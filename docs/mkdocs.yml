@@ -5,7 +5,8 @@ theme:
   #name: 'readthedocs'
   #name: 'mkdocs'
 
-repo_url: http://github.com/cudmore/PyMapManager
+#repo_url: http://github.com/cudmore/PyMapManager
+repo_url: http://github.com/mapmanager/PyMapManager
 
 edit_uri: ''
 
