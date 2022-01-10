@@ -289,9 +289,9 @@ class mmStack():
 		Get all values for an annotation.
 
 		Args:
-			stat (str): Name of a stack annotation.
-			roiType: spineROI or otherROI.
-			segmentID: Integer list specifying stack segment number.
+			stat (str): Name of a stack annotation (corresponds to columns in DataFrame self.stackdb).
+			roiType (list): spineROI or otherROI.
+			segmentID (list): Integer list specifying stack segment number.
 
 		Returns:
 			1D numpy ndarray of values

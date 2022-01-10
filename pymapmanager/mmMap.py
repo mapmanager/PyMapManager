@@ -186,6 +186,21 @@ class mmMap():
 		stopTime = time.time()
 		print('map', self.name, 'loaded in', round(stopTime-startTime,2), 'seconds.')
 
+	def __iter__(self):
+		# this along with __next__ allow mmMap to iterate over stacks
+		self._iterIdx = 0
+		return self
+
+	def __next__(self):
+		# this along with __iter__ allow mmMap to iterate over stacks
+		if self._iterIdx < self.numSessions:
+			x = self.stacks[self._iterIdx]
+			self._iterIdx += 1
+			return x
+		else:
+			raise StopIteration
+
+
 	@property
 	def numChannels(self):
 		"""
