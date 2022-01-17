@@ -384,7 +384,7 @@ class mmMap():
 	def _getStackName(self, sessIdx):
 		# get the name of the stack at session sessIdx, this is contained in the map header
 		ret = self.getValue('hsStack', sessIdx)
-		if ret.endswith('_ch1'):
+		if ret.endswith('_ch1') or ret.endswith('_ch2'):
 			ret = ret[:-4]
 		return ret
 
