@@ -40,7 +40,8 @@ setup(
     author='Robert H Cudmore',
     author_email='robert.cudmore@gmail.com',
     license='GNU GPLv3',
-    packages = find_packages(),
+    #packages = find_packages(),
+    packages=find_packages(include=['pymapmanager', 'pymapmanager.*']),
     #packages = find_packages(exclude=['version']),
     #packages=[
     #    'pymapmanager',
