@@ -1,4 +1,14 @@
 """
+A stack contains a 3D Tiff, a list of 3D annotations, and optionally a number of line segment tracings.
+
+A stack can either be a single time-point or be embeded into a session (timepoint) of a :class:`pymapmanager.map`.
+
+The list of 3D annotations is a :class:`pymapmanager.annotations.pointAnnotation`.
+
+The list of line segments is a :class:`pymapmanager.annotations.lineAnnotations`.
+
+Stack annotations are saved in an (created) enclosing folder with the same name as the tif stack file after removing the .tif extension.
+
 """
 import errno
 import json
@@ -7,8 +17,8 @@ import os
 import numpy as np
 import tifffile
 
-import pymapmanager.pointAnnotations
-import pymapmanager.lineAnnotations
+import pymapmanager.annotations.pointAnnotations
+import pymapmanager.annotations.lineAnnotations
 
 import pymapmanager.logger
 logger = pymapmanager.logger.get_logger(__name__)
@@ -44,13 +54,15 @@ class stack():
     imageRowIdx = 1
     imageColIdx = 2
 
-    def __init__(self, tifPath : str, loadChannel : int = 2, loadData : bool = True):
+    def __init__(self, tifPath : str,
+                defaultChannel : int = 1,
+                loadData : bool = True):
         """
         Create a stack from .tif file.
         
         Args:
             tifPath: Full path to a tif file
-            loadChannel:
+            defaultChannel: Default channel to load
             loadData: If false than don't load anyhthing
         """
         if not os.path.isfile(tifPath):
@@ -76,7 +88,7 @@ class stack():
         #       when we do not load, we cannot infer header from tifData
         imageShape = None
         if loadData:
-            imageShape = self.loadImages(channel=loadChannel)
+            imageShape = self.loadImages(channel=defaultChannel)
 
         # read from txt file json
         headerDict = self.loadHeader()
@@ -164,7 +176,7 @@ class stack():
                 headerDict = json.load(json_file)
                 return headerDict
         else:
-            logger.warning(f'Did not find header file {headerPath}')
+            logger.info(f'Did not find header file {headerPath}')
             return None
 
     def save(self, saveImages : bool = False):
@@ -208,6 +220,11 @@ class stack():
         Get the entire image channel
         """
         # TODO (cudmore) check that channel < self.maxNumChannels
+        
+        # TODO (Cudmore) fix
+        if channel is None:
+            channel = 1
+        
         channelIdx = channel - 1
         return self._images[channelIdx]
 
@@ -262,13 +279,15 @@ class stack():
 
     def loadAnnotations(self):
         try:
-            self._annotations = pymapmanager.pointAnnotations.pointAnnotations(self._basePath)
+            #self._annotations = pymapmanager.annotations.pointAnnotations.pointAnnotations(self._basePath)
+            self._annotations = pymapmanager.annotations.pointAnnotations.pointAnnotations(self)
         except (FileNotFoundError) as e:
             self._annotations = None
 
     def loadLines(self):
         try:
-            self._lines = pymapmanager.lineAnnotations.lineAnnotations(self._basePath)
+            #self._lines = pymapmanager.annotations.lineAnnotations.lineAnnotations(self._basePath)
+            self._lines = pymapmanager.annotations.lineAnnotations.lineAnnotations(self)
         except (FileNotFoundError) as e:
             self._lines = None
 
@@ -365,69 +384,28 @@ class stack():
 def run():
     import sys
     
+    # A tif file with no info. The user loads this first
     nakedPath = '/media/cudmore/data/richard/rr30a/naked-tif/rr30a_s0_ch2.tif'
     myStack = stack(nakedPath)
     print(myStack)
+    
     df = myStack.getPointAnnotations().asDataFrame()
+    print('test: initial list of points is empty')
     print(df)
 
     # try and use roiType as Enum, not string
-    import pymapmanager.baseAnnotations
-    spineROI = pymapmanager.baseAnnotations.baseAnnotations.roiTypeEnum.spineROI
+    import pymapmanager.annotations.baseAnnotations
+    spineROI = pymapmanager.annotations.baseAnnotations.baseAnnotations.roiTypeEnum.spineROI
     print('enum:', spineROI)
     
+    # not working
+    '''
     myStack.getPointAnnotations().addAnnotation(xPnt=10, yPnt=20, zPnt=30, roiType='spineROI')
     print(myStack)
     df = myStack.getPointAnnotations().asDataFrame()
     print(df)
-
-    myStack.save()
-    sys.exit(1)
-
-    # create a stack from a path
-    tifPath = '/media/cudmore/data/richard/rr30a/firstMap/stacks/rr30a_s0_ch2.tif'
-    myStack = stack(tifPath)
-    print(myStack)
-
-    #print(myStack._getEnclosingFolderPath())
-
-    #myStack.loadImages(channel=1)
-    #print(myStack)
-
-    myStack.printHeader()
-    myStack.saveHeader()
-
-    myStack.loadImages(channel=1)
-    maxProject1 = myStack.getMaxProject(channel=1)
-    print('maxProject1:', maxProject1.shape)
-
-    #myStack.loadImages(channel=2)
-    #maxProject2 = myStack.getMaxProject(channel=2)
-
-    #xyzAnnotation = myStack.getPointAnnotations().getPoints_xyz(roiType=['spineROI'], asPixel=True)
-    #xAnnotation = xyzAnnotation[:,0]
-    #yAnnotation = xyzAnnotation[:,1]
-    
-    #xyzLine = myStack.getLineAnnotations().getLine()
-    #xLine = xyzLine[:,0]
-    #yLine = xyzLine[:,1]
-    
-    # TODO (cudmore) line x/y is in micro-meters, images is in pixels
-    # TODO (cudmore) image needs to be flipped in y
-    
-    import matplotlib.pyplot as plt
-    #plt.imshow(maxProject2, origin='lower')  # flip y
-    
-    import pymapmanager.plotting.plottingUtils
-    roiType = ['spineROI']
-    segmentID = []
-    pymapmanager.plotting.plottingUtils.plotMax(myStack, roiType=roiType, segmentID=segmentID)
-    
     '''
-    plt.plot(xAnnotation, yAnnotation, 'ok')
-    plt.plot(xLine, yLine, 'or', linewidth=0.5)
-    '''
-    plt.show()
+    
 
 if __name__ == '__main__':
     run()

@@ -29,7 +29,7 @@ def getLoggerFile():
 		#myPath = os.path.dirname(os.path.abspath(__file__))
 		myPath = pathlib.Path(__file__).parent.absolute()
 
-	fileName = 'mapmanager.log'
+	fileName = 'pymapmanager.log'
 	logPath = os.path.join(myPath, fileName)
 	return logPath
 
@@ -43,7 +43,7 @@ def get_logger(name, level=logging.DEBUG):
 		# running in a normal Python environment
 		myPath = pathlib.Path(__file__).parent.absolute()
 
-	fileName = 'mapmanager.log'
+	fileName = 'pymapmanager.log'
 	logPath = os.path.join(myPath, fileName)
 
 	# Create a custom logger
