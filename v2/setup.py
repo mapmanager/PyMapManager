@@ -1,4 +1,3 @@
-from setuptools import setup, find_packages
 
 '''
 ## Pushing to PyPi
@@ -29,6 +28,8 @@ https://pypi.python.org/pypi/pymapmanager
 ## Notes:
     `requests` is required by pymapmanager.mmio
 '''
+
+from setuptools import setup, find_packages
 
 exec (open('pymapmanager/version.py').read())
 

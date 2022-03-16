@@ -111,6 +111,7 @@ class stack():
         else:
             self._header = headerDict
 
+        # TODO (cudmore) we should add an option to defer loading until explicitly called
         self.loadAnnotations()
         self.loadLines()
 
@@ -135,6 +136,15 @@ class stack():
         print(f'== header for stack {self._basePath}')
         for k,v in self._header.items():
             print(f'{prefixStr}{k} : {v} {type(v)}')
+
+    def getVoxelShape(self):
+        """
+        Get (slice, x, y) voxel shape in um (from header).
+        """
+        xVoxel = self._header['xVoxel']
+        yVoxel = self._header['yVoxel']
+        zVoxel = self._header['zVoxel']
+        return zVoxel, xVoxel, yVoxel
 
     def _getDefaultHeader(self):
         """
@@ -240,13 +250,25 @@ class stack():
         return self._images[channelIdx][imageSlice][:][:]
 
     def getMaxProject(self, channel : int = 1):
-        """Get a maximal intensity projection of image slices for one channel.
+        """
+        Get a maximal intensity projection of image slices for one channel.
         """
         channelIdx = channel - 1
         return self._images[channelIdx].max(axis=self.imageSliceIdx)
 
-    def getMaxProjectSlice(self, imageSlice : int, channel : int = 1, upSlices : int = 3, downSlices : int = 3):
-        """Get a maximal intensity projection of image slices for one channel.
+    def getMaxProjectSlice(self, 
+                            imageSlice : int, 
+                            channel : int = 1, 
+                            upSlices : int = 3, 
+                            downSlices : int = 3):
+        """
+        Get a maximal intensity projection of image slices for one channel.
+
+        Args:
+            imageSlice:
+            channel:
+            upSlices:
+            downSlices:
         """
         channelIdx = channel - 1
         firstSlice = imageSlice - upSlices

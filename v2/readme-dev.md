@@ -10,7 +10,7 @@ Here is a link to download just one stack:
 https://ucdavis.box.com/s/9eajzyanuc3pvdhturt5sxse4vxz7ulw
 
 
-## 1) New file formats and directory structure
+## 1) New file format directory structure
 
 Here is an example of the file directory structure for one stack (a stack is just a .tif file)
 
@@ -118,6 +118,23 @@ Some basic plotting functions I am using as 'visual' tests ???
 ```
 
 
+## Notes
 
+- 20220129
 
+### Problem with segmentID being shared between line annotations and point annotations
+
+Many point annotations will have a parent 'segmentID' that corresponds to the 'segmentID' of a lineAnnotation. If an entire segment of a lineAnnotation is deleted, the reference in pointAnnotation to that segmentID needs to be update
+
+1) Don't allow a segment to be deleted if it has points with it as a parent.
+2) We are assuming our segmentID in lineAnnotations is a contiguous list of int(s), [0, 1, 2, 3, ...] with no gaps.
+
+    When we delete a segment by its segmentID, we introduce gaps
+
+    We could decriment all segmentID beyond what was deleted
+
+    We then also have to decriment all pointAnnotations segmentID in the same way
+    
+
+### We need bounds check on annotation to be sure they are within (slices, x, y) of parent stack
 
