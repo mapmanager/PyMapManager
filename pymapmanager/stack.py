@@ -407,8 +407,8 @@ def run():
     import sys
     
     # A tif file with no info. The user loads this first
-    nakedPath = '/media/cudmore/data/richard/rr30a/naked-tif/rr30a_s0_ch2.tif'
-    myStack = stack(nakedPath)
+    stackPath = '../PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
+    myStack = stack(stackPath)
     print(myStack)
     
     df = myStack.getPointAnnotations().asDataFrame()
