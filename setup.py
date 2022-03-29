@@ -36,7 +36,7 @@ setup(
     name='pymapmanager',
     version=__version__,
     description='Load, analyze, and visualize Map Manager files',
-    url='http://github.com/cudmore/PyMapManager',
+    url='http://github.com/pymapmanager/PyMapManager',
     author='Robert H Cudmore',
     author_email='robert.cudmore@gmail.com',
     license='GNU GPLv3',
@@ -50,7 +50,7 @@ setup(
     install_requires=[
         "numpy",
         "pandas",
-        "requests",
+        #"requests",
         "scipy",
         "tifffile",
         "matplotlib"

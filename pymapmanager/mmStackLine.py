@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import os, io, math
 from errno import ENOENT
 import pandas as pd
@@ -20,7 +18,7 @@ class mmStackLine():
 		# Get the (x,y,z) values, in um, of the 2nd mmStack tracing
 		xyz = myMap.stacks[2].getLine()
 	"""
-	def __init__(self,stack):
+	def __init__(self, stack):
 		"""
 		Load a line tracing for a stack. In addition to (x,y,z), the line has 'parentID' to specify multiple dendritic tracings
 
