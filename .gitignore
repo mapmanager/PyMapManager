@@ -1,4 +1,5 @@
-*.tif
+.DS_Store
+
 /**/ingested/*.png
 
 # Compiled python modules.
