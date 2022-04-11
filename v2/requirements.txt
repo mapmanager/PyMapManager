@@ -1,8 +1,0 @@
-numpy
-pandas
-requests
-
-scipy
-tifffile
-
-matplotlib

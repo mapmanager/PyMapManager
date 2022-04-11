@@ -3,14 +3,15 @@ A stack contains a 3D Tiff, a list of 3D annotations, and optionally a number of
 
 A stack can either be a single time-point or be embeded into a session (timepoint) of a :class:`pymapmanager.map`.
 
-The list of 3D annotations is a :class:`pymapmanager.annotations.pointAnnotation`.
+The list of 3D annotations is a :class:`pymapmanager.annotations.pointAnnotations`.
 
 The list of line segments is a :class:`pymapmanager.annotations.lineAnnotations`.
 
-Stack annotations are saved in an (created) enclosing folder with the same name as the tif stack file after removing the .tif extension.
+Stack annotations are saved in an enclosing folder with the same name as the tif stack file after removing the .tif extension.
 
 """
 import errno
+import enum
 import json
 import os
 
@@ -23,6 +24,13 @@ import pymapmanager.annotations.lineAnnotations
 import pymapmanager.logger
 logger = pymapmanager.logger.get_logger(__name__)
 
+class pixelOrder(enum.Enum):
+    """Specify the desired pixel order.
+    
+    This maps numpy (z, y, x).
+    """
+    xyz = [2, 1, 0]
+    
 class stack():
     """
     A stack manages:
@@ -43,7 +51,7 @@ class stack():
     """
 
     maxNumChannels = 4
-    """Maximum number fo color channels. Corresponds to _ch1, _ch2, etc"""
+    """Maximum number fo color channels. Corresponds to _ch1, _ch2, _ch3, etc"""
 
     channelStrings = [f'_ch{i}.tif' for i in range(1, maxNumChannels+1)]  # ['_ch1.tif', '_ch2.tif', '_ch3.tif', '_ch4.tif']
     """Possible file name endings indicate color channels"""
@@ -56,38 +64,42 @@ class stack():
 
     def __init__(self, tifPath : str,
                 defaultChannel : int = 1,
-                loadData : bool = True):
+                loadImageData : bool = True):
         """
         Create a stack from .tif file.
         
         Args:
             tifPath: Full path to a tif file
             defaultChannel: Default channel to load
-            loadData: If false than don't load anyhthing
+            loadImageData: If false than don't load anyhthing
         """
         if not os.path.isfile(tifPath):
             logger.error(f'Did not find tifPath: {tifPath}')
-            # TODO (cudmore) raise an exception
+            # TODO (cudmore) is there a 'FileNotFound' exception built in?
             raise OSError(errno.ENOENT, os.strerror(errno.ENOENT), tifPath)
 
         self._tifPath = tifPath
         """Full path to .tif we were created with"""
         
         self._basePath = self._getBasePath()
+
         self._baseName = os.path.split(self._basePath)[1]
     
+        self._enclosingPath = os.path.join(self._basePath, self._baseName)
+
         # infer this from tif file _ch (need to look on harddrive)
         self._numChannels, self._tifPathList = self._inferNumberOfChannels() 
 
         self._images = [None] * self.maxNumChannels
-        """List of n-dimensional images corresponding to potential _ch1, _ch2, etc.
+        """List of n-dimensional images corresponding to potential _ch1, _ch2, _ch3, etc.
             Always keep a list of maxNumChannels and fill in depending on available files
         """
     
         # (TODO) add option to not load image data on creation
         #       when we do not load, we cannot infer header from tifData
         imageShape = None
-        if loadData:
+        if loadImageData:
+            # load 
             imageShape = self.loadImages(channel=defaultChannel)
 
         # read from txt file json
@@ -120,6 +132,8 @@ class stack():
         return self._header
     
     def __str__(self):
+        """Get the string representation of stack.
+        """
         printList = []
         printList.append('stack')
         printList.append(f'base name: {self._baseName}')
@@ -135,7 +149,7 @@ class stack():
     def printHeader(self, prefixStr='  '):
         print(f'== header for stack {self._basePath}')
         for k,v in self._header.items():
-            print(f'{prefixStr}{k} : {v} {type(v)}')
+            print(f'  {prefixStr}{k} : {v} {type(v)}')
 
     def getVoxelShape(self):
         """
@@ -146,7 +160,7 @@ class stack():
         zVoxel = self._header['zVoxel']
         return zVoxel, xVoxel, yVoxel
 
-    def _getDefaultHeader(self):
+    def _getDefaultHeader(self) -> dict:
         """
         """
         headerDict = {
@@ -165,13 +179,17 @@ class stack():
         return headerDict.copy()
 
     def _getHeaderPath(self):
+        """Get the full path to the stack header file.
+        
+        This contains information about pixels, voxels, etc.
+        """
         folderPath = self._getEnclosingFolderPath()
         headerFile = self._baseName + '.json'
         headerPath = os.path.join(folderPath, headerFile)
         return headerPath
 
     def saveHeader(self):
-        self._makeFolder()
+        self._makeEnclosingFolder()
 
         headerPath = self._getHeaderPath()
         with open(headerPath, 'w') as outfile:
@@ -193,7 +211,7 @@ class stack():
         """
         Save line and point annotations and optionally the tif stacks
         """
-        self._makeFolder()
+        self._makeEnclosingFolder()
         
         self.saveHeader()  # not really neccessary (does not change)
         
@@ -300,16 +318,26 @@ class stack():
         return numSlices
 
     def loadAnnotations(self):
+        """Load point annotations.
+        """
         try:
             #self._annotations = pymapmanager.annotations.pointAnnotations.pointAnnotations(self._basePath)
-            self._annotations = pymapmanager.annotations.pointAnnotations.pointAnnotations(self)
+            #self._annotations = pymapmanager.annotations.pointAnnotations.pointAnnotations(self)
+            
+            annotationFilePath = self._enclosingPath + '_pa.txt'
+            self._annotations = pymapmanager.annotations.pointAnnotations.pointAnnotations(annotationFilePath)
+
         except (FileNotFoundError) as e:
             self._annotations = None
 
     def loadLines(self):
+        """Load line annotations.
+        """
         try:
             #self._lines = pymapmanager.annotations.lineAnnotations.lineAnnotations(self._basePath)
-            self._lines = pymapmanager.annotations.lineAnnotations.lineAnnotations(self)
+            #self._lines = pymapmanager.annotations.lineAnnotations.lineAnnotations(self)
+            lineFilePath = self._enclosingPath + '_la.txt'
+            self._lines = pymapmanager.annotations.lineAnnotations.lineAnnotations(lineFilePath)
         except (FileNotFoundError) as e:
             self._lines = None
 
@@ -371,7 +399,7 @@ class stack():
 
     def _getBasePath(self):
         """
-        Get base filename by removing channelStr
+        Get base filename by removing all `self.channelStrings`
         
         TODO (cudmore) Just do this once, it does not change.
         """
@@ -381,23 +409,23 @@ class stack():
             basePath = basePath.replace(channelString, '')
         return basePath
 
-    def _makeFolder(self):
+    def _makeEnclosingFolder(self):
         """
         Make a containing folder from base name to hold all anotations.
         """
         basePath = self._basePath
         if os.path.isdir(basePath):
-            logger.info(f'Base folder already exists at {basePath}')
+            #logger.info(f'Base folder already exists at {basePath}')
             pass
         else:
-            logger.info(f'Making base folder at {basePath}')
+            logger.info(f'Making enclosing folder: "{basePath}"')
             os.mkdir(basePath)
 
     def _getEnclosingFolderPath(self):
         """
-        Get the full path to the containing folder.
+        Get the full path to the enclosing folder.
 
-        This is the folder where we save all analysis for a given tif stack
+        This is the folder where we save all analysis for a given tif stack.
         """
         tifFolder, tifFile = os.path.split(self._tifPath)
         folderPath = os.path.join(tifFolder, self._baseName)
@@ -411,14 +439,14 @@ def run():
     myStack = stack(stackPath)
     print(myStack)
     
-    df = myStack.getPointAnnotations().asDataFrame()
-    print('test: initial list of points is empty')
-    print(df)
+    #df = myStack.getPointAnnotations().asDataFrame()
+    #print('test: initial list of points is empty')
+    #print(df)
 
     # try and use roiType as Enum, not string
-    import pymapmanager.annotations.baseAnnotations
-    spineROI = pymapmanager.annotations.baseAnnotations.baseAnnotations.roiTypeEnum.spineROI
-    print('enum:', spineROI)
+    #import pymapmanager.annotations.baseAnnotations
+    #spineROI = pymapmanager.annotations.baseAnnotations.baseAnnotations.roiTypeEnum.spineROI
+    #print('enum:', spineROI)
     
     # not working
     '''
