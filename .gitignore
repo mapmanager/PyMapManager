@@ -1,4 +1,7 @@
-*.tif
+pymapmanager.log
+
+.DS_Store
+
 /**/ingested/*.png
 
 # Compiled python modules.

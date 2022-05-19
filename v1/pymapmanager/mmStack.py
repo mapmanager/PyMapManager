@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import os, io, time
 from glob import glob # for mmStackPool
 from errno import ENOENT
@@ -7,22 +5,21 @@ import pandas as pd
 import numpy as np
 #import uuid # to generate a unique id for each spine
 
-# davis
-# was this, this import is failing ????
-#from scipy.misc import imsave
-
 import tifffile
-#from skimage.io import imsave, imread
 
 from pymapmanager.mmStackLine import mmStackLine
+from pymapmanager.mmStackDb import mmStackDb
 from pymapmanager.mmio import mmio
 from pymapmanager.mmUtil import newplotdict
 
+from pymapmanager.mmLogger import get_logger
+logger = get_logger(__name__)
+
 class mmStack():
 	"""
-	A stack contains a 3D Tiff, a list of 3D annotations, and optionally a number of segment tracings,
+	A stack contains a 3D Tiff, a list of 3D annotations, and optionally a number of line segment tracings,
 	:class:`pymapmanager.mmStackLine`.
-	A stack can either be a single time-point or be embeded into a session of a :class:`pymapmanager.mmMap`.
+	A stack can either be a single time-point or be embeded into a session (timepoint) of a :class:`pymapmanager.mmMap`.
 
 	Args:
 		filePath (str): Full path to tiff file, this is used to open single timepoint stacks (not stacks in a map)
@@ -34,6 +31,7 @@ class mmStack():
 	"""
 
 	def __init__(self, filePath=None, name=None, numChannels=1, map=None, mapSession=None, urlmap=None):
+		logger.warning('')
 		self.fileName = filePath
 		self._folder = '' #map.folder #re-route this to load a single time-point stack from its .tif !!!
 		self.name = name #re-route this for single channel stack
@@ -65,7 +63,7 @@ class mmStack():
 			# todo: we don't have numChannel in header, infer this from other _ch1.tif and _ch2.tif files in same directory
 		else:
 			# undefined
-			print('error: mmStack() constructor got bad parameters.')
+			logger.error('Constructor got bad parameters.')
 			return
 
 		#todo: to open generic tif (no stackdb), we need to use tifffile load of first image, query tif header values (gonna be a pain)
@@ -82,7 +80,7 @@ class mmStack():
 			stackdbFile = self._folder + 'stackdb' + '/' + self.name + '_db2.txt'
 			if not os.path.isfile(stackdbFile):
 				raise IOError(ENOENT, 'mmStack did not find stackdbFile:', stackdbFile)
-			with open(stackdbFile, 'rU') as f:
+			with open(stackdbFile, 'r') as f:
 				header = f.readline().rstrip()
 			self._stackdb = pd.read_csv(stackdbFile, header=1, index_col=False)
 			self._stackdb['Idx'] = self.stackdb.index
@@ -144,6 +142,7 @@ class mmStack():
 		for i in range(self.numChannels):
 			ch = i+1
 			if self.doFile:
+				#  TODO: switch to os.path.join
 				intFile = self._folder + 'stackdb' + '/' + self.name + '_Int' + str(ch) + '.txt'
 				if not os.path.isfile(intFile):
 					raise IOError(ENOENT, 'mmStack did not find intFile:', intFile)
@@ -188,6 +187,11 @@ class mmStack():
 				int2 = int2.add_suffix('_int2')
 				self._stackdb = self.stackdb.join(int2)
 		'''
+
+		###############################################################################
+		# stackdb
+		self._stackDb = None
+		self._loadStackDb()
 
 		###############################################################################
 		# line
@@ -359,12 +363,21 @@ class mmStack():
 
 	def _loadLine(self):
 		"""
-		Load a :class:'pymapmanager.mmStackLine' associated with the stack. Sets 'line' instance variable.
+		Load a :class:'pymapmanager.mmStackLine' associated with the stack.
 
 		Returns:
 			None.
 		"""
 		self._line = mmStackLine(self)
+
+	def _loadStackDb(self):
+		"""
+		Load a :class:'pymapmanager.mmStackDb' associated with the stack.
+
+		Returns:
+			None.
+		"""
+		self._stackdb2 = mmStackDb(self)
 
 	def loadStackImages(self, channel=2):
 		"""
@@ -376,7 +389,7 @@ class mmStack():
 			channel (int): Specifies the channel number to load.
 
 		Returns:
-			images (3D ndarray): 3D numpy array of images.
+			images (np.ndarray): 3D numpy array of images.
 		"""
 		startTime = time.time()
 
@@ -449,7 +462,7 @@ class mmStack():
 
 	def ingest(self):
 		"""
-		Load each stack, save each slice as png
+		Used to create a file version for the cloud. Load each stack, save each slice as png.
 
 		/Users/cudmore/Dropbox/PyMaanager-Data/public/rr30a/raw/ingested/tp0/rr30a_tp0_ch2_s0000.png
 
@@ -474,6 +487,12 @@ class mmStack():
 				#print('   mmStack.ingest() turn save back on')
 				#
 				# DAVIS REMOVED
-				imsave(dstPath + dstFile, self.images[slice,:,:])
+				tifffile.imsave(dstPath + dstFile, self.images[slice,:,:])
 
 			self._images = None
+
+if __name__ == '__main__':
+	path = '/media/cudmore/data/richard/rr30a/raw/rr30a_s0_ch1.tif'
+	myStack = mmStack(path)
+	print(myStack)
+
