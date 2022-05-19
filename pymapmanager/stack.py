@@ -14,6 +14,7 @@ import errno
 import enum
 import json
 import os
+from pprint import pprint
 
 import numpy as np
 import tifffile
@@ -21,8 +22,7 @@ import tifffile
 import pymapmanager.annotations.pointAnnotations
 import pymapmanager.annotations.lineAnnotations
 
-import pymapmanager.logger
-logger = pymapmanager.logger.get_logger(__name__)
+from pymapmanager._logger import logger
 
 class pixelOrder(enum.Enum):
     """Specify the desired pixel order.
@@ -82,18 +82,20 @@ class stack():
         """Full path to .tif we were created with"""
         
         self._basePath = self._getBasePath()
+        # full path after stripping (_ch1, _ch2, ...) and extension
 
         self._baseName = os.path.split(self._basePath)[1]
-    
-        self._enclosingPath = os.path.join(self._basePath, self._baseName)
+        # base file name after stripping (_ch1, _ch2, ...) and extension
 
-        # infer this from tif file _ch (need to look on harddrive)
+        self._enclosingPath = os.path.join(self._basePath, self._baseName)
+        # fill path to save files with (after appending something like '_la.txt)
+
         self._numChannels, self._tifPathList = self._inferNumberOfChannels() 
+        # infer this from tif file _ch (need to look on harddrive)
 
         self._images = [None] * self.maxNumChannels
-        """List of n-dimensional images corresponding to potential _ch1, _ch2, _ch3, etc.
-            Always keep a list of maxNumChannels and fill in depending on available files
-        """
+        # List of n-dimensional images corresponding to potential _ch1, _ch2, _ch3, etc.
+        # Always keep a list of maxNumChannels and fill in depending on available files
     
         # (TODO) add option to not load image data on creation
         #       when we do not load, we cannot infer header from tifData
@@ -104,7 +106,9 @@ class stack():
 
         # read from txt file json
         headerDict = self.loadHeader()
-        if headerDict is None:
+        if headerDict is not None:
+            self._header = headerDict
+        else:
             logger.info(f'Creating header')
             self._header = self._getDefaultHeader()
             self._header['basename'] = self._baseName
@@ -120,8 +124,6 @@ class stack():
             # width/height in um
             self._header['umWidth'] = self._header['xPixels'] * self._header['xVoxel'] if imageShape is not None else None
             self._header['umHeight'] = self._header['yPixels'] * self._header['yVoxel'] if imageShape is not None else None
-        else:
-            self._header = headerDict
 
         # TODO (cudmore) we should add an option to defer loading until explicitly called
         self.loadAnnotations()
@@ -153,12 +155,12 @@ class stack():
 
     def getVoxelShape(self):
         """
-        Get (slice, x, y) voxel shape in um (from header).
+        Get (slice, y, x) voxel shape in um (from header).
         """
         xVoxel = self._header['xVoxel']
         yVoxel = self._header['yVoxel']
         zVoxel = self._header['zVoxel']
-        return zVoxel, xVoxel, yVoxel
+        return zVoxel, yVoxel, xVoxel
 
     def _getDefaultHeader(self) -> dict:
         """
@@ -202,7 +204,7 @@ class stack():
             logger.info(f'Loading header {headerPath}')
             with open(headerPath) as json_file:
                 headerDict = json.load(json_file)
-                return headerDict
+            return headerDict
         else:
             logger.info(f'Did not find header file {headerPath}')
             return None
@@ -211,7 +213,7 @@ class stack():
         """
         Save line and point annotations and optionally the tif stacks
         """
-        self._makeEnclosingFolder()
+        self._makeEnclosingFolder()  # just in case
         
         self.saveHeader()  # not really neccessary (does not change)
         
@@ -320,13 +322,9 @@ class stack():
     def loadAnnotations(self):
         """Load point annotations.
         """
-        try:
-            #self._annotations = pymapmanager.annotations.pointAnnotations.pointAnnotations(self._basePath)
-            #self._annotations = pymapmanager.annotations.pointAnnotations.pointAnnotations(self)
-            
+        try:            
             annotationFilePath = self._enclosingPath + '_pa.txt'
             self._annotations = pymapmanager.annotations.pointAnnotations.pointAnnotations(annotationFilePath)
-
         except (FileNotFoundError) as e:
             self._annotations = None
 
@@ -334,8 +332,6 @@ class stack():
         """Load line annotations.
         """
         try:
-            #self._lines = pymapmanager.annotations.lineAnnotations.lineAnnotations(self._basePath)
-            #self._lines = pymapmanager.annotations.lineAnnotations.lineAnnotations(self)
             lineFilePath = self._enclosingPath + '_la.txt'
             self._lines = pymapmanager.annotations.lineAnnotations.lineAnnotations(lineFilePath)
         except (FileNotFoundError) as e:
@@ -347,11 +343,81 @@ class stack():
     def getLineAnnotations(self):
         return self._lines
 
-    def _checkChannel(self, channel):
+    # TODO (cudmore) this needs to be a two step process
+    # 1) imoprt from file (to get df)
+    # 1.1) in user interface, show user what we are about to import and confirm
+    # 2) import from data
+    
+    # moved to baseAnnotations
+    '''
+    def importFromFile(self, annotationType : str, funcDef, path, finalizeImport=False):
+        header, df = funcDef(path)
+        if finalizeImport:
+            self.importFromData(annotationType, header, df)
+
+        return header, df
+    '''
+
+    # moved to baseAnnotations
+    '''
+    def importFromData(self, annotationType : str, header, df):
+        """Import annotations from a function in pymapmanager.mmImport
+        
+        Args:
+            annotationType (str) From ('points', 'lines')
+            funDef (def) function that takes a path and return (header, df)
+            path (str) Path to file for import
+        """
+        logger.info('')
+
+        # (TODO (cudmore) check that path exists
+        #path = '/Users/cudmore/Sites/PyMapManager-Data/one-timepoint/rr30a_s0_import_mm_igor/rr30a_s0_l.txt'
+        
+        # TODO (cudmore) check that import exists
+        # user specified import function
+        #from pymapmanager.mmImport.importFile import _import_lines_mapmanager_igor
+        #funcDef = _import_lines_mapmanager_igor
+        
+        #header, df = funcDef(path)
+        
+        # TODO (cudmore) check that header is a dict
+        # TODO (cudmore) check that df is a pd.DataFrame
+        
+        #pprint(header)
+        #pprint(df)
+
+        if annotationType == 'points':
+            # assign df to our points
+            pa = self.getPointAnnotations()
+
+            # header
+            for k,v in header.items():
+                pa.setHeaderVal(k, v)
+
+            # data
+            for column in df.columns:
+                #la[column] = df[column]
+                pa.setColumn(column, df[column])
+
+        elif annotationType == 'lines':
+            # assign df to our lines
+            la = self.getLineAnnotations()
+
+            # header
+            for k,v in header.items():
+                la.setHeaderVal(k, v)
+
+            # data
+            for column in df.columns:
+                #la[column] = df[column]
+                la.setColumn(column, df[column])
+    '''
+    
+    def _checkChannel(self, channel : int):
         """
         Check that a 1 based channel is legitimate.
         
-        TODO (Cudmore) write general purpose chack tht a given channel (int) is legitamate.
+        TODO (cudmore) write general purpose check that a given channel (int) is legitamate.
         """   
         pass
 
@@ -413,13 +479,12 @@ class stack():
         """
         Make a containing folder from base name to hold all anotations.
         """
-        basePath = self._basePath
-        if os.path.isdir(basePath):
+        if os.path.isdir(self._basePath):
             #logger.info(f'Base folder already exists at {basePath}')
             pass
         else:
-            logger.info(f'Making enclosing folder: "{basePath}"')
-            os.mkdir(basePath)
+            logger.info(f'Making enclosing folder: "{self._basePath}"')
+            os.mkdir(self._basePath)
 
     def _getEnclosingFolderPath(self):
         """

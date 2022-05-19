@@ -6,15 +6,14 @@ from typing import List, Union
 import numpy as np
 import pandas as pd
 
+from pymapmanager.annotations import ColumnItem
 from pymapmanager.annotations import baseAnnotations
-#from pymapmanager.annotations import roiTypesClass
 from pymapmanager.annotations import comparisonTypes
-from pymapmanager.annotations import fileTypeClass
+#from pymapmanager.annotations import fileTypeClass
 
 import pymapmanager.analysis
 
-import pymapmanager.logger
-logger = pymapmanager.logger.get_logger(__name__)
+from pymapmanager._logger import logger
 
 class lineAnnotations(baseAnnotations):
     """
@@ -29,6 +28,26 @@ class lineAnnotations(baseAnnotations):
     def __init__(self, *args,**kwargs):
         super().__init__(*args,**kwargs)
 
+        colItem = ColumnItem(
+            name = 'segmentID',
+            type = 'Int64',  # 'Int64' is pandas way to have an int64 with nan values
+            units = '',
+            humanname = 'Segment ID',
+            description = 'Segment ID'
+        )
+        self.addColumn(colItem)
+
+        colItem = ColumnItem(
+            name = 'roiType',
+            type = str,  
+            units = '',
+            humanname = 'ROI Type',
+            description = 'ROI Type'
+        )
+        self.addColumn(colItem)
+
+        self.load()
+
     def load(self):
         super().load()
 
@@ -36,78 +55,6 @@ class lineAnnotations(baseAnnotations):
         #df = self.getDataFrame()
         #if df is not None:
         #    df['segmentID'] = df['segmentID'].astype(int)
-
-    def old__import_mapmanager_igor_header(self, path : str):
-        """Load header from first line of file.
-        
-        Header is a ';' sperated list of key=value pairs.
-        """
-        header = {}
-        
-        # (voxelx,voxely,voxelz)) are in units 'um/pixel'
-        acceptKeys = ['voxelx', 'voxely', 'voxelz']
-
-        if not os.path.isfile(path):
-            logger.warning(f'Did not find annotation file path: {path}')
-            return None
-
-        with open(path) as f:
-            headerLine = f.readline().rstrip()
-
-        items = headerLine.split(';')
-        for item in items:
-            if item:
-                k,v = item.split('=')
-                if k in acceptKeys:
-                    # TODO: (cudmore) we need to know the type, for now just float
-                    header[k] = float(v)
-        
-        #logger.info('')
-        #pprint(header)
-
-        return header
-        
-    def old_import_mapmanager_igor(self, path : str):
-        #df = super()._import_mapmanager_igor(*args,**kwargs)
-
-        header = self._import_mapmanager_igor_header(path)
-        for k,v in header.items():
-            self.setHeaderVal(k, v)
-
-        df = pd.read_csv(path, header=1, index_col=False)
-
-        # swap some columns
-        x = df['x']  # um/pixel
-        y = df['y']
-        z = df['z']
-        
-        xPixel = x / self._header['voxelx']  # pixel
-        yPixel = y / self._header['voxely']
-        zPixel = z / self._header['voxelz']
-
-        # set native dataframe
-        self._df['x'] = xPixel
-        self._df['y'] = yPixel
-        self._df['z'] = zPixel
-
-        self._df['xVoxel'] = x
-        self._df['yVoxel'] = y
-        self._df['zVoxel'] = z
-
-        #self.addColumn('roiType', df['roiType'])
-        self.addColumn('segmentID', df['segmentID'].values)
-
-        #self._df['roiType'] = df['roiType']
-
-        #self._df['roiType'] = df['roiType']
-        #self._df['segmentID'] = df['parentID']
-        
-        #
-        # specific to line annotations
-        roiTypeStr = 'linePnt'
-        self.addColumn('roiType', roiTypeStr)
-
-        return df
 
     def getSegment_xyz(self, segmentID : Union[int, list[int]] = None) -> list:
         """Get a list of (z,y,x) values from segment(s).
@@ -120,7 +67,7 @@ class lineAnnotations(baseAnnotations):
         zyxList = []  # a list of segments, each segment is np.ndarray of (z,y,x)
         for oneSegmentID in segmentID:
             zyx = self.getValuesWithCondition(['z', 'y', 'x'],
-                            compareColName='segmentID',
+                            compareColNames='segmentID',
                             comparisons=comparisonTypes.equal,
                             compareValues=oneSegmentID)
             zyxList.append(zyx)
@@ -189,6 +136,8 @@ class lineAnnotations(baseAnnotations):
     def addSegment(self, pointList : List[List[int]]):
         """
         Add a new segment from a list of [z,y,x] points.
+        
+        Length of point list must be greater than 1.
         
         Args:
             pointList: List of (x,y,z) points.
@@ -278,69 +227,5 @@ class lineAnnotations(baseAnnotations):
 
         return lengthList2D, lengthList3D
         
-def run():
-    logger.info('')
-    
-    # load a stack, line annotations use this as parent
-    '''
-    import pymapmanager.stack
-    path = '/media/cudmore/data/richard/rr30a/firstMap/stacks/rr30a_s0_ch2.tif'
-    stack = pymapmanager.stack.stack(path)
-    print(stack)
-    '''
-
-    linePath = '../PyMapManager-Data/one-timepoint/rr30a_s0/rr30a_s0_l.txt'
-    linePath = '/Users/cudmore/Sites/PyMapManager-Data/one-timepoint/rr30a_s0_import_mm_igor/rr30a_s0_l.txt'
-
-    la = lineAnnotations()   # line annotation directly from a parent stack
-    la.importFile(linePath, fileType=fileTypeClass.mapmanager_igor)
-
-    # could be test
-    print('  todo: assert ... numAnnotations:', la.numAnnotations)
-    xyzSegmentList  = la.getSegment_xyz()
-    print('  todo: assert ... len(xyzSegmentList):', len(xyzSegmentList))  # unlike .tif image data, order is (x, y, slice)
-
-    segLen = la.calculateSegmentLength()
-    print('  todo: assert ... segLen:', segLen)
-
-    # add a new segment from list of segment
-    pointList = [
-        [10, 10, 0],
-        [20, 20, 0],
-        [30, 30, 0],
-        [40, 40, 0],
-    ]
-    newSegmentID = la.addSegment(pointList)  # add a new segment
-    xyzSegmentList  = la.getSegment_xyz(segmentID=newSegmentID)
-    print('  todo: assert ... after adding new segment len(xyzSegmentList):', len(xyzSegmentList))
-    # unlike .tif image data, order is (x, y, slice)
-
-    #print(la.getDataFrame())
-
-    rows = la.getRows('segmentID', 1)  # get row indices where column 'segmentID' has value == 1
-    print('  todo: assert ... rows corresponding to segmentID 1')
-    print('    first:', rows[0], 'last:', rows[-1], 'num:', len(rows))
-
-    # delete, seems to work
-    print('  todo: assert ... before delete num segments:', la.numSegments)
-    la.deleteSegment(1)
-    print('  todo: assert ... after delete num segments:', la.numSegments)
-
-    # add to segment
-    segmentID = 0
-    la.addToSegment(20, 30, 0, segmentID=segmentID)
-
-    segmentID = 5
-    la.addToSegment(40, 50, 0, segmentID=segmentID)
-
-    # plot
-    if 0 :
-        import matplotlib.pyplot as plt
-        xyz  = la.getPoints_xyz(asPixel=True)
-        x = xyz[:,0]
-        y = xyz[:,1]
-        plt.plot(x, y, 'o')
-        plt.show()
-
 if __name__ == '__main__':
-    run()
+    pass

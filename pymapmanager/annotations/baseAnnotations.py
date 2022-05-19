@@ -14,21 +14,12 @@ from typing import List, Union  # Callable, Iterator, Optional
 
 import numpy as np
 import pandas as pd
+from pydantic import create_model_from_typeddict
 
-import pymapmanager.logger
-logger = pymapmanager.logger.get_logger(__name__)
+from pymapmanager._logger import logger
 
 class fileTypeClass(enum.Enum):
     mapmanager_igor = 'mapmanager_igor'
-
-class roiTypesClass(enum.Enum):
-    """
-    These Enum values are used to map to str literal (rather than directly using a str)
-    """
-    spineROI = "spineROI"  # pointAnnotations
-    controlPnt = "controlPnt"
-    pivotPnt = "pivotPnt"
-    linePnt = "linePnt"  # lineAnnotations
 
 class comparisonTypes(enum.Enum):
     equal = 'equal'
@@ -37,35 +28,234 @@ class comparisonTypes(enum.Enum):
     lessthanequal = 'lessthanequal'
     greaterthanequal = 'greaterthanequal'
 
-class baseAnnotations():
+class ColumnItem():
+    """Class to hold one columns.
+    """
+    def __init__(self,
+            name : str,
+            type = None,
+            units : str = '',
+            humanname : str = '',
+            description : str = ''):
+        self._dict = {
+            'name': name,
+            'type': type,
+            'units': units,
+            'humanname': humanname,
+            'description': description,
+        }
     
-    #roiTypeEnum = roiTypesClass
-    
-    # TODO: (cudmore) moved this logic to pymapmanager.stack
-    #filePostfixStr = ''  # derived must define, like ('_db2.txt' or '_l.txt')
-    
-    # todo: (cudmore) add self.addColumn() and all derived must use this
-    # userColumns = []  # list of string specifying additional columns
+    def getName(self):
+        """Get the name of the column.
+        """
+        return self._dict['name']
 
+    def getType(self) -> type:
+        """Get the name of the column.
+        """
+        return self._dict['type']
+
+    def getValue(self, key):
+        """Get value from column.
+        """
+        try:
+            return self._dict[key]
+        except (KeyError) as e:
+            logger.error(e)
+            return None
+
+class Columns():
+    """A list of ColumnItem.
+    """
+    def __init__(self):
+        self._colList = []
+
+    def getTypeDict(self):
+        """Get a dictionary mapping column name to column type.
+        
+        Used in pandas read_csv dtype parameter.
+        """
+        typeDict = {}
+        for colItem in self:
+            typeDict[colItem.getName()] = colItem.getType()
+        return typeDict
+
+    def getColumnNames(self):
+        return [item.getName() for item in self._colList]
+    
+    def addColumn(self, colItem : ColumnItem):
+        """Add a new column.
+        
+        Don't add if column `name` already exists.
+        
+        Returns:
+            (bool) True if added, False otherwise.
+        """
+        name = colItem.getName()
+        if name in self.getColumnNames():
+            logger.warning(f'not adding column "{name}", already a Columns')
+            return
+        self._colList.append(colItem)
+        return True
+
+    def numColumns(self):
+        return len(self._colList)
+
+    def columnIsValid(self, columnNames : Union[str, List[str]]) -> bool:
+        """Convenience function to check that column name(s) exist.
+        """
+        if not isinstance(columnNames, list):
+            columnNames = [columnNames]
+
+        _columnNames = self.getColumnNames()
+        for columnName in columnNames:
+            if not columnName in _columnNames:
+                return False
+        return True
+
+    def __iter__(self):
+        """As iterator, returns ColumnItem.
+        """
+        self._iterIdx = 0
+        return self
+
+    def __next__(self):
+        if self._iterIdx < self.numColumns():
+            x = self._colList[self._iterIdx]
+            self._iterIdx += 1
+            return x
+        else:
+            raise StopIteration
+
+class baseAnnotations():
     def __init__(self, path : Union[str, None] = None):
         """
         Args:
             path (str | None): Full path to a file (a csv file). If None then wait to create on save.
-            fileType (fileTypeClass): File type to load
         """
         
         self._path = path
         #Full path to file we load/save. Can be None if we are new and have not saved.
         
+        # default, empy DataFrame
+        self._df = pd.DataFrame()
+
         self._dataModified = False
         #To keep track if edits have been made and need to be save.
         
         self._header = self._getDefaultHeader()
 
-        self._df = self._getDefaultDataFrame()
+        # create Columns(), a list of ColumnItem()
+        self._columns = Columns()
 
-        self.load()
+        colItem = ColumnItem(
+            name = 'x',
+            type = int,
+            units = 'Pixels',
+            humanname = 'X Pixels',
+            description = 'xxx'
+        )
+        self.addColumn(colItem)
 
+        colItem = ColumnItem(
+            name = 'y',
+            type = int,
+            units = 'Pixels',
+            humanname = 'Y Pixels',
+            description = 'xxx'
+        )
+        self.addColumn(colItem)
+
+        colItem = ColumnItem(
+            name = 'z',
+            type = int,
+            units = 'Pixels',
+            humanname = 'Z Pixels',
+            description = 'xxx'
+        )
+        self.addColumn(colItem)
+
+        colItem = ColumnItem(
+            name = 'xVoxel',
+            type = float,
+            units = 'um',
+            humanname = 'X Voxel (um)',
+            description = 'xxx'
+        )
+        self.addColumn(colItem)
+
+        colItem = ColumnItem(
+            name = 'yVoxel',
+            type = float,
+            units = 'um',
+            humanname = 'Y Voxel (um)',
+            description = 'xxx'
+        )
+        self.addColumn(colItem)
+
+        colItem = ColumnItem(
+            name = 'zVoxel',
+            type = float,
+            units = 'um',
+            humanname = 'Z Voxel (um)',
+            description = 'xxx'
+        )
+        self.addColumn(colItem)
+
+        '''
+        # TODO (cudmore) not sure we need this. All annotations live in all channels.
+        colItem = ColumnItem(
+            name = 'channel',
+            type = int,
+            units = '',
+            humanname = 'Channel Number',
+            description = 'xxx'
+        )
+        self.addColumn(colItem)
+        '''
+
+        colItem = ColumnItem(
+            name = 'cSeconds',
+            type = float,
+            units = '',
+            humanname = 'Creation time (s)',
+            description = 'Creation time in linux epoch seconds'
+        )
+        self.addColumn(colItem)
+
+        colItem = ColumnItem(
+            name = 'mSeconds',
+            type = float,
+            units = '',
+            humanname = 'Modification time (s)',
+            description = 'Modification time in linux epoch seconds'
+        )
+        self.addColumn(colItem)
+
+        colItem = ColumnItem(
+            name = 'note',
+            type = str,
+            units = '',
+            humanname = 'Note',
+            description = 'User edited note'
+        )
+        self.addColumn(colItem)
+
+        #
+        # create dataframe with columnn names
+        #columns = self._columns.getColumnNames()
+        #self._df = pd.DataFrame(columns=columns)
+
+        # classes that derive need to call this
+        # self.load()
+
+    @property
+    def columns(self):
+        return self._columns
+        
+    def __len__(self):
+        return len(self._df)
+    
     def __iter__(self):
         """As iterator, returns pandas.core.series.Series
         """
@@ -86,6 +276,10 @@ class baseAnnotations():
     def __setitem__(self, item, value):
         self._df[item] = value
 
+    @property
+    def shape(self):
+        return self._df.shape
+    
     @property
     def at(self):
         """Mimic pd.DataFrame self.at[row, col].
@@ -112,7 +306,7 @@ class baseAnnotations():
     def columns(self):
         """Get column names.
         """
-        return self._df.columns
+        return self._columns
     
     @property
     def numAnnotations(self):
@@ -150,63 +344,11 @@ class baseAnnotations():
 
         return df.index.tolist()
 
-    def _reduceRows(self, 
-                    compareColNames : Union[str, List[str]],
-                    comparisons : Union[comparisonTypes, List[comparisonTypes]],
-                    compareValues : Union[float, List[float]],
-                    ):
-        """Reduce the number of annotations based on values in specified columns.
-        
-        Args:
-            compareColNames (str | list(str)):
-            comparisons (comparisonTypes | list(comparisonTypes)):
-            compareValues (???):
-        """
-        if not isinstance(compareColNames, list):
-            compareColNames = [compareColNames]
-        if not isinstance(comparisons, list):
-            comparisons = [comparisons]
-        if not isinstance(compareValues, list):
-            compareValues = [compareValues]
-
-        df = self._df
-
-        for idx, compareColName in enumerate(compareColNames):
-            comparison = comparisons[idx]
-            compareValue = compareValues[idx]
-            #print('compareColName:', compareColName, 'comparison:', comparison, 'compareValue:', compareValue)
-            if comparison == comparisonTypes.equal:
-                df = df[ df[compareColName]==compareValue ]
-        
-        #pprint(df)
-        return df
-
-    # def getValueFromRow()
-    def getValuesWithCondition(self,
-                    colName : Union[str, List[str]],
-                    compareColName : Union[str, List[str]],
-                    comparisons : Union[comparisonTypes, List[comparisonTypes]],
-                    #compareValues = Union[float, List[float]],
-                    compareValues,
-                    ) -> Union[np.ndarray, None]:
-        """Get values from a column that match another column value.
-
-        Args:
-            colName (str | List(str)): Column(s) to get values from
-            compareColName (str | List(str)):
-            comparisons (comparisonTypes | List(comparisonTypes)):
-            compareValues (???): We don't know the type. Could be (float, int, bool) or other?
-        """
-        # TODO: check that lists are same length (compareColName, comparisons, compareValues)
-        
-        df = self._reduceRows(compareColName, comparisons, compareValues)
-        values = df.loc[:,colName].values
-        if values.shape[1]==1:
-            values = values.flatten() # ensure 1D (for napari)
-        return values
-
     def getValue(self, colName : str, rowIdx : int):
         """Get a single value from a row and column.
+        
+        Returns
+            (scalar) type is defined by types in self.columns[colName]
         """
         return self.getValues(colName, rowIdx)
         
@@ -223,14 +365,16 @@ class baseAnnotations():
         Returns:
             Annotation values (np.ndarray)
         """
-        #if rowIdx is not None and compareColName is not None:
-        #    logger.error('can't specify both')
-        #    # raise ...
-        
-        # TODO (cudmore) check that column exists and if not decide what to return.
+
+        # ensure it is a list
         if not isinstance(colName, list):
             colName = [colName]
 
+        # check column names exist
+        if not self.columns.columnIsValid(colName):
+            logger.error(f'did not find column name "{colName}"')
+            return
+            
         if rowIdx is None:
             rowIdx = range(self.numAnnotations)  # get all rows
         elif not isinstance(rowIdx, list):
@@ -246,13 +390,120 @@ class baseAnnotations():
             if ret.shape[1]==1:
                 ret = ret.flatten() # ensure 1D (for napari)
             return ret
-        #except(IndexError) as e:
+        #except (IndexError) as e:
         #    logger.error(f'Did not find rows: "{rowIdx}"')
         #    return None
-        except(KeyError) as e:
-            logger.error(f'Column {e}')
+        #except (IndexingError) as e:
+        #    logger.error(f'IndexingError: {e}')
+        except (KeyError) as e:
+            #logger.error(f'Column {e}')
+            logger.error(f'bad rowIdx(s) {rowIdx}, range is 0...{len(self)-1}')
             return None
-                
+
+    def getValuesWithCondition(self,
+                    colName : Union[str, List[str]],
+                    compareColNames : Union[str, List[str]],
+                    comparisons : Union[comparisonTypes, List[comparisonTypes]],
+                    #compareValues = Union[float, List[float]],
+                    compareValues,
+                    ) -> Union[np.ndarray, None]:
+        """Get values from column(s) that match another column(s) value.
+
+        Args:
+            colName (str | List(str)): Column(s) to get values from
+            compareColName (str | List(str)): Columns to compare to
+            comparisons (comparisonTypes | List(comparisonTypes)): Type of comparisons
+            compareValues (???): We don't know the type. Could be (float, int, bool) or other?
+        """
+        # TODO: check that lists are same length (compareColName, comparisons, compareValues)
+
+        if not isinstance(compareColNames, list):
+            compareColNames = [compareColNames]
+        if not isinstance(comparisons, list):
+            comparisons = [comparisons]
+        if not isinstance(compareValues, list):
+            compareValues = [compareValues]
+
+        _lists = [compareColNames, comparisons, compareValues]
+        if not all(len(_lists[0]) == len(l) for l in _lists[1:]):
+            logger.error(f'all parameters need to be the same length')
+            return None
+
+        #df = self._old_reduceRows(compareColName, comparisons, compareValues)
+        
+        # iteratively reduce df
+        df = self._df
+        for idx, compareColName in enumerate(compareColNames):
+            comparison = comparisons[idx]
+            compareValue = compareValues[idx]
+            #print('compareColName:', compareColName, 'comparison:', comparison, 'compareValue:', compareValue)
+            if comparison == comparisonTypes.equal:
+                df = df[ df[compareColName]==compareValue ]
+            # TODO (cudmore) add other comparisonTypes, can we use (==, <=, !=, etc) for all possible types?
+
+        values = df.loc[:,colName].values
+        if values.shape[1]==1:
+            values = values.flatten() # ensure 1D (for napari)
+        return values
+
+    def setValue(self, colName : str, row : int, value):
+        """Set a signle value.
+        
+        Args:
+            colName (str)
+            row (int)
+            value (???)
+        """
+        if not self.columns.columnIsValid(colName):
+            logger.warning(f'did not find "{colName}" in columns')
+            return
+        try:
+            self._df.at[row, colName] = value
+        except(IndexError) as e:
+            logger.error(f'did not set value for col "{colName}" at row {row}')
+
+    def setColumn(self, colName : str, values):
+        """Set all values in one column.
+        """
+        #if not colName in self.columns.getColumnNames():
+        if not self.columns.columnIsValid(colName):
+            logger.warning(f'did not find "{colName}" in columns')
+            return
+        self._df[colName] = values
+            
+    def _getDefaultRow(self):
+        """Get a list of values for a default row (for one annotations).
+        
+        TODO (Cudmore) maybe specify type of all ColumnItem using s string like ('int', 'float', etc)
+                        not sure how to test the type of a name like `float`
+                        type(float) resolves to <class 'type'>
+        """
+        row = [None] * self.columns.numColumns()
+        for colIdx, columnItem in enumerate(self.columns):
+            theType = columnItem.getType()
+            theTypeStr = str(theType)
+            #logger.info(f'theType "{theType}" is type() {type(theType)}')
+            if theType == 'Int64':
+                # 'Int64' is pandas way to have an int64 with nan values
+                # TODO (cudmore) switch this to pd.Int64Dtype
+                row[colIdx] = float('nan')
+            #elif isinstance(theType, float):
+            elif theTypeStr == "<class 'float'>":
+                row[colIdx] = float('nan')
+            #elif isinstance(theType, str):
+            elif theTypeStr == "<class 'str'>":
+                row[colIdx] = ''
+            #elif isinstance(theType, int):
+            elif theTypeStr == "<class 'int'>":
+                # int always needs a values, caller is required to fill in
+                pass
+            else:
+                className = self.__class__.__name__  # name of class, including inherited
+                logger.warning(f'{className} did not understand {columnItem.getName()} with type "{theType}"')
+        #print(row)
+        #theRet = [None] * len(self._df.columns)
+        return row
+
     def addAnnotation(self, 
                     x : int, y : int, z : int,
                     rowIdx : int = None) -> int:
@@ -273,12 +524,10 @@ class baseAnnotations():
         if rowIdx is None:
             rowIdx = self.numAnnotations
 
-        logger.info(f'{x},{y},{z},rowIdx:{rowIdx} numAnnotations:{self.numAnnotations}')
+        #logger.info(f'{x},{y},{z},rowIdx:{rowIdx} numAnnotations:{self.numAnnotations}')
 
-        # append a row of all None, not sure this is the best
-        # we often need to ensure the type of each column remains heterogeneous
-        # this may cause problem with str type columns (shown as type 'object' in pandas?)
-        self._df.loc[rowIdx] = [None] * len(self._df.columns)
+        # append a default row, base on self.columns type
+        self._df.loc[rowIdx] = self._getDefaultRow()
 
         self._df.loc[rowIdx, 'cSeconds'] = time.time()  # creation time
         self._df.loc[rowIdx, 'mSeconds'] = time.time()  # modification time
@@ -315,12 +564,33 @@ class baseAnnotations():
         self._df.drop(labels=rowIdx, axis=0, inplace=True)
         self._resetIndex()
 
-    def addColumn(self, colStr : str, values):
+    def addColumn(self, columnItem : ColumnItem, values = None):
         """Add a column
         """
-        if colStr in self.columns:
-            logger.warning(f'Column alread exists "{colStr}"')
-        self._df[colStr] = values  # TODO: keep track of column types ?
+
+        colName = columnItem.getName()
+        theType = columnItem.getType()
+
+        # if already exists, do not add
+        if self.columns.columnIsValid(colName):
+            className = self.__class__.__name__  # name of class, including inherited
+            logger.warning(f'class {className} did not add column "{colName}", it already exists.')
+
+        # add to columns
+        self.columns.addColumn(columnItem)
+
+        # add to dataframe
+        self._df[colName] = values  # TODO: keep track of column types ?
+
+        # convert column to proper type
+        if theType is None:
+            pass
+        elif theType == 'Int64':
+            # without this sillyness, we get error
+            # TypeError: cannot safely cast non-equivalent float64 to int64
+            self._df[colName] = np.floor(pd.to_numeric(self._df[colName], errors='coerce')).astype('Int64')
+        else:
+            self._df[colName].astype(theType)
 
     def _resetIndex(self):
         """Reset pd.DataFrame row indexes. Needs to be done after inserting and deleting.
@@ -345,66 +615,62 @@ class baseAnnotations():
 
         self._header[key] = value
 
-    def _getDefaultDataFrame(self):
-        """
-        Get an empty default DataFrame with pre-defined columns.
+    def importFromFile(self, funcDef, path, finalizeImport=False):
+        """Import from file path using function fundef.
         
-        Returns:
-            (pandas.DataFrame)
-
-        Notes:
-            - We need to work on defining this.
-            - What columns are needed, what are their defaults, units, and their 'human readable' meanings.
-            - Maybe have a dict (or similar) like this
-                columnNames = {
-                    'x': {
-                        'defaultValue': None,
-                        'type': float,
-                        'units': 'um',
-                        'humanname': 'X Pixel',
-                        'description': 'The X-Coordinate of an annotation.',
-                    },
-                    'mSeconds': {
-                        'defaultValue': None,
-                        'type': int,
-                        'units': 'seconds',
-                        'humanname': 'Mod Seconds',
-                        'description': 'Last modification time in linux epochs (seconds).',
-                    }
-            }
+        Args:
+            funcDef (def) A function that accepts path as parameter and returns
+                (dict) header dictionary
+                (pd.DataFrame) dataframe of annotations.
         """
-        columns = ['roiType',
-                    'x',  # points
-                    'y',
-                    'z',
-                    'xVoxel',  # um
-                    'yVoxel',
-                    'zVoxel',
-                    #'segmentID',
-                    'channel',  # the image channel the annotation lives in
-                    'cSeconds',  # creation time in linux epoch seconds
-                    'mSeconds',  # modification time in linux epoch seconds
-                    'note',  # user editable note
-                ]
+        # TODO (cudmore) check that funcDef exists      
+        #       check parametersignature that there is one param and it is type str          
+        # TODO (cudmore) check that path exists
 
-        # join/append userColumns defined in derived classes
-        #columns = columns + self.userColumns
+        # TODO (cudmore) check that we got back header:dict and df:pd.DataFrame
+        # TODO (cudmore) add try ... else to catch errors if return has wrong number of elements
 
-        df = pd.DataFrame(columns=columns)
-        return df
+        header, df = funcDef(path)
 
-    def importFile(self, path, fileType : fileTypeClass):
-        # TODO: (cudmore) put in protected function
-        if fileType == fileTypeClass.mapmanager_igor:
-            logger.info(f'importing with _import_mapmanager_igor')
-            logger.info(f'{path}')
-            self._import_mapmanager_igor(path)
-    
+        if finalizeImport:
+            self.importFromData(header, df)
+
+        return header, df
+
+    def importFromData(self, header, df):
+        """Import annotations from a function in pymapmanager.mmImport
+        
+        Args:
+            funDef (def) function that takes a path and return (header, df)
+            path (str) Path to file for import
+        """
+        logger.info('')
+
+        # TODO (cudmore) check that header is a dict
+        # TODO (cudmore) check that df is a pd.DataFrame
+        
+        # header
+        for k,v in header.items():
+            self.setHeaderVal(k, v)
+
+        # data
+        for columnItem in df.columns:
+            columnName = columnItem.getName()
+            if not columnName in df.columns:
+                className = self.__class__.__name__  # name of class, including inherited
+                logger.warning(f'{className} did not find expected column "{columnName}"')
+                continue
+            self.setColumn(columnName, df[columnName])
+
     def loadHeader(self):
         """Load header as dictionary.
+
+        Header is always first line in file.
+
+        TODO (cudmore) Some files might not have a header
         """
         
-        logger.info(f'loading header from {self.filePath}')
+        #logger.info(f'loading header from {self.filePath}')
         
         header = {}
         
@@ -418,8 +684,8 @@ class baseAnnotations():
                 # TODO: (cudmore) we need to know the type, for now just float
                 header[k] = float(v)
         
-        logger.info('')
-        pprint(header)
+        #logger.info('')
+        #pprint(header)
 
         self._header = header
 
@@ -428,8 +694,10 @@ class baseAnnotations():
     def load(self):
         """
         Load annotations from a file.
+
+        Annotations are always in a comma seperated file with a one line header.
         """
-        #TODO (cudmore) In future we need to load different annotation formats, not just our pymapmanager formats.
+        #TODO (cudmore) We will always load our native format, rely on `mmImport` to coerce into native.
         
         if self.filePath is None:
             # no file yet
@@ -444,8 +712,47 @@ class baseAnnotations():
         
         self.loadHeader()
         
-        self._df = pd.read_csv(self.filePath, header=1, index_col=False)
-            
+        # this gives errors, too complex
+        # typeDict = self._columns.getTypeDict()  # map column name to type
+        #dfLoaded = pd.read_csv(self.filePath, header=1, index_col=False, dtype=typeDict)
+
+        dfLoaded = pd.read_csv(self.filePath, header=1, index_col=False)
+        loadedColumns = dfLoaded.columns
+
+        # actually assign expected columns from loaded
+        for columnItem in self.columns:
+            columnName = columnItem.getName()
+            if not columnName in loadedColumns:
+                className = self.__class__.__name__  # name of class, including inherited
+                logger.warning(f'class {className} did not find expected column name "{columnName}"')
+                continue
+
+            self._df[columnName] = dfLoaded[columnName]  # this trashes our column types
+
+        # convert to proper type
+        for columnItems in self.columns:
+            colName = columnItems.getName()
+            theType = columnItems.getType()
+            #logger.info(f'converting column "{colName}" to type:"{theType}"')
+            if theType is None:
+                pass
+            elif theType == 'Int64':
+                # without this sillyness, we get error
+                # TypeError: cannot safely cast non-equivalent float64 to int64
+                self._df[colName] = np.floor(pd.to_numeric(self._df[colName], errors='coerce')).astype('Int64')
+            else:
+                self._df[colName].astype(theType)
+
+        # check if loaded df has unknown columns
+        for loadedColumnName in loadedColumns:
+            #if not loadedColumnName in self.columns.getColumnNames():
+            if not self.columns.columnIsValid(loadedColumnName):
+                className = self.__class__.__name__  # name of class, including inherited
+                logger.warning(f'Loaded with unknown column name "{loadedColumnName}" in class "{className}"')
+                # TODO (cudmore) consider adding to columns with type=None ???
+
+        pprint(self._df)
+
     def save(self, forceSave=False):
         """
         Save underlying pandas.DataFrame.
@@ -454,7 +761,7 @@ class baseAnnotations():
             forceSave (bool): If true then save even if not dirty
         """
         if not self._dataModified and not forceSave:
-            # if not dirty/modified, do not save
+            # if not modified, do not save
             #logger.info(f'not saving')
             return
             
@@ -483,85 +790,5 @@ class baseAnnotations():
         header += '\n'
         return header
 
-def test_empty_init():
-    #path = 'data/one-timepoint/rr30a_s0/rr30a_s0_db2.txt'
-    #ba = baseAnnotations(path)
-    ba = baseAnnotations()
-    assert ba is not None
-    return ba
-
-def test_import():
-    path = '/Users/cudmore/Sites/PyMapManager-Data/one-timepoint/rr30a_s0_import_mm_igor/rr30a_s0_db2.txt'
-    ba = baseAnnotations()
-    ba.importFile(path, fileType = fileTypeClass.mapmanager_igor)    
-    return ba
-
-def test_getValues(ba):
-
-    # test_numAnnotations
-    numAnnotations = ba.numAnnotations
-    print('ba.numAnnotations:', ba.numAnnotations)
-    assert numAnnotations == 287
-
-    # test_getValues
-    # because of optional params need 4x test (or more)
-    colStr = 'x'
-    values = ba.getValues(colStr)
-    assert type(values) == np.ndarray
-    assert values.shape == (287,)
-    assert len(values) == 287
-
-    colStr = ['x', 'y']
-    values = ba.getValues(colStr)
-    assert type(values) == np.ndarray
-    assert values.shape == (287, 2)
-
-    colStr = ['x']
-    rowIdx = 10
-    values = ba.getValues(colStr, rowIdx)
-    assert values.shape == (1,)
-
-    colStr = ['x']
-    rowIdx = [10, 20, 30]
-    values = ba.getValues(colStr, rowIdx)
-    assert values.shape == (3,)
-
-    colStr = ['x', 'y']
-    rowIdx = [10, 20, 30]
-    values = ba.getValues(colStr, rowIdx)
-    assert values.shape == (3,2)
-
-    if 0:
-        colStr = ['x', 'y', 'does not exist']
-        values = ba.getValues(colStr)
-        assert values is None
-
-    if 0:
-        colStr = ['x', 'y', 'z']
-        rowIdx = 500
-        values = ba.getValues(colStr, rowIdx)
-        assert values is None
-
-    # test mixture of int and str return values
-    #colStr = ['x', 'userName']
-    #values = ba.getValues(colStr)
-    # assert something
-
-    colName = ['x', 'y']
-    compareColName = 'roiType'
-    comparisons = comparisonTypes.equal
-    compareValues = 'spineROI'
-    values = ba.getValuesWithCondition(colName, 
-                    compareColName=compareColName,
-                    comparisons=comparisons,
-                    compareValues=compareValues)
-    assert values.shape == (139,2)
-
-    # test as iterable
-    for a in ba:
-        print(a)
-
 if __name__ == '__main__':
-    test_empty_init()
-    ba = test_import()
-    test_getValues(ba)
+    pass

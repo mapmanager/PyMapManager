@@ -5,8 +5,7 @@ import os
 
 import pymapmanager.stack
 
-import pymapmanager.logger
-logger = pymapmanager.logger.get_logger(__name__)
+from pymapmanager._logger import logger
 
 class map():
     """
