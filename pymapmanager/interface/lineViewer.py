@@ -12,6 +12,73 @@ from qtpy import QtCore
 from pymapmanager._logger import logger
 import napari_layer_table
 
+from types import MethodType
+def _my_update_displayed(self):
+    """Monkey patched version of Napari function.
+    
+    This is a modified version of code found in _shape_list._update_displayed()
+
+    See:
+        self.lineLayer._data_view._update_displayed
+
+    TODO:
+        get a shape (type path) to display its points +/- current image plane.
+    """
+    
+    """Update the displayed data based on the slice key."""
+    # The list slice key is repeated to check against both the min and
+    # max values stored in the shapes slice key.
+    slice_key = np.array([self.slice_key, self.slice_key])
+
+    # Slice key must exactly match mins and maxs of shape as then the
+    # shape is entirely contained within the current slice.
+    if len(self.shapes) > 0:
+        doOriginal = False
+        if doOriginal:
+            self._displayed = np.all(self.slice_keys == slice_key, axis=(1, 2))
+        else:
+            #print('type(self.slice_keys <= slice_key)', type(self.slice_keys <= slice_key))
+            #_tmp = self.slice_keys <= slice_key  # <class 'numpy.ndarray'>
+            #print('  _tmp.shape', _tmp.shape)  # shape (5, 2, 1)
+            #print(_tmp)
+            #self._displayed = np.all(self.slice_keys <= slice_key, axis=(1, 2))
+            #print('  slice_key:', type(slice_key), slice_key)
+            _my_slice_range = 6
+            _upper_slice_key = slice_key - _my_slice_range
+            _lower_slice_key = slice_key + _my_slice_range
+            self._displayed = np.all((self.slice_keys >= _upper_slice_key) & \
+                                (self.slice_keys <= _lower_slice_key), axis=(1, 2))
+    else:
+        self._displayed = []
+    disp_indices = np.where(self._displayed)[0]
+
+    z_order = self._mesh.triangles_z_order
+    disp_tri = np.isin(
+        self._mesh.triangles_index[z_order, 0], disp_indices
+    )
+    self._mesh.displayed_triangles = self._mesh.triangles[z_order][
+        disp_tri
+    ]
+    self._mesh.displayed_triangles_index = self._mesh.triangles_index[
+        z_order
+    ][disp_tri]
+    self._mesh.displayed_triangles_colors = self._mesh.triangles_colors[
+        z_order
+    ][disp_tri]
+
+    disp_vert = np.isin(self._index, disp_indices)
+    self.displayed_vertices = self._vertices[disp_vert]
+    self.displayed_index = self._index[disp_vert]
+
+'''
+logger.info('MONKEY')
+import napari
+#from napari.layers.shapes import _shape_list
+#napari.layers.shapes._shape_list._update_displayed = _my_update_displayed
+napari.layers.shapes._shape_list._update_displayed = MethodType(_my_update_displayed, 
+                napari.layers.shapes._shape_list)
+'''
+
 class lineViewer():
     """Display lineAnnotations in viewer .
     
@@ -56,15 +123,29 @@ class lineViewer():
 
         ndim = 3
 
+        #napari.layers.shapes._shape_list._update_displayed = _my_update_displayed
+
         edge_width = 5  # TODO (cudmore) add to options
+        edge_color = 'green' # TODO (cudmore) color each segmentID different
         self.lineLayer = self._viewer.add_shapes(
             plotSegments,
             ndim = ndim,
             shape_type = 'path',
             edge_width = edge_width, 
-            #edge_color='green'  # TODO (cudmore) color each segmentID different
+            edge_color = edge_color,  
             name = 'Tracing'
         )
+
+        # monkey patch _update_displayed with our own function (_my_update_displayed)
+        # 1
+        #self.lineLayer._data_view._update_displayed = _my_update_displayed
+        # 2
+        #self.lineLayer._data_view._update_displayed = MethodType(_my_update_displayed,
+        #                self.lineLayer._data_view._update_displayed)
+        # 3
+        # MethodType(newFunc, instance)
+        self.lineLayer._data_view._update_displayed = MethodType(_my_update_displayed,
+                        self.lineLayer._data_view)
 
         #self.lineLayer.events.highlight.connect(self.on_select_line_in_viewer)
 

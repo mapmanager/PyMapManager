@@ -51,13 +51,11 @@ class pointViewer():
         faceColorList = [[1., 0, 0, 1]] * numAnnotations  # like [1., 0, 0, 1]
         sizeList = [5] * numAnnotations
 
-        features = {
-            'roiType': [None] * numAnnotations
-        }
-
+        # TODO (cudmore) get rid of loop, use list comprehension
         for row in range(numAnnotations):
             # point annotations have multiple roi types, each with different color/size
             roiType = pointAnnotations.at[row, 'roiType']
+            #segmentID = pointAnnotations.at[row, 'segmentID']
 
             shown = self._options['pointsDisplay'][roiType]['shown']
             color = self._options['pointsDisplay'][roiType]['face_color']
@@ -67,11 +65,15 @@ class pointViewer():
             faceColorList[row] = color
             sizeList[row] = size
             
-            features['roiType'][row] = roiType
-
         ndim = 3
 
-        # make a selection layer
+        # add some features
+        features = {
+            'roiType': pointAnnotations.getValues('roiType'),
+            'segmentID': pointAnnotations.getValues('segmentID')
+        }
+
+        # selection layer
         self.pointsLayerSelection = self._viewer.add_points(name='Point Selection',
                                         ndim = 3)
 
@@ -94,13 +96,6 @@ class pointViewer():
 
         self.pointsLayer.mode = 'select'
         
-        '''
-        # add some properties
-        self.pointsLayer.properties = {
-            'roiType': pointAnnotations.getValues('roiType')
-        }
-        '''
-
         # to visually select in our seletion layer
         #self.pointsLayer.events.highlight.connect(self.on_select_point_in_viewer)
 
@@ -207,7 +202,7 @@ class pointViewer():
 
         if eventType =='add':
             for rowDict in listOfDict:
-                rowIdx = rowDict['rowIdx']
+                #rowIdx = rowDict['rowIdx']
                 roiTypeStr = rowDict['roiType']
                 x = rowDict['x']
                 y = rowDict['y']
@@ -218,37 +213,46 @@ class pointViewer():
                 segmentID = None
                 pointAnnotations.addAnnotation(roiType, segmentID, x, y, z)
                 
+            self.refreshPointSelection(selectionList)
+
             self.checkPointState()
 
         elif eventType =='delete':
+            '''
             rowList = []
             for rowDict in listOfDict:
                 rowIdx = rowDict['rowIdx']
                 rowList.append(rowIdx)
+            '''
 
             # delete point annotation
-            print(f'  deleting rows {rowList}')
-            pointAnnotations.deleteAnnotation(rowList)
-                
+            print(f'  deleting rows {selectionList}')
+            pointAnnotations.deleteAnnotation(selectionList)
+
+            noSelection = []
+            self.refreshPointSelection(noSelection)
+
             self.checkPointState()
 
         elif eventType =='change':
-            rowList = []
-            for _rowIdx, rowDict in enumerate(listOfDict):
-                rowIdx = selectionList[_rowIdx]
+            #rowList = []
+            #for _rowIdx, rowDict in enumerate(listOfDict):
+            for _dictIdx, _rowIdx in enumerate(selectionList):
+                rowDict = listOfDict[_dictIdx]
                 x = rowDict['x']
                 y = rowDict['y']
                 z = rowDict['z']
                 
                 # move point
-                pointAnnotations.setValue('x', rowIdx, x)
-                pointAnnotations.setValue('y', rowIdx, y)
-                pointAnnotations.setValue('z', rowIdx, z)
+                pointAnnotations.setValue('x', _rowIdx, x)
+                pointAnnotations.setValue('y', _rowIdx, y)
+                pointAnnotations.setValue('z', _rowIdx, z)
                 
-                rowList.append(rowIdx)
+                #rowList.append(rowIdx)
 
             # move selection
-            self.refreshPointSelection(rowList)
+            # TODO (cudmore) is this needed? Did viewer already handle this?
+            self.refreshPointSelection(selectionList)
 
             self.checkPointState()
 

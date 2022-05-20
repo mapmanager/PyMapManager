@@ -75,16 +75,15 @@ class mmViewer():
         '''
 
         #  Order matters, last built will be selected
-        #self.buildLineAnnotation()
+
+        self._pointViewer = pointViewer(self._viewer,
+                                self._stack.getPointAnnotations(),
+                                options)
+
         self._lineViewer = lineViewer(self._viewer,
                                 self._stack.getLineAnnotations(),
                                 options)
 
-        #self.buildPointAnnotations()
-        self._pointViewer = pointViewer(self._viewer,
-                                self._stack.getPointAnnotations(),
-                                options)
-        
         #self.testPlugin()
 
     @property

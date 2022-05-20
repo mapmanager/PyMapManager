@@ -10,7 +10,7 @@ import os
 import time
 from pprint import pprint
 
-from typing import List, Union  # Callable, Iterator, Optional
+from typing import List, Union  # , Callable, Iterator, Optional
 
 import numpy as np
 import pandas as pd
