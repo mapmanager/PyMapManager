@@ -7,7 +7,16 @@ Example script to load a mmMap and display the first timepoint mmStack with:
     - 3D point annotations
     - 3D line tracings
 
-To run locally, you need to specify the full path to the map in mapPath
+To run locally, you need to specify the full path to the map in mapPath.py
+
+To view the coordinates of line segments and annotations in a table, you need to run:
+
+pip install napari-properties-viewer
+
+Once napari is running, you can view the properties by opening the properties viewer plugin from
+Plugins menu -> Add dock widget -> napari-propertiews-viewer: properties table
+
+It can take a minute or so after napari has started for the Plugins menu to be clickable.
 
 """
 
@@ -16,6 +25,7 @@ import napari
 import pymapmanager
 
 mapPath = '/media/cudmore/data/richard/rr30a/rr30a.txt'
+# mapPath = '/Users/vasudhajha/Documents/mapmanager/PyMapManager-Data/rr30a.txt'
 
 def run():
     # load a mmMap
@@ -64,7 +74,7 @@ def run():
     #
     # create a points layer with our spineROI point annotations
     size = 2  # the size of the point displayed in napari
-    points_layer = viewer.add_points(points, size=size, face_color='r')
+    points_layer = viewer.add_points(points, size=size, face_color='r', properties={"x": x, "y": y, "z": z})
 
     #
     # load line/segment tracings from a mmStack
@@ -81,7 +91,7 @@ def run():
     #
     # create a points layer with our line segments
     size = 2
-    line_points_layer = viewer.add_points(linePoints, size=size, face_color='c')
+    line_points_layer = viewer.add_points(linePoints, size=size, face_color='c', properties={"x": xLine.tolist(), "y": yLine.tolist(), "z": zLine.tolist()})
 
     #
     # typical of any kind of GUI interface, we need to enter into a loop so the viewer stays up
