@@ -24,10 +24,11 @@ class pointViewer():
         pointAnnotations: pymapmanager.annotations.pointAnnotations
         options (dict) options dict
     """
-    def __init__(self, viewer, pointAnnotations, options : dict):
-        self._viewer = viewer
-        self._pointAnnotations = pointAnnotations
-        self._options = options
+    def __init__(self, parent, viewer, pointAnnotations, options : dict):
+        self._parent = parent  # pymapmanager.interface.stackViewer
+        self._viewer = viewer  # napari.viewer
+        self._pointAnnotations = pointAnnotations  # pymapmanager.annotations.pointAnnotations
+        self._options = options  # dict
 
         self._units = 'um'  # ('points', 'um')
         
@@ -39,6 +40,17 @@ class pointViewer():
 
         self.buildInterface()
 
+    def getSelectedPointIdx(self):
+        return self._selected_data
+
+    '''
+    def _myfilterLayerList(self, row, parent):
+        """Filter out (hide) layers.
+        """
+        logger.info('')
+        return "<hidden>" not in self._viewer.layers[row].name
+    '''
+    
     def buildInterface(self):
         pointAnnotations = self._pointAnnotations
                 
@@ -74,8 +86,12 @@ class pointViewer():
         }
 
         # selection layer
-        self.pointsLayerSelection = self._viewer.add_points(name='Point Selection',
+        name = 'Point Selection <hidden>'
+        self.pointsLayerSelection = self._viewer.add_points(name=name,
                                         ndim = 3)
+
+        # hide our pointsLayerSelection in the viewer layer list
+        #self._viewer.window.qt_viewer.layers.model().filterAcceptsRow = self._myfilterLayerList
 
         '''
         if self._units == 'points':
@@ -144,7 +160,7 @@ class pointViewer():
                             area=area, name=name)
 
     def on_add_point_callback(self, rows : set, properties : pd.DataFrame) -> Union[None, dict]:
-        """Callback from shape-layer-plugin.
+        """Callback from layer-table-plugin.
         
         User added a new point annotation.
         
@@ -161,14 +177,21 @@ class pointViewer():
         currentPointType = self._currentRoi  # selection in display popup
         
         if currentPointType == 'All':
-            logger.error(f'got unexpected point type "{currentPointType}"')
-            return
+            logger.info(f'rejecting on "{currentPointType}"')
+            return None
+
+        # spineROI requires a segment ID
+        segmentID = self._parent.getSelectedSegmentID()
+        if currentPointType == 'spineROI' and segmentID is None:
+            logger.info(f'rejecting on "{currentPointType}" and segmentID: {segmentID}')
+            return None
 
         returnDict = {}
         
         # modify
         #properties['roiType'][rows] = currentPointType
         returnDict['roiType'] = currentPointType
+        returnDict['segmentID'] = segmentID
 
         # face_color
         size = self._options['pointsDisplay'][currentPointType]['size']

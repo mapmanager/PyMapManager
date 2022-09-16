@@ -15,11 +15,9 @@ from pymapmanager.annotations import fileTypeClass
 
 from pymapmanager._logger import logger
 
-# TypeError: pointTypes: cannot extend enumeration 'baseTypes'
-# class pointTypes(baseTypes):
 class pointTypes(enum.Enum):
     """
-    These Enum values are used to map to str literal (rather than directly using a str)
+    These Enum values are used to map to str (rather than directly using a str)
     """
     spineROI = "spineROI"  # pointAnnotations
     controlPnt = "controlPnt"

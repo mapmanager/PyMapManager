@@ -39,8 +39,16 @@ options = {
     },
 }  # options
 
+class mmWidget(QtWidgets.QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setStyleSheet('background: red')
+
+    def closeEvent(self, event):
+        logger.info('')
+
 class mmViewer():
-    """ A viewer to visualize a 3D image volume and its assocaiated annotation.
+    """ A napari viewer to visualize a 3D image volume and its assocaiated annotation.
    
         stack: The 3D image volume
         points:
@@ -59,8 +67,56 @@ class mmViewer():
         # testing if import of (points, lines) works from mapmanager-igor
         # self.tmpTestImport()
 
+    def _on_visibility_changed(self, visible : bool):
+        """
+        See qt_viewer_dock_widget destroyOnClose().
+        
+        Best we can do is have a menu to re-open?
+        """
+        logger.info(f'visible: {visible}')
+        self._tmp.setVisible(True)
+        
+    def _build_mm_widget(self):
+        """Geneal purpose MapManager (mm) widget.
+        """
+        self.mmWidget = mmWidget() ##QtWidgets.QWidget()
+
+        # add_dock_widget returns QtViewerDockWidget
+        self._tmp = self._viewer.window.add_dock_widget(self.mmWidget,
+                                name='mmWidget',
+                                area='right',
+                                #close_btn=False
+                                )
+        self._tmp.visibilityChanged.connect(self._on_visibility_changed)
+
+        # hide the close button
+        # see: https://forum.image.sc/t/can-i-remove-the-close-icon-when-i-create-a-dock-widget-in-the-viewer-with-add-dock-widget/67369/3
+        # (v1) does not work
+        #self._tmp.title.close_button.hide()  # remove close button
+        #self._tmp.title.hide_button.hide() # remove hide button
+        # (v2) works, hides the close button
+        self._tmp._close_btn = False
+        self._tmp._hide_btn = False
+
+    def _myfilterLayerList(self, row, parent):
+        """Filter out (hide) layers with '<hidden>' in their name.
+        
+        Needs to be installed before any layers are added.
+
+        See:
+            https://forum.image.sc/t/make-particular-layers-invisible-in-the-layer-list-dock/53248/13
+        """
+        #logger.info('')
+        return "<hidden>" not in self._viewer.layers[row].name
+
     def buildInterface(self):
         self._viewer = napari.Viewer()
+
+        # needs to be installed here before we add any layers
+        # want this in pointViewer class but does not work
+        # hide our pointsLayerSelection in the viewer layer list
+        # see: https://forum.image.sc/t/make-particular-layers-invisible-in-the-layer-list-dock/53248/13
+        self._viewer.window.qt_viewer.layers.model().filterAcceptsRow = self._myfilterLayerList
 
         image = self._stack.getImageChannel(1)
         self._viewer.add_image(image)
@@ -76,13 +132,29 @@ class mmViewer():
 
         #  Order matters, last built will be selected
 
-        self._pointViewer = pointViewer(self._viewer,
+        # testing how to disable/hide the close button
+        # self._build_mm_widget()
+
+        # points
+        self._pointViewer = pointViewer(self, self._viewer,
                                 self._stack.getPointAnnotations(),
                                 options)
 
+        # lines
         self._lineViewer = lineViewer(self._viewer,
                                 self._stack.getLineAnnotations(),
                                 options)
+
+        # 
+        print('self._viewer.window:', self._viewer.window)
+        # this has list of dock widgets
+        print('self._viewer.window._qt_window:', self._viewer.window._qt_window)
+        
+        # hide layer list
+        #self._viewer.window.qt_viewer.dockLayerList.setVisible(False)
+        
+        # list of layer objects
+        # print('self._viewer.layers:', self._viewer.layers)
 
         #self.testPlugin()
 
@@ -93,6 +165,12 @@ class mmViewer():
     @property
     def viewer(self):
         return self._viewer
+
+    def getSelectedSegmentID(self):
+        return self._lineViewer.getSelectedSegmentID()
+
+    def getSelectedPointIdx(self):
+        return self._pointViewer.getSelectedPointIdx()
 
     def tmpTestImport(self):
         """This will import mapmanager-igor into the stack.

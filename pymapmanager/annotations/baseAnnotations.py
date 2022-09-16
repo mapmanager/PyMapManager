@@ -5,7 +5,7 @@ We will derive (point, line) annotations from this
 from email import header
 import enum
 import errno
-from lib2to3.pgen2.pgen import DFAState  # for FileNotFoundError
+#from lib2to3.pgen2.pgen import DFAState  # for FileNotFoundError
 import os
 import time
 from pprint import pprint
@@ -14,7 +14,7 @@ from typing import List, Union  # , Callable, Iterator, Optional
 
 import numpy as np
 import pandas as pd
-from pydantic import create_model_from_typeddict
+#from pydantic import create_model_from_typeddict
 
 from pymapmanager._logger import logger
 
@@ -148,6 +148,8 @@ class baseAnnotations():
         # create Columns(), a list of ColumnItem()
         self._columns = Columns()
 
+        # Put all the parameters for these CoumnItem into a globally accessible dict
+        # use this dict to create ColumnItem(dict['key']) and seld.addColumn()
         colItem = ColumnItem(
             name = 'x',
             type = int,
@@ -202,17 +204,25 @@ class baseAnnotations():
         )
         self.addColumn(colItem)
 
-        '''
-        # TODO (cudmore) not sure we need this. All annotations live in all channels.
         colItem = ColumnItem(
             name = 'channel',
-            type = int,
+            type = pd.Int64Dtype(),  # so we can have missing values
             units = '',
             humanname = 'Channel Number',
             description = 'xxx'
         )
         self.addColumn(colItem)
-        '''
+
+        # TODO (cudmore) add
+        # bad:bool
+        # type:enum int
+        # stackFile:str (filename of associated stack)
+
+        # not sure if we keep these with each annotation (row)
+        # or once in header, to export proper pd.dataframe, we might want to add this?
+        # xVoxelSize
+        # yVoxelSize
+        # zVoxelSize
 
         colItem = ColumnItem(
             name = 'cSeconds',
@@ -250,10 +260,14 @@ class baseAnnotations():
         # self.load()
 
     @property
-    def columns(self):
+    def columns(self) -> Columns:
+        """Return the list of columns object.
+        """
         return self._columns
         
-    def __len__(self):
+    def __len__(self) -> int:
+        """Return the number of annotations.
+        """
         return len(self._df)
     
     def __iter__(self):
@@ -270,10 +284,11 @@ class baseAnnotations():
         else:
             raise StopIteration
 
-    def __getitem__(self, item):
+    # don't make this class ack like a dictionary?
+    def old__getitem__(self, item):
         return self._df[item]
     
-    def __setitem__(self, item, value):
+    def old__setitem__(self, item, value):
         self._df[item] = value
 
     @property
@@ -302,11 +317,11 @@ class baseAnnotations():
         """
         return self._path
 
-    @property
-    def columns(self):
-        """Get column names.
-        """
-        return self._columns
+    # @property
+    # def columns(self):
+    #     """Get column names.
+    #     """
+    #     return self._columns
     
     @property
     def numAnnotations(self):
@@ -318,7 +333,7 @@ class baseAnnotations():
             return len(self._df)
 
     def getDataFrame(self) -> pd.DataFrame:
-        """Get annotations as underlying `pd.DataFrame`.
+        """Get annotations as underlying `pandas.DataFrame`.
         """
         return self._df
 
@@ -327,7 +342,7 @@ class baseAnnotations():
                 value,
                 operator : comparisonTypes = comparisonTypes.equal) -> List[int]:
         """
-        Get a list of rows corresponding to the values in a columns
+        Get a list of rows (int) corresponding to the values in a column
         
         Args:
             colStr: The column to interogate
@@ -350,8 +365,10 @@ class baseAnnotations():
         Returns
             (scalar) type is defined by types in self.columns[colName]
         """
-        return self.getValues(colName, rowIdx)
-        
+        _ret = self.getValues(colName, rowIdx)
+        if _ret is not None:
+            return _ret[0]
+
     def getValues(self,
                     colName : Union[str, List[str]],
                     rowIdx : Union[int, List[int]] = None,
@@ -396,7 +413,6 @@ class baseAnnotations():
         #except (IndexingError) as e:
         #    logger.error(f'IndexingError: {e}')
         except (KeyError) as e:
-            #logger.error(f'Column {e}')
             logger.error(f'bad rowIdx(s) {rowIdx}, range is 0...{len(self)-1}')
             return None
 
@@ -415,7 +431,6 @@ class baseAnnotations():
             comparisons (comparisonTypes | List(comparisonTypes)): Type of comparisons
             compareValues (???): We don't know the type. Could be (float, int, bool) or other?
         """
-        # TODO: check that lists are same length (compareColName, comparisons, compareValues)
 
         if not isinstance(compareColNames, list):
             compareColNames = [compareColNames]
@@ -424,6 +439,7 @@ class baseAnnotations():
         if not isinstance(compareValues, list):
             compareValues = [compareValues]
 
+        # TODO: check that lists are same length (compareColName, comparisons, compareValues)
         _lists = [compareColNames, comparisons, compareValues]
         if not all(len(_lists[0]) == len(l) for l in _lists[1:]):
             logger.error(f'all parameters need to be the same length')
@@ -704,7 +720,7 @@ class baseAnnotations():
             return
             
         if not os.path.isfile(self.filePath):
-            logger.warning(f'Did not find annotation file: {self.filePath}')
+            logger.error(f'Did not find annotation file: {self.filePath}')
             #raise OSError(errno.ENOENT, os.strerror(errno.ENOENT), self.filePath)
             return
 
@@ -716,7 +732,8 @@ class baseAnnotations():
         # typeDict = self._columns.getTypeDict()  # map column name to type
         #dfLoaded = pd.read_csv(self.filePath, header=1, index_col=False, dtype=typeDict)
 
-        dfLoaded = pd.read_csv(self.filePath, header=1, index_col=False)
+        numHeaderRows = 1
+        dfLoaded = pd.read_csv(self.filePath, header=numHeaderRows, index_col=False)
         loadedColumns = dfLoaded.columns
 
         # actually assign expected columns from loaded
@@ -733,7 +750,7 @@ class baseAnnotations():
         for columnItems in self.columns:
             colName = columnItems.getName()
             theType = columnItems.getType()
-            #logger.info(f'converting column "{colName}" to type:"{theType}"')
+            logger.info(f'converting column "{colName}" to type:"{theType}"')
             if theType is None:
                 pass
             elif theType == 'Int64':
@@ -751,7 +768,8 @@ class baseAnnotations():
                 logger.warning(f'Loaded with unknown column name "{loadedColumnName}" in class "{className}"')
                 # TODO (cudmore) consider adding to columns with type=None ???
 
-        pprint(self._df)
+        logger.info(f'  loaded df: rows: {len(self._df)} cols {len(self._df.columns)}')
+        #pprint(self._df.head())
 
     def save(self, forceSave=False):
         """

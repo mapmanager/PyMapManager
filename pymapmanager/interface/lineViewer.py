@@ -94,8 +94,24 @@ class lineViewer():
         self._lineAnnotations = lineAnnotations
         self._options = options
 
+        self._selected_data = set()
+
         self.buildInterface()
     
+    def getSelectedSegmentID(self) -> Union[int, None]:
+        """Return the selected segment.
+        
+        Currently limited to one segment
+        """
+        # self._selected_data is a set
+        if len(self._selected_data)>1:
+            logger.error('expecing _selected_data to have len()<=1')
+            return None
+        elif len(self._selected_data) == 1:
+            return list(self._selected_data)[0]
+        else:
+            return None
+
     @property
     def lineAnnotations(self):
         return self._lineAnnotations
@@ -173,9 +189,19 @@ class lineViewer():
                     df: pd.DataFrame):
         """Respond to users edits and modify internal dta.
         """
-        logger.info('')
-    
-    def on_select_line_in_viewer(self, event):
+        logger.info(f'action:{action} selection:{selection}')
+        if action == 'select':
+            self._selected_data = selection
+        elif action == 'add':
+            logger.info('TODO add to backend')
+        elif action == 'delete':
+            logger.info('TODO delete from backend')
+        elif action == 'add':
+            logger.info('TODO move in backend')
+        else:
+            logger.error(f'did not understand action: {action}')
+
+    def old_on_select_line_in_viewer(self, event):
         """Shape/line layer selection.
         """
         logger.info('')
