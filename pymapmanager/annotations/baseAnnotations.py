@@ -128,6 +128,12 @@ class Columns():
             raise StopIteration
 
 class baseAnnotations():
+    def getAnnotationDict(self):
+        theDict = {}
+        for column in self._columns:
+            theDict[column.getName()] = None
+        return theDict
+
     def __init__(self, path : Union[str, None] = None):
         """
         Args:
@@ -148,7 +154,7 @@ class baseAnnotations():
         # create Columns(), a list of ColumnItem()
         self._columns = Columns()
 
-        # Put all the parameters for these CoumnItem into a globally accessible dict
+        # TODO (cudmore) Put all the parameters for these CoumnItem into a globally accessible dict
         # use this dict to create ColumnItem(dict['key']) and seld.addColumn()
         colItem = ColumnItem(
             name = 'x',
@@ -581,7 +587,9 @@ class baseAnnotations():
         self._resetIndex()
 
     def addColumn(self, columnItem : ColumnItem, values = None):
-        """Add a column
+        """Add a column.
+
+            This includes adding column to 'Columns' object and to back end pd.DataFrame.
         """
 
         colName = columnItem.getName()
@@ -598,6 +606,7 @@ class baseAnnotations():
         # add to dataframe
         self._df[colName] = values  # TODO: keep track of column types ?
 
+        # TODO (cudmor) this type conversion on columns IS NOT NECCESSARY !?!?!
         # convert column to proper type
         if theType is None:
             pass
@@ -746,6 +755,7 @@ class baseAnnotations():
 
             self._df[columnName] = dfLoaded[columnName]  # this trashes our column types
 
+        # TODO (cudmore) get rid of this column type checking
         # convert to proper type
         for columnItems in self.columns:
             colName = columnItems.getName()

@@ -1,3 +1,5 @@
+from pprint import pprint
+
 import pytest
 
 import pymapmanager as pmm
@@ -12,6 +14,9 @@ def test_init_annotations() -> pmm.annotations.baseAnnotations:
     assert ba is not None
     
     assert ba.numAnnotations == 0
+
+    ad = ba.getAnnotationDict()
+    print(ad)
 
     return ba
 
