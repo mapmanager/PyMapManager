@@ -1,7 +1,6 @@
 from pprint import pprint
 
 import numpy as np
-import pymapmanager.annotations
 
 from pymapmanager.annotations import comparisonTypes
 from pymapmanager.annotations import pointAnnotations
