@@ -5,6 +5,7 @@ import numpy as np
 from pymapmanager.annotations import comparisonTypes
 from pymapmanager.annotations import pointAnnotations
 from pymapmanager.annotations.pointAnnotations import pointTypes
+import pymapmanager as pmm
 
 # test init
 def test_point_annotation():
@@ -16,14 +17,24 @@ def test_point_annotation():
     x = 10
     y = 20
     z = 30
-    pa.addAnnotation(roiType, x=x, y=y, z=z)
+
+    ba = pmm.annotations.baseAnnotations()
+    pd = ba.getParamDict()
+    pd['x'] = 1
+    pd['y'] = 2
+    pd['z'] = 3
+    # TODO: Update argument to dict instead of x,y,z
+    pa.addAnnotation(roiType, pd)
     assert len(pa) == 1
 
     roiType = pointTypes.spineROI
-    x = 11
-    y = 21
-    z = 31
-    pa.addAnnotation(roiType, x=x, y=y, z=z)
+    # x = 11
+    # y = 21
+    # z = 31
+    pd['x'] = 11
+    pd['y'] = 21
+    pd['z'] = 31
+    pa.addAnnotation(roiType, pd)
     assert len(pa) == 2
     assert pa.numAnnotations == 2
 

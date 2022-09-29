@@ -40,7 +40,8 @@ class pointAnnotations(baseAnnotations):
             type = str,
             units = '',
             humanname = 'ROI Type',
-            description = ''
+            description = '',
+            isDefault = True
         )
         self.addColumn(colItem)
 
@@ -49,7 +50,8 @@ class pointAnnotations(baseAnnotations):
             type = 'Int64',  # 'Int64' is pandas way to have an int64 with nan values
             units = '',
             humanname = 'Segment ID',
-            description = 'Segment ID'
+            description = 'Segment ID',
+            isDefault = True
         )
         self.addColumn(colItem)
 
@@ -58,7 +60,8 @@ class pointAnnotations(baseAnnotations):
     def load(self):
         super().load()
 
-    def addAnnotation(self,
+    # todo: Change to dictionary instead roitype and segmentID
+    def old_addAnnotation(self,
                     roiType : pointTypes,
                     segmentID : int = float('nan'),
                     *args,**kwargs):
@@ -71,6 +74,7 @@ class pointAnnotations(baseAnnotations):
 
         newRow = super().addAnnotation(*args,**kwargs)
 
+        # Automate: check if roitype is in dictionary.
         self._df.loc[newRow, 'roiType'] = roiType.value
 
         # find brightest path to line segment

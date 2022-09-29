@@ -5,6 +5,7 @@ We will derive (point, line) annotations from this
 from email import header
 import enum
 import errno
+from msilib.schema import Property
 #from lib2to3.pgen2.pgen import DFAState  # for FileNotFoundError
 import os
 import time
@@ -36,15 +37,21 @@ class ColumnItem():
             type = None,
             units : str = '',
             humanname : str = '',
-            description : str = ''):
+            description : str = '',
+            isDefault : bool = False):
         self._dict = {
             'name': name,
             'type': type,
             'units': units,
             'humanname': humanname,
             'description': description,
+            'isDefault' : isDefault
         }
     
+    @property
+    def isDefault(self):
+        return self._dict['isDefault']
+
     def getName(self):
         """Get the name of the column.
         """
@@ -80,7 +87,7 @@ class Columns():
             typeDict[colItem.getName()] = colItem.getType()
         return typeDict
 
-    def getColumnNames(self):
+    def getColumnNames(self) -> List[str]:
         return [item.getName() for item in self._colList]
     
     def addColumn(self, colItem : ColumnItem):
@@ -128,10 +135,17 @@ class Columns():
             raise StopIteration
 
 class baseAnnotations():
-    def getAnnotationDict(self):
+    def getParamDict(self):
+        """ 
+        Return a dictionary where each key is a column name.
+        Fill in desired values. This dictionary is used when calling addAnnotation().
+        """
+
         theDict = {}
         for column in self._columns:
-            theDict[column.getName()] = None
+            if column.isDefault:
+                theDict[column.getName()] = None
+            
         return theDict
 
     def __init__(self, path : Union[str, None] = None):
@@ -154,6 +168,9 @@ class baseAnnotations():
         # create Columns(), a list of ColumnItem()
         self._columns = Columns()
 
+        # Create empty dictionary
+        # self._dict = self.getAnnotationDict()
+
         # TODO (cudmore) Put all the parameters for these CoumnItem into a globally accessible dict
         # use this dict to create ColumnItem(dict['key']) and seld.addColumn()
         colItem = ColumnItem(
@@ -161,16 +178,21 @@ class baseAnnotations():
             type = int,
             units = 'Pixels',
             humanname = 'X Pixels',
-            description = 'xxx'
+            description = 'xxx',
+            isDefault = True
         )
         self.addColumn(colItem)
+
+        # set the column name as key, and its data as values
+        # self._dict[]
 
         colItem = ColumnItem(
             name = 'y',
             type = int,
             units = 'Pixels',
             humanname = 'Y Pixels',
-            description = 'xxx'
+            description = 'xxx',
+            isDefault = True
         )
         self.addColumn(colItem)
 
@@ -179,7 +201,8 @@ class baseAnnotations():
             type = int,
             units = 'Pixels',
             humanname = 'Z Pixels',
-            description = 'xxx'
+            description = 'xxx',
+            isDefault = True
         )
         self.addColumn(colItem)
 
@@ -432,7 +455,7 @@ class baseAnnotations():
         """Get values from column(s) that match another column(s) value.
 
         Args:
-            colName (str | List(str)): Column(s) to get values from
+            colName (str | List(str)): Column names to get values from
             compareColName (str | List(str)): Columns to compare to
             comparisons (comparisonTypes | List(comparisonTypes)): Type of comparisons
             compareValues (???): We don't know the type. Could be (float, int, bool) or other?
@@ -469,7 +492,7 @@ class baseAnnotations():
         return values
 
     def setValue(self, colName : str, row : int, value):
-        """Set a signle value.
+        """Set a single value.
         
         Args:
             colName (str)
@@ -526,10 +549,16 @@ class baseAnnotations():
         #theRet = [None] * len(self._df.columns)
         return row
 
+
+    #  todo (Johnson): Take in dictionary instead of x,y,z
+    #  Change unit testing to reflect changes here
     def addAnnotation(self, 
-                    x : int, y : int, z : int,
+                    paramDict: dict,
+                    # x : int, y : int, z : int,
                     rowIdx : int = None) -> int:
+        
         """
+        Old
         Add a new annotation at pixel (x,y,z).
         
         Args:
@@ -543,6 +572,12 @@ class baseAnnotations():
             (int) Added row (annotation) number.
         """
         
+        """
+        New change
+        Args:
+            paramDict: Dictionary from baseAnnotation.getAnnotationDict()
+        """
+        
         if rowIdx is None:
             rowIdx = self.numAnnotations
 
@@ -551,19 +586,25 @@ class baseAnnotations():
         # append a default row, base on self.columns type
         self._df.loc[rowIdx] = self._getDefaultRow()
 
+        for key,value in paramDict.items():
+            if key in self._columns.getColumnNames():
+                self._df.loc[rowIdx, key] = value
+            else:
+                logger.warning(f"Did not recognize paramDict key {key}")
+
         self._df.loc[rowIdx, 'cSeconds'] = time.time()  # creation time
         self._df.loc[rowIdx, 'mSeconds'] = time.time()  # modification time
 
         # TODO (cudmore) import, I want (x,y,z) to be points/pixels
         # and (xVoxel, yVoxel, zVoxel) to be in real-world coordinates (usually micro-meter)
-        self._df.loc[rowIdx, 'x'] = x
-        self._df.loc[rowIdx, 'y'] = y
-        self._df.loc[rowIdx, 'z'] = z
+        # self._df.loc[rowIdx, 'x'] = x
+        # self._df.loc[rowIdx, 'y'] = y
+        # self._df.loc[rowIdx, 'z'] = z
 
         # TODO: (cudmore) convert pixel to um. We need pymapmanager.stack header for this
-        self._df.loc[rowIdx, 'xVoxel'] = x * self._header['voxelx']
-        self._df.loc[rowIdx, 'yVoxel'] = y * self._header['voxely']
-        self._df.loc[rowIdx, 'zVoxel'] = z * self._header['voxelz']
+        self._df.loc[rowIdx, 'xVoxel'] = self._df.loc[rowIdx, 'x'] * self._header['voxelx']
+        self._df.loc[rowIdx, 'yVoxel'] = self._df.loc[rowIdx, 'y'] * self._header['voxely']
+        self._df.loc[rowIdx, 'zVoxel'] = self._df.loc[rowIdx, 'z'] * self._header['voxelz']
 
         self._resetIndex()
         
