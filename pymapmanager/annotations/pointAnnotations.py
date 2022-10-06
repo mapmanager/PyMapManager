@@ -6,7 +6,8 @@ from pprint import pprint
 from typing import List, Union
 
 import pandas as pd
-import numpy as np  # TODO (cudmore) only used for return signature?
+import numpy as np
+from pytest import param  # TODO (cudmore) only used for return signature?
 
 from pymapmanager.annotations import baseAnnotations
 from pymapmanager.annotations import ColumnItem
@@ -61,8 +62,9 @@ class pointAnnotations(baseAnnotations):
         super().load()
 
     # todo: Change to dictionary instead roitype and segmentID
-    def old_addAnnotation(self,
+    def addAnnotation(self,
                     roiType : pointTypes,
+                    paramDict : dict,
                     segmentID : int = float('nan'),
                     *args,**kwargs):
         """
@@ -73,6 +75,8 @@ class pointAnnotations(baseAnnotations):
         """
 
         newRow = super().addAnnotation(*args,**kwargs)
+        
+        # newRow = super().addAnnotation(paramDict = paramDict, 
 
         # Automate: check if roitype is in dictionary.
         self._df.loc[newRow, 'roiType'] = roiType.value

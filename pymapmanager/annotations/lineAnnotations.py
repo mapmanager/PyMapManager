@@ -126,11 +126,12 @@ class lineAnnotations(baseAnnotations):
             return None, None
 
     def addAnnotation(self, 
-                    x : int, y : int, z : int,
+                    # x : int, y : int, z : int,
+                    paramDict: dict,
                     segmentID : int,
                     rowIdx = None,
                     ) -> int:
-        addedRow = super().addAnnotation(x, y, z, rowIdx=rowIdx)
+        addedRow = super().addAnnotation(paramDict = paramDict, rowIdx=rowIdx)
         self.at[addedRow, 'segmentID'] = segmentID
 
     def addSegment(self, pointList : List[List[int]]):

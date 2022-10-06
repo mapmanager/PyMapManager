@@ -5,7 +5,7 @@ We will derive (point, line) annotations from this
 from email import header
 import enum
 import errno
-from msilib.schema import Property
+# from msilib.schema import Property
 #from lib2to3.pgen2.pgen import DFAState  # for FileNotFoundError
 import os
 import time
