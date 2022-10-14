@@ -56,7 +56,7 @@ class lineAnnotations(baseAnnotations):
         #if df is not None:
         #    df['segmentID'] = df['segmentID'].astype(int)
 
-    def getSegment_xyz(self, segmentID : Union[int, list[int]] = None) -> list:
+    def getSegment_xyz(self, segmentID : Union[int, List[int]] = None) -> list:
         """Get a list of (z,y,x) values from segment(s).
         """
         if segmentID is None:

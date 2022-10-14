@@ -206,6 +206,70 @@ class imageWidget(pg.PlotWidget):
 
         self.signalSetSlice.emit(self._currentSlice)
 
+class pointView():
+    def __init__(self, stack : pymapmanager.stack, imageWidget : imageWidget):
+        self._imageWidget = imageWidget
+
+        self._stack = stack
+        self._buildGui()
+
+    def _buildGui(self):
+
+        # make a scatter plot
+        # TODO: work on making it better looking
+        self._scatter = pg.ScatterPlotItem(
+            size=5, brush=pg.mkBrush(255, 50, 50, 200))
+
+        # set scatter empty
+        self._scatter.setData([], [])
+
+        # add item to the main view (stack image is also an item)
+        self._imageWidget.addItem(self._scatter)
+
+    def slot_setSlice(self, sliceNumber : int):
+        """Get points from stack and replot scatter.
+        """
+        logger.info(f'pointView {sliceNumber}')
+        
+        # grab all (z,y,x) points of type spineROI
+        roiType = pymapmanager.annotations.pointAnnotations.pointTypes.spineROI
+        xyzPoints = self._stack.getPointAnnotations().getRoiType_xyz(roiType)
+
+        print(f'  xyzPoints:{xyzPoints.shape}')
+        
+        # reduce based on sliceNumber
+        _upDown = 2  # needs to be a global program option
+        
+        top = sliceNumber - _upDown
+        if top<0:
+            top = 0
+
+        bottom = sliceNumber + _upDown
+        if bottom > self._stack.numImageSlices:
+            bottom = self._stack.numImageSlices - 1
+
+        # get the points we want from z
+        z = xyzPoints[:,0]
+        _where = np.where((z>top) & (z<bottom))
+        _where = _where[0]  # np.where returns a tuple ... confusing
+
+        print(f'  _where:{_where}')
+
+        if len(_where) == 0:
+            # no points in this +/- slice
+            return
+
+        x = xyzPoints[_where,2]
+        y = xyzPoints[_where,1]
+
+        print(f'  x:{x.shape} y:{y.shape}')
+
+        # update scatter with new data
+        self._scatter.setData(x, y)
+
+        # force replot of window (important)
+        self._imageWidget.update()
+
 class stackViewer2(QtWidgets.QWidget):
     def __init__(self, path : str, parent=None):
         """A pymapmanager stack viewer.
@@ -234,6 +298,8 @@ class stackViewer2(QtWidgets.QWidget):
 
         self._imageWidget = imageWidget(self._stack)
         
+        self._pointViewer = pointView(self._stack, self._imageWidget)
+
         vMainLayout.addWidget(self._imageWidget)
 
         self._bottomToolbar = bottomToolbar(self._stack)
@@ -249,6 +315,8 @@ class stackViewer2(QtWidgets.QWidget):
         self._imageWidget.signalMouseMove.connect(self._bottomToolbar.slot_mouseMoved)
         self._imageWidget.signalSetSlice.connect(self._bottomToolbar.slot_sliceChanged)
 
+        self._imageWidget.signalSetSlice.connect(self._pointViewer.slot_setSlice)
+
 def runOneWidget(path):
     _stack = pymapmanager.stack(path)
     
@@ -259,7 +327,8 @@ if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
 
     path = '/Users/cudmore/Sites/PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
-    
+    path = '/home/cudmore/Sites/PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
+
     sv = stackViewer2(path)
     sv.show()
 
