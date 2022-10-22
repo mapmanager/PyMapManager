@@ -1,0 +1,1 @@
+tiffFile=/Volumes/mapmanager/Users/cudmore/Dropbox/data/Shu-Ling/Shu-Ling_tif/mm_maps/ling_map_1/raw/ling_map_1_s0_ch2.tifpoint=228,343,18point=261,341,18point=285,327,18point=330,316,18point=360,308,21point=407,312,24
