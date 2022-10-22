@@ -407,7 +407,7 @@ class baseAnnotations():
         
         try:
             # TODO (cudmore) can't mix compareColName (reduceRows) and rowIdx
-            ret = df.loc[rowIdx, colName].values
+            ret = df.loc[rowIdx, colName].to_numpy(na_value=np.nan)
             #logger.info(f'ret:{type(ret)} {ret.shape}')
             #if len(colName)==1:
             if ret.shape[1]==1:
@@ -760,7 +760,7 @@ class baseAnnotations():
         for columnItems in self.columns:
             colName = columnItems.getName()
             theType = columnItems.getType()
-            logger.info(f'converting column "{colName}" to type:"{theType}"')
+            #logger.info(f'converting column "{colName}" to type:"{theType}"')
             if theType is None:
                 pass
             elif theType == 'Int64':

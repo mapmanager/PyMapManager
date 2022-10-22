@@ -97,8 +97,27 @@ class pointAnnotations(baseAnnotations):
         #return cPnt
 
     def getRoiType_xyz(self, roiType : pointTypes):
+        """Get (x,y,z) of one roiType.
+        """
         #logger.info(f'{roiType.value}')
         xyz = self.getValuesWithCondition(['z', 'y', 'x'],
+                    compareColNames='roiType',
+                    comparisons=comparisonTypes.equal,
+                    compareValues=roiType.value)
+        return xyz
+
+    def getRoiType_col(self, col : Union[List[str], str], roiType : pointTypes):
+        """Get values in column(s) for one roi type
+        
+        Args:
+            col: the column to get values from
+            roitType: the roi type to get from
+        """
+        
+        if not isinstance(col, list):
+            col = [col]
+        
+        xyz = self.getValuesWithCondition(col,
                     compareColNames='roiType',
                     comparisons=comparisonTypes.equal,
                     compareValues=roiType.value)

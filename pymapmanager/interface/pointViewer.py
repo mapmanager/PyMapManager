@@ -8,6 +8,8 @@ import pandas as pd
 
 from qtpy import QtCore, QtWidgets  
 
+import napari
+
 import pymapmanager
 from pymapmanager.annotations.pointAnnotations import pointTypes
 import napari_layer_table

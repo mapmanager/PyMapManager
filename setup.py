@@ -54,6 +54,9 @@ setup(
         "scipy",
         "tifffile",
         "matplotlib"
+
+        # todo: move this to an interface install
+        
     ]
 )
 

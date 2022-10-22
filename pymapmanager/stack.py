@@ -62,7 +62,7 @@ class stack():
     imageRowIdx = 1
     imageColIdx = 2
 
-    def __init__(self, tifPath : str,
+    def __init__(self, path : str,
                 defaultChannel : int = 1,
                 loadImageData : bool = True):
         """
@@ -73,12 +73,12 @@ class stack():
             defaultChannel: Default channel to load
             loadImageData: If false than don't load anyhthing
         """
-        if not os.path.isfile(tifPath):
-            logger.error(f'Did not find tifPath: {tifPath}')
+        if not os.path.isfile(path):
+            logger.error(f'Did not find tifPath: {path}')
             # TODO (cudmore) is there a 'FileNotFound' exception built in?
             raise OSError(errno.ENOENT, os.strerror(errno.ENOENT), tifPath)
 
-        self._tifPath = tifPath
+        self._tifPath = path
         """Full path to .tif we were created with"""
         
         self._basePath = self._getBasePath()

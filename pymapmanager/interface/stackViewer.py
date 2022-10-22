@@ -59,7 +59,7 @@ class mmViewer():
         self._tifPath = tifPath
         
         # load the stack
-        self._stack = pymapmanager.stack.stack(tifPath)
+        self._stack = pymapmanager.stack(tifPath)
         print(self._stack)
 
         self.buildInterface()
