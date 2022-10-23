@@ -9,7 +9,7 @@ from pymapmanager._logger import logger
 
 class map():
     """
-    A map is a list of pymapmanager.stack.stack with book-keeping to connect annotations between stacks.
+    A map is a list of pymapmanager.stack with book-keeping to connect annotations between stacks.
     
     The list of stacks is conceptually a list of time-points. Stacks imaged at different times from seconds to weeks.
     """
@@ -24,7 +24,7 @@ class map():
         mapFileName = folderName + '.txt'
         
         self._stacks = []
-        """ A list of pymapmanager.stack.stack"""
+        """ A list of pymapmanager.stack"""
         
         self._mapFolderPath = folderPath
         self._mapFilePath = os.path.join(folderPath, mapFileName)

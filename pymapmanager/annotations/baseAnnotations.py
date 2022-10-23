@@ -221,7 +221,7 @@ class baseAnnotations():
 
         # TODO (cudmore) add
         # bad:bool
-        # type:enum int
+        # type:enum
         # stackFile:str (filename of associated stack)
 
         # not sure if we keep these with each annotation (row)
@@ -433,7 +433,7 @@ class baseAnnotations():
 
         Args:
             colName (str | List(str)): Column(s) to get values from
-            compareColName (str | List(str)): Columns to compare to
+            compareColNames (str | List(str)): Columns to compare to
             comparisons (comparisonTypes | List(comparisonTypes)): Type of comparisons
             compareValues (???): We don't know the type. Could be (float, int, bool) or other?
         """

@@ -50,20 +50,21 @@ setup(
     install_requires=[
         "numpy",
         "pandas",
-        #"requests",
         "scipy",
         "tifffile",
-        #"matplotlib"        
     ],
 	extras_require={
         'gui': [
-			'pyqtgraph',
+			'matplotlib',
+            'pyqtgraph',
 			#'PyQt5==5.12 # 5.12 is only version where QComboBox works # 5.15.2',
 			'PyQt5',
 			'qdarkstyle',
+		],
+        'napari': [
             'napari',
             'napari-layer-table'
-		],
+        ],
         'dev': [
 			'mkdocs',
 			'mkdocs-material',
@@ -73,6 +74,7 @@ setup(
             'pyinstaller',
             'ipython',
             'pytest',
+            'flake8'
 		],
     },
 

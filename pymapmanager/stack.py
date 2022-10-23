@@ -76,7 +76,7 @@ class stack():
         if not os.path.isfile(path):
             logger.error(f'Did not find tifPath: {path}')
             # TODO (cudmore) is there a 'FileNotFound' exception built in?
-            raise OSError(errno.ENOENT, os.strerror(errno.ENOENT), tifPath)
+            raise OSError(errno.ENOENT, os.strerror(errno.ENOENT), path)
 
         self._tifPath = path
         """Full path to .tif we were created with"""

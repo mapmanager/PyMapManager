@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 import pymapmanager.stack
 
-def plotMax(stack: pymapmanager.stack.stack,
+def plotMax(stack: pymapmanager.stack,
             channel : int = 2,
             plotLines : bool = True,
             segmentID : list = [],
@@ -22,6 +22,8 @@ def plotMax(stack: pymapmanager.stack.stack,
         plotAnnotations: If True then plot annotations
         roiType: List of point annotation roiTypes to plot
     """
+    
+    # plot stack
     maxProject = stack.getMaxProject(channel=channel)
 
     # extent is used to specify image display in units other than pixels
@@ -31,6 +33,7 @@ def plotMax(stack: pymapmanager.stack.stack,
     bottom = 0
     top = stack.header['umHeight']
     extent = [left, right, bottom, top]
+    extent = None  # using pixels
 
     plt.imshow(maxProject, origin='lower', extent=extent)  # origin='lower' to flip y
 
@@ -42,20 +45,24 @@ def plotMax(stack: pymapmanager.stack.stack,
         # step through each segment so different segmentID remain disjoint
         for oneSegmentID in segmentID:
             oneSegmentID = [oneSegmentID]
-            xyzLine = stack.getLineAnnotations().getPoints_xyz(segmentID=oneSegmentID, asPixel=False)
-            xLine = xyzLine[:,0]
+            xyzLine = stack.getLineAnnotations().getSegment_xyz(segmentID=oneSegmentID)
+            xyzLine = xyzLine[0]  # xyzLine is a list of numpy
+            #print('xyzLine:', type(xyzLine))
+            xLine = xyzLine[:,2]
             yLine = xyzLine[:,1]
-            plt.plot(xLine, yLine, '-r', linewidth=0.5)  # TODO (cudmore) disjoint segments are incorrectly connected by a line
+            plt.plot(xLine, yLine, '-y', linewidth=0.5)  # TODO (cudmore) disjoint segments are incorrectly connected by a line
 
     if plotAnnotations:
-        xyzAnnotation = stack.getPointAnnotations().getPoints_xyz(roiType=roiType, segmentID=segmentID, asPixel=False)
-        xAnnotation = xyzAnnotation[:,0]
+        roiType = pymapmanager.annotations.pointTypes.spineROI
+        xyzAnnotation = stack.getPointAnnotations().getRoiType_xyz(roiType=roiType)
+        print('xyzAnnotation:', type(xyzAnnotation))
+        xAnnotation = xyzAnnotation[:,2]
         yAnnotation = xyzAnnotation[:,1]
-        plt.plot(xAnnotation, yAnnotation, 'ok')
+        plt.scatter(xAnnotation, yAnnotation, s=5, c='k')
 
 def run():
-    tifPath = '/media/cudmore/data/richard/rr30a/stacks/rr30a_s0_ch1.tif'
-    myStack = pymapmanager.stack.stack(tifPath)
+    tifPath = '../PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
+    myStack = pymapmanager.stack(tifPath)
     thisChannel = 2
     myStack.loadImages(channel=thisChannel)
     print(myStack)

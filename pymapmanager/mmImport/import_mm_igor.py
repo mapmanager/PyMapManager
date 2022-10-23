@@ -135,5 +135,4 @@ def _import_lines_mapmanager_igor(path : str):
     return header, df
 
 if __name__ == '__main__':
-    _convertPoints()
-    _convertLines()
+    pass

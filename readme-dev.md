@@ -1,6 +1,66 @@
 
 ## This is a rewrite of the original pymapmanager backend
 
+## Development pipeline
+
+To check your local branch or main you want to do a few things.
+
+1) Run all tests with `pytest`. The `--maxfail=2` will stop testing after just 2 errors and is sometmies easier to debug.
+
+    ```
+    pytest --maxfail=2
+    ```
+
+2) We are using flake8 for code linting. We only check for a few error (E9, F63, etc). See [flake documentation](https://flake8.pycqa.org/en/latest/user/error-codes.html) for more info.
+
+    ```
+    flake8 pymapmanager --count --select=E9,F63,F7,F82 --show-source --statistics
+    ```
+
+    If this **passes**, you will just see a '0'. If this **fails** you might see something like this:
+
+    ```
+    src/napari_layer_table/debugInterface.py:77:10: F821 undefined name 'shapesLayer'
+    sl = shapesLayer(viewer, shapes_layer)
+         ^
+    1     F821 undefined name 'shapesLayer'
+    ```
+
+3) If you made changes to the mkdocs documentation, you need to check that too.
+
+    The mkdocs files are in [mkdocs.yml](mkdocs.yml) file and in the [docs/](docs/) folder.
+
+    ```
+    mkdocs build
+    ```
+
+    You can always run the documentation in a local browser using
+
+    ```
+    mkdocs serve
+    ```
+
+    Running `mkdocs build` is actualy usefull for finding missing parts and typos in doc strings. The output is often like this:
+
+    ```
+    WARNING  -  griffe: pymapmanager/annotations/baseAnnotations.py:92: No type or annotation for returned value None
+    WARNING  -  griffe: pymapmanager/annotations/baseAnnotations.py:354: No type or annotation for parameter 'value'
+    WARNING  -  griffe: pymapmanager/annotations/baseAnnotations.py:436: Parameter 'compareColName' does not appear in the parent signature
+    WARNING  -  griffe: pymapmanager/annotations/baseAnnotations.py:669: Failed to get 'name: description' pair from 'funDef (def) function that takes a path and return (header, df)'
+    WARNING  -  griffe: pymapmanager/annotations/baseAnnotations.py:670: Failed to get 'name: description' pair from 'path (str) Path to file for import'
+    WARNING  -  griffe: pymapmanager/annotations/baseAnnotations.py:670: Empty parameters section at line 3
+    ```
+
+4) Pushing a new version
+
+    If you are ready to push a new version to **main**, you need to update the version in [pymapmanager/version.py](pymapmanager/version.py). Otherwise, pushing the code to PyPi (for pip install) will fail.
+
+    ```
+    [metadata]
+    name = napari-layer-table
+    version = 0.0.9
+    ```
+
 ## TODO (20220329):
 	- Remove toolbars (top-left) for (delete, add, select, zoom).
 	- Replace these with interface including
