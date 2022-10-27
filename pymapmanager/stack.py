@@ -71,7 +71,13 @@ class stack():
         Args:
             tifPath: Full path to a tif file
             defaultChannel: Default channel to load
-            loadImageData: If false than don't load anyhthing
+            loadImageData: If True than load default channel
+
+        Notes:
+            - We need to load czi/lsm/nd2 using  aicsimageio
+            - If path ends with (_ch1.tif, _ch2.tif, _ch3.tif)
+                assume we are loading ScanImage tif after Fiji export to mapManager
+            - Look at all my recent work in Canvas repo to just load .tif etc native !
         """
         if not os.path.isfile(path):
             logger.error(f'Did not find tifPath: {path}')
@@ -125,6 +131,8 @@ class stack():
             self._header['umWidth'] = self._header['xPixels'] * self._header['xVoxel'] if imageShape is not None else None
             self._header['umHeight'] = self._header['yPixels'] * self._header['yVoxel'] if imageShape is not None else None
 
+            self._header['bitDepth'] = 11
+
         # TODO (cudmore) we should add an option to defer loading until explicitly called
         self.loadAnnotations()
         self.loadLines()
@@ -140,7 +148,7 @@ class stack():
         printList.append('stack')
         printList.append(f'base name: {self._baseName}')
         printList.append(f'channels: {self.numChannels}')
-        printList.append(f'slices: {self.numImageSlices}')
+        printList.append(f'slices: {self.numSlices}')
         printList.append(f'rows: {self.numImageRows}')
         printList.append(f'columns: {self.numImageColumns}')
         printList.append(f'annotations: {self.getPointAnnotations().numAnnotations}')
@@ -245,6 +253,10 @@ class stack():
             logger.info(f'Loaded tif data {tifData.shape} from tif file: {tifPath}')
             return tifData.shape
 
+    def getStack(self, channel : int = 1) -> np.ndarray:
+        channelIdx = channel - 1
+        return self._images[channelIdx]
+
     def getImageChannel(self, channel : int = 1):
         """
         Get the entire image channel
@@ -267,7 +279,11 @@ class stack():
             channel (int): Channel number, one based
         """
         channelIdx = channel - 1
-        return self._images[channelIdx][imageSlice][:][:]
+        if self._images[channelIdx] is None:
+            logger.error(f'channel {channelIdx} is None')
+            return
+        data =  self._images[channelIdx][imageSlice][:][:]
+        return data
 
     def getMaxProject(self, channel : int = 1):
         """
@@ -280,7 +296,8 @@ class stack():
                             imageSlice : int, 
                             channel : int = 1, 
                             upSlices : int = 3, 
-                            downSlices : int = 3):
+                            downSlices : int = 3,
+                            func = np.max):
         """
         Get a maximal intensity projection of image slices for one channel.
 
@@ -296,9 +313,15 @@ class stack():
             firstSlice = 0
         lastSlice = imageSlice + downSlices
         # TODO (cudmore) Write function to check sanits of slice (int)
-        if lastSlice > self.numImageSlices - 1:
-            lastSlice = self.numImageSlices
-        return self._images[channelIdx][firstSlice:lastSlice].max(axis=self.imageSliceIdx)
+        if lastSlice > self.numSlices - 1:
+            lastSlice = self.numSlices
+        theRet = self._images[channelIdx][firstSlice:lastSlice].max(axis=self.imageSliceIdx)
+        return theRet
+
+    def getPixel(self, channel : int, slice : int, y, x) -> int:
+        """Get the intensity of a pixel.
+        """
+        return -111
 
     @property
     def numChannels(self):
@@ -315,7 +338,7 @@ class stack():
         return numColumns
 
     @property
-    def numImageSlices(self):
+    def numSlices(self):
         numSlices = self._header['zPixels']
         return numSlices
 
@@ -324,7 +347,7 @@ class stack():
         """
         try:            
             annotationFilePath = self._enclosingPath + '_pa.txt'
-            self._annotations = pymapmanager.annotations.pointAnnotations.pointAnnotations(annotationFilePath)
+            self._annotations = pymapmanager.annotations.pointAnnotations(annotationFilePath)
         except (FileNotFoundError) as e:
             self._annotations = None
 
@@ -333,7 +356,7 @@ class stack():
         """
         try:
             lineFilePath = self._enclosingPath + '_la.txt'
-            self._lines = pymapmanager.annotations.lineAnnotations.lineAnnotations(lineFilePath)
+            self._lines = pymapmanager.annotations.lineAnnotations(lineFilePath)
         except (FileNotFoundError) as e:
             self._lines = None
 

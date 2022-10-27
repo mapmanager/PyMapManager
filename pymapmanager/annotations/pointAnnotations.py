@@ -67,6 +67,7 @@ class pointAnnotations(baseAnnotations):
         
         Args:
             roiType:
+            segmentID:
         """
 
         newRow = super().addAnnotation(*args,**kwargs)

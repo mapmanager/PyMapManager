@@ -1,5 +1,7 @@
 
-from re import X
+from imp import get_frozen_object
+import os
+#from re import X
 import sys, traceback
 from pprint import pprint
 
@@ -8,9 +10,11 @@ from qtpy import QtGui, QtCore, QtWidgets
 import numpy as np
 import pyqtgraph as pg
 
-import tifffile
+import qdarkstyle
 
 import pymapmanager
+import pymapmanager.annotations
+import pymapmanager.interface
 
 from pymapmanager._logger import logger
 
@@ -39,6 +43,8 @@ class stackWidget(QtWidgets.QMainWindow):
     """Widget to display a stack including:
         - Top toolbar (bTopToolbar)
         - Interactive image/stack canvas (myPyQtGraphPlotWidget)
+            With scatter plots for points and lines
+        - Left control bar with tables for points and lines
         - Contrast widget (bHistogramWidget)
         - Bottom status toolbar (bStatusToolbar)
     """
@@ -55,15 +61,54 @@ class stackWidget(QtWidgets.QMainWindow):
         elif path is not None:
             self.myStack = pymapmanager.stack(path)
         else:
-            logger.error('Must specify either myStack or path')
+            logger.error('Must specify either path or myStack')
+            raise ValueError
 
         self._channelColor = ['g', 'r', 'b']
         self._buildColorLut()  # assigns self._colorLutDict
 
         self._setDefaultContrastDict()
 
+        # the stackWidget has a number of options (like display options)
+        # TODO (cudmore) eventually these will be program options we get in __init__
+        self._getDefaultDisplayOptions()
+
         self._buildUI()
         self._buildMenus()
+
+    def _getDefaultDisplayOptions(self):
+        theDict = {}
+
+        # interface.stackWidget
+        theDict['stackWindow'] = {}
+        theDict['stackWindow']['showContrast'] = False
+        
+        # interface.pointPlotWidget
+        theDict['pointDisplay'] = {}
+        theDict['pointDisplay']['width'] = 2
+        theDict['pointDisplay']['color'] = 'r'
+        theDict['pointDisplay']['symbol'] = 'o'
+        theDict['pointDisplay']['size'] = 4
+        # user selection
+        theDict['pointDisplay']['widthUserSelection'] = 2
+        theDict['pointDisplay']['colorUserSelection'] = 'y'
+        theDict['pointDisplay']['symbolUserSelection'] = 'o'
+        theDict['pointDisplay']['sizeUserSelection'] = 7
+
+        # interface.linePlotWidget
+        theDict['lineDisplay'] = {}
+        theDict['lineDisplay']['width'] = 2
+        theDict['lineDisplay']['color'] = 'b'
+        theDict['lineDisplay']['symbol'] = 'o'
+        theDict['lineDisplay']['size'] = 4
+        # user selection
+        theDict['lineDisplay']['widthUserSelection'] = 2
+        theDict['lineDisplay']['colorUserSelection'] = 'c'
+        theDict['lineDisplay']['symbolUserSelection'] = 'o'
+        theDict['lineDisplay']['sizeUserSelection'] = 7
+        
+        #
+        self._displayOptionsDict = theDict
 
     def _setDefaultContrastDict(self):
         """Remember contrast setting and color LUT for each channel.
@@ -77,6 +122,8 @@ class stackWidget(QtWidgets.QMainWindow):
             minStackIntensity = np.min(_stackData)
             maxStackIntensity = np.max(_stackData)
 
+            logger.info(f'  minStackIntensity:{minStackIntensity} maxStackIntensity:{maxStackIntensity}')
+
             self._contrastDict[channelNumber] = {
                 'channel': channelNumber,
                 'colorLUT': self._channelColor[channelIdx],
@@ -84,7 +131,7 @@ class stackWidget(QtWidgets.QMainWindow):
                 'maxContrast': maxStackIntensity,  # set by user
                 #'minStackIntensity': minStackIntensity,  # to set histogram/contrast slider guess
                 #'maxStackIntensity': maxStackIntensity,
-                'bitDepth': self.myStack.bitDepth
+                'bitDepth': self.myStack.header['bitDepth']
             }
 
     def _buildColorLut(self):
@@ -122,12 +169,32 @@ class stackWidget(QtWidgets.QMainWindow):
         self._colorLutDict['blue'] = lut
         self._colorLutDict['b'] = lut
 
+    def toggleImageView(self):
+        """Hide/show the image.
+        """
+        self._myGraphPlotWidget.toggleImageView()
+
+    def toggleTracingView(self):
+        """Hide/show the tracing (pooints and lines)
+        """
+        self._myGraphPlotWidget.toggleTracingView()
+        
     def toggleContrastWidget(self):
+        """Hide/show the contrast widget.
+        """
         logger.info('')
         visible = not self._histogramWidget.isVisible()
         #self.contrastVisibilityChanged(visible)
         self._histogramWidget.setVisible(visible)
         
+    def togglePointTable(self):
+        visible = not self.pointListDock.isVisible()
+        self.pointListDock.setVisible(visible)
+
+    def toggleLineTable(self):
+        visible = not self.lineListDock.isVisible()
+        self.lineListDock.setVisible(visible)
+
     def contrastVisibilityChanged(self, visible):
         logger.info('')
 
@@ -136,26 +203,83 @@ class stackWidget(QtWidgets.QMainWindow):
         mainMenu = self.menuBar()
 
         # channels
-        self.channelShortcut_1 = QtWidgets.QShortcut(QtGui.QKeySequence("1"), self)
-        self.channelShortcut_1.activated.connect(self.on_user_channel)
-         
+
+        # 1
+        # self.channelShortcut_1 = QtWidgets.QShortcut(QtGui.QKeySequence("1"), self)
+        # _callback = lambda item='1': self.on_user_channel(item)
+        # self.channelShortcut_1.activated.connect(_callback)
+
+        # channelOneAction = QtWidgets.QAction('Channel 1', self)
+        # channelOneAction.setShortcut('1')
+        # _callback = lambda checked, item='1': self.on_user_channel(checked,item)
+        # channelOneAction.triggered.connect(_callback)
+
+        # 2
+        # self.channelShortcut_2 = QtWidgets.QShortcut(QtGui.QKeySequence("2"), self)
+        # _callback = lambda item='2': self.on_user_channel(item)
+        # self.channelShortcut_2.activated.connect(_callback)
+
         # close
         self.closeShortcut = QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+W"), self)
         self.closeShortcut.activated.connect(self.on_user_close)
 
         # contrast
-        self.contrastShortcut = QtWidgets.QShortcut(QtGui.QKeySequence("C"), self)
-        self.contrastShortcut.activated.connect(self.toggleContrastWidget)
+        # self.contrastShortcut = QtWidgets.QShortcut(QtGui.QKeySequence("C"), self)
+        # self.contrastShortcut.activated.connect(self.toggleContrastWidget)
 
-        self.contrastAction = QtWidgets.QAction('Image Contrast', self)
-        #self.contrastAction.setShortcut('c')
-        self.contrastAction.triggered.connect(self.toggleContrastWidget)
-
+        # stack menubar
         stackMenu = mainMenu.addMenu('&Stack')
-        stackMenu.addAction(self.contrastAction)
 
-    def on_user_channel(self):
-        logger.info('')
+        # toggle contrast on/off
+        _showContrast = self._displayOptionsDict['stackWindow']['showContrast']
+        contrastAction = QtWidgets.QAction('Image Contrast', self)
+        contrastAction.setCheckable(True)
+        contrastAction.setChecked(_showContrast)
+        contrastAction.setShortcut('C')
+        contrastAction.triggered.connect(self.toggleContrastWidget)
+        stackMenu.addAction(contrastAction)
+
+        # toggle image on/off
+        aAction = QtWidgets.QAction('Image', self)
+        aAction.setCheckable(True)
+        aAction.setChecked(True)
+        aAction.setShortcut('I')
+        aAction.triggered.connect(self.toggleImageView)
+        stackMenu.addAction(aAction)
+
+        # toggle tracing on/off
+        aAction = QtWidgets.QAction('Tracing', self)
+        aAction.setCheckable(True)
+        aAction.setChecked(True)
+        aAction.setShortcut('T')
+        aAction.triggered.connect(self.toggleTracingView)
+        stackMenu.addAction(aAction)
+
+        # toggle point table on/off
+        aAction = QtWidgets.QAction('Point Table', self)
+        aAction.setCheckable(True)
+        aAction.setChecked(True)
+        aAction.setShortcut('P')
+        aAction.triggered.connect(self.togglePointTable)
+        stackMenu.addAction(aAction)
+
+        # toggle polineint table on/off
+        aAction = QtWidgets.QAction('Line Table', self)
+        aAction.setCheckable(True)
+        aAction.setChecked(True)
+        aAction.setShortcut('L')
+        aAction.triggered.connect(self.toggleLineTable)
+        stackMenu.addAction(aAction)
+
+        #stackMenu.addAction(channelOneAction)
+
+    def on_user_channel(self, checked : bool, item : str):
+        """Respond to user changing channel.
+        
+        Args:
+            item: Item triggered: '1' for channel 1, '2' for channel 2, etc
+        """
+        logger.info(f'checked:{checked} item:{item}')
         
     def on_user_close(self):
         logger.info('')
@@ -163,11 +287,19 @@ class stackWidget(QtWidgets.QMainWindow):
 
     def _buildUI(self):
         # QMainWindow needs a central widget
-        # pass self here to grab keyboard focus, do not construct anything else with self!
+        # pass self here to grab keyboard focus,
+        # do not construct anything else with self!
         centralWidget = QtWidgets.QWidget(self)
 
-        vBoxLayout = QtWidgets.QVBoxLayout(centralWidget)
-        #centralWidget.setLayout(vBoxLayout)
+        hBoxLayout_main = QtWidgets.QHBoxLayout(centralWidget)
+        #hBoxLayout_main = QtWidgets.QHBoxLayout()
+
+        centralWidget.setLayout(hBoxLayout_main)
+
+        vBoxLayout = QtWidgets.QVBoxLayout()
+        centralWidget.setLayout(vBoxLayout)
+
+        hBoxLayout_main.addLayout(vBoxLayout)
 
         # top toolbar
         _topToolbar = bTopToolBar(self.myStack, self._contrastDict)
@@ -176,68 +308,130 @@ class stackWidget(QtWidgets.QMainWindow):
         # holds image and slice-slider
         hBoxLayout = QtWidgets.QHBoxLayout()
 
-        _myGraphPlotWidget = myPyQtGraphPlotWidget(self.myStack,
+        # main image plot with scatter of point and lien annotations
+        self._myGraphPlotWidget = myPyQtGraphPlotWidget(self.myStack,
                                 self._contrastDict,
-                                self._colorLutDict)
-        hBoxLayout.addWidget(_myGraphPlotWidget)
+                                self._colorLutDict,
+                                self._displayOptionsDict)
+        hBoxLayout.addWidget(self._myGraphPlotWidget)
+
+        #print('QQQQQQQQQQ hBoxLayout:', hBoxLayout.contentsMargins().top())
 
         # slider to set slice
         _numSlices = self.myStack.numSlices
         _stackSlider = myStackSlider(_numSlices)
         hBoxLayout.addWidget(_stackSlider)
 
-        vBoxLayout.addLayout(hBoxLayout)
+        vBoxLayout.addLayout(hBoxLayout)  # image and slider
 
         # histogram widget goes into a dock
         self._histogramWidget = bHistogramWidget(self.myStack, self._contrastDict, parent=self)
         #vBoxLayout.addWidget(_histogramWidget)
 
-        # don't like contrast as dock
+        _showContrast = self._displayOptionsDict['stackWindow']['showContrast']
+        self._histogramWidget.setVisible(_showContrast)
+
+        # option 1: don't like contrast as dock
         '''
         self.contrastDock = QtWidgets.QDockWidget('Contrast',self)
-        self.contrastDock.visibilityChanged.connect(self.contrastVisibilityChanged)
-        self.contrastDock.setWidget(_histogramWidget)
+        #self.contrastDock.visibilityChanged.connect(self.contrastVisibilityChanged)
+        self.contrastDock.setWidget(self._histogramWidget)
+        self.contrastDock.setFeatures(QtWidgets.QDockWidget.NoDockWidgetFeatures)
         self.contrastDock.setFloating(False)
         # self.contrastDock.visibilityChanged.connect(self.slot_visibilityChanged)
         # self.contrastDock.topLevelChanged.connect(self.slot_topLevelChanged)
         # self.contrastDock.setAllowedAreas(QtCore.Qt.TopDockWidgetArea | QtCore.Qt.BottomDockWidgetArea)
         # self.contrastDock.dockLocationChanged.connect(partial(self.slot_dockLocationChanged, self.fileDock))
+
+        # works, but I want it in vlayout
         self.addDockWidget(QtCore.Qt.BottomDockWidgetArea, self.contrastDock)
+        #vBoxLayout.addDockWidget(QtCore.Qt.BottomDockWidgetArea, self.contrastDock)
         '''
-        # can only have one bottom toolbar
-        # self.addToolBar(QtCore.Qt.BottomToolBarArea, _histogramWidget)
+
+        # option 2: part of v layout
         vBoxLayout.addWidget(self._histogramWidget)
+
+        #
+        # these QDockWidgets need to be last so they take up the entire left column
+        
+        # point list
+        # oct 2022 balt
+        self._myPointListWidget = \
+                pymapmanager.interface.pointListWidget(self.myStack.getPointAnnotations(), title='Points')
+        #hBoxLayout_main.addWidget(myPointListWidget)
+
+        self.pointListDock = QtWidgets.QDockWidget('Points',self)
+        self.pointListDock.setWidget(self._myPointListWidget)
+        self.pointListDock.setFeatures(QtWidgets.QDockWidget.NoDockWidgetFeatures)
+        self.pointListDock.setFloating(False)
+        #self.pointListDock.dockLocationChanged.connect(partial(self.slot_dockLocationChanged, self.pluginDock1))
+        self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.pointListDock)
+        
+        # line list
+        # oct 2022 balt
+        self._myLineListWidget = \
+                pymapmanager.interface.lineListWidget(self.myStack.getLineAnnotations(), title='Lines')
+        self.lineListDock = QtWidgets.QDockWidget('Lines',self)
+        self.lineListDock.setWidget(self._myLineListWidget)
+        self.lineListDock.setFloating(False)
+        self.lineListDock.setFeatures(QtWidgets.QDockWidget.NoDockWidgetFeatures)
+        #self.lineListDock.dockLocationChanged.connect(partial(self.slot_dockLocationChanged, self.pluginDock1))
+        self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.lineListDock)
 
         # status toolbar (bottom)
         _statusToolbar = bStatusToolbar(self.myStack, parent=self)
         self.addToolBar(QtCore.Qt.BottomToolBarArea, _statusToolbar)
         #vBoxLayout.addWidget(_statusToolbar)
 
+        # important
         self.setCentralWidget(centralWidget)
 
-        # signals
-        _stackSlider.signalUpdateSlice.connect(_myGraphPlotWidget.slot_setSlice)
+        #
+        # connect signal/slot
+        _stackSlider.signalUpdateSlice.connect(self._myGraphPlotWidget.slot_setSlice)
         _stackSlider.signalUpdateSlice.connect(self._histogramWidget.slot_setSlice)
-        _stackSlider.signalUpdateSlice.connect(_statusToolbar.slot_updateSlice)
+        _stackSlider.signalUpdateSlice.connect(_statusToolbar.slot_setSlice)
 
-        _myGraphPlotWidget.signalUpdateSlice.connect(self._histogramWidget.slot_setSlice)
-        _myGraphPlotWidget.signalUpdateSlice.connect(_stackSlider.slot_setSlice)
-        _myGraphPlotWidget.signalUpdateSlice.connect(_statusToolbar.slot_updateSlice)
+        # when user hits escape key
+        self._myGraphPlotWidget.signalCancelSelection.connect(self._myPointListWidget.slot_selectAnnotation)
+        self._myGraphPlotWidget.signalCancelSelection.connect(self._myLineListWidget.slot_selectAnnotation)
+        self._myGraphPlotWidget.signalCancelSelection.connect(self._myGraphPlotWidget._aPointPlot.slot_selectAnnotation)
+        self._myGraphPlotWidget.signalCancelSelection.connect(self._myGraphPlotWidget._aLinePlot.slot_selectAnnotation)
+        self._myGraphPlotWidget.signalCancelSelection.connect(self._myGraphPlotWidget._aLinePlot.slot_selectSegment)
+
+        self._myGraphPlotWidget.signalUpdateSlice.connect(self._histogramWidget.slot_setSlice)
+        self._myGraphPlotWidget.signalUpdateSlice.connect(_stackSlider.slot_setSlice)
+        self._myGraphPlotWidget.signalUpdateSlice.connect(_statusToolbar.slot_setSlice)
         
-        _myGraphPlotWidget.signalChannelChange.connect(self._histogramWidget.slot_setChannel)
-        _myGraphPlotWidget.signalChannelChange.connect(_topToolbar.slot_setChannel)
+        self._myGraphPlotWidget.signalChannelChange.connect(self._histogramWidget.slot_setChannel)
+        self._myGraphPlotWidget.signalChannelChange.connect(_topToolbar.slot_setChannel)
 
-        _myGraphPlotWidget.signalMouseMove.connect(_statusToolbar.slot_updateStatus)
+        self._myGraphPlotWidget.signalMouseMove.connect(_statusToolbar.slot_updateStatus)
 
         _topToolbar.signalChannelChange.connect(self._histogramWidget.slot_setChannel)
-        _topToolbar.signalChannelChange.connect(_myGraphPlotWidget.slot_setChannel)
-        _topToolbar.signalSlidingZChanged.connect(_myGraphPlotWidget.slot_setSlidingZ)
+        _topToolbar.signalChannelChange.connect(self._myGraphPlotWidget.slot_setChannel)
+        _topToolbar.signalSlidingZChanged.connect(self._myGraphPlotWidget.slot_setSlidingZ)
 
-        self._histogramWidget.signalContrastChange.connect(_myGraphPlotWidget.slot_setContrast)
+        self._histogramWidget.signalContrastChange.connect(self._myGraphPlotWidget.slot_setContrast)
+
+        # connect user click in image/annotation view with annotation table
+        self._myGraphPlotWidget._aPointPlot.signalAnnotationClicked.connect(self._myPointListWidget.slot_selectAnnotation)
+        self._myGraphPlotWidget._aLinePlot.signalAnnotationClicked.connect(self._myLineListWidget.slot_selectAnnotation)
+        
+        # connect user click in annotation table with image/annotation view
+        self._myPointListWidget.signalRowSelection.connect(self._myGraphPlotWidget._aPointPlot.slot_selectAnnotation)
+        self._myLineListWidget.signalRowSelection.connect(self._myGraphPlotWidget._aLinePlot.slot_selectSegment)
+        #self._myLineListWidget.signalSelectSegment.connect(self._myGraphPlotWidget._aLinePlot.slot_selectSegment)
+
+        # when user alt+clicks on point or line table
+        # _myGraphPlotWidget wil propogate with chained signalSet slice to other pieces of interface
+        # like (status bar, contrast/histogram widget, stack slider)
+        self._myPointListWidget.signalSetSlice.connect(self._myGraphPlotWidget.slot_setSlice)
+        self._myLineListWidget.signalSetSlice.connect(self._myGraphPlotWidget.slot_setSlice)
 
         left = 100
         top = 100
-        width = 500
+        width = 700
         height = 500
         self.move(left,top)
         self.resize(width, height)
@@ -300,7 +494,7 @@ class _histogram(QtWidgets.QWidget):
 
         self._sliceNumber = 0
         self._channel = channel
-        self._maxValue = 2**self._myStack.bitDepth  # will default to 8 if not found
+        self._maxValue = 2**self._myStack.header['bitDepth']  # will default to 8 if not found
         self._sliceImage = None  # set by 
 
         self._plotLogHist = True
@@ -351,8 +545,10 @@ class _histogram(QtWidgets.QWidget):
         self._sliceNumber = sliceNumber
         
         channel = self._channel
-        self._sliceImage = self._myStack.getImage2(channel=channel,
-                            sliceNum=self._sliceNumber)
+        # self._sliceImage = self._myStack.getImage2(channel=channel,
+        #                     sliceNum=self._sliceNumber)
+        self._sliceImage = self._myStack.getImageSlice(imageSlice=self._sliceNumber,
+                                channel=channel)
 
         y,x = np.histogram(self._sliceImage, bins=255)
         if self._plotLogHist:
@@ -536,22 +732,24 @@ class _histogram(QtWidgets.QWidget):
         self.myGridLayout.addWidget(self.pgPlotWidget,
                 row, specialCol, specialRowSpan, specialColSpan)
 
-#class bHistogramWidget(QtWidgets.QWidget):
-class bHistogramWidget(QtWidgets.QToolBar):
+#class bHistogramWidget(QtWidgets.QToolBar):
+class bHistogramWidget(QtWidgets.QWidget):
     signalContrastChange = QtCore.Signal(object) # (contrast dict)
 
     def __init__(self, myStack, contrastDict : dict,
                     sliceNumber:int=0, channel:int=1, parent=None):
         """
         """
-        super().__init__('xxxyyy', parent)
+        # as toolbar
+        # super().__init__('contrast', parent)
+        super().__init__(parent)
 
         self._myStack = myStack
         self._contrastDict = contrastDict
 
         self._sliceNumber = sliceNumber
         self._channel = channel
-        self._maxValue = 2**self._myStack.bitDepth  # will default to 8 if not found
+        self._maxValue = 2**self._myStack.header['bitDepth']  # will default to 8 if not found
         self._sliceImage = None  # set by 
 
         self.plotLogHist = True
@@ -579,7 +777,7 @@ class bHistogramWidget(QtWidgets.QToolBar):
     def slot_setChannel(self, channel):
         """Show/hide channel buttons.
         """
-        logger.info(f'channel:{channel}')
+        logger.info(f'bHistogramWidget channel:{channel}')
         self._channel = channel
         
         if channel in [1,2,3]:
@@ -672,7 +870,8 @@ class bHistogramWidget(QtWidgets.QToolBar):
         minVal = 0
         maxVal = self._maxValue
 
-        _tmpWidget = QtWidgets.QWidget()
+        # as a toolbar
+        #_tmpWidget = QtWidgets.QWidget()
 
         vBoxLayout = QtWidgets.QVBoxLayout() # main layout
         #self.myGridLayout = QtWidgets.QGridLayout(self)
@@ -737,8 +936,10 @@ class bHistogramWidget(QtWidgets.QToolBar):
         # self.setLayout(vBoxLayout)
 
         # as a toolbar
-        _tmpWidget.setLayout(vBoxLayout)
-        self.addWidget(_tmpWidget)
+        # _tmpWidget.setLayout(vBoxLayout)
+        # self.addWidget(_tmpWidget)
+        # as a widget
+        self.setLayout(vBoxLayout)
 
         '''
         # popup for color LUT for image
@@ -782,18 +983,23 @@ class bTopToolBar(QtWidgets.QToolBar):
         #self.setIconSize(QtCore.QSize(myIconSize,myIconSize))
         self.setToolButtonStyle( QtCore.Qt.ToolButtonTextUnderIcon )
 
-        myFontSize = 10
-        myFont = self.font();
-        myFont.setPointSize(myFontSize);
-        self.setFont(myFont)
+        # myFontSize = 10
+        # myFont = self.font();
+        # myFont.setPointSize(myFontSize);
+        # self.setFont(myFont)
 
         self._buildUI()
 
         # refresh interface
         self._setStack(self._myStack)
 
-    def _setStack(self, theStack):
-        """Set toolbar actions based on stack. Mostly number of channels.
+    def _setStack(self, theStack : pymapmanager.stack):
+        """Show/hide toolbar actions based on stack.
+        
+        Mostly based on number of channels in the image.
+
+        Args:
+            theStack: The stack to set the entire window to
         """
         self._myStack = theStack
         
@@ -812,14 +1018,16 @@ class bTopToolBar(QtWidgets.QToolBar):
             if actionName == 'rgb' and numChannels < 2:
                 action.setVisible(False)
 
-    def _on_channel_callback(self, index):
+    def _on_channel_callback(self, checked, index):
         """
         this REQUIRES a list of actions, self.tooList
         """
+        logger.info(f'checked:{checked} index:{index}')
+        
         action = self._actionList[index]
         actionName = action.statusTip()
         isChecked = action.isChecked()
-        logger.info(f'index:{index} actionName:"{actionName}" isChecked:{isChecked}')
+        logger.info(f'  index:{index} actionName:"{actionName}" isChecked:{isChecked}')
 
         if actionName in self._channelList:
             # channel 1,2,3
@@ -857,7 +1065,7 @@ class bTopToolBar(QtWidgets.QToolBar):
         
         These are a disjoint list, only one can be active. Others automatically disable.
         """
-        logger.info(f'channel:{channel}')
+        logger.info(f'bTopToolbar channel:{channel}')
         if channel == 'rgb':
             channelIdx = 3
         else:
@@ -868,7 +1076,7 @@ class bTopToolBar(QtWidgets.QToolBar):
         logger.info(f'  slidingEnabled:{slidingEnabled}')
         self.slidingUpDown.setEnabled(slidingEnabled)
         self.slidingCheckbox.setEnabled(slidingEnabled)
-        self.colorPopup.setEnabled(slidingEnabled)
+        #self.colorPopup.setEnabled(slidingEnabled)
 
         action = self._actionList[channelIdx]
         action.setChecked(True)
@@ -896,7 +1104,7 @@ class bTopToolBar(QtWidgets.QToolBar):
             elif toolName == 'rgb':
                 theAction.setToolTip('View RGB')
 
-            theAction.triggered.connect(lambda checked, index=toolIndex: self._on_channel_callback(index))
+            theAction.triggered.connect(lambda checked, index=toolIndex: self._on_channel_callback(checked, index))
 
             # add action
             self._actionList.append(theAction)
@@ -920,10 +1128,10 @@ class bTopToolBar(QtWidgets.QToolBar):
         self.addWidget(slidingUpDownLabel)
         self.addWidget(self.slidingUpDown)
 
-        colorList = ['Gray', 'Gray Inverted', 'Green', 'Red', 'Blue']
-        self.colorPopup = QtWidgets.QComboBox()
-        self.colorPopup.addItems(colorList)
-        self.addWidget(self.colorPopup)
+        # colorList = ['Gray', 'Gray Inverted', 'Green', 'Red', 'Blue']
+        # self.colorPopup = QtWidgets.QComboBox()
+        # self.colorPopup.addItems(colorList)
+        # self.addWidget(self.colorPopup)
 
 #class bStatusToolbar(QtWidgets.QWidget):
 class bStatusToolbar(QtWidgets.QToolBar):
@@ -952,7 +1160,7 @@ class bStatusToolbar(QtWidgets.QToolBar):
             # statusDict is from set slice
             pass
 
-    def slot_updateSlice(self, sliceNumber):
+    def slot_setSlice(self, sliceNumber):
         """Update status in response to slice/image change.
         """
         numSlices = self._myStack.numSlices
@@ -999,24 +1207,44 @@ class bStatusToolbar(QtWidgets.QToolBar):
 class myPyQtGraphPlotWidget(pg.PlotWidget):
 
     signalUpdateSlice = QtCore.Signal(object) # (int) : slice number
+    """Signal emitted when slice changes.
+    """
+    
     signalChannelChange = QtCore.Signal(object)  #(int) : channel number
+    """Signal emitted when image channel is changed.
+    """
+    
     signalMouseMove = QtCore.Signal(object)  #(dict) : dict with {x,y,int}
+    """Signal emitted when mouse is moved.
+    """
 
+    signalCancelSelection = QtCore.Signal(object, object)
+    """Signal emitted on keyboard 'esc' to cancel all selections
+    
+    Args:
+        rowIdx (int): If None then cancel selection
+        isAlt (bool): True if Alt key is down (not used)
+        """
+    
     def __init__(self, myStack : pymapmanager.stack,
                     contrastDict : dict,
                     colorLutDict : dict,
+                    displayOptionsDict : dict,
                     parent=None):
         super().__init__(parent)
         
         self._myStack = myStack
         self._contrastDict = contrastDict
         self._colorLutDict = colorLutDict
+        self._displayOptionsDict = displayOptionsDict
 
         self._currentSlice = 0
         self._displayThisChannel = 1  # 1->0, 2->1, 3->2, etc
         self._doSlidingZ = False
         # a dictionary of contrast, one key per channel
         #self._setDefaultContrastDict()  # assigns _contrastDict
+
+        self._blockSlots = False
 
         self._buildUI()
 
@@ -1032,10 +1260,12 @@ class myPyQtGraphPlotWidget(pg.PlotWidget):
         return self._contrastDict    
         
     def wheelEvent(self, event):
-        """
+        """Respond to mouse wheel and set new slice.
+
         Override PyQt wheel event.
         
-        event: <PyQt5.QtGui.QWheelEvent object at 0x11d486910>
+        Args:
+            event: PyQt5.QtGui.QWheelEvent
         """        
         modifiers = QtWidgets.QApplication.keyboardModifiers()
         if modifiers == QtCore.Qt.ControlModifier:
@@ -1044,18 +1274,19 @@ class myPyQtGraphPlotWidget(pg.PlotWidget):
         else:
             # set slice
             yAngleDelta = event.angleDelta().y()
+            newSlice = self._currentSlice
             if yAngleDelta > 0:
                 # mouse up
-                self._currentSlice -= 1
-                if self._currentSlice < 0:
-                    self._currentSlice = 0
+                newSlice -= 1
+                if newSlice < 0:
+                    newSlice = 0
             if yAngleDelta < 0:
                 # mouse down
-                self._currentSlice += 1
-                if self._currentSlice > self._myStack.numSlices-1:
-                    self._currentSlice -= 1
+                newSlice += 1
+                if newSlice > self._myStack.numSlices-1:
+                    newSlice -= 1
 
-            self.refreshSlice()
+            self._setSlice(newSlice)
 
     def keyPressEvent(self, event):
         """
@@ -1074,8 +1305,12 @@ class myPyQtGraphPlotWidget(pg.PlotWidget):
             self._setChannel(2)
             self.refreshSlice()
 
-        elif event.key() == QtCore.Qt.Key_I:
-            self._myStack.printHeader()
+        elif event.key() == QtCore.Qt.Key_Escape:
+            # cancel all user selections
+            self.signalCancelSelection.emit(None, False)  # (selIdx, isAlt)
+
+        #elif event.key() == QtCore.Qt.Key_I:
+        #    self._myStack.printHeader()
 
         else:
             # if not handled by *this, this will continue propogation
@@ -1086,6 +1321,11 @@ class myPyQtGraphPlotWidget(pg.PlotWidget):
         padding = 0.0
         self.setRange(imageBoundingRect, padding=padding)
         
+    def old_onMouseClick_scene(self, event):
+        # pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent
+        # event:<MouseClickEvent (98,207) button=1>
+        logger.info(f'event:{type(event)}')
+
     def _onMouseMoved_scene(self, pos):
         """As user moves mouse, grab and emit the pixel (x, y, intensity).
         """
@@ -1118,7 +1358,9 @@ class myPyQtGraphPlotWidget(pg.PlotWidget):
         return self._displayThisChannel == 'rgb'
 
     def slot_setSlice(self, sliceNumber):
-        self._setSlice(sliceNumber, doEmit=False)
+        if self._blockSlots:
+            return
+        self._setSlice(sliceNumber)
 
     def slot_setContrast(self, contrastDict):
         #logger.info(f'contrastDict:')
@@ -1129,6 +1371,7 @@ class myPyQtGraphPlotWidget(pg.PlotWidget):
         self._setContrast()
 
     def slot_setChannel(self, channel):
+        logger.info(f' myPyQtGraphPlotWidget channel:{channel}')
         self._setChannel(channel, doEmit=False)
 
     def slot_setSlidingZ(self, d):
@@ -1175,7 +1418,7 @@ class myPyQtGraphPlotWidget(pg.PlotWidget):
                 oneMaxContrast = self._contrastDict[channelNumber]['maxContrast']
 
                 # convert to [0..255]
-                bitDepth = self._myStack.bitDepth
+                bitDepth = self._myStack.header['bitDepth']
                 maxInt = 2**bitDepth
                 oneMinContrast = int(oneMinContrast / maxInt * 255)
                 oneMaxContrast = int(oneMaxContrast / maxInt * 255)
@@ -1230,20 +1473,28 @@ class myPyQtGraphPlotWidget(pg.PlotWidget):
     def refreshSlice(self):
         self._setSlice(self._currentSlice)
     
-    def _setSlice(self, sliceNumber, doEmit=True):
-        channel = self._displayThisChannel
+    def _setSlice(self, sliceNumber):
+        """
+        TODO: get rid of doEmit, use _blockSlots
+        """
+        
+        self._currentSlice = sliceNumber
+                
+        #logger.info(f'myPyQtGraphplotwidget() sliceNumber:{sliceNumber}')
         
         self._currentSlice = sliceNumber
         
         # order matters
+        channel = self._displayThisChannel
         if self._channelIsRGB():
-            ch1_image = self._myStack.getImage2(channel=1, sliceNum=sliceNumber)
-            ch2_image = self._myStack.getImage2(channel=2, sliceNum=sliceNumber)
-
+            ch1_image = self._myStack.getImageSlice(imageSlice=sliceNumber, channel=1)
+            ch2_image = self._myStack.getImageSlice(imageSlice=sliceNumber, channel=2)
+            
             # print('1) ch1_image:', ch1_image.shape, ch1_image.dtype)
 
-            ch1_image = ch1_image/ch1_image.max() * 255
-            ch2_image = ch2_image/ch1_image.max() * 255
+            # rgb requires 8-bit images
+            ch1_image = ch1_image/ch1_image.max() * 2**8
+            ch2_image = ch2_image/ch1_image.max() * 2**8
 
             ch1_image = ch1_image.astype(np.uint8)
             ch2_image = ch2_image.astype(np.uint8)
@@ -1256,13 +1507,14 @@ class myPyQtGraphPlotWidget(pg.PlotWidget):
             sliceImage[:,:,2] = ch2_image  # blue
         elif self._doSlidingZ:
             upDownSlices = self._upDownSlices
-            sliceImage = self._myStack.getSlidingZ2(channel, sliceNumber,
+            sliceImage = self._myStack.getMaxProjectSlice(sliceNumber,
+                                    channel,
                                     upDownSlices, upDownSlices,
                                     func=np.max)
         else:
             # one channel
-            sliceImage = self._myStack.getImage2(channel=channel, sliceNum=sliceNumber)
-        
+            sliceImage = self._myStack.getImageSlice(imageSlice=sliceNumber, channel=channel)
+
         autoLevels = True
         levels = None
         
@@ -1273,10 +1525,25 @@ class myPyQtGraphPlotWidget(pg.PlotWidget):
         # update contrast
         self._setContrast()
 
-        self.update()
+        self.update()  # update pyqtgraph interface
 
-        if doEmit:
-            self.signalUpdateSlice.emit(self._currentSlice)
+        # emit
+        #logger.info(f'  -->> emit signalUpdateSlice() _currentSlice:{self._currentSlice}')
+        self._blockSlots = True
+        self.signalUpdateSlice.emit(self._currentSlice)
+        self._blockSlots = False
+
+    def toggleImageView(self):
+        """Show/hide image.
+        """
+        visible = not self._myImage.isVisible()
+        self._myImage.setVisible(visible)
+
+    def toggleTracingView(self):
+        """Show/hide tracing.
+        """
+        self._aPointPlot.toggleScatterPlot()
+        self._aLinePlot.toggleScatterPlot()
 
     def _buildUI(self):
         #self.setAspectLocked(True)
@@ -1289,15 +1556,37 @@ class myPyQtGraphPlotWidget(pg.PlotWidget):
         # this is required for mouse callbacks to have proper x/y position !!!
         self.hideAxis('left')
         self.hideAxis('bottom')
+        #self.hideAxis('top')
+        #self.hideAxis('right')
+
+        #self.getViewBox().setBorder(0)
 
         # Instances of ImageItem can be used inside a ViewBox or GraphicsView.
         fakeData = np.zeros((1,1,1))
         self._myImage = pg.ImageItem(fakeData)
+        #self._myImage.setContentsMargins(0, 0, 0, 0)
+        #self._myImage.setBorder(None)
         self.addItem(self._myImage)
 
         self.scene().sigMouseMoved.connect(self._onMouseMoved_scene)
-        #self.scene().sigMouseClicked.connect(self.onMouseClicked_scene) # works but confusing coordinates
+        #self.scene().sigMouseClicked.connect(self._onMouseClick_scene) # works but confusing coordinates
 
+        # add point plot of pointAnnotations
+        pointAnnotations = self._myStack.getPointAnnotations()
+        _displayOptions = self._displayOptionsDict['pointDisplay']
+        self._aPointPlot = pymapmanager.interface.pointPlotWidget(pointAnnotations, self, _displayOptions)
+
+        # add line plot of lineAnnotations
+        lineAnnotations = self._myStack.getLineAnnotations()
+        _displayOptions = self._displayOptionsDict['lineDisplay']
+        self._aLinePlot = pymapmanager.interface.linePlotWidget(lineAnnotations, self, _displayOptions)
+        # connect mouse clicks in annotation view to proper table
+        # self._aLinePlot.signalAnnotationClicked.connect()
+
+        # TODO (johnson) add point plot
+        # pointAnnotations = self._myStack.getPointAnnotations()
+        # self.aPoint = pymapmanager.interface.pointPlotWidget(pointAnnotations, self)
+        
 if __name__ == '__main__':
     from pprint import pprint
     
@@ -1307,12 +1596,10 @@ if __name__ == '__main__':
         #     myJavaBridge = canvas.canvasJavaBridge()
         #     myJavaBridge.start()
 
-        app = QtWidgets.QApplication(sys.argv)
-
         #path = '/Users/cudmore/data/example-oir/20190416__0001.oir'
         
         # zeng-you linden sutter
-        #path = '/Users/cudmore/data/example-linden-sutter/F12S12_15112_001.tif'
+        path = '/Users/cudmore/data/example-linden-sutter/F12S12_15112_001.tif'
         # cudmore 2 channel si
         #path = '/Users/cudmore/Dropbox/MapMAnagerData/scanimage4/YZ008_C2_05192015_001.tif'
         #path = '/Users/cudmore/Dropbox/MapMAnagerData/scanimage4/YZ008_C2_05192015_001.tif'
@@ -1322,15 +1609,35 @@ if __name__ == '__main__':
         #path = '/Users/cudmore/Dropbox/MapMAnagerData/julia/canvas/20180404_baselineA1/040418_002.tif'
         # patrick
         # path = '/Users/cudmore/data/patrick/GCaMP Time Series 1.tiff'
-        path = '/Users/cudmore/data/patrick/GCaMP Time Series 2.tiff'
+        #path = '/Users/cudmore/data/patrick/GCaMP Time Series 2.tiff'
+
+        path = '/Users/cudmore/Sites/PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
 
         myStack = pymapmanager.stack(path=path)
         
+        myStack.loadImages(channel=1)
+        myStack.loadImages(channel=2)
+        
         print('myStack:', myStack)
-        #print(f'  stackType:{myStack.header["stackType"]}')
 
-        #myStack.print()
-        #pprint(myStack.header.header)
+        # run pyqt interface
+        os.environ['QT_API'] = 'pyqt5'
+        app = QtWidgets.QApplication(sys.argv)
+
+        app.setStyleSheet(qdarkstyle.load_stylesheet())
+
+        logger.info(f'app font: {app.font().family()} {app.font().pointSize()}')
+        _fontSize = 12
+        aFont = QtGui.QFont('Arial', _fontSize)
+        app.setFont(aFont, "QLabel")
+        app.setFont(aFont, "QComboBox")
+        app.setFont(aFont, "QPushButton")
+        app.setFont(aFont, "QCheckBox")
+        app.setFont(aFont, "QSpinBox")
+        app.setFont(aFont, "QDoubleSpinBox")
+        app.setFont(aFont, "QTableView")
+        app.setFont(aFont, "QToolBar")
+
 
         bsw = stackWidget(myStack=myStack)
         bsw.show()

@@ -333,7 +333,7 @@ class pointViewer():
             self.refreshPointSelection(selectedDataList)
             
             # This is unstable in napari, sometimes needed, sometimes not???
-            # we need this to update the interface
+            # we needx this to update the interface
             # this triggers events and causes error if we arrived her on 'new'
             #self.pointsLayerSelection.events.face_color()
 

@@ -9,7 +9,6 @@ import pandas as pd
 from pymapmanager.annotations import ColumnItem
 from pymapmanager.annotations import baseAnnotations
 from pymapmanager.annotations import comparisonTypes
-#from pymapmanager.annotations import fileTypeClass
 
 import pymapmanager.analysis
 
@@ -48,6 +47,57 @@ class lineAnnotations(baseAnnotations):
 
         self.load()
 
+        self.buildSegmentDatabase()
+
+    def buildSegmentDatabase(self, segmentID : Union[List[int], int, None] = None):
+        """Rebuild summary database of each line segment.
+
+        Args:
+            segmentID: Segment ID to rebuild, if None then rebuild all.
+
+        Notes
+            todo: (cudmore) we need to rebuild this database as segments are edited
+              - add/delete segments
+              - add/delete points in a segment
+        """
+        if segmentID is None:
+            segments = self._df['segmentID'].unique()
+        elif isinstance(segmentID, int):
+            segments = [segmentID]
+        else:
+            segment = segmentID
+        
+        dbSegmentList = []
+        for segment in segments:
+            # get the median z of the segment
+            _df = self._df[self._df['segmentID']==segment]
+            _zMedian = _df['z'].median()
+
+            # get number of controlPoint roi from point annotation for segmentID==segment
+            _controlPoints = -1
+            
+            # get number of points from line annotation for segmentID==segment
+            _fitPoints = len(self._df[self._df['segmentID']==segment])
+            
+            # get um length of segment from euclidean distance
+            _segmentList = segment.tolist()
+            _length2d, _length3d = self.calculateSegmentLength(_segmentList)
+            _length2d = round(_length2d[0],1)
+            _length3d = round(_length3d[0],1)
+
+            oneSegment = {
+                'segmentID': segment,
+                'z': _zMedian,
+                'controlPoints': _controlPoints,  # from pointAnnotations
+                'fitPoints': _fitPoints,
+                'umLength2D': _length2d,
+                'umLength3D': _length3d,
+                # TODO (Cudmore) maybe add other information
+            }
+            dbSegmentList.append(oneSegment)
+
+        self._dfSegments = pd.DataFrame.from_dict(dbSegmentList, orient='columns')
+    
     def load(self):
         super().load()
 
@@ -56,8 +106,21 @@ class lineAnnotations(baseAnnotations):
         #if df is not None:
         #    df['segmentID'] = df['segmentID'].astype(int)
 
-    def getSegment_xyz(self, segmentID : Union[int, list[int]] = None) -> list:
+    def getDataFrame(self) -> pd.DataFrame:
+        """Get annotations as underlying `pandas.DataFrame`.
+        
+        Override from inherited.
+        We do not return the entire database of points.
+        Instead we return a database of summaries of individual segments.
+        """
+        #return self._df
+        return self._dfSegments
+
+    def getSegment_xyz(self, segmentID : Union[int, list[int], None] = None) -> List[List[int]]:
         """Get a list of (z,y,x) values from segment(s).
+
+        Args:
+            segmentID:
         """
         if segmentID is None:
             segmentID = self.unique('segmentID')  # unique() does not work for float
@@ -66,7 +129,7 @@ class lineAnnotations(baseAnnotations):
 
         zyxList = []  # a list of segments, each segment is np.ndarray of (z,y,x)
         for oneSegmentID in segmentID:
-            zyx = self.getValuesWithCondition(['z', 'y', 'x'],
+            zyx = self.getValuesWithCondition(['z', 'y', 'x', 'index', 'segmentID'],
                             compareColNames='segmentID',
                             comparisons=comparisonTypes.equal,
                             compareValues=oneSegmentID)
@@ -210,16 +273,17 @@ class lineAnnotations(baseAnnotations):
                 Like when a point is added, edited, or deleted
         """
         if segmentID is None:
-            segmentID = range(self.numSegments)
+            segmentList = range(self.numSegments)
         elif not isinstance(segmentID, list):
-            segmentID = [segmentID]
-        
+            segmentList = [segmentID]
+                    
         lengthList2D = []
         lengthList3D = []
-        for segment in segmentID:
+        for segment in segmentList:
             # get list of 3D points (x,y,z)
             points = self.getSegment_xyz(segmentID=segment)
-            
+            points = points[0]
+
             length2D, length3D = pymapmanager.analysis.lineAnalysis.getLineLength(points)
             
             lengthList2D.append(length2D)

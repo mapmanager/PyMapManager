@@ -166,6 +166,15 @@ class baseAnnotations():
         self.addColumn(colItem)
 
         colItem = ColumnItem(
+            name = 'index',
+            type = int,
+            units = '',
+            humanname = 'Row Index',
+            description = 'Row Index'
+        )
+        self.addColumn(colItem)
+
+        colItem = ColumnItem(
             name = 'y',
             type = int,
             units = 'Pixels',
@@ -329,6 +338,43 @@ class baseAnnotations():
     #     """
     #     return self._columns
     
+    def getSegmentPlot(self, segmentID : Union[int, list[int], None],
+                        roiTypes : list,
+                        zSlice : int,
+                        zPlusMinus : int = 0,
+                        ) -> pd.DataFrame:
+        """Get a pd.DataFrame to plot.
+
+        Args:
+            segmentId: A single segment (int), a list of segments [int], or None for all segments.
+            roiTypes: List of annotation roitType
+            zSlice: The slice to get
+            zPlusMinus: 
+        """
+        
+        #logger.info(f'segmentID:{segmentID} roiTypes:{roiTypes} zSlice:{zSlice}')
+
+        # reduce by roiType
+        df = self._df[self._df['roiType'].isin(roiTypes)]
+        
+        #print('  df after reduce by roiType:', len(df), 'for roiTypes:', roiTypes)
+
+        if segmentID is None:
+            segmentID = df['segmentID'].unique()
+        elif isinstance(segmentID, int):
+            segmentID = [segmentID]
+        else:
+            logger.error(f'did not understand segmentID:{segmentID}')
+            return
+
+        zMin = zSlice - zPlusMinus
+        zMax = zSlice + zPlusMinus
+
+        df = df[df['segmentID'].isin(segmentID)]
+        df = df[(df['z']>=zMin) & (df['z']<=zMax)]
+        
+        return df
+
     @property
     def numAnnotations(self):
         """Get the number of annotations.
@@ -462,6 +508,9 @@ class baseAnnotations():
             if comparison == comparisonTypes.equal:
                 df = df[ df[compareColName]==compareValue ]
             # TODO (cudmore) add other comparisonTypes, can we use (==, <=, !=, etc) for all possible types?
+
+        # df['index'] = df.index
+        # colName += 'index'
 
         values = df.loc[:,colName].values
         if values.shape[1]==1:
@@ -735,7 +784,7 @@ class baseAnnotations():
 
         logger.info(f'loading file:{self.filePath}')
         
-        self.loadHeader()
+        self.loadHeader()  # load one line header
         
         # this gives errors, too complex
         # typeDict = self._columns.getTypeDict()  # map column name to type
@@ -743,6 +792,11 @@ class baseAnnotations():
 
         numHeaderRows = 1
         dfLoaded = pd.read_csv(self.filePath, header=numHeaderRows, index_col=False)
+
+        # if there is no 'index' column, make one. This is critical.
+        if not 'index' in dfLoaded.columns:
+            dfLoaded['index'] = [idx for idx in range(len(dfLoaded))]
+
         loadedColumns = dfLoaded.columns
 
         # actually assign expected columns from loaded
@@ -757,18 +811,18 @@ class baseAnnotations():
 
         # TODO (cudmore) get rid of this column type checking
         # convert to proper type
-        for columnItems in self.columns:
-            colName = columnItems.getName()
-            theType = columnItems.getType()
-            #logger.info(f'converting column "{colName}" to type:"{theType}"')
-            if theType is None:
-                pass
-            elif theType == 'Int64':
-                # without this sillyness, we get error
-                # TypeError: cannot safely cast non-equivalent float64 to int64
-                self._df[colName] = np.floor(pd.to_numeric(self._df[colName], errors='coerce')).astype('Int64')
-            else:
-                self._df[colName].astype(theType)
+        # for columnItems in self.columns:
+        #     colName = columnItems.getName()
+        #     theType = columnItems.getType()
+        #     #logger.info(f'converting column "{colName}" to type:"{theType}"')
+        #     if theType is None:
+        #         pass
+        #     elif theType == 'Int64':
+        #         # without this sillyness, we get error
+        #         # TypeError: cannot safely cast non-equivalent float64 to int64
+        #         self._df[colName] = np.floor(pd.to_numeric(self._df[colName], errors='coerce')).astype('Int64')
+        #     else:
+        #         self._df[colName].astype(theType)
 
         # check if loaded df has unknown columns
         for loadedColumnName in loadedColumns:
@@ -781,12 +835,12 @@ class baseAnnotations():
         logger.info(f'  loaded df: rows: {len(self._df)} cols {len(self._df.columns)}')
         #pprint(self._df.head())
 
-    def save(self, forceSave=False):
+    def save(self, forceSave : bool = False):
         """
         Save underlying pandas.DataFrame.
 
         Args:
-            forceSave (bool): If true then save even if not dirty
+            forceSave: If true then save even if not dirty
         """
         if not self._dataModified and not forceSave:
             # if not modified, do not save

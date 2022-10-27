@@ -2,13 +2,15 @@ from pprint import pprint
 
 import numpy as np
 
+import pymapmanager
+
 from pymapmanager.annotations import comparisonTypes
 from pymapmanager.annotations import pointAnnotations
 from pymapmanager.annotations.pointAnnotations import pointTypes
 
 # test init
 def test_point_annotation():
-    pa = pointAnnotations.pointAnnotations()
+    pa = pymapmanager.annotations.pointAnnotations()
     assert len(pa) == 0
 
     # test add
@@ -28,10 +30,12 @@ def test_point_annotation():
     assert pa.numAnnotations == 2
 
     # test getValues, bad row
+    print('bad row test:')
     values = pa.getValues('x', rowIdx=1000)
     assert values is None
 
     # test getValues, bad col
+    print('bad col test:')
     values = pa.getValues('bad column', rowIdx=0)
     assert values is None
 
