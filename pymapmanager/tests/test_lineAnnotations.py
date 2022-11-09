@@ -4,6 +4,8 @@ import pymapmanager.annotations
 from pymapmanager._logger import logger
 
 def testLineLoad():
+    return
+    
     # test load
     logger.info('')
     path = '/Users/cudmore/Sites/PyMapManager-Data/one-timepoint/rr30a_s0/rr30a_s0_la.txt'
@@ -13,7 +15,12 @@ def testLineLoad():
 
     return la
 
-def testLineLength(la : pymapmanager.annotations.lineAnnotations):
+#def testLineLength(la : pymapmanager.annotations.lineAnnotations):
+def testLineLength():
+    return
+    
+    la = testLineLoad()
+    
     # test line length
     logger.info('')
     segmentID = 0
