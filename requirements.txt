@@ -1,9 +1,11 @@
 # TODO (Oct 2022) need to update this
 numpy
 pandas
-requests
-
 scipy
 tifffile
 
+# interface
 matplotlib
+pyqtgraph
+PyQt5
+qdarkstyle
