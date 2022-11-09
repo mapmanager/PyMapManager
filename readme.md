@@ -18,6 +18,13 @@ PyMapManager has a modular architecture with the following components:
 
 ## Install
 
+Create a virtual environment
+
+```
+conda create -y -n pmm-env python=3.8
+conda activate pmm-env
+```
+
 Install the backend from source
 
 ```

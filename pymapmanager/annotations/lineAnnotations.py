@@ -116,7 +116,7 @@ class lineAnnotations(baseAnnotations):
         #return self._df
         return self._dfSegments
 
-    def getSegment_xyz(self, segmentID : Union[int, list[int], None] = None) -> List[List[int]]:
+    def getSegment_xyz(self, segmentID : Union[int, List[int], None] = None) -> List[List[int]]:
         """Get a list of (z,y,x) values from segment(s).
 
         Args:

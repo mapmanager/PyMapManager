@@ -347,7 +347,7 @@ class baseAnnotations():
     #     """
     #     return self._columns
     
-    def getSegmentPlot(self, segmentID : Union[int, list[int], None],
+    def getSegmentPlot(self, segmentID : Union[int, List[int], None],
                         roiTypes : list,
                         zSlice : int,
                         zPlusMinus : int = 0,
