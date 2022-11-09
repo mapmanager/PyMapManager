@@ -50,7 +50,7 @@ class myTableView(QtWidgets.QTableView):
         self.setSortingEnabled(True)
 
         # to allow click on already selected row
-        self.clicked.connect(self.on_user_click_row)
+        #self.clicked.connect(self.on_user_click_row)
 
     def getMyModel(self):
         return self.myModel
@@ -180,13 +180,33 @@ class myTableView(QtWidgets.QTableView):
             return
         
         row = self.proxy.mapToSource(item).row()
-        logger.info(f'row:{row}')
+        logger.info(f'row:{row} isAlt:{isAlt}')
 
         selectedRowList = [row]
         self.signalSelectionChanged.emit(selectedRowList, isAlt)
 
+    # Thsi is a bug in qt, alt does not work, will only be fixed in qt6
+    # def keyPressEvent(self, event : QtGui.QKeyEvent):
+    #     """Respond to keyboard. Inherited from QWidget.
+
+    #     Args:
+    #         event: QKeyEvent
+    #     """
+    #     #logger.info('')
+    #     if event.key() == QtCore.Qt.Key_Down:            
+    #         #modifiers = QtWidgets.QApplication.keyboardModifiers()
+    #         modifiers = QtWidgets.QApplication.queryKeyboardModifiers()
+    #         isAlt = modifiers == QtCore.Qt.AltModifier
+    #         logger.info(f'  isAlt:{isAlt}')
+
+    #         _modifiers = event.modifiers()
+    #         isAlt2 = modifiers == QtCore.Qt.AltModifier
+    #         logger.info(f'  isAlt2:{isAlt2}')
+
     def on_selectionChanged(self, selected, deselected):
         """Respond to change in selection.
+
+            This is called when there is a selection and user hit up/down arrow
 
             Args:
                 selected (QItemSelection):
@@ -202,9 +222,16 @@ class myTableView(QtWidgets.QTableView):
             #self.blockUpdate = False
             return
             
-        # pure PyQt
-        modifiers = QtWidgets.QApplication.keyboardModifiers()
-        isShift = modifiers == QtCore.Qt.ShiftModifier
+        #
+        # There is a qt bug (from 1998!!!), the keyboard modifier is not set when using
+        #   up/down arrows!
+        #   this will not be fixed until qt6
+        #   see: https://bugreports.qt.io/browse/QTBUG-35632
+        #   see: https://bugreports.qt.io/browse/QTBUG-73826
+        #modifiers = QtWidgets.QApplication.keyboardModifiers()
+        modifiers = QtWidgets.QApplication.queryKeyboardModifiers()
+        
+        #isShift = modifiers == QtCore.Qt.ShiftModifier
         isAlt = modifiers == QtCore.Qt.AltModifier
         
         # BINGO, don't use params, use self.selectedIndexes()
@@ -214,7 +241,7 @@ class myTableView(QtWidgets.QTableView):
         # reduce to list of unique values
         selectedIndexes = list(set(selectedIndexes))  # to get unique values
         
-        logger.info(f'selectedIndexes:{selectedIndexes}')
+        logger.info(f'selectedIndexes:{selectedIndexes} isAlt:{isAlt}')
         
         self.signalSelectionChanged.emit(selectedIndexes, isAlt)
 

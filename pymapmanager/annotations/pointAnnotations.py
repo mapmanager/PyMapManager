@@ -21,7 +21,7 @@ class pointTypes(enum.Enum):
     """
     spineROI = "spineROI"  # pointAnnotations
     controlPnt = "controlPnt"
-    pivotPnt = "pivotPnt"
+    #pivotPnt = "pivotPnt"
     #linePnt = "linePnt"  # lineAnnotations
 
 class pointAnnotations(baseAnnotations):
@@ -73,9 +73,12 @@ class pointAnnotations(baseAnnotations):
         newRow = super().addAnnotation(*args,**kwargs)
 
         self._df.loc[newRow, 'roiType'] = roiType.value
+        self._df.loc[newRow, 'segmentID'] = segmentID
 
         # find brightest path to line segment
         #self.reconnectToSegment(newRow)
+
+        return newRow
 
     def reconnectToSegment(self, rowIdx : int):
         """

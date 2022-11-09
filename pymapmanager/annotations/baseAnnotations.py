@@ -127,6 +127,15 @@ class Columns():
         else:
             raise StopIteration
 
+class annotationType(enum.Enum):
+    """Used to determine the type of annotation.
+    
+    Used when we delete a point from a view (list, image scatter, scatter, etc)
+    """
+    point = 'point'
+    line = 'line'
+    segment = 'segment'
+
 class baseAnnotations():
     def getAnnotationDict(self):
         theDict = {}
@@ -635,6 +644,8 @@ class baseAnnotations():
         self._df.drop(labels=rowIdx, axis=0, inplace=True)
         self._resetIndex()
 
+        self._dataModified = True
+
     def addColumn(self, columnItem : ColumnItem, values = None):
         """Add a column.
 
@@ -668,10 +679,14 @@ class baseAnnotations():
 
     def _resetIndex(self):
         """Reset pd.DataFrame row indexes. Needs to be done after inserting and deleting.
+        
+        Also need to reset our "index" column.
         """
         # Use the drop parameter to avoid the old index being added as a column
         self._df = self._df.reset_index(drop=True)
     
+        self._df['index'] = list(range(self.numAnnotations))
+
     def _getDefaultHeader(self):
         header = {
             'voxelx' : 1,  # um/pixel

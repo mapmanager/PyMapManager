@@ -24,6 +24,13 @@ class annotationListWidget(QtWidgets.QWidget):
         slineNumber(int): The z-slice from annotation 'z'
     """
     
+    signalZoomToPoint = QtCore.Signal(object, object)
+    """Signal emitted when user selects alt+row
+        Zoom to the point (x,y)
+    Args:
+        x:
+        y:
+    """
     signalRowSelection = QtCore.Signal(object, object)
     """Sigmal emmited when user selects a row(s)
     
@@ -32,8 +39,14 @@ class annotationListWidget(QtWidgets.QWidget):
         bool: True if keyboard alt is down
     """
 
-    signalDeleteRows = QtCore.Signal(object)
-    #signalDeleteRows = QtCore.Signal([int])
+    signalDeletingAnnotation = QtCore.Signal(dict)
+    """Signal emmited when user hits deyboard del/backspace
+    
+    Args:
+        dict:
+    """
+
+    #signalDeleteRows = QtCore.Signal(object)
     """Signal emmited when user deletes selected rows.
     
         Uusally with keyboard (delete, backspace)
@@ -43,14 +56,23 @@ class annotationListWidget(QtWidgets.QWidget):
     """
 
     def __init__(self, annotations : pymapmanager.annotations.baseAnnotations,
-                    title : str = '',
+                    title : str,
+                    displayOptionsDict : dict,
                     parent = None):
+        """
+        Args:
+            annotations:
+            title:
+            displayOptions:
+            parent:
+        """
         super().__init__(parent)
 
         logger.info(f'{title} {type(annotations)}')
 
-        self._title : str = title
         self._annotations : pymapmanager.annotations.baseAnnotations = annotations
+        self._title : str = title
+        self._displayOptionsDict = displayOptionsDict
 
         self._blockSlots : bool = False
         #Set to true on emit() signal so corresponding slot is not called.
@@ -59,7 +81,7 @@ class annotationListWidget(QtWidgets.QWidget):
         self._setModel()
 
         # signal/slot
-        self.signalDeleteRows.connect(self.getMyModel().myDeleteRows)
+        #self.signalDeleteRows.connect(self.getMyModel().myDeleteRows)
 
     def keyPressEvent(self, event : QtGui.QKeyEvent):
         """Respond to keyboard. Inherited from QWidget.
@@ -67,7 +89,11 @@ class annotationListWidget(QtWidgets.QWidget):
         Args:
             event: QKeyEvent
         """
+        #logger.info('')
         if event.key() in [QtCore.Qt.Key_Backspace, QtCore.Qt.Key_Delete]:            
+            # delete selected annotations
+            # for now, only delete point annotations (implement line annotations later)
+            
             # selectedRows is [QtCore.QModelIndex]
             selectedRows = self._myTableView.selectionModel().selectedRows()
             deletedRows : List[int] = []
@@ -75,9 +101,29 @@ class annotationListWidget(QtWidgets.QWidget):
                 sortedRowItem = self._myTableView.model().mapToSource(row)
                 deletedRows.append(sortedRowItem.row())
 
-            logger.info(f'  -->> emit signalDeleteRows() deletedRows:{deletedRows}')
+            # was this
+            # logger.info(f'  -->> emit signalDeleteRows() deletedRows:{deletedRows}')
+            #self.signalDeleteRows.emit(deletedRows)
+
+            if isinstance(self._annotations, pymapmanager.annotations.pointAnnotations):
+                annotationType = pymapmanager.annotations.annotationType.point
+            elif isinstance(self._annotations, pymapmanager.annotations.lineAnnotations):
+                annotationType = pymapmanager.annotations.annotationType.segment
+
+            deleteDict = {
+                'annotationType': annotationType,
+                'annotationIndex': deletedRows,
+                'isSegment': False,
+            }
+
+            logger.info(f'  -->> emit signalDeleteAnnotation deleteDict:{deleteDict}')
             
-            self.signalDeleteRows.emit(deletedRows)
+            #self.getMyModel().beginResetModel()
+
+            self.signalDeletingAnnotation.emit(deleteDict)
+
+            #self.getMyModel().beginResetModel()
+
         elif event.key() in [QtCore.Qt.Key_Escape]:
             self.on_table_selection(None)
             self._myTableView.mySelectRows(None)
@@ -162,7 +208,15 @@ class annotationListWidget(QtWidgets.QWidget):
         """
 
         logger.info(f'rowList:{rowList} isAlt:{isAlt}')
-        
+
+        # when user presses alt then scrolls with arrow,
+        # there is no way we can get isAlt working
+        # this is a bug in Qt from 1998 and will not be fixed until Qt6
+        # modifiers = QtWidgets.QApplication.queryKeyboardModifiers()
+        # #isShift = modifiers == QtCore.Qt.ShiftModifier
+        # isAlt = modifiers == QtCore.Qt.AltModifier
+        # print('  xxx isAlt:', isAlt)
+
         self._blockSlots = True
 
         if isAlt:
@@ -171,6 +225,11 @@ class annotationListWidget(QtWidgets.QWidget):
                 newSlice = self._annotations._df.loc[firstRow, 'z']
                 logger.info(f'  -->> emit signalSetSlice newSlice:{newSlice}') 
                 self.signalSetSlice.emit(newSlice)
+
+                x = self._annotations._df.loc[firstRow, 'x']
+                y = self._annotations._df.loc[firstRow, 'y']
+                logger.info(f'  -->> emit signalZoomToPoint x:{x} y:{y}') 
+                self.signalZoomToPoint.emit(x, y)
             else:
                 logger.warning(f'Underlying table does not have "z" column. Snapping to image slice will not work')
 
@@ -200,10 +259,10 @@ class annotationListWidget(QtWidgets.QWidget):
         # select in table
         self._myTableView.mySelectRows(rows)
 
-    def slot_addAnnotations(self, rows : List[int], dictList : List[dict]):
+    def old_slot_addAnnotation(self, rows : List[int], dictList : List[dict]):
         """Add annotations from list.
         
-        This is called when user deletes points in (for example)
+        This is called when user adds points in (for example)
         a pyqtgraph plot.
 
         Args:
@@ -216,7 +275,46 @@ class annotationListWidget(QtWidgets.QWidget):
         # df = 
         #self.getMyModel().myAppendRow(df)
 
-    def slot_deleteAnnotations(self, rows : List[int]):
+    def slot_addedAnnotation(self, addDict : dict):
+        """Called after user creates a new annotation in parent stack window.
+        """
+        logger.info(f'addDict:{addDict}')
+        
+        # TODO (cudmore): we need to implement finer grained updates like just updating what was added
+
+        self._setModel()
+
+        # TODO: set the selection to newAnnotationRow
+        newAnnotationRow = addDict['newAnnotationRow']
+        self.slot_selectAnnotation(newAnnotationRow)
+        
+    def slot_deletedAnnotation(self, delDict : dict):
+        """Slot called after annotation have been deleted (by parent stack widget)
+        
+        Note:
+            I can't get the data model to update (see comments below)
+            Instead, I am just setting the model from the modified annotation df
+                This probably refreshes the entire table?
+                This might get slow?
+        """
+        logger.info(f'delDict:{delDict}')
+
+        annotationIndex = delDict['annotationIndex']
+
+        # want this
+        # self.beginRemoveRows(QtCore.QModelIndex(), minRow, maxRow)
+        #self.getMyModel().beginResetModel()
+
+        # removes values but leaves empy row
+        # for item in annotationIndex:
+        #    logger.info(f'removing row: {item}')
+        #    self.getMyModel().removeRows(item, 1)  # QtCore.QModelIndex()
+
+        #self.getMyModel().endResetModel()
+
+        self._setModel()
+
+    def old_slot_deleteAnnotation(self, rows : List[int]):
         """Delete annotations from list.
         
         This is called when user deletes points in (for example)
@@ -264,7 +362,7 @@ class lineListWidget(annotationListWidget):
     """Signal emitted when user clicks add ('+') segment button.
     """
     
-    signalDeleteSegment = QtCore.Signal(object)
+    signalDeletingSegment = QtCore.Signal(object)
     """Signal emmited when user clicks delete ('-') segment button.
 
     Args:
@@ -290,24 +388,29 @@ class lineListWidget(annotationListWidget):
         hBoxLayout = QtWidgets.QHBoxLayout()
         vControlLayout.addLayout(hBoxLayout)
 
+        _editSegment = self._displayOptionsDict['doEditSegments']
+
         # edit checkbox
         aCheckbox = QtWidgets.QCheckBox('Edit')
+        aCheckbox.setChecked(_editSegment)
         aCheckbox.stateChanged.connect(self.on_edit_checkbox)
         hBoxLayout.addWidget(aCheckbox, alignment=_alignLeft)
         # aLabel = QtWidgets.QLabel('Edit')
         # hBoxLayout.addWidget(aLabel, alignment=_alignLeft)
 
         # new line segment button
-        aButton = QtWidgets.QPushButton('+')
+        self._addSegmentButton = QtWidgets.QPushButton('+')
+        self._addSegmentButton.setEnabled(_editSegment)
         _callback = lambda state, buttonName='+': self.on_button_clicked(state, buttonName)
-        aButton.clicked.connect(_callback)
-        hBoxLayout.addWidget(aButton, alignment=_alignLeft)
+        self._addSegmentButton.clicked.connect(_callback)
+        hBoxLayout.addWidget(self._addSegmentButton, alignment=_alignLeft)
 
         # delete line segment button
-        aButton = QtWidgets.QPushButton('-')
+        self._deleteSegmentButton = QtWidgets.QPushButton('-')
+        self._deleteSegmentButton.setEnabled(_editSegment)
         _callback = lambda state, buttonName='-': self.on_button_clicked(state, buttonName)
-        aButton.clicked.connect(_callback)
-        hBoxLayout.addWidget(aButton, alignment=_alignLeft)
+        self._deleteSegmentButton.clicked.connect(_callback)
+        hBoxLayout.addWidget(self._deleteSegmentButton, alignment=_alignLeft)
 
         hBoxLayout.addStretch()  # required for alignment=_alignLeft 
 
@@ -319,6 +422,10 @@ class lineListWidget(annotationListWidget):
             state = True
         else:
             state = False
+
+        self._addSegmentButton.setEnabled(state)
+        self._deleteSegmentButton.setEnabled(state)
+
         logger.info(f'  -->> emit signalEditSegments() state:{state}')
         self.signalEditSegments.emit(state)
 
@@ -331,8 +438,8 @@ class lineListWidget(annotationListWidget):
             logger.info(f'')
             # TODO (cudmore): get list of selected segments from list
             _segment = [None]
-            logger.info(f'  -->> emit signalDeleteSegment() segment:{_segment}')
-            self.signalDeleteSegment(_segment)
+            logger.info(f'  -->> emit signalDeletingSegment() segment:{_segment}')
+            self.signalDeletingSegment(_segment)
         else:
             logger.warning(f'did not understand buttonName:{buttonName}')
 
@@ -455,7 +562,7 @@ class pointListWidget(annotationListWidget):
         if roiType == 'All':
             roiTypeEnumList = []
             for item in pymapmanager.annotations.pointTypes:
-                roiTypeEnumList.append(item.name)
+                roiTypeEnumList.append(item)
         else:
             # one roi type
             roiTypeEnumList = [pymapmanager.annotations.pointTypes[roiType]]

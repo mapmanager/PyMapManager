@@ -48,6 +48,16 @@ class stackWidget(QtWidgets.QMainWindow):
         - Contrast widget (bHistogramWidget)
         - Bottom status toolbar (bStatusToolbar)
     """
+
+    signalAddedAnnotation = QtCore.Signal(dict)
+
+    signDeletedAnnotation = QtCore.Signal(dict)
+    """Signal emitted when an annotation is deleted.
+    
+    A few views can initiate deletion with signalDeletingAnnotation.
+    The main stack widget is the only one that can actually delete from the backend.
+    """
+    
     def __init__(self, path : str = None, myStack : pymapmanager.stack = None):
         """
         Args:
@@ -80,33 +90,41 @@ class stackWidget(QtWidgets.QMainWindow):
         theDict = {}
 
         # interface.stackWidget
-        theDict['stackWindow'] = {}
-        theDict['stackWindow']['showContrast'] = False
+        theDict['windowState'] = {}
+        theDict['windowState']['showContrast'] = False
+        # TODO: add booleans for all our children (lineListWidget, pointListWidget)
+        # TODO: add boolean for children in myPyQtGraphPlotWidget (_myImage, _aPointPlot, _aLinePlot)
+        theDict['windowState']['doEditSegments'] = False  # toggle in lineListWidget
         
         # interface.pointPlotWidget
         theDict['pointDisplay'] = {}
         theDict['pointDisplay']['width'] = 2
         theDict['pointDisplay']['color'] = 'r'
         theDict['pointDisplay']['symbol'] = 'o'
-        theDict['pointDisplay']['size'] = 4
+        theDict['pointDisplay']['size'] = 7
+        theDict['pointDisplay']['zorder'] = 4  # higher number will visually be on top
         # user selection
         theDict['pointDisplay']['widthUserSelection'] = 2
         theDict['pointDisplay']['colorUserSelection'] = 'y'
         theDict['pointDisplay']['symbolUserSelection'] = 'o'
-        theDict['pointDisplay']['sizeUserSelection'] = 7
+        theDict['pointDisplay']['sizeUserSelection'] = 9
+        theDict['pointDisplay']['zorderUserSelection'] = 5  # higher number will visually be on top
 
         # interface.linePlotWidget
         theDict['lineDisplay'] = {}
-        theDict['lineDisplay']['width'] = 2
+        theDict['lineDisplay']['width'] = 1
         theDict['lineDisplay']['color'] = 'b'
         theDict['lineDisplay']['symbol'] = 'o'
-        theDict['lineDisplay']['size'] = 4
+        theDict['lineDisplay']['size'] = 5
+        theDict['lineDisplay']['zorder'] = 1  # higher number will visually be on top
+
         # user selection
         theDict['lineDisplay']['widthUserSelection'] = 2
         theDict['lineDisplay']['colorUserSelection'] = 'c'
         theDict['lineDisplay']['symbolUserSelection'] = 'o'
-        theDict['lineDisplay']['sizeUserSelection'] = 7
-        
+        theDict['lineDisplay']['sizeUserSelection'] = 9
+        theDict['lineDisplay']['zorderUserSelection'] = 2  # higher number will visually be on top
+
         #
         self._displayOptionsDict = theDict
 
@@ -231,7 +249,7 @@ class stackWidget(QtWidgets.QMainWindow):
         stackMenu = mainMenu.addMenu('&Stack')
 
         # toggle contrast on/off
-        _showContrast = self._displayOptionsDict['stackWindow']['showContrast']
+        _showContrast = self._displayOptionsDict['windowState']['showContrast']
         contrastAction = QtWidgets.QAction('Image Contrast', self)
         contrastAction.setCheckable(True)
         contrastAction.setChecked(_showContrast)
@@ -328,7 +346,7 @@ class stackWidget(QtWidgets.QMainWindow):
         self._histogramWidget = bHistogramWidget(self.myStack, self._contrastDict, parent=self)
         #vBoxLayout.addWidget(_histogramWidget)
 
-        _showContrast = self._displayOptionsDict['stackWindow']['showContrast']
+        _showContrast = self._displayOptionsDict['windowState']['showContrast']
         self._histogramWidget.setVisible(_showContrast)
 
         # option 1: don't like contrast as dock
@@ -357,7 +375,10 @@ class stackWidget(QtWidgets.QMainWindow):
         # point list
         # oct 2022 balt
         self._myPointListWidget = \
-                pymapmanager.interface.pointListWidget(self.myStack.getPointAnnotations(), title='Points')
+                pymapmanager.interface.pointListWidget(self.myStack.getPointAnnotations(),
+                                    title='Points',
+                                    displayOptionsDict = self._displayOptionsDict['windowState']
+                                    )
         #hBoxLayout_main.addWidget(myPointListWidget)
 
         self.pointListDock = QtWidgets.QDockWidget('Points',self)
@@ -370,7 +391,10 @@ class stackWidget(QtWidgets.QMainWindow):
         # line list
         # oct 2022 balt
         self._myLineListWidget = \
-                pymapmanager.interface.lineListWidget(self.myStack.getLineAnnotations(), title='Lines')
+                pymapmanager.interface.lineListWidget(self.myStack.getLineAnnotations(),
+                                    title='Lines',
+                                    displayOptionsDict = self._displayOptionsDict['windowState']
+                                    )
         self.lineListDock = QtWidgets.QDockWidget('Lines',self)
         self.lineListDock.setWidget(self._myLineListWidget)
         self.lineListDock.setFloating(False)
@@ -429,6 +453,33 @@ class stackWidget(QtWidgets.QMainWindow):
         self._myPointListWidget.signalSetSlice.connect(self._myGraphPlotWidget.slot_setSlice)
         self._myLineListWidget.signalSetSlice.connect(self._myGraphPlotWidget.slot_setSlice)
 
+        self._myPointListWidget.signalZoomToPoint.connect(self._myGraphPlotWidget.slot_zoomToPoint)
+        self._myLineListWidget.signalZoomToPoint.connect(self._myGraphPlotWidget.slot_zoomToPoint)
+
+        # change roiType we are displaying point plot
+        self._myPointListWidget.signalDisplayRoiType.connect(self._myGraphPlotWidget._aPointPlot.slot_setDisplayType)
+
+        # set edit state of line segments
+        self._myLineListWidget.signalEditSegments.connect(self.slot_editSegments)
+
+        #
+        # add annotation
+        self._myGraphPlotWidget.signalAddingAnnotation.connect(self.slot_addingAnnotation)
+        
+        self.signalAddedAnnotation.connect(self._myGraphPlotWidget._aPointPlot.slot_addedAnnotation)
+        self.signalAddedAnnotation.connect(self._myPointListWidget.slot_addedAnnotation)
+        #self.signalAddedAnnotation.connect(self._myLineListWidget.slot_addedAnnotation)
+       
+        #
+        # # delete annotations
+        self._myGraphPlotWidget.signalDeletingAnnotation.connect(self.slot_deletingAnnotation)
+        self._myPointListWidget.signalDeletingAnnotation.connect(self.slot_deletingAnnotation)
+        self._myLineListWidget.signalDeletingAnnotation.connect(self.slot_deletingAnnotation)
+        
+        self.signDeletedAnnotation.connect(self._myGraphPlotWidget._aPointPlot.slot_deletedAnnotation)
+        self.signDeletedAnnotation.connect(self._myPointListWidget.slot_deletedAnnotation)
+        self.signDeletedAnnotation.connect(self._myLineListWidget.slot_deletedAnnotation)
+
         left = 100
         top = 100
         width = 700
@@ -437,6 +488,87 @@ class stackWidget(QtWidgets.QMainWindow):
         self.resize(width, height)
 
         self.setFocus()  # so key-stroke actions work
+
+    def slot_addingAnnotation(self, addDict : dict):
+        """User shit+click to make an new annotation (in myPyQtGraphPlotWidget).
+
+            newDict = {
+                'roiType' = roiType.value,
+                'segmentID' = segmentID,
+                'x': x,
+                'y': y,
+                'z': z,
+            }
+        """
+        roiType = addDict['roiType']
+        segmentID = addDict['segmentID']
+        x = addDict['x']
+        y = addDict['y']
+        z = addDict['z']
+        
+        # add to backend
+        logger.info(f'=== Adding point annotation roiType:{roiType} segmentID:{segmentID} x:{x}, y:{y}, z{z}')
+        newAnnotationRow = self.myStack.getPointAnnotations().addAnnotation(roiType, segmentID, x, y, z)
+        logger.info(f'  newAnnotationRow:{newAnnotationRow}')
+
+        addDict['newAnnotationRow'] = newAnnotationRow  #self.myStack.getPointAnnotations().numAnnotations
+
+        self.signalAddedAnnotation.emit(addDict)
+
+    def slot_deletingAnnotation(self, deleteDict):
+        """User has started the delete of an annotation.
+        
+        This comes from (list view, plot view)
+
+        Args:
+            deleteDict = {
+                'annotationType': pymapmanager.annotations.annotationType.point,
+                'annotationIndex': _selectedAnnotation,
+                'isSegment': False,
+            }
+        """
+        logger.info(f'stackWidget() deleteDict:{deleteDict}')
+
+        # check if delete is allowed
+        #   if deleting an entire segmentID, warn user if spines are connect
+        #   check our display options and show a dialog if neccessary
+
+        #delete from backend
+        annotationType = deleteDict['annotationType']
+        annotationIndex = deleteDict['annotationIndex']
+        if annotationType == pymapmanager.annotations.annotationType.point:
+            logger.info(f'Deleting point annotation dbIdx:{annotationIndex}')
+            self.myStack.getPointAnnotations().deleteAnnotation(annotationIndex)
+
+            logger.info(f'  -->> emit signDeletedAnnotation {deleteDict}')
+            self.signDeletedAnnotation.emit(deleteDict)
+        elif annotationType == pymapmanager.annotations.annotationType.line:
+            logger.info(f'Deleting line annotation dbIdx:{annotationIndex}')
+            self.myStack.getLineAnnotations().deleteAnnotation(annotationIndex)
+
+            logger.info(f'  -->> emit signDeletedAnnotation {deleteDict}')
+            self.signDeletedAnnotation.emit(deleteDict)
+        elif annotationType == pymapmanager.annotations.annotationType.segment:
+            # TODO (cudmore) not implemented, delete an entire segment
+            logger.warning(f'Not implemented, delete an entire segment')
+        else:
+            logger.warning(f'did not understand annotationType: {annotationType}')
+
+    def slot_editSegments(self, state : bool):
+        """Toggle edit state of segments
+        
+            Signal comes from lineList xxx
+        """
+        logger.info(f'stackWidget() state:{state}')
+        
+        # set our options
+        self._displayOptionsDict['windowState']['doEditSegments'] = state
+
+        # TODO (cudmore) tell our myPyQtGraphPlotWidget we are
+        #   editing or not editing line segments.
+        # if we are editing segments, new items (shotf+click) need to be
+        #   point annotations with roiType controlPnt
+        logger.info('  TODO: tell our myPyQtGraphPlotWidget we are editing/not-editing segments')
 
 class myStackSlider(QtWidgets.QSlider):
     """
@@ -1205,7 +1337,14 @@ class bStatusToolbar(QtWidgets.QToolBar):
         self.addWidget(_tmpWidget)
 
 class myPyQtGraphPlotWidget(pg.PlotWidget):
+    """A plot widget (pg.PlotWidget) to plot
+        - image
+        - annotations
 
+    Respond to
+        - wheel event (wheelEvent)
+        - ket press event (keyPressEvent)
+    """
     signalUpdateSlice = QtCore.Signal(object) # (int) : slice number
     """Signal emitted when slice changes.
     """
@@ -1226,6 +1365,20 @@ class myPyQtGraphPlotWidget(pg.PlotWidget):
         isAlt (bool): True if Alt key is down (not used)
         """
     
+    signalAddingAnnotation = QtCore.Signal(dict)
+    """Signal emitted when user shift_click to create a new annotation.
+    
+    Args:
+        dict:
+    """
+    
+    signalDeletingAnnotation = QtCore.Signal(object)
+    """Signal emitted when user clicks del/backspace to delete the selected annotation.
+    
+    Args:
+        dict: 
+    """
+
     def __init__(self, myStack : pymapmanager.stack,
                     contrastDict : dict,
                     colorLutDict : dict,
@@ -1288,13 +1441,51 @@ class myPyQtGraphPlotWidget(pg.PlotWidget):
 
             self._setSlice(newSlice)
 
-    def keyPressEvent(self, event):
+    def _deleteAnnotation(self):
+        """Delete the selected annotation.
+        
+        This is in response to keyboard del/backspace.
+        
+        For now this will only delete selected point annotations in point plot.
+        """
+        
+        # for _aLinePlot we will have to types of selected annotation:
+        #   1) point in line
+        #   2) segmentID
+        
+        # we need to know the state of the parent window
+        #   default: delete point annotations of roiType spineROI
+        #   in editSegment mode/state, delete line annotations if roiType linePoint
+
+        # for now just delete selected points from our _aPointPlot
+        _selectedAnnotation = self._aPointPlot.getSelectedAnnotation()
+        if _selectedAnnotation is not None:
+            logger.info(f'TODO emit signalDeleteAnnotation dbIdx:{_selectedAnnotation}')
+            
+            # delete from backend
+            # logger.info(f'Deleting point annotation dbIdx:{_selectedAnnotation}')
+            # self._myStack.getPointAnnotations().deleteAnnotation(_selectedAnnotation)
+            
+            deleteDict = {
+                'annotationType': pymapmanager.annotations.annotationType.point,
+                'annotationIndex': _selectedAnnotation,
+                'isSegment': False,
+            }
+            logger.info(f'-->> emit signalDeleteAnnotation deleteDict:{deleteDict}')
+            self.signalDeletingAnnotation.emit(deleteDict)
+        else:
+            logger.warning(f'no selection to delete.')
+
+    def keyPressEvent(self, event : QtGui.QKeyEvent):
         """
         Override PyQt key press.
         
-        event: <PyQt5.QtGui.QKeyEvent object at 0x13e1f7410>
+        Args:
+            event: QtGui.QKeyEvent
         """
 
+        print(type(event))
+        
         if event.key() in [QtCore.Qt.Key_Enter, QtCore.Qt.Key_Return]:
             self._setFullView()
 
@@ -1309,22 +1500,76 @@ class myPyQtGraphPlotWidget(pg.PlotWidget):
             # cancel all user selections
             self.signalCancelSelection.emit(None, False)  # (selIdx, isAlt)
 
+        elif event.key() in [QtCore.Qt.Key_Delete, QtCore.Qt.Key_Backspace]:
+            # cancel all user selections
+            # if we have a point selection. delete it from backend
+            
+            #self.signalDeleteAnnotation.emit(None, False)  # (selIdx, isAlt)
+            self._deleteAnnotation()
+
         #elif event.key() == QtCore.Qt.Key_I:
         #    self._myStack.printHeader()
 
         else:
             # if not handled by *this, this will continue propogation
             event.setAccepted(False)
+            #logger.warning(f'key not understood {event.text()}')
 
-    def _setFullView(self):
-        imageBoundingRect = self._myImage.boundingRect()
-        padding = 0.0
-        self.setRange(imageBoundingRect, padding=padding)
+    #def _onMouseClick_scene(self, event : pg.GraphicsScene.mouseEvents.MouseClickEvent):
+    def _onMouseClick_scene(self, event):
+        """If we get shit+click, make new annotation item.
         
-    def old_onMouseClick_scene(self, event):
-        # pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent
-        # event:<MouseClickEvent (98,207) button=1>
+        This will depend on window state, we need to know 'new item'
+        New items are always point annotations but different roiType like:
+            - spineROI
+            - controlPnt
+
+        Note:
+            This seems to get called AFTER _on_mouse_click in out annotation plots?
+
+        Args:
+            event: pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent
+        """
         logger.info(f'event:{type(event)}')
+
+        modifiers = QtWidgets.QApplication.queryKeyboardModifiers()
+        isShift = modifiers == QtCore.Qt.ShiftModifier
+        #isAlt = modifiers == QtCore.Qt.AltModifier
+
+        # we always make pointAnnotation
+        #   never make lineAnnotation, this comes in after fitting controlPnt
+        if isShift:
+            if self._displayOptionsDict['windowState']['doEditSegments']:
+                roiType = pymapmanager.annotations.pointTypes.controlPnt
+            else:
+                roiType = pymapmanager.annotations.pointTypes.spineROI
+            
+            logger.info(f'  TODO: implement new point annotation from [spineROI, controlPnt]')
+            logger.info(f'new point will be pointAnnotations.pointTypes:"{roiType.value}"')
+
+            # for both (spineROI, controlPnt) we need a selected segmentID to associate it with
+
+            pos = event.pos()
+            imagePos : QtCore.QPointF = self._myImage.mapFromScene(pos)
+            print('  imagePos:', imagePos)
+
+            x = int(imagePos.x())
+            y = int(imagePos.y())
+            z = self._currentSlice
+
+            segmentID = 0
+            
+            # logger.info(f'Adding point annotation roiType:{roiType} segmentID:{segmentID} x:{x}, y:{y}, z{z}')
+            # self._myStack.getPointAnnotations().addAnnotation(roiType, segmentID, x, y, z)
+
+            newDict = {
+                'roiType': roiType,  # type is pymapmanager.annotations.pointTypes
+                'segmentID': segmentID,
+                'x': x,
+                'y': y,
+                'z': z,
+            }
+            self.signalAddingAnnotation.emit(newDict)
 
     def _onMouseMoved_scene(self, pos):
         """As user moves mouse, grab and emit the pixel (x, y, intensity).
@@ -1357,6 +1602,34 @@ class myPyQtGraphPlotWidget(pg.PlotWidget):
     def _channelIsRGB(self):
         return self._displayThisChannel == 'rgb'
 
+    def _setFullView(self):
+        """Set view to full size of image.
+        """
+        imageBoundingRect = self._myImage.boundingRect()
+        padding = 0.0
+        self.setRange(imageBoundingRect, padding=padding)
+ 
+    def slot_zoomToPoint(self, x, y, zoomFieldOfView=300):
+        """Zoom to point (x,y) with a width/height of widthHeight.
+        
+        Args:
+            x:
+            y:
+            zoomFieldOfView: Width/height of zoom
+        """
+        halfZoom = zoomFieldOfView / 2
+        l = x - halfZoom
+        t = y - halfZoom
+        r = x + halfZoom
+        b = y + halfZoom
+
+        w = r - l
+        h = b - t
+        _zoomRect = QtCore.QRectF(l, t, w, h)
+
+        padding = 0.0
+        self.setRange(_zoomRect, padding=padding)
+       
     def slot_setSlice(self, sliceNumber):
         if self._blockSlots:
             return
@@ -1569,7 +1842,7 @@ class myPyQtGraphPlotWidget(pg.PlotWidget):
         self.addItem(self._myImage)
 
         self.scene().sigMouseMoved.connect(self._onMouseMoved_scene)
-        #self.scene().sigMouseClicked.connect(self._onMouseClick_scene) # works but confusing coordinates
+        self.scene().sigMouseClicked.connect(self._onMouseClick_scene) # works but confusing coordinates
 
         # add point plot of pointAnnotations
         pointAnnotations = self._myStack.getPointAnnotations()
@@ -1630,7 +1903,7 @@ if __name__ == '__main__':
         _fontSize = 12
         aFont = QtGui.QFont('Arial', _fontSize)
         app.setFont(aFont, "QLabel")
-        app.setFont(aFont, "QComboBox")
+        #app.setFont(aFont, "QComboBox")
         app.setFont(aFont, "QPushButton")
         app.setFont(aFont, "QCheckBox")
         app.setFont(aFont, "QSpinBox")
