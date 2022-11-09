@@ -26,7 +26,15 @@ To check your local branch or main you want to do a few things.
     1     F821 undefined name 'shapesLayer'
     ```
 
-3) If you made changes to the mkdocs documentation, you need to check that too.
+3) We need to run tox locally
+
+I do not understand how this works. Sems we need tox to know about different version of Python 3.7/3.8, etc.
+
+```
+python -m tox
+```
+
+4) If you made changes to the mkdocs documentation, you need to check that too.
 
     The mkdocs files are in [mkdocs.yml](mkdocs.yml) file and in the [docs/](docs/) folder.
 
@@ -51,7 +59,7 @@ To check your local branch or main you want to do a few things.
     WARNING  -  griffe: pymapmanager/annotations/baseAnnotations.py:670: Empty parameters section at line 3
     ```
 
-4) Pushing a new version
+5) Pushing a new version
 
     If you are ready to push a new version to **main**, you need to update the version in [pymapmanager/version.py](pymapmanager/version.py). Otherwise, pushing the code to PyPi (for pip install) will fail.
 
