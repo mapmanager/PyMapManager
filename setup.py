@@ -75,6 +75,7 @@ setup(
             'tornado', # needed for pyinstaller
             'pyinstaller',
             'ipython',
+            'jupyter',
             'pytest',
             'flake8'
 		],

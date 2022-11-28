@@ -10,6 +10,7 @@ The list of line segments is a :class:`pymapmanager.annotations.lineAnnotations`
 Stack annotations are saved in an enclosing folder with the same name as the tif stack file after removing the .tif extension.
 
 """
+import sys
 import errno
 import enum
 import json
@@ -519,7 +520,48 @@ class stack():
         folderPath = os.path.join(tifFolder, self._baseName)
         return folderPath
 
+def connectSpineToLine():
+    """Find the brightest path (in the image) between a spineRoi (x,y,z)
+        and a segment ID (list of (x,y,z))
+    """
+
+    '''
+    For each spineRoi in point annotations
+        - grab that spine roi segmentID
+        - grab all (x,y,z) points in line annotation with segmentID
+
+        - find the closest point on the line (3d pythagrian theorem)
+        - for each point on the line within a number of points from the closest point
+            - draw a line between spineROI (x,y,z) and candidate on line annotation
+                - calculate the intensity along that line
+                - use: https://scikit-image.org/docs/stable/api/skimage.measure.html#skimage.measure.profile_line
+                - now you have a set of cadiate line and their intensities
+            - return the line (from the candidates) that has the brightest path
+    '''
+
+    stackPath = '../PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
+    myStack = stack(stackPath)
+    pas = myStack.getPointAnnotations()
+    las = myStack.getLineAnnotations()
+
+    #uniqueSegments = las.numSegments()
+    # for la in las:
+    #     print(la['segmentID'])
+
+    
+    for pa in pas:
+        #print(pa)
+        if pa['roiType'] == 'spineROI':
+            segmentID = pa['segmentID']
+            #[_z, _y, _x, _index, _segmentID] = las.getSegment_xyz(segmentID=segmentID)
+            tmp = las.getSegment_xyz(segmentID=segmentID)
+            print(tmp)
+
 def run():
+    connectSpineToLine()
+
+    sys.exit(1)
+
     import sys
     
     # A tif file with no info. The user loads this first
