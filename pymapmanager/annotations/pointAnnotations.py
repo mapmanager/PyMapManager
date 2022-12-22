@@ -53,6 +53,27 @@ class pointAnnotations(baseAnnotations):
         )
         self.addColumn(colItem)
 
+        # Add column for connection index
+        colItem = ColumnItem(
+            name = 'connectionID',
+            type = 'Int64',  # 'Int64' is pandas way to have an int64 with nan values
+            units = '',
+            humanname = 'connectionID',
+            description = 'connectionID'
+        )
+        
+        self.addColumn(colItem)
+
+        colItem = ColumnItem(
+            name = 'brightestIndex',
+            type = 'Int64',  # 'Int64' is pandas way to have an int64 with nan values
+            units = '',
+            humanname = 'brightestIndex',
+            description = 'brightestIndex'
+        )
+        
+        self.addColumn(colItem)
+
         self.load()
 
     def load(self):
@@ -126,6 +147,14 @@ class pointAnnotations(baseAnnotations):
                     comparisons=comparisonTypes.equal,
                     compareValues=roiType.value)
         return xyz
+
+    def getSegmentSpines(self, segmentID : int) -> pd.DataFrame:
+        """Get all spines connected to one segment.
+        """
+        dfPoints = self.getDataFrame()
+        dfSpines = dfPoints[dfPoints['roiType'] == 'spineROI']
+        dfSpines = dfSpines[dfSpines['segmentID']==segmentID]
+        return dfSpines
 
 if __name__ == '__main__':
     pass

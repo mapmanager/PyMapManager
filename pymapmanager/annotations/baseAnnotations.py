@@ -527,7 +527,7 @@ class baseAnnotations():
         return values
 
     def setValue(self, colName : str, row : int, value):
-        """Set a signle value.
+        """Set a single value.
         
         Args:
             colName (str)

@@ -1,5 +1,5 @@
 
-from imp import get_frozen_object
+# from imp import get_frozen_object
 import os
 #from re import X
 import sys, traceback
@@ -81,6 +81,7 @@ class stackWidget(QtWidgets.QMainWindow):
 
         # the stackWidget has a number of options (like display options)
         # TODO (cudmore) eventually these will be program options we get in __init__
+        # This assigns self._displayOptionsDict 
         self._getDefaultDisplayOptions()
 
         self._buildUI()
@@ -109,6 +110,15 @@ class stackWidget(QtWidgets.QMainWindow):
         theDict['pointDisplay']['symbolUserSelection'] = 'o'
         theDict['pointDisplay']['sizeUserSelection'] = 9
         theDict['pointDisplay']['zorderUserSelection'] = 5  # higher number will visually be on top
+        
+        # TODO:
+        # Add stuff to control connected line plot
+        theDict['spineLineDisplay'] = {}
+        theDict['spineLineDisplay']['width'] = 3
+        theDict['spineLineDisplay']['color'] = 'r'
+        theDict['spineLineDisplay']['symbol'] = 'o'
+        theDict['spineLineDisplay']['size'] = 5
+        theDict['spineLineDisplay']['zorder'] = 7  # higher number will visually be on top
 
         # interface.linePlotWidget
         theDict['lineDisplay'] = {}
@@ -426,6 +436,7 @@ class stackWidget(QtWidgets.QMainWindow):
         self._myGraphPlotWidget.signalUpdateSlice.connect(self._histogramWidget.slot_setSlice)
         self._myGraphPlotWidget.signalUpdateSlice.connect(_stackSlider.slot_setSlice)
         self._myGraphPlotWidget.signalUpdateSlice.connect(_statusToolbar.slot_setSlice)
+        # self._myGraphPlotWidget.signalUpdateSlice.connect(self._myGraphPlotWidget._aPointPlot.slot_setSlice)
         
         self._myGraphPlotWidget.signalChannelChange.connect(self._histogramWidget.slot_setChannel)
         self._myGraphPlotWidget.signalChannelChange.connect(_topToolbar.slot_setChannel)
@@ -455,6 +466,9 @@ class stackWidget(QtWidgets.QMainWindow):
 
         self._myPointListWidget.signalZoomToPoint.connect(self._myGraphPlotWidget.slot_zoomToPoint)
         self._myLineListWidget.signalZoomToPoint.connect(self._myGraphPlotWidget.slot_zoomToPoint)
+
+        #  send current slice for connecting spines and lines
+        self._myPointListWidget.signalSetSlice.connect(self._myGraphPlotWidget._aPointPlot.slot_setDisplayType)
 
         # change roiType we are displaying point plot
         self._myPointListWidget.signalDisplayRoiType.connect(self._myGraphPlotWidget._aPointPlot.slot_setDisplayType)
@@ -1397,6 +1411,8 @@ class myPyQtGraphPlotWidget(pg.PlotWidget):
         # a dictionary of contrast, one key per channel
         #self._setDefaultContrastDict()  # assigns _contrastDict
 
+        self._sliceImage = None
+
         self._blockSlots = False
 
         self._buildUI()
@@ -1788,16 +1804,25 @@ class myPyQtGraphPlotWidget(pg.PlotWidget):
             # one channel
             sliceImage = self._myStack.getImageSlice(imageSlice=sliceNumber, channel=channel)
 
+        # myStack.createBrightestIndexes(sliceImage, channel)
+
         autoLevels = True
         levels = None
         
+        # Setting current slice to be used in _buildUI 
+        # self._sliceImage = sliceImage
+        # print("sliceimage is:", sliceImage)
         self._myImage.setImage(sliceImage, levels=levels, autoLevels=autoLevels)
+        self._sliceImage = sliceImage
 
+        # myStack.createBrightestIndexes(sliceImage)
+
+        # print("test sliceimage is:", self._sliceImage)
         # set color
         self._setColorLut()
         # update contrast
         self._setContrast()
-
+       
         self.update()  # update pyqtgraph interface
 
         # emit
@@ -1846,8 +1871,16 @@ class myPyQtGraphPlotWidget(pg.PlotWidget):
 
         # add point plot of pointAnnotations
         pointAnnotations = self._myStack.getPointAnnotations()
+        lineAnnotations = self._myStack.getLineAnnotations()
         _displayOptions = self._displayOptionsDict['pointDisplay']
-        self._aPointPlot = pymapmanager.interface.pointPlotWidget(pointAnnotations, self, _displayOptions)
+        _displayOptionsLine = self._displayOptionsDict['spineLineDisplay']
+        # image = np.array(self._myImage)
+
+        print("image is: ", self._sliceImage)
+        # self._aPointPlot = pymapmanager.interface.pointPlotWidget(pointAnnotations, self, _displayOptions, lineAnnotations, self._myImage)
+        # TODO: Figure out a way to get  self._sliceImage into this class so that we can pass it into pointPlotWidget
+        # THis method doesnt work because it is not dynamic
+        self._aPointPlot = pymapmanager.interface.pointPlotWidget(pointAnnotations, self, _displayOptions, _displayOptionsLine, lineAnnotations, self._myStack)
 
         # add line plot of lineAnnotations
         lineAnnotations = self._myStack.getLineAnnotations()
@@ -1884,13 +1917,16 @@ if __name__ == '__main__':
         # path = '/Users/cudmore/data/patrick/GCaMP Time Series 1.tiff'
         #path = '/Users/cudmore/data/patrick/GCaMP Time Series 2.tiff'
 
-        path = '/Users/cudmore/Sites/PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
+        # path = '/Users/cudmore/Sites/PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
+        path = '/Users/johns/Documents/GitHub/PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
 
         myStack = pymapmanager.stack(path=path)
         
         myStack.loadImages(channel=1)
         myStack.loadImages(channel=2)
         
+        myStack.createBrightestIndexes(channelNum = 2)
+
         print('myStack:', myStack)
 
         # run pyqt interface
