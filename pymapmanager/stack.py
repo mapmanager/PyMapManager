@@ -103,7 +103,10 @@ class stack():
         self._images = [None] * self.maxNumChannels
         # List of n-dimensional images corresponding to potential _ch1, _ch2, _ch3, etc.
         # Always keep a list of maxNumChannels and fill in depending on available files
-    
+
+        self.brightestIndexesAreSet = False
+        # Boolean to ensure that brightest indexes are only set once
+
         # (TODO) add option to not load image data on creation
         #       when we do not load, we cannot infer header from tifData
         imageShape = None
@@ -279,6 +282,11 @@ class stack():
             slice (int): Image slice. Zero based
             channel (int): Channel number, one based
         """
+      
+        if not isinstance(imageSlice, int):
+            # print("Not an integer")
+            imageSlice = int(imageSlice)
+
         channelIdx = channel - 1
         if self._images[channelIdx] is None:
             logger.error(f'channel {channelIdx} is None')
@@ -308,12 +316,17 @@ class stack():
             upSlices:
             downSlices:
         """
+
+        if not isinstance(imageSlice, int):
+        # print("Not an integer")
+            imageSlice = int(imageSlice)
+
         channelIdx = channel - 1
         firstSlice = imageSlice - upSlices
         if firstSlice < 0:
             firstSlice = 0
         lastSlice = imageSlice + downSlices
-        # TODO (cudmore) Write function to check sanits of slice (int)
+       
         if lastSlice > self.numSlices - 1:
             lastSlice = self.numSlices
         theRet = self._images[channelIdx][firstSlice:lastSlice].max(axis=self.imageSliceIdx)
@@ -520,6 +533,87 @@ class stack():
         folderPath = os.path.join(tifFolder, self._baseName)
         return folderPath
 
+    def createBrightestIndexes(self, channelNum):
+        """
+        For all spines find brightest indexes within the lines.
+
+        Notes:
+        Temporary Quick Fix
+        Store brightest index in pointAnnotations 
+        """
+
+        if (self.brightestIndexesAreSet):
+            return 
+
+        pas = self.getPointAnnotations()
+        las = self.getLineAnnotations()
+        segments = las.getSegmentList()
+        xyzSpines = []
+        brightestIndexes = []
+        # channel = self._channel
+        # channel = channelNum
+        # slice 
+
+        # UI is slowed down now. This might be the cause.
+        # sliceImage = self.getImageSlice(imageSlice= ,
+        #                         channel=channelNum)
+
+        for segment in segments:
+            # print("segment is:", segment)
+            # Get each line segement
+            dfLineSegment = las.getSegment(segment)
+
+            # Change this to have a backend function to simplify
+            startSegmentIndex = dfLineSegment['index'].to_numpy()[0]
+            lineSegment = dfLineSegment[['x', 'y', 'z']].to_numpy()
+
+            # Get the spines from each segment
+            dfSegmentSpines = pas.getSegmentSpines(segment)
+            # Iterate through all the spines 
+            for idx, spine in dfSegmentSpines.iterrows():
+                # print("idx:", idx)
+                
+
+                xSpine = spine['x']
+                ySpine = spine['y']
+                zSpine = spine['z']
+                # ch2_img = myStack.getImageSlice(imageSlice=zSpine, channel=2)
+
+                sliceImage = self.getImageSlice(imageSlice= zSpine,
+                                channel=channelNum)
+
+                xyzSpines.append([xSpine, ySpine, zSpine])
+                # TODO: check if backend functions are working, check if image is actually correct
+                # Add brightestIndex in annotation as a column
+                brightestIndex = pymapmanager.utils._findBrightestIndex(xSpine, ySpine, zSpine, lineSegment, sliceImage)
+                brightestIndexes.append(brightestIndex + startSegmentIndex)
+                # Offset index accounts for inital index added onto the actual brightest index
+                offSetIndex = brightestIndex + startSegmentIndex
+                # spine['brightestIndex'] = offSetIndex
+                currentSpineRow = spine['index']
+                # print("currentSpineRow: ", currentSpineRow)
+                # print("brightestIndex: ", brightestIndex)
+                # print("startSegmentIndex: ", startSegmentIndex)
+                # print("offSetIndex: ", offSetIndex)
+                # print(type(offSetIndex))
+                # print(pas)
+                # sys.exit(1)
+
+                # Set the actual value into the backend (point annotations)
+                pas.setValue('brightestIndex', currentSpineRow, offSetIndex)
+                # pas.setValue('brightestIndex')
+
+                # print("spine:", spine["index"])
+                # This is used for debugging
+                
+
+        # pas['brightestIndex'] = brightestIndexes
+
+        # for index, pa in pas:
+        #     pa['brightestIndex'] = brightestIndexes[index]
+
+        # self.brightestIndexesAreSet = True
+
 def connectSpineToLine():
     """Find the brightest path (in the image) between a spineRoi (x,y,z)
         and a segment ID (list of (x,y,z))
@@ -557,6 +651,7 @@ def connectSpineToLine():
             tmp = las.getSegment_xyz(segmentID=segmentID)
             print(tmp)
 
+    
 def run():
     connectSpineToLine()
 
