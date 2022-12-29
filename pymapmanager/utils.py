@@ -220,165 +220,140 @@ if __name__ == "__main__":
     yPlotSpines = [xyzOneSpine[1] for xyzOneSpine in xyzSpines]
 
     # Line to connect points
-    # x = [xPlotSpines, xPlotLines]
-    # y = [yPlotSpines, yPlotLines]
-    # plt.plot(x, y, 'ow', linestyle="--")
-
-    # plt.plot(xPlotLines, yPlotLines, 'ob')
-    # plt.plot(xPlotSpines, yPlotSpines, 'or')
-    # print('plotting')
-
-    idx = 22
-
-    # Plotting just one set of points first to figure out algorithm
-    x = [xPlotSpines[idx], xPlotLines[idx]]
-    y = [yPlotSpines[idx], yPlotLines[idx]]
+    x = [xPlotSpines, xPlotLines]
+    y = [yPlotSpines, yPlotLines]
     plt.plot(x, y, 'ow', linestyle="--")
 
-    plt.plot(xPlotLines[idx], yPlotLines[idx], 'ob')
-    plt.plot(xPlotSpines[idx], yPlotSpines[idx], 'or')
+    plt.plot(xPlotLines, yPlotLines, 'ob')
+    plt.plot(xPlotSpines, yPlotSpines, 'or')
     print('plotting')
+
+    # idx = 22
+
+    # # Plotting just one set of points first to figure out algorithm
+    # x = [xPlotSpines[idx], xPlotLines[idx]]
+    # y = [yPlotSpines[idx], yPlotLines[idx]]
+    # plt.plot(x, y, 'ow', linestyle="--")
+    # plt.plot(xPlotLines[idx], yPlotLines[idx], 'ob')
+    # plt.plot(xPlotSpines[idx], yPlotSpines[idx], 'or')
+    # print('plotting')
     
     width = 3
     extendHead = 3
     extendTail= 3
 
-    # a = line point, b = spine point
-    Xa = xPlotLines[idx]
-    Xb = xPlotSpines[idx]
+    firstCoordXArray = []
+    firstCoordYArray = []
+    secondCoordXArray = []
+    secondCoordYArray = []
+    thirdCoordXArray = []
+    thirdCoordYArray = []
+    fourthCoordXArray = []
+    fourthCoordYArray = []
 
-    Ya = yPlotLines[idx]
-    Yb = yPlotSpines[idx]
-    
-    Dx = Xb - Xa
-    Dy = Yb - Ya
+    for idx, x in enumerate(xPlotLines):
+        print("idx is:", idx)
+        # a = line point, b = spine point
+        Xa = xPlotLines[idx]
+        Xb = xPlotSpines[idx]
 
-    originalDx = Xb - Xa
-    originalDy = Yb - Ya
-    m = Dy/Dx
-    
-    D = math.sqrt(Dx * Dx + Dy * Dy)
-    # Dx= 0.5 * width * Dx / D
-    # Dy= 0.5 * width * Dy / D
-    print("D: ", D)
-    # Shorten the height by dividing by D
-    Dx = width * Dx / D 
-    Dy = width * Dy / D
+        Ya = yPlotLines[idx]
+        Yb = yPlotSpines[idx]
 
-    print("Dx: ", Dx)
-    print("Dy: ", Dy)
+        Dx = Xb - Xa
+        Dy = Yb - Ya
+        originalDx = Xb - Xa
+        originalDy = Yb - Ya
+        m = Dy/Dx
+
+        D = math.sqrt(Dx * Dx + Dy * Dy)
+ 
+        print("D: ", D)
+        # Shorten the height by dividing by D
+        Dx = width * Dx / D 
+        Dy = width * Dy / D
+
+        firstCoordX = Xa - Dy
+        firstCoordY = Ya + Dx
+        secondCoordX = Xa + Dy
+        secondCoordY = Ya - Dx
+        print("firstCoordX:", firstCoordX)
+        angle = np.arctan2(originalDy,originalDx) 
+        adjustY = np.sin(angle) * extendHead
+        adjustX = adjustY/ (np.tan(angle))
+
+        thirdCoordX = Xb + Dy + adjustX
+        fourthCoordX = Xb - Dy + adjustX
+        thirdCoordY = Yb - Dx + adjustY
+        fourthCoordY = Yb + Dx + adjustY
+
+        firstCoordXArray.append(firstCoordX)
+        firstCoordYArray.append(firstCoordY)
+        secondCoordXArray.append(secondCoordX)
+        secondCoordYArray.append(secondCoordY)
+        thirdCoordXArray.append(thirdCoordX)
+        thirdCoordYArray.append(thirdCoordY)
+        fourthCoordXArray.append(fourthCoordX)
+        fourthCoordYArray.append(fourthCoordY)
+            
+    # print("Dx: ", Dx)
+    # print("Dy: ", Dy)
 
     # xBox = [Xa - Dy, Xa + Dy, Xb - Dy, Xb + Dy]
     # yBox = [Ya + Dx, Ya - Dx, Yb + Dx, Yb - Dx]
    
-    firstCoordX = Xa - Dy
-    firstCoordY = Ya + Dx
-    secondCoordX = Xa + Dy
-    secondCoordY = Ya - Dx
-    thirdCoordX = 0
-    fourthCoordX = 0
+    # firstCoordX = Xa - Dy
+    # firstCoordY = Ya + Dx
+    # secondCoordX = Xa + Dy
+    # secondCoordY = Ya - Dx
+    # thirdCoordX = 0
+    # fourthCoordX = 0
     # thirdCoordX = Xb + Dy 
     # thirdCoordY = Yb - Dx 
     # fourthCoordX = Xb - Dy
     # fourthCoordY = Yb + Dx
-
     
     # Determine how much to exntend point using given: Extendhead, angle
     # angle = np.arctan2(originalDy,originalDx) * 180/np.pi
-    angle = np.arctan2(originalDy,originalDx) 
+    # angle = np.arctan2(originalDy,originalDx) 
 
     # angle = np.arctan(np.radians(originalDy/originalDx))
-    print("angle: ", angle)
-    # print("arcsin: ", np.arcsin(angle))
-    # adjustY = np.arcsin(angle) * extendHead
-    # print("angle 2 : ", np.sin(angle)* 180/np.pi)
-    adjustY = np.sin(angle) * extendHead
-    print("adjustY: ", adjustY)
-    adjustX = adjustY/ (np.tan(angle))
-    print("adjustX: ", adjustX)
-    print("adjustment slope: ", (adjustY)/ (adjustX))
+    # print("angle: ", angle)
+    # # print("arcsin: ", np.arcsin(angle))
+    # # print("angle 2 : ", np.sin(angle)* 180/np.pi)
+    # adjustY = np.sin(angle) * extendHead
+    # print("adjustY: ", adjustY)
+    # adjustX = adjustY/ (np.tan(angle))
+    # print("adjustX: ", adjustX)
+    # print("adjustment slope: ", (adjustY)/ (adjustX))
 
 
     # Need to determie appropriate value to adjust. X coord will directly affect y coordinate since we are using line formula
     # to compute y using x
-    # if (Dx < 0):
-    #     thirdCoordX = Xb + Dy + adjustX
-    #     fourthCoordX = Xb - Dy + adjustX
-    #     thirdCoordY = Yb - Dx + adjustY
-    #     fourthCoordY = Yb + Dx + adjustY
-    # if (Dx > 0):
-    #     thirdCoordX = Xb + Dy + adjustX
-    #     fourthCoordX = Xb - Dy + adjustX
 
-    #     # Inverse the adjustment. We add because the y values are negative. Meaning that we are increasing 
-    #     # the point vertically up in our y-axis
-    #     thirdCoordY = Yb - Dx + adjustY
-    #     fourthCoordY = Yb + Dx + adjustY
-    
-    # Compare x position and y position
-    # Up Left (segment 0 idx 20)
-    # if (Dx < 0 and Dy < 0):
-    #     thirdCoordX = Xb + Dy + adjustX
-    #     fourthCoordX = Xb - Dy + adjustX
-    #     thirdCoordY = Yb - Dx + adjustY
-    #     fourthCoordY = Yb + Dx + adjustY
-    # # Down Left
-    # if (Dx < 0 and Dy > 0):
-    #     thirdCoordX = Xb + Dy + adjustX
-    #     fourthCoordX = Xb - Dy + adjustX
-    #     thirdCoordY = Yb - Dx + adjustY
-    #     fourthCoordY = Yb + Dx + adjustY
-    # # Down Right (Segment 1 idx 10)
-    # if (Dx > 0 and Dy > 0):
-    #     thirdCoordX = Xb + Dy + adjustX
-    #     fourthCoordX = Xb - Dy + adjustX
-    #     thirdCoordY = Yb - Dx + adjustY
-    #     fourthCoordY = Yb + Dx + adjustY
-    # # Up Right
-    # if (Dx > 0 and Dy < 0):
-    #     thirdCoordX = Xb + Dy + adjustX
-    #     fourthCoordX = Xb - Dy + adjustX
-    #     thirdCoordY = Yb - Dx + adjustY
-    #     fourthCoordY = Yb + Dx + adjustY
-    
-
-    thirdCoordX = Xb + Dy + adjustX
-    fourthCoordX = Xb - Dy + adjustX
-    thirdCoordY = Yb - Dx + adjustY
-    fourthCoordY = Yb + Dx + adjustY
-
-    # thirdCoordX = Xb + Dy + extendHead /D
-    # # thirdCoordY = Yb - Dx 
-    # fourthCoordX = Xb - Dy + extendHead /D
-    # fourthCoordY = Yb + Dx - (extendHead) / D
-    # fourthCoordY = Yb + Dx - (extendHead) / D
-
-    # Testing calculate points via slope
-    # b4 = firstCoordY - m * firstCoordX
-    # # y = mx + b
-    # fourthCoordY = m * (fourthCoordX) + b4
-
-    # b3 = secondCoordY - m * secondCoordX
-    # thirdCoordY = m * (thirdCoordX) + b3
+    # thirdCoordX = Xb + Dy + adjustX
+    # fourthCoordX = Xb - Dy + adjustX
+    # thirdCoordY = Yb - Dx + adjustY
+    # fourthCoordY = Yb + Dx + adjustY
 
     # print("b: ", b4)
-    print("original slope: ", (Yb - Ya)/ (Xb - Xa))
-    print("testing new slope: ", (thirdCoordY - secondCoordY)/ (thirdCoordX - secondCoordX))
-    print("testing new slope: ", (fourthCoordY - firstCoordY)/ (fourthCoordX - firstCoordX))
+    # print("original slope: ", (Yb - Ya)/ (Xb - Xa))
+    # print("testing new slope: ", (thirdCoordY - secondCoordY)/ (thirdCoordX - secondCoordX))
+    # print("testing new slope: ", (fourthCoordY - firstCoordY)/ (fourthCoordX - firstCoordX))
 
-    print("controlled slope: ", ((Yb + Dx) - (Ya + Dx))/ ((Xb - Dy) - (Xa - Dy)))
+    # print("controlled slope: ", ((Yb + Dx) - (Ya + Dx))/ ((Xb - Dy) - (Xa - Dy)))
 
-    # Detect if y distance is greater than x difference and calculate accordinging (subtract from y coords instead of x)
-    print("1st coordinate: ", firstCoordX, firstCoordY)
-    print("2nd coordinate: ", secondCoordX, secondCoordY)
-    print("3rd coordinate: ", thirdCoordX, thirdCoordY)
-    print("4th coordinate: ", fourthCoordX, fourthCoordY)
+    # # Detect if y distance is greater than x difference and calculate accordinging (subtract from y coords instead of x)
+    # print("1st coordinate: ", firstCoordX, firstCoordY)
+    # print("2nd coordinate: ", secondCoordX, secondCoordY)
+    # print("3rd coordinate: ", thirdCoordX, thirdCoordY)
+    # print("4th coordinate: ", fourthCoordX, fourthCoordY)
 
     # Needs to add first point at the end for final connection. Bad implementation?
     # Need to figure out how to use extendHead
     # TODO: extend the tail
-    xBox = [firstCoordX, secondCoordX, thirdCoordX, fourthCoordX, firstCoordX]
-    yBox = [firstCoordY, secondCoordY, thirdCoordY, fourthCoordY, firstCoordY]
+    xBox = [firstCoordXArray, secondCoordXArray, thirdCoordXArray, fourthCoordXArray, firstCoordXArray]
+    yBox = [firstCoordYArray, secondCoordYArray, thirdCoordYArray, fourthCoordYArray, firstCoordYArray]
     plt.plot(xBox, yBox, 'oy', linestyle="--")
 
     # segment 0 idx 20
