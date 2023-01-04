@@ -126,6 +126,9 @@ class lineViewer():
             if len(xyzSegment) < 2:
                 # TODO (cudmore) fix this, shape layer does not accept path of len() 1
                 continue
+            xyzSegment = xyzSegment[:,0:3]
+            # print('QQQQQ')
+            # print(xyzSegment[0:5, 0:5])
             plotSegments.append(xyzSegment)
 
         logger.info(f'xyzSegments has {len(xyzSegments)} segments')
@@ -138,7 +141,7 @@ class lineViewer():
             # need to pass None, not []
             plotSegments = None
 
-        ndim = 3
+        #ndim = 3
 
         #napari.layers.shapes._shape_list._update_displayed = _my_update_displayed
 
@@ -146,7 +149,7 @@ class lineViewer():
         edge_color = 'green' # TODO (cudmore) color each segmentID different
         self.lineLayer = self._viewer.add_shapes(
             plotSegments,
-            ndim = ndim,
+            #ndim = ndim,
             shape_type = 'path',
             edge_width = edge_width, 
             edge_color = edge_color,  
