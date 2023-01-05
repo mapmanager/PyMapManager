@@ -46,6 +46,8 @@ if __name__ == "__main__":
     channel = 2
     lineAnnotations = myStack.getLineAnnotations()
     # segmentROIplot()
+    
+    from pymapmanager.utils import getRadiusLines
     getRadiusLines(lineAnnotations)
    
 

@@ -1,7 +1,12 @@
+import math
+from typing import List
+
 import numpy as np
 import pandas as pd
 
 import pymapmanager as pmm
+
+from pymapmanager.utils import _findBrightestIndex
 
 def _getSegmentList(lineAnnotations : pmm.annotations.lineAnnotations) -> List[int]:
     """Get a list of all segment ID.
