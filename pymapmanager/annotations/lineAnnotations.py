@@ -290,6 +290,20 @@ class lineAnnotations(baseAnnotations):
             lengthList3D.append(length3D)
 
         return lengthList2D, lengthList3D
+
+    def getSegmentList(self) -> List[int]:
+        """Get a list of all segment ID.
+        """
+        return self.getDataFrame()['segmentID'].to_numpy()
+
+
+    def getSegment(self, segmentID : int) -> pd.DataFrame:
+        """Get all annotations rows for one segment id.
+        """
+        dfLines = self._df  # All of our annotation classes are represented as a dataframe (_df)
+        dfOneSegment = dfLines[dfLines['roiType']=='linePnt']
+        dfOneSegment = dfOneSegment[dfLines['segmentID']==segmentID]
+        return dfOneSegment
         
 if __name__ == '__main__':
     pass

@@ -9,6 +9,8 @@ import pyqtgraph as pg
 from pymapmanager._logger import logger
 import pymapmanager.stack
 
+# import utils
+
 """Widgets to plot annotations in a pg view.
 
 Annotations are plotted as ScatterItems.
@@ -18,6 +20,8 @@ class annotationPlotWidget(QtWidgets.QWidget):
     """Base class to plot annotations in a pg view.
     
     Used to plot point and line annotations.
+
+    Abstract class (not useable on its own), instantiated from a derived class (pointPlotWidget and linePlotWidget)
     """
 
     signalAnnotationClicked = QtCore.Signal(int)
@@ -40,7 +44,7 @@ class annotationPlotWidget(QtWidgets.QWidget):
         """
         Args:
             annotations:
-            pgView:
+            pgView: type is pg.PlotWidget
             displayOptions:
             parent:
         """
@@ -61,6 +65,9 @@ class annotationPlotWidget(QtWidgets.QWidget):
         self._currentSlice = 0
         # keep track of current slice so we can replot with _refreshSlice()
 
+        self._channel = 1 # 1->0, 2->1, 3->2, etc
+        # Keep track of current channel so that we can get current image slice
+
         self._currentPlotIndex = None
         # Each time we replot, fill this in with annotation row index
         # of what we are actually plotting
@@ -70,8 +77,11 @@ class annotationPlotWidget(QtWidgets.QWidget):
         # then state changes, fetch from backend again
         # state is, for example, plotting ['spineROI'] versus ['spineROI', 'controlROI']
 
+
+        # Moved to derived classes
         # self._buildUI()
-        # self._view.signalUpdateSlice.connect(self.slot_setSlice)
+
+        #self._view.signalUpdateSlice.connect(self.slot_setSlice)
 
     def _buildUI(self):
         
@@ -106,6 +116,24 @@ class annotationPlotWidget(QtWidgets.QWidget):
                                             color=color), symbol=symbol, size=size)
         self._scatterUserSelection.setZValue(zorder)  # put it on top, may need to change '10'
         self._view.addItem(self._scatterUserSelection)
+
+        # Scatter for connection of lines (segments) and spines 
+        # width = self._displayOptions['widthUserSelection']
+        # color = self._displayOptions['colorUserSelection']
+        # symbol = self._displayOptions['symbolUserSelection']
+        # size = self._displayOptions['sizeUserSelection']
+        # zorder = self._displayOptions['zorderUserSelection']
+
+        # width = self._displayOptionsLine['widthUserSelection']
+        # color = self._displayOptionsLine['colorUserSelection']
+        # symbol = self._displayOptionsLine['symbolUserSelection']
+        # size = self._displayOptionsLine['sizeUserSelection']
+        # zorder = self._displayOptionsLine['zorderUserSelection']
+        # # self._spineConnections = pg.ScatterPlotItem(pen=pg.mkPen(width=width,
+        # #                                     color=color), symbol=symbol, size=size)
+        # self._spineConnections = self._view.plot([],[],pen=pg.mkPen(width=width, color=(255, 0, 0)), symbol='o')
+        # self._spineConnections.setZValue(1) 
+        # self._view.addItem(self._spineConnections)
 
     def toggleScatterPlot(self):
         logger.info('')
@@ -235,6 +263,7 @@ class annotationPlotWidget(QtWidgets.QWidget):
         self._refreshSlice()
 
     def _refreshSlice(self):
+        # I don't think that the current slice is being updated, it will always pass in 0?
         self.slot_setSlice(self._currentSlice)
 
     def slot_setSlice(self, sliceNumber : int):
@@ -253,7 +282,7 @@ class annotationPlotWidget(QtWidgets.QWidget):
 
         theseSegments = 2  # all segments
         roiTypes = self._roiTypes
-                
+        
         # dfPlot is a row reduced version of backend df (all columns preserved)
         if 0 and self._dfPlot is not None:
             # TODO: Fix logic, we need to fetch all annotations
@@ -261,18 +290,22 @@ class annotationPlotWidget(QtWidgets.QWidget):
             #   - use (theseSegments, roiType)
             dfPlot = self._dfPlot
         else:
+            # TODO: change to member variable self._dfPlot
             dfPlot = self._annotations.getSegmentPlot(theseSegments, roiTypes, sliceNumber)
             self._dfPlot = dfPlot
 
         x = dfPlot['x']
         y = dfPlot['y']
 
+        # TODO: Can get rid of this and just use dfPlot, use dfPlot at index 
         self._currentPlotIndex = dfPlot['index'].tolist()
 
         self._scatter.setData(x,y)
 
         # make a color column based on roiType
-        dfPlot['color'] = '#0000FF'
+        # TODO: change black to use color from dictionary
+        # dfPlot['color'] = '#0000FF'
+        dfPlot['color'] = 'b'
         #dfPlot['color'][dfPlot['roiType'] == 'controlPnt'] = '#FF0000'
         _colorList = dfPlot['color'].tolist()
         self._scatter.setBrush(_colorList)
@@ -310,24 +343,153 @@ class annotationPlotWidget(QtWidgets.QWidget):
         self._refreshSlice()
 
 class pointPlotWidget(annotationPlotWidget):
-    def __init__(self, annotations : pymapmanager.annotations.pointAnnotations,
+    def __init__(self, pointAnnotations : pymapmanager.annotations.pointAnnotations,
                         pgView,  # pymapmanager.interface.myPyQtGraphPlotWidget
                         displayOptions : dict,
+                        displayOptionsLines : dict,
+                        lineAnnotations: pymapmanager.annotations.lineAnnotations,
+                        # myImage : pg.ImageItem,
+                        stack : pymapmanager.stack,
                         parent = None):
         """
         Args:
+            displayOptions : dictionary to specify the style for the points
+            displayOptionsLine : dictionary to specify the style for lines connecting spines and points
             annotations:
             pgView:
         """
-        super().__init__(annotations, pgView, displayOptions, parent)
         
+        super().__init__(pointAnnotations, pgView, displayOptions, parent)
+        
+        self._displayOptionsLines = displayOptionsLines
+
         # define the roi types we will display
         # see: slot_setDisplayTypes
         self._roiTypes = ['spineROI', 'controlPnt']
 
+        #self._buildUI()
+
+        self.lineAnnotations = lineAnnotations
+        self.pointAnnotations = pointAnnotations
+        # self._myImage = myImage
+        self._myStack = stack
+
         self._buildUI()
         self._view.signalUpdateSlice.connect(self.slot_setSlice)
 
+    # def set_currentImage(self, )
+    def _buildUI(self):
+        super()._buildUI()
+
+        width = self._displayOptionsLines['width']
+        color = self._displayOptionsLines['color']
+        symbol = self._displayOptionsLines['symbol']
+        size = self._displayOptionsLines['size']
+        zorder = self._displayOptionsLines['zorder']
+        # self._spineConnections = pg.ScatterPlotItem(pen=pg.mkPen(width=width,
+        #                                     color=color), symbol=symbol, size=size)
+        self._spineConnections = self._view.plot([],[],pen=pg.mkPen(width=width, color=color), symbol=symbol)
+        self._spineConnections.setZValue(zorder) 
+        self._view.addItem(self._spineConnections)
+
+    def slot_setSlice(self, sliceNumber : int):
+        super().slot_setSlice(sliceNumber=sliceNumber)
+
+        # TODO: update new scatter line connection plot code
+        # getCurrentSegment of the slice instead of all segments?
+        segments = self.lineAnnotations.getSegmentList()
+        segmentID = 0
+
+        xyzSpines = []
+        brightestIndexes = []
+        channel = self._channel
+        # UI is slowed down now. This might be the cause.
+        # sliceImage = self._myStack.getImageSlice(imageSlice= self._currentSlice,
+        #                         channel=channel)
+
+        # print("testing slice image", sliceImage)
+        # for segment in segments:
+        #     # print("segment is:", segment)
+        #     # Get each line segement
+        #     dfLineSegment = self.lineAnnotations.getSegment(segment)
+        #     startSegmentIndex = dfLineSegment['index'].to_numpy()[0]
+        #     lineSegment = dfLineSegment[['x', 'y', 'z']].to_numpy()
+
+        #     # Get the spines from each segment
+        #     dfSegmentSpines = self.pointAnnotations.getSegmentSpines(segment)
+        #     # Iterate through all the spines 
+        #     for idx, spine in dfSegmentSpines.iterrows():
+        #         # print("idx:", idx)
+
+        #         xSpine = spine['x']
+        #         ySpine = spine['y']
+        #         zSpine = spine['z']
+        #         # ch2_img = myStack.getImageSlice(imageSlice=zSpine, channel=2)
+
+        #         xyzSpines.append([xSpine, ySpine, zSpine])
+        #         # TODO: check if backend functions are working, check if image is actually correct
+        #         # Add brightestIndex in annotation as a column
+        #         brightestIndex, candidatePoints, closestIndex = pymapmanager.utils._findBrightestIndex(xSpine, ySpine, zSpine, lineSegment, sliceImage)
+        #         brightestIndexes.append(brightestIndex + startSegmentIndex)
+        theseSegments = None
+        roiTypes = ['spineROI']
+
+        dfPlotSpines = self._annotations.getSegmentPlot(theseSegments, roiTypes, sliceNumber)
+        # dfPlotSpines = self._dfPlot 
+
+        # print("dfPlotSpines: ", dfPlotSpines)
+        # print("dfPlotSpines['x']: ", dfPlotSpines['x'])
+        # print("dfPlotSpines: ", dfPlotSpines[14])
+        # print(self.pointAnnotations['brightestIndexes'])
+
+        # xPlotLines = self.lineAnnotations.getValues(['x'], brightestIndexes)
+        # yPlotLines = self.lineAnnotations.getValues(['y'], brightestIndexes)  
+        # xPlotSpines = [xyzOneSpine[0] for xyzOneSpine in xyzSpines]
+        # yPlotSpines = [xyzOneSpine[1] for xyzOneSpine in xyzSpines]
+        # x = [xPlotSpines, xPlotLines]
+        # y = [yPlotSpines, yPlotLines]
+
+        xPlotSpines = []
+        yPlotSpines = []
+        # for index, xyzOneSpine in enumerate(dfPlotSpines):
+        #     print("xyzOneSpine test:", xyzOneSpine)
+        #     print("xyzOneSpine[0]:", xyzOneSpine[0])
+        #     # sys.exit(1)
+        #     xPlotSpines.append(xyzOneSpine[0])
+
+        #     # xPlotLine = self.lineAnnotations.getValue(['x'], brightestIndex)
+        #     # Use the brightestindex on each spine. Go into the LineAnnotations and for that brightestIndex grab the x y z
+        #     # xPlotSpines.append(xPlotLines[index])
+        #     xPlotSpines.append(np.nan)
+
+        #     yPlotSpines.append(xyzOneSpine[1])
+        #     # yPlotSpines.append(yPlotLines[index])
+        #     yPlotSpines.append(np.nan)
+
+        # for idx, spine in dfSegmentSpines.iterrows()
+        for index, xyzOneSpine in dfPlotSpines.iterrows():
+            # print("xyzOneSpine test:", xyzOneSpine)
+            xPlotSpines.append(xyzOneSpine['x'])
+            xPlotLine = self.lineAnnotations.getValue(['x'], xyzOneSpine['brightestIndex'])
+            # print("xPlotLine", xPlotLine)
+            xPlotSpines.append(xPlotLine)
+            xPlotSpines.append(np.nan)
+
+            yPlotSpines.append(xyzOneSpine['y'])
+            yPlotLine = self.lineAnnotations.getValue(['y'], xyzOneSpine['brightestIndex'])
+            # print("xPlotLine", xPlotLine)
+            yPlotSpines.append(yPlotLine)
+            yPlotSpines.append(np.nan)
+
+            # print("xyzOneSpine['x']:", xyzOneSpine['x'])
+            # print("xyzOneSpine['y']:", xyzOneSpine['y'])
+            # print("xyzOneSpine['brightestIndex']:", xyzOneSpine['brightestIndex'])
+
+        # self._spineConnections.setData(x, y)
+        # self._spineConnections.setData(xPlotLines, yPlotLines)
+        self._spineConnections.setData(xPlotSpines, yPlotSpines)
+        self._view.update()
+      
 class linePlotWidget(annotationPlotWidget):
     def __init__(self, annotations : pymapmanager.annotations.lineAnnotations,
                         pgView,  # pymapmanager.interface.myPyQtGraphPlotWidget
@@ -343,6 +505,7 @@ class linePlotWidget(annotationPlotWidget):
         # define the roi types we will display
         # see: slot_setDisplayTypes
         self._roiTypes = ['linePnt']
+        self._buildUI()
 
         self._buildUI()
         self._view.signalUpdateSlice.connect(self.slot_setSlice)
