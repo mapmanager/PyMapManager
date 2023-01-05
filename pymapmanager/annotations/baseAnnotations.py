@@ -348,8 +348,8 @@ class baseAnnotations():
     #     return self._columns
     
     def getSegmentPlot(self, segmentID : Union[int, List[int], None],
-                        roiTypes : list,
-                        zSlice : int,
+                        roiTypes : list, 
+                        zSlice : Union[int, None] = None,
                         zPlusMinus : int = 0,
                         ) -> pd.DataFrame:
         """Get a pd.DataFrame to plot.
@@ -368,6 +368,7 @@ class baseAnnotations():
         
         #print('  df after reduce by roiType:', len(df), 'for roiTypes:', roiTypes)
 
+        # Reduce by segmentID
         if segmentID is None:
             segmentID = df['segmentID'].unique()
         elif isinstance(segmentID, int):
@@ -376,11 +377,13 @@ class baseAnnotations():
             logger.error(f'did not understand segmentID:{segmentID}')
             return
 
-        zMin = zSlice - zPlusMinus
-        zMax = zSlice + zPlusMinus
-
         df = df[df['segmentID'].isin(segmentID)]
-        df = df[(df['z']>=zMin) & (df['z']<=zMax)]
+
+        # Reduce by Z
+        if zSlice is not None:
+            zMin = zSlice - zPlusMinus
+            zMax = zSlice + zPlusMinus
+            df = df[(df['z']>=zMin) & (df['z']<=zMax)]
         
         return df
 
@@ -432,7 +435,7 @@ class baseAnnotations():
 
     def getValues(self,
                     colName : Union[str, List[str]],
-                    rowIdx : Union[int, List[int]] = None,
+                    rowIdx : Union[int, List[int], None] = None,
                     ) -> Union[np.ndarray, None]:
         """Get value(s) from a column or list of columns.
 
@@ -542,10 +545,17 @@ class baseAnnotations():
         except(IndexError) as e:
             logger.error(f'did not set value for col "{colName}" at row {row}')
 
-    def setColumn(self, colName : str, values):
+    def setColumn(self, colName : str, values : list):
         """Set all values in one column.
+
+        args:
+            values: a list of some type like (str, int, float)
         """
         #if not colName in self.columns.getColumnNames():
+        if len(values) != len(self._df):
+            logger.warning(f'incorrect length of "{len(values)}", length expected "{len(self._df)}"')
+            return
+
         if not self.columns.columnIsValid(colName):
             logger.warning(f'did not find "{colName}" in columns')
             return

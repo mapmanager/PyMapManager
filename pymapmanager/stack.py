@@ -299,6 +299,10 @@ class stack():
         Get a maximal intensity projection of image slices for one channel.
         """
         channelIdx = channel - 1
+        if self._images[channelIdx] is None:
+            logger.error(f'self._images[channelIdx] is None')
+            return
+       
         return self._images[channelIdx].max(axis=self.imageSliceIdx)
 
     def getMaxProjectSlice(self, 
