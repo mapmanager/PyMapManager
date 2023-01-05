@@ -119,7 +119,10 @@ class mmViewer():
         self._viewer.window.qt_viewer.layers.model().filterAcceptsRow = self._myfilterLayerList
 
         image = self._stack.getImageChannel(1)
+        logger.info(f'XXXXXX image: {image.shape}')
         self._viewer.add_image(image)
+
+        #return
 
         # to hide napari interface panels
         # see: https://forum.image.sc/t/is-it-possible-to-open-the-napari-viewer-with-the-layer-controls-and-layer-list-gui-elements-hidden/47755
