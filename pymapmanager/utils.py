@@ -9,6 +9,7 @@ import pandas as pd
 import skimage
 # Remove later on:
 import pymapmanager as pmm
+import matplotlib.pyplot as plt
 
 def setsAreEqual(a, b):
 	"""Return true if sets (a, b) are equal.
@@ -115,8 +116,8 @@ def _getSegment(lineAnnotations : pmm.annotations.lineAnnotations, segmentID : i
     dfOneSegment = dfOneSegment[dfLines['segmentID']==segmentID]
     return dfOneSegment
 
-if __name__ == "__main__":
-	
+def segmentROIplot():
+
     stackPath = '../PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
     myStack = pmm.stack(stackPath)
     channel = 2
@@ -147,6 +148,7 @@ if __name__ == "__main__":
     segments = _getSegmentList(lineAnnotations)
 
     import matplotlib.pyplot as plt
+    
     plt.imshow(ch2_img)
     # plt.show()
     # ch2_img = myStack.getImageSlice(imageSlice=zOneSpine, channel=channel)
@@ -268,7 +270,7 @@ if __name__ == "__main__":
 
         D = math.sqrt(Dx * Dx + Dy * Dy)
  
-        print("D: ", D)
+        # print("D: ", D)
         # Shorten the height by dividing by D
         Dx = width * Dx / D 
         Dy = width * Dy / D
@@ -277,7 +279,7 @@ if __name__ == "__main__":
         firstCoordY = Ya + Dx
         secondCoordX = Xa + Dy
         secondCoordY = Ya - Dx
-        print("firstCoordX:", firstCoordX)
+        # print("firstCoordX:", firstCoordX)
         angle = np.arctan2(originalDy,originalDx) 
         adjustY = np.sin(angle) * extendHead
         adjustX = adjustY/ (np.tan(angle))
@@ -295,66 +297,83 @@ if __name__ == "__main__":
         thirdCoordYArray.append(thirdCoordY)
         fourthCoordXArray.append(fourthCoordX)
         fourthCoordYArray.append(fourthCoordY)
-            
-    # print("Dx: ", Dx)
-    # print("Dy: ", Dy)
 
-    # xBox = [Xa - Dy, Xa + Dy, Xb - Dy, Xb + Dy]
-    # yBox = [Ya + Dx, Ya - Dx, Yb + Dx, Yb - Dx]
-   
-    # firstCoordX = Xa - Dy
-    # firstCoordY = Ya + Dx
-    # secondCoordX = Xa + Dy
-    # secondCoordY = Ya - Dx
-    # thirdCoordX = 0
-    # fourthCoordX = 0
-    # thirdCoordX = Xb + Dy 
-    # thirdCoordY = Yb - Dx 
-    # fourthCoordX = Xb - Dy
-    # fourthCoordY = Yb + Dx
-    
-    # Determine how much to exntend point using given: Extendhead, angle
-    # angle = np.arctan2(originalDy,originalDx) * 180/np.pi
-    # angle = np.arctan2(originalDy,originalDx) 
-
-    # angle = np.arctan(np.radians(originalDy/originalDx))
-    # print("angle: ", angle)
-    # # print("arcsin: ", np.arcsin(angle))
-    # # print("angle 2 : ", np.sin(angle)* 180/np.pi)
-    # adjustY = np.sin(angle) * extendHead
-    # print("adjustY: ", adjustY)
-    # adjustX = adjustY/ (np.tan(angle))
-    # print("adjustX: ", adjustX)
-    # print("adjustment slope: ", (adjustY)/ (adjustX))
-
-
-    # Need to determie appropriate value to adjust. X coord will directly affect y coordinate since we are using line formula
-    # to compute y using x
-
-    # thirdCoordX = Xb + Dy + adjustX
-    # fourthCoordX = Xb - Dy + adjustX
-    # thirdCoordY = Yb - Dx + adjustY
-    # fourthCoordY = Yb + Dx + adjustY
-
-    # print("b: ", b4)
-    # print("original slope: ", (Yb - Ya)/ (Xb - Xa))
-    # print("testing new slope: ", (thirdCoordY - secondCoordY)/ (thirdCoordX - secondCoordX))
-    # print("testing new slope: ", (fourthCoordY - firstCoordY)/ (fourthCoordX - firstCoordX))
-
-    # print("controlled slope: ", ((Yb + Dx) - (Ya + Dx))/ ((Xb - Dy) - (Xa - Dy)))
-
-    # # Detect if y distance is greater than x difference and calculate accordinging (subtract from y coords instead of x)
-    # print("1st coordinate: ", firstCoordX, firstCoordY)
-    # print("2nd coordinate: ", secondCoordX, secondCoordY)
-    # print("3rd coordinate: ", thirdCoordX, thirdCoordY)
-    # print("4th coordinate: ", fourthCoordX, fourthCoordY)
+    # graph to test tangent line
 
     # Needs to add first point at the end for final connection. Bad implementation?
     # Need to figure out how to use extendHead
     # TODO: extend the tail
     xBox = [firstCoordXArray, secondCoordXArray, thirdCoordXArray, fourthCoordXArray, firstCoordXArray]
     yBox = [firstCoordYArray, secondCoordYArray, thirdCoordYArray, fourthCoordYArray, firstCoordYArray]
-    plt.plot(xBox, yBox, 'oy', linestyle="--")
+
+    segmentROIXinitial = []
+    segmentROIYinitial = []
+
+    segmentROIXend = []
+    segmentROIYend= []
+
+    for idx, x in enumerate(xPlotLines):
+        if(idx == 0 or idx == len(xPlotLines) - 1):
+            # Do nothing
+            continue
+        else:
+            currentX = xPlotLines[idx]
+            currentY = yPlotLines[idx]
+
+            prevX = xPlotLines[idx-1]
+            prevY = yPlotLines[idx-1]
+
+            nextX = xPlotLines[idx+1]
+            nextY = yPlotLines[idx+1]
+
+            dXsegment = nextX - prevX
+            dYsegment = nextY - prevY
+
+            Msegment = dYsegment/dXsegment
+            angle = np.arctan2(dYsegment,dXsegment) 
+            adjustY = np.sin(angle) * extendHead
+            adjustX = adjustY/ (np.tan(angle))
+
+            segmentROIXinitial.append(currentX-adjustX)
+            segmentROIYinitial.append(currentY-adjustY)
+
+            segmentROIXend.append(currentX+adjustX)
+            segmentROIYend.append(currentY+adjustY)
+
+    # IDX could be out of order?
+    temp1 = [segmentROIXinitial, segmentROIXend]
+    temp2 = [segmentROIYinitial, segmentROIYend]
+
+    # plt.plot(temp1, temp2, 'om', linestyle="--")
+
+
+    # idx: 3 center
+    # idx: 2,4 
+    x2 = xPlotLines[2]
+    x4 = xPlotLines[4]
+    y2 = yPlotLines[2]
+    y4 = yPlotLines[4]
+    dXsegment = x4-x2
+    dYsegment = y4-y2
+
+    newM = dYsegment/ dXsegment
+
+    x3 = xPlotLines[3]
+    y3 = yPlotLines[3]
+    # y = mx + B
+
+    angle = np.arctan2(dYsegment,dXsegment) 
+    adjustY = np.sin(angle) * extendHead
+    adjustX = adjustY/ (np.tan(angle))
+
+    b3 = y - newM * x3
+    # x3_1 = y3 - 
+
+    tempX = [x3-adjustX, x3+adjustX]
+    tempY = [y3-adjustY, y3+adjustY]
+    # plt.plot(tempX, tempY, 'om', linestyle="--")
+    # plt.plot(x2, y2, 'og', linestyle="--")
+    plt.plot(xPlotLines[0], yPlotLines[0], 'om', linestyle="--")
 
     # segment 0 idx 20
     # x_min = 1005
@@ -367,27 +386,203 @@ if __name__ == "__main__":
     # x_max = 370
     # y_min = 270
     # y_max = 245
+
+    x_min = 330
+    x_max = 460
+    y_min = 260
+    y_max = 200
     # # Why does the y go the other way?
-    # plt.axis([x_min, x_max, y_min, y_max])
+    plt.axis([x_min, x_max, y_min, y_max])
 
     plt.show()
 
-    #     # Plot using brightest Index
-    #     dfTemp = dfLineSegment.iloc[brightestIndex]
-    #     xPlotLine = dfTemp['x']
-    #     yPlotLine = dfTemp['y'] 
-        # plt.imshow(ch2_img)
+def computeTangentLine(startPoint: tuple, stopPoint: tuple) -> tuple: 
+    """ Given a start point and stop point return the 
 
-    #     # Plot the line connecting points
-    #     plt.plot(candidatePoints[:,0], candidatePoints[:,1], 'oy')
-    #     x = [xPlotSpine, xPlotLine]
-    #     y = [yPlotSpine, yPlotLine]
+    Args: 
+        startPoint: tuple(x, y) representing the starting coordinate
+        endPoint: tuple(x, y) representing the end coordinate
 
-    #     # Plot the points over the lines
-    #     plt.plot(x, y, 'ow', linestyle="--")
-    #     plt.plot(xPlotSpine, yPlotSpine, 'ob')
-    #     plt.plot(xPlotLine, yPlotLine, 'or')
+    Return:
+        a tuple (adjustY, adjustX)        
+    """
+    # xPrev = startPoint[0]
+    # yPrev = startPoint[1]
+    extendHead = 1
 
+    dXsegment = stopPoint[0] - startPoint[0]
+    dYsegment = stopPoint[1] - startPoint[1]
+
+    Msegment = dYsegment/dXsegment
+    angle = np.arctan2(dYsegment,dXsegment) 
+    adjustY = np.sin(angle) * extendHead
+    adjustX = adjustY/ (np.tan(angle))
+
+    return (adjustY, adjustX)
+
+def getRadiusLines(lineAnnotations: pmm.annotations.lineAnnotations):
+
+    extendHead = 5
+
+	# print(myStack)
+    # segmentID = 1
+    # pointAnnotations = myStack.getPointAnnotations()
+    # lineAnnotations = myStack.getLineAnnotations()  
+    lineAnnotations = lineAnnotations
+    
+    # segmentDF = lineAnnotations.getSegment(segmentID)
+    segmentDF = lineAnnotations._df
+
+    # print(segmentDF)
+
+    xPlot = segmentDF['x']
+    yPlot = segmentDF['y']
+    zPlot = segmentDF['z']
+    # print(xPlot)
+    # print(zPlot)
+
+    # ch2_img = myStack.getImageSlice(imageSlice=zPlot[695], channel=channel)
+    # ch2_img = myStack.getImageSlice(imageSlice=zPlot[695], channel=channel)
+
+    # plt.imshow(ch2_img)
+
+    segmentROIXinitial = []
+    segmentROIYinitial = []
+    segmentROIXend = []
+    segmentROIYend = []
+
+    orthogonalROIXinitial = [np.nan]
+    orthogonalROIYinitial = [np.nan]
+    orthogonalROIZinitial = [np.nan]
+    orthogonalROIXend = []
+    orthogonalROIYend = []
+
+    offset = 0
+    for idx, val in enumerate(xPlot):
+        # print(val)
+        if idx == 0 or idx == len(xPlot)-1:
+            continue
+        
+        xCurrent = xPlot[idx + offset]
+        yCurrent = yPlot[idx + offset]
+
+        xPrev = xPlot[idx-1 + offset]
+        xNext = xPlot[idx+1 + offset]
+
+        yPrev = yPlot[idx-1 + offset]
+        yNext = yPlot[idx+1 + offset]
+
+        adjustY, adjustX = computeTangentLine((xPrev,yPrev), (xNext,yNext))
+
+        segmentROIXinitial.append(xCurrent-adjustX)
+        segmentROIYinitial.append(yCurrent-adjustY)
+        orthogonalROIZinitial.append(zPlot[idx + offset])
+
+        segmentROIXend.append(xCurrent+adjustX)
+        segmentROIYend.append(yCurrent+adjustY)
+
+        # orthogonal vector
+        # y = mx + b
+        k = 1
+        # orthogonalLineX = k/(np.sqrt(adjustY^2 + adjustX^2)) * -adjustY
+        # orthogonalLineY = k/(np.sqrt(adjustY^2 + adjustX^2)) * -adjustX
+
+        orthogonalROIXinitial.append(xCurrent-adjustY)
+        orthogonalROIYinitial.append(yCurrent+adjustX)
+
+        orthogonalROIXend.append(xCurrent+adjustY)
+        orthogonalROIYend.append(yCurrent-adjustX)
+
+        # plt.plot([xCurrent-adjustX,xCurrent+adjustX], [yCurrent-adjustY, yCurrent+adjustY], '.r', linestyle="--")
+
+    # TODO: add columns to represent each point to the line annotation object 
+    # Make a column to represent left point, each row is an tuple (x,y,z)
+    # Make a column to represent right point, each row is an tuple (x,y,z)
+    # Or have separate columns xRight, xLeft, yRight, etc...
+    orthogonalROIXinitial.append(np.nan)
+    orthogonalROIYinitial.append(np.nan)
+    orthogonalROIZinitial.append(np.nan)
+
+    lineAnnotations.setColumn("xLeft", orthogonalROIXinitial)
+    temp = lineAnnotations.getValues("xLeft")
+    # print("Xleft: ", temp)
+    print("length of list: ", len(orthogonalROIXinitial))
+
+    lineAnnotations.setColumn("yLeft", orthogonalROIYinitial)
+    lineAnnotations.setColumn("zLeft", orthogonalROIZinitial)
+    
+    # lineAnnotations.setColumn("xRight", orthogonalROIXend)
+    # lineAnnotations.setColumn("yRight", orthogonalROIYend)
+
+
+    # Plot using what we added to lineannotation
+    # Have a separate function to take in the lineannotation and plot
+    # call this line to get the pd of what we want to plot:
+    # dfPlot = self._annotations.getSegmentPlot(theseSegments, roiTypes, sliceNumber)
+    # roiTypes = "linePnt"
+    # sliceNumber = None
+
+
+def plotRadiusLines(myStack: pmm.stack):
+
+    lineAnnotations = myStack.getLineAnnotations()
+    # Separate this into another function
+    savedXLeftVals = lineAnnotations.getValues("xLeft")
+    savedYLeftVals = lineAnnotations.getValues("yLeft")
+
+    xLinePlot = lineAnnotations.getValues("x")
+    yLinePlot = lineAnnotations.getValues("y")
+
+    # ch2_img = myStack.getImageSlice(imageSlice=10, channel=channel)
+    ch2_img = myStack.getMaxProject(channel= 2)
+    if ch2_img is None:
+        print("you forgot to load the images")
+        return
+
+    plt.imshow(ch2_img)
+    plt.plot(savedXLeftVals, savedYLeftVals, '.r', linestyle="--")
+    plt.plot(xLinePlot, yLinePlot, '.y', linestyle="--")
+
+    # Add xyz on the right
+    # Plot the orthogonal Line
+
+
+    # xPlotTangent = [savedXLeftVals, segmentROIXend]
+    # yPlotTangent = [segmentROIYinitial, segmentROIYend]
+    # plt.plot(xPlotTangent, yPlotTangent, '.r', linestyle="--")
+
+    # xPlotOrthogonal = [orthogonalROIXinitial, orthogonalROIXend]
+    # yPlotOrthogonal = [orthogonalROIYinitial, orthogonalROIYend]
+    # plt.plot(xPlotOrthogonal, yPlotOrthogonal, '.b', linestyle="--")
+
+    # plt.plot(xPlot, yPlot, '.y', linestyle="--")
+    # plt.plot(xPlot[5], yPlot[5], 'ob', linestyle="--")
+    # plt.plot(xPlot[6], yPlot[6], 'oy', linestyle="--")
+    
+    plt.show()
+
+if __name__ == "__main__":
+    stackPath = '../PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
+    myStack = pmm.stack(stackPath)
+    channel = 2
+    lineAnnotations = myStack.getLineAnnotations()
+    # segmentROIplot()
+    getRadiusLines(lineAnnotations)
+   
+
+    # TODO: save and load then plot
+    lineAnnotations.save(forceSave = True)
+
+    myStack = pmm.stack(stackPath)
+    myStack.loadImages(channel=channel)
+
+    plotRadiusLines(myStack)
+
+    # plt.plot(xBox, yBox, 'oy', linestyle="--")
+
+
+
+    # Testing tangent lines
 
 
 
