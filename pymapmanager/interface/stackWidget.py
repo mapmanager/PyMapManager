@@ -1874,22 +1874,16 @@ class myPyQtGraphPlotWidget(pg.PlotWidget):
         lineAnnotations = self._myStack.getLineAnnotations()
         _displayOptions = self._displayOptionsDict['pointDisplay']
         _displayOptionsLine = self._displayOptionsDict['spineLineDisplay']
-        # image = np.array(self._myImage)
-
-        print("image is: ", self._sliceImage)
-        # self._aPointPlot = pymapmanager.interface.pointPlotWidget(pointAnnotations, self, _displayOptions, lineAnnotations, self._myImage)
-        # TODO: Figure out a way to get  self._sliceImage into this class so that we can pass it into pointPlotWidget
-        # THis method doesnt work because it is not dynamic
         self._aPointPlot = pymapmanager.interface.pointPlotWidget(pointAnnotations, self, _displayOptions, _displayOptionsLine, lineAnnotations, self._myStack)
 
         # add line plot of lineAnnotations
         lineAnnotations = self._myStack.getLineAnnotations()
         _displayOptions = self._displayOptionsDict['lineDisplay']
         self._aLinePlot = pymapmanager.interface.linePlotWidget(lineAnnotations, self, _displayOptions)
+        
         # connect mouse clicks in annotation view to proper table
         # self._aLinePlot.signalAnnotationClicked.connect()
 
-        # TODO (johnson) add point plot
         # pointAnnotations = self._myStack.getPointAnnotations()
         # self.aPoint = pymapmanager.interface.pointPlotWidget(pointAnnotations, self)
         
