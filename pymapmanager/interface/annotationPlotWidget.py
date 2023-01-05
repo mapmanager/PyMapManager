@@ -77,10 +77,11 @@ class annotationPlotWidget(QtWidgets.QWidget):
         # then state changes, fetch from backend again
         # state is, for example, plotting ['spineROI'] versus ['spineROI', 'controlROI']
 
+
         # Moved to derived classes
         # self._buildUI()
 
-        self._view.signalUpdateSlice.connect(self.slot_setSlice)
+        #self._view.signalUpdateSlice.connect(self.slot_setSlice)
 
     def _buildUI(self):
         
@@ -279,7 +280,7 @@ class annotationPlotWidget(QtWidgets.QWidget):
         
         self._currentSlice = sliceNumber
 
-        theseSegments = None  # all segments
+        theseSegments = 2  # all segments
         roiTypes = self._roiTypes
         
         # dfPlot is a row reduced version of backend df (all columns preserved)
@@ -366,12 +367,15 @@ class pointPlotWidget(annotationPlotWidget):
         # see: slot_setDisplayTypes
         self._roiTypes = ['spineROI', 'controlPnt']
 
+        #self._buildUI()
+
         self.lineAnnotations = lineAnnotations
         self.pointAnnotations = pointAnnotations
         # self._myImage = myImage
         self._myStack = stack
 
         self._buildUI()
+        self._view.signalUpdateSlice.connect(self.slot_setSlice)
 
     # def set_currentImage(self, )
     def _buildUI(self):
@@ -486,8 +490,6 @@ class pointPlotWidget(annotationPlotWidget):
         self._spineConnections.setData(xPlotSpines, yPlotSpines)
         self._view.update()
       
-
-
 class linePlotWidget(annotationPlotWidget):
     def __init__(self, annotations : pymapmanager.annotations.lineAnnotations,
                         pgView,  # pymapmanager.interface.myPyQtGraphPlotWidget
@@ -504,6 +506,9 @@ class linePlotWidget(annotationPlotWidget):
         # see: slot_setDisplayTypes
         self._roiTypes = ['linePnt']
         self._buildUI()
+
+        self._buildUI()
+        self._view.signalUpdateSlice.connect(self.slot_setSlice)
 
     def slot_selectSegment(self, segmentID : int, isAlt : bool):
         logger.info(f'segmentID:{segmentID} isAlt:{isAlt}')
