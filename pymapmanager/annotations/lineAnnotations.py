@@ -45,42 +45,9 @@ class lineAnnotations(baseAnnotations):
         )
         self.addColumn(colItem)
 
-        # Add columns xLeft ...
-        colItem = ColumnItem(
-            name = 'xLeft',
-            type = int,  
-            units = '',
-            humanname = 'xLeft',
-            description = 'xLeft'
-        )
-        self.addColumn(colItem)
-
-        colItem = ColumnItem(
-            name = 'yLeft',
-            type = int,  
-            units = '',
-            humanname = 'yLeft',
-            description = 'yLeft'
-        )
-        self.addColumn(colItem)
-
-        colItem = ColumnItem(
-            name = 'zLeft',
-            type = int,  
-            units = '',
-            humanname = 'zLeft',
-            description = 'zLeft'
-        )
-        self.addColumn(colItem)
-
-
         self.load()
 
         self.buildSegmentDatabase()
-
-     
-
-
 
     def buildSegmentDatabase(self, segmentID : Union[List[int], int, None] = None):
         """Rebuild summary database of each line segment.
