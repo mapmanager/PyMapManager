@@ -1,22 +1,25 @@
 PyMapManager only exists because of the massive amount of creativity, expertise, and effort that has been put in to creating and maintaining a slew of open-source software projects.
 
+### [Python](https://www.python.org/) (back-end)
+  - [SciPy](https://www.scipy.org/) - Scientific computing ecosystem
+  - scikit-image - Image processing in Python
+  - [NumPy](http://www.numpy.org/) - Scientific computing for Python
+  - [Pandas](https://pandas.pydata.org/) - Data analysis library
+  - [Matplotlib](https://matplotlib.org/) - Plotting
+  - Tifffile - General purpose Tiff file library
+
+### Linking Python to a web server
+  - [Flask](http://flask.pocoo.org/) - Web microframework
+  - [Redis](https://redis.io/) - Database
+  - [Celery](http://www.celeryproject.org/) - Distributed task queue
 
 ### Server
   - [Debian](https://www.debian.org/) - Operating system
   - [NGINX ](https://www.nginx.com/) - Web server for load balancing, microservices, and API gateways
   - [uwsgi](https://uwsgi-docs.readthedocs.io/en/latest/) - Web standard for NGINX to talk to Python
 
-### [Python](https://www.python.org/) (back-end)
-  - [Flask](http://flask.pocoo.org/) - Web microframework
-  - [SciPy](https://www.scipy.org/) - Scientific computing ecosystem
-  - [NumPy](http://www.numpy.org/) - Scientific computing for Python
-  - [Pandas](https://pandas.pydata.org/) - Data analysis library
-  - [Matplotlib](https://matplotlib.org/) - Plotting
-  - Tifffile - General purpose Tiff file library
-  - [Redis](https://redis.io/) - Database
-  - [Celery](http://www.celeryproject.org/) - Distributed task queue
- 
 ### [Javascript](https://www.javascript.com/) (front-end)
+  - Vue
   - [Angular](https://angularjs.org/) - Superheroic Javascript framework
   - [JQuery](https://jquery.com/)
   - [D3](https://d3js.org/) - Data driven documents
@@ -35,7 +38,8 @@ PyMapManager only exists because of the massive amount of creativity, expertise,
 ### Distribution
   - [Github](https://github.com/) - Software development platform for online storage/sharing/computation
   - [PyPi](https://pypi.org/project/pymapmanager/) - Python package index for online distribution
-    
+  - PyInstaller - To create one click executables for macOS, Windows, Linux
+
 [duckdns]: http://cudmore.duckdns.org
 [pymapmanager]: https://github.com/cudmore/PyMapManager
 [pymapmanager-data]: https://github.com/mapmanager/PyMapManager-Data
