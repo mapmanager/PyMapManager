@@ -53,6 +53,7 @@ setup(
         "numpy",
         "pandas",
         "scipy",
+        "scikit-image",
         "tifffile",
     ],
 	extras_require={

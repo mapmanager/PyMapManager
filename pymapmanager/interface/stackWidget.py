@@ -1823,6 +1823,14 @@ class myPyQtGraphPlotWidget(pg.PlotWidget):
         # update contrast
         self._setContrast()
        
+        # _myImageLabel
+        # logger.info('todo: fix logic of _myImageLabel, this recreates on each set slice')
+        # _imageLabel = self._sliceImage.copy()
+        # _imageLabel[:] = 0
+        # _imageLabel[200:300,300:600] = 255
+        # self._imageLabel = _imageLabel  # update self._imageLabel with tracing results and self.update()
+        # self._myImageLabel.setImage(_imageLabel, opacity=0.5)
+
         self.update()  # update pyqtgraph interface
 
         # emit
@@ -1876,7 +1884,9 @@ class myPyQtGraphPlotWidget(pg.PlotWidget):
         _displayOptionsLine = self._displayOptionsDict['spineLineDisplay']
         # image = np.array(self._myImage)
 
-        print("image is: ", self._sliceImage)
+        # will be None
+        # print("image is: ", self._sliceImage)
+        
         # self._aPointPlot = pymapmanager.interface.pointPlotWidget(pointAnnotations, self, _displayOptions, lineAnnotations, self._myImage)
         # TODO: Figure out a way to get  self._sliceImage into this class so that we can pass it into pointPlotWidget
         # THis method doesnt work because it is not dynamic
@@ -1893,6 +1903,13 @@ class myPyQtGraphPlotWidget(pg.PlotWidget):
         # pointAnnotations = self._myStack.getPointAnnotations()
         # self.aPoint = pymapmanager.interface.pointPlotWidget(pointAnnotations, self)
         
+        # jan23 add an image to show tracing progress
+        _fakeData = np.zeros((1,1,1))
+        self._myImageLabel = pg.ImageItem(_fakeData)
+        #self._myImage.setContentsMargins(0, 0, 0, 0)
+        #self._myImage.setBorder(None)
+        self.addItem(self._myImageLabel)
+
 if __name__ == '__main__':
     from pprint import pprint
     
@@ -1905,7 +1922,7 @@ if __name__ == '__main__':
         #path = '/Users/cudmore/data/example-oir/20190416__0001.oir'
         
         # zeng-you linden sutter
-        path = '/Users/cudmore/data/example-linden-sutter/F12S12_15112_001.tif'
+        # path = '/Users/cudmore/data/example-linden-sutter/F12S12_15112_001.tif'
         # cudmore 2 channel si
         #path = '/Users/cudmore/Dropbox/MapMAnagerData/scanimage4/YZ008_C2_05192015_001.tif'
         #path = '/Users/cudmore/Dropbox/MapMAnagerData/scanimage4/YZ008_C2_05192015_001.tif'
@@ -1918,13 +1935,14 @@ if __name__ == '__main__':
         #path = '/Users/cudmore/data/patrick/GCaMP Time Series 2.tiff'
 
         # path = '/Users/cudmore/Sites/PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
-        path = '/Users/johns/Documents/GitHub/PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
-
+        # path = '/Users/johns/Documents/GitHub/PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
+        path = '../PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
         myStack = pymapmanager.stack(path=path)
         
         myStack.loadImages(channel=1)
         myStack.loadImages(channel=2)
         
+        # do this one and save into backend and file
         myStack.createBrightestIndexes(channelNum = 2)
 
         print('myStack:', myStack)
@@ -1947,8 +1965,11 @@ if __name__ == '__main__':
         app.setFont(aFont, "QTableView")
         app.setFont(aFont, "QToolBar")
 
-
         bsw = stackWidget(myStack=myStack)
+
+        # useful on startup, to snap to an image
+        bsw._myGraphPlotWidget.slot_setSlice(30)
+
         bsw.show()
 
         sys.exit(app.exec_())
