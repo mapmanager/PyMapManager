@@ -9,7 +9,7 @@ import pandas as pd
 import skimage
 # Remove later on:
 import pymapmanager as pmm
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 def setsAreEqual(a, b):
 	"""Return true if sets (a, b) are equal.
@@ -117,6 +117,7 @@ def _getSegment(lineAnnotations : pmm.annotations.lineAnnotations, segmentID : i
     return dfOneSegment
 
 def segmentROIplot():
+    import matplotlib.pyplot as plt
 
     stackPath = '../PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
     myStack = pmm.stack(stackPath)
@@ -524,6 +525,8 @@ def getRadiusLines(lineAnnotations: pmm.annotations.lineAnnotations):
 
 
 def plotRadiusLines(myStack: pmm.stack):
+
+    import matplotlib.pyplot as plt
 
     lineAnnotations = myStack.getLineAnnotations()
     # Separate this into another function
