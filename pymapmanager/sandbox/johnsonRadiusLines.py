@@ -9,8 +9,26 @@ def plotRadiusLines(myStack: pmm.stack):
     savedXLeftVals = lineAnnotations.getValues("xLeft")
     savedYLeftVals = lineAnnotations.getValues("yLeft")
 
-    xLinePlot = lineAnnotations.getValues("x")
-    yLinePlot = lineAnnotations.getValues("y")
+    savedXRightVals = lineAnnotations.getValues("xRight")
+    savedYRightVals = lineAnnotations.getValues("yRight")
+
+    # xLinePlot = lineAnnotations.getValues("x")
+    # yLinePlot = lineAnnotations.getValues("y")
+    # Plot just on segment for testing
+    # segmentCoords = lineAnnotations.getSegment_xyz(0)
+    # print(segmentCoords)
+    # xLinePlotSegment = segmentCoords[:,2]
+    # yLinePlotSegment = segmentCoords[:,1]
+    segment = 0
+    dfLineSegment = lineAnnotations.getSegment(segment)
+    # print("dfLineSegment", dfLineSegment)
+    lineSegment = dfLineSegment[['x', 'y', 'z']].to_numpy()
+    # print("lineSegment", lineSegment)
+    # print("lineSegment[0]", lineSegment[:,0])
+    xLinePlotSegment = lineSegment[:,0]
+    yLinePlotSegment = lineSegment[:,1]
+
+
 
     # ch2_img = myStack.getImageSlice(imageSlice=10, channel=channel)
     ch2_img = myStack.getMaxProject(channel= 2)
@@ -20,24 +38,12 @@ def plotRadiusLines(myStack: pmm.stack):
 
     plt.imshow(ch2_img)
     plt.plot(savedXLeftVals, savedYLeftVals, '.r', linestyle="--")
-    plt.plot(xLinePlot, yLinePlot, '.y', linestyle="--")
+    plt.plot(savedXRightVals, savedYRightVals, '.r', linestyle="--")
+    # Orthogonal Line
+    plt.plot([savedXLeftVals, savedXRightVals], [savedYLeftVals, savedYRightVals], '.b', linestyle="--")
+    plt.plot(xLinePlotSegment, yLinePlotSegment, '.y', linestyle="--")
+    # plt.plot(xLinePlot, yLinePlot, '.y', linestyle="--")
 
-    # Add xyz on the right
-    # Plot the orthogonal Line
-
-
-    # xPlotTangent = [savedXLeftVals, segmentROIXend]
-    # yPlotTangent = [segmentROIYinitial, segmentROIYend]
-    # plt.plot(xPlotTangent, yPlotTangent, '.r', linestyle="--")
-
-    # xPlotOrthogonal = [orthogonalROIXinitial, orthogonalROIXend]
-    # yPlotOrthogonal = [orthogonalROIYinitial, orthogonalROIYend]
-    # plt.plot(xPlotOrthogonal, yPlotOrthogonal, '.b', linestyle="--")
-
-    # plt.plot(xPlot, yPlot, '.y', linestyle="--")
-    # plt.plot(xPlot[5], yPlot[5], 'ob', linestyle="--")
-    # plt.plot(xPlot[6], yPlot[6], 'oy', linestyle="--")
-    
     plt.show()
 
 if __name__ == "__main__":
@@ -46,9 +52,12 @@ if __name__ == "__main__":
     channel = 2
     lineAnnotations = myStack.getLineAnnotations()
     # segmentROIplot()
-    
-    from pymapmanager.utils import getRadiusLines
-    getRadiusLines(lineAnnotations)
+    # segmentID = 0
+
+    lineAnnotations.getRadiusLines([0,1])
+
+    # from pymapmanager.utils import getRadiusLines
+    # getRadiusLines(lineAnnotations)
    
 
     # TODO: save and load then plot

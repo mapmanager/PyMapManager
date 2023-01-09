@@ -112,16 +112,27 @@ def computeTangentLine(startPoint: tuple, stopPoint: tuple) -> tuple:
     dXsegment = stopPoint[0] - startPoint[0]
     dYsegment = stopPoint[1] - startPoint[1]
 
-    Msegment = dYsegment/dXsegment
+    # Msegment = dYsegment/dXsegment
     angle = np.arctan2(dYsegment,dXsegment) 
     adjustY = np.sin(angle) * extendHead
-    adjustX = adjustY/ (np.tan(angle))
+    # print("adjustY", adjustY)
+    # adjustX = adjustY/ (np.tan(angle))
+    adjustX = extendHead * np.cos(angle)
 
     return (adjustY, adjustX)
+
+# spineROIs do the same calculate for one at a time (and have a separate for loop in the future)
+# Intersection of ROI (rectangle, and shaft)
+# Function to return the polygons 
 
 # def getRadiusLines(lineAnnotations: pmm.annotations.lineAnnotations):
 def getRadiusLines(lineAnnotations):
     # TODO (cudmore) this should be a member function of lineAnnotations class
+    # 2nd parameter segmentID: Union(Int, List(int), None)
+    # if segmentID is None:
+        # grab all segments into a list
+    # else if(isInstance(segmentID, int)):
+    #   segmentID = list[segmentID]
 
     import pymapmanager as pmm
     #lineAnnotations: pmm.annotations.lineAnnotations
@@ -135,9 +146,11 @@ def getRadiusLines(lineAnnotations):
     lineAnnotations = lineAnnotations
     
     # segmentDF = lineAnnotations.getSegment(segmentID)
+
+    # Change to one segment when put into lineAnnotation.py
     segmentDF = lineAnnotations._df
 
-    # print(segmentDF)
+    print(segmentDF)
 
     xPlot = segmentDF['x']
     yPlot = segmentDF['y']
@@ -158,12 +171,21 @@ def getRadiusLines(lineAnnotations):
     orthogonalROIXinitial = [np.nan]
     orthogonalROIYinitial = [np.nan]
     orthogonalROIZinitial = [np.nan]
-    orthogonalROIXend = []
-    orthogonalROIYend = []
+    # orthogonalROIXend = []
+    # orthogonalROIYend = []
+    orthogonalROIXend = [np.nan]
+    orthogonalROIYend = [np.nan]
+    orthogonalROIZend = [np.nan]
 
+    # pd.df index
     offset = 0
+
+    # Change so that you loop through each segment individually
+    # Nested for loop
     for idx, val in enumerate(xPlot):
         # print(val)
+        # Exclude first and last points since they do not have a previous or next point 
+        # that is needed for calculation
         if idx == 0 or idx == len(xPlot)-1:
             continue
         
@@ -180,44 +202,47 @@ def getRadiusLines(lineAnnotations):
 
         segmentROIXinitial.append(xCurrent-adjustX)
         segmentROIYinitial.append(yCurrent-adjustY)
-        orthogonalROIZinitial.append(zPlot[idx + offset])
-
+        
         segmentROIXend.append(xCurrent+adjustX)
         segmentROIYend.append(yCurrent+adjustY)
 
-        # orthogonal vector
-        # y = mx + b
-        k = 1
-        # orthogonalLineX = k/(np.sqrt(adjustY^2 + adjustX^2)) * -adjustY
-        # orthogonalLineY = k/(np.sqrt(adjustY^2 + adjustX^2)) * -adjustX
-
         orthogonalROIXinitial.append(xCurrent-adjustY)
         orthogonalROIYinitial.append(yCurrent+adjustX)
+        orthogonalROIZinitial.append(zPlot[idx + offset])
 
         orthogonalROIXend.append(xCurrent+adjustY)
         orthogonalROIYend.append(yCurrent-adjustX)
+        orthogonalROIZend.append(zPlot[idx + offset])
 
+        # import matplotlib.pyplot as plt
         # plt.plot([xCurrent-adjustX,xCurrent+adjustX], [yCurrent-adjustY, yCurrent+adjustY], '.r', linestyle="--")
 
     # TODO: add columns to represent each point to the line annotation object 
     # Make a column to represent left point, each row is an tuple (x,y,z)
     # Make a column to represent right point, each row is an tuple (x,y,z)
     # Or have separate columns xRight, xLeft, yRight, etc...
+
+    # Add nan at the end of each list since previous for loop excludes the last point
     orthogonalROIXinitial.append(np.nan)
     orthogonalROIYinitial.append(np.nan)
     orthogonalROIZinitial.append(np.nan)
 
+    orthogonalROIXend.append(np.nan)
+    orthogonalROIYend.append(np.nan)
+    orthogonalROIZend.append(np.nan)
+
+    # print(orthogonalROIYinitial)
     lineAnnotations.setColumn("xLeft", orthogonalROIXinitial)
     temp = lineAnnotations.getValues("xLeft")
     # print("Xleft: ", temp)
-    print("length of list: ", len(orthogonalROIXinitial))
+    # print("length of list: ", len(orthogonalROIXinitial))
 
     lineAnnotations.setColumn("yLeft", orthogonalROIYinitial)
     lineAnnotations.setColumn("zLeft", orthogonalROIZinitial)
     
-    # lineAnnotations.setColumn("xRight", orthogonalROIXend)
-    # lineAnnotations.setColumn("yRight", orthogonalROIYend)
-
+    lineAnnotations.setColumn("xRight", orthogonalROIXend)
+    lineAnnotations.setColumn("yRight", orthogonalROIYend)
+    lineAnnotations.setColumn("zRight", orthogonalROIZend)
 
     # Plot using what we added to lineannotation
     # Have a separate function to take in the lineannotation and plot

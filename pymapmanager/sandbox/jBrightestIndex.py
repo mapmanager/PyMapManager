@@ -29,7 +29,7 @@ def _getSegment(lineAnnotations : pmm.annotations.lineAnnotations, segmentID : i
     dfOneSegment = dfOneSegment[dfLines['segmentID']==segmentID]
     return dfOneSegment
 
-def segmentROIplot():
+def spineROIplot():
     import matplotlib.pyplot as plt
 
     stackPath = '../PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
@@ -128,7 +128,6 @@ def segmentROIplot():
         # print("brightestIndex: ", brightestIndex)
         brightestIndexes.append(brightestIndex + startSegmentIndex)
 
-    # Logic of this needs to be fixed. Not showing all the line segments 
     xPlotLines = lineAnnotations.getValues(['x'], brightestIndexes)
     yPlotLines = lineAnnotations.getValues(['y'], brightestIndexes)  
     
@@ -217,95 +216,109 @@ def segmentROIplot():
     # Needs to add first point at the end for final connection. Bad implementation?
     # Need to figure out how to use extendHead
     # TODO: extend the tail
+    # Note: Plotting ROI around the spine connection with line
     xBox = [firstCoordXArray, secondCoordXArray, thirdCoordXArray, fourthCoordXArray, firstCoordXArray]
     yBox = [firstCoordYArray, secondCoordYArray, thirdCoordYArray, fourthCoordYArray, firstCoordYArray]
+    plt.plot(xBox, yBox, 'og', linestyle="--")
+    plt.show()
+    
+if __name__ == "__main__":
+    spineROIplot()
 
-    segmentROIXinitial = []
-    segmentROIYinitial = []
 
-    segmentROIXend = []
-    segmentROIYend= []
 
-    for idx, x in enumerate(xPlotLines):
-        if(idx == 0 or idx == len(xPlotLines) - 1):
-            # Do nothing
-            continue
-        else:
-            currentX = xPlotLines[idx]
-            currentY = yPlotLines[idx]
 
-            prevX = xPlotLines[idx-1]
-            prevY = yPlotLines[idx-1]
 
-            nextX = xPlotLines[idx+1]
-            nextY = yPlotLines[idx+1]
 
-            dXsegment = nextX - prevX
-            dYsegment = nextY - prevY
 
-            Msegment = dYsegment/dXsegment
-            angle = np.arctan2(dYsegment,dXsegment) 
-            adjustY = np.sin(angle) * extendHead
-            adjustX = adjustY/ (np.tan(angle))
 
-            segmentROIXinitial.append(currentX-adjustX)
-            segmentROIYinitial.append(currentY-adjustY)
+    # # Begin calculating tangent and orthogonal line for segment ROI.
+    # segmentROIXinitial = []
+    # segmentROIYinitial = []
 
-            segmentROIXend.append(currentX+adjustX)
-            segmentROIYend.append(currentY+adjustY)
+    # segmentROIXend = []
+    # segmentROIYend= []
 
-    # IDX could be out of order?
-    temp1 = [segmentROIXinitial, segmentROIXend]
-    temp2 = [segmentROIYinitial, segmentROIYend]
+    # for idx, x in enumerate(xPlotLines):
+    #     if(idx == 0 or idx == len(xPlotLines) - 1):
+    #         # Do nothing
+    #         continue
+    #     else:
+    #         currentX = xPlotLines[idx]
+    #         currentY = yPlotLines[idx]
+
+    #         prevX = xPlotLines[idx-1]
+    #         prevY = yPlotLines[idx-1]
+
+    #         nextX = xPlotLines[idx+1]
+    #         nextY = yPlotLines[idx+1]
+
+    #         dXsegment = nextX - prevX
+    #         dYsegment = nextY - prevY
+
+    #         Msegment = dYsegment/dXsegment
+    #         angle = np.arctan2(dYsegment,dXsegment) 
+    #         adjustY = np.sin(angle) * extendHead
+    #         adjustX = adjustY/ (np.tan(angle))
+
+    #         segmentROIXinitial.append(currentX-adjustX)
+    #         segmentROIYinitial.append(currentY-adjustY)
+
+    #         segmentROIXend.append(currentX+adjustX)
+    #         segmentROIYend.append(currentY+adjustY)
+
+    # # IDX could be out of order?
+    # temp1 = [segmentROIXinitial, segmentROIXend]
+    # temp2 = [segmentROIYinitial, segmentROIYend]
 
     # plt.plot(temp1, temp2, 'om', linestyle="--")
 
 
-    # idx: 3 center
-    # idx: 2,4 
-    x2 = xPlotLines[2]
-    x4 = xPlotLines[4]
-    y2 = yPlotLines[2]
-    y4 = yPlotLines[4]
-    dXsegment = x4-x2
-    dYsegment = y4-y2
+    # # idx: 3 center
+    # # idx: 2,4 
+    # x2 = xPlotLines[2]
+    # x4 = xPlotLines[4]
+    # y2 = yPlotLines[2]
+    # y4 = yPlotLines[4]
+    # dXsegment = x4-x2
+    # dYsegment = y4-y2
 
-    newM = dYsegment/ dXsegment
+    # newM = dYsegment/ dXsegment
 
-    x3 = xPlotLines[3]
-    y3 = yPlotLines[3]
-    # y = mx + B
+    # x3 = xPlotLines[3]
+    # y3 = yPlotLines[3]
+    # # y = mx + B
 
-    angle = np.arctan2(dYsegment,dXsegment) 
-    adjustY = np.sin(angle) * extendHead
-    adjustX = adjustY/ (np.tan(angle))
+    # angle = np.arctan2(dYsegment,dXsegment) 
+    # adjustY = np.sin(angle) * extendHead
+    # adjustX = adjustY/ (np.tan(angle))
 
-    b3 = y - newM * x3
-    # x3_1 = y3 - 
+    # b3 = y - newM * x3
+    # # x3_1 = y3 - 
 
-    tempX = [x3-adjustX, x3+adjustX]
-    tempY = [y3-adjustY, y3+adjustY]
+    # tempX = [x3-adjustX, x3+adjustX]
+    # tempY = [y3-adjustY, y3+adjustY]
     # plt.plot(tempX, tempY, 'om', linestyle="--")
-    # plt.plot(x2, y2, 'og', linestyle="--")
-    plt.plot(xPlotLines[0], yPlotLines[0], 'om', linestyle="--")
+    # # plt.plot(x2, y2, 'og', linestyle="--")
+    # plt.plot(xPlotLines[0], yPlotLines[0], 'om', linestyle="--")
 
-    # segment 0 idx 20
-    # x_min = 1005
-    # x_max = 1020
-    # y_min = 250
-    # y_max = 225
+    # # segment 0 idx 20
+    # # x_min = 1005
+    # # x_max = 1020
+    # # y_min = 250
+    # # y_max = 225
 
-    # Segment 1 idx = 0
+    # # Segment 1 idx = 0
+    # # x_min = 330
+    # # x_max = 370
+    # # y_min = 270
+    # # y_max = 245
+
     # x_min = 330
-    # x_max = 370
-    # y_min = 270
-    # y_max = 245
+    # x_max = 460
+    # y_min = 260
+    # y_max = 200
+    # # # Why does the y go the other way?
+    # plt.axis([x_min, x_max, y_min, y_max])
 
-    x_min = 330
-    x_max = 460
-    y_min = 260
-    y_max = 200
-    # # Why does the y go the other way?
-    plt.axis([x_min, x_max, y_min, y_max])
-
-    plt.show()
+    # plt.show()
