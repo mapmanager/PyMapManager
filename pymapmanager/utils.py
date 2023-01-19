@@ -21,25 +21,38 @@ def setsAreEqual(a, b):
 			return False
 	return True
 
-def _findClosestIndex(x, y, z, xyzLine : List[List[float]]) -> int:
+def _findClosestIndex(x, y, z, zyxLine : List[List[float]]) -> int:
     """Find the closest point to (x,y,z) on line.
     """
+    # print()
     dist = float('inf') # np.inf
     closestIdx = None
-    for idx, point in enumerate(xyzLine):
-        dx = abs(x - point[0])
+    for idx, point in enumerate(zyxLine):
+        # dx = abs(x - point[0])
+        # dy = abs(y - point[1])
+        # dz = abs(z - point[2])
+        dx = abs(x - point[2])
         dy = abs(y - point[1])
-        dz = abs(z - point[2])
+        dz = abs(z - point[0])
         _dist = math.sqrt( dx**2 + dy**2 + dz**2)
         if _dist < dist:
             dist = _dist
             closestIdx = idx
     return closestIdx
 
-def _findBrightestIndex(x, y, z, xyzLine : List[List[float]], image) -> int:
-    """Find the brightest path in an image volume
+def _findBrightestIndex(x, y, z, zyxLine : List[List[float]], image: np.ndarray, numPnts: int = 5, linewidth: int = 1) -> int:
+    """
+        Find the brightest path in an image volume
         From one point (x,y,z) to the given candidates line (xyzLine).
         
+        (subject to change)
+        Args:
+            x: x coordinate of spine
+            y: y coordinate of spine
+            z: z coordinate of spine
+            xyzLine : xyz points of the line within a list
+            image: np.array
+
         Returns: index on the line which has the brightest path
 		and list of x y z candidate
 
@@ -47,11 +60,11 @@ def _findBrightestIndex(x, y, z, xyzLine : List[List[float]], image) -> int:
             Rather than a single image slice, pass it a small z-projection centered on z
             use pmm.stack.getMaxProjectSlice() to do this.
     """
-    numPnts = 5  # parameter for the search, seach +/- from closest point (seed point)
-    linewidth = 3
+    # numPnts = 5  # parameter for the search, seach +/- from closest point (seed point)
+    # linewidth = 3
     # 1) use pythagrian theorem to find the closest point on the line.
     #    This will be the seed point for searching for the brigtest path
-    closestIndex = _findClosestIndex(x, y, z, xyzLine)
+    closestIndex = _findClosestIndex(x, y, z, zyxLine)
     
 #     print(temp)
     # 3) using intensity profile, find the point on the line with the brightest path (from the spine point)
@@ -63,11 +76,11 @@ def _findBrightestIndex(x, y, z, xyzLine : List[List[float]], image) -> int:
     if(firstPoint < 0):
         firstPoint = 0
         
-    if(lastPoint > len(xyzLine)):
-        lastPoint = len(xyzLine) - 1
+    if(lastPoint > len(zyxLine)):
+        lastPoint = len(zyxLine) - 1
     
     # 2) grab a list of candidate points on the line, loop through temp
-    candidatePoints = xyzLine[firstPoint:lastPoint]
+    candidatePoints = zyxLine[firstPoint:lastPoint]
     # print("candidatePoints: ", candidatePoints)
   
     brightestIndex = None

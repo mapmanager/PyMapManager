@@ -101,7 +101,8 @@ def spineROIplot():
     startSegmentIndex = dfLineSegment['index'].to_numpy()[0]
 
     # print(dfLineSegment)
-    lineSegment = dfLineSegment[['x', 'y', 'z']].to_numpy()
+    # lineSegment = dfLineSegment[['x', 'y', 'z']].to_numpy()
+    lineSegment = dfLineSegment[['z', 'y', 'x']].to_numpy()
 
     # Get the spines from each segment
     dfSegmentSpines = _getSegmentSpines(pointAnnotations, segment)
@@ -119,10 +120,6 @@ def spineROIplot():
         ySpine = spine['y']
         zSpine = spine['z']
 
-        # print("xSpine: ", xSpine)
-        # print("ySpine: ", ySpine)
-        # print("zSpine: ", zSpine)
-
         xyzSpines.append([xSpine, ySpine, zSpine])
         brightestIndex = _findBrightestIndex(xSpine, ySpine, zSpine, lineSegment, ch2_img)
         # print("brightestIndex: ", brightestIndex)
@@ -130,10 +127,10 @@ def spineROIplot():
 
     xPlotLines = lineAnnotations.getValues(['x'], brightestIndexes)
     yPlotLines = lineAnnotations.getValues(['y'], brightestIndexes)  
-    
+    print(xPlotLines)
     xPlotSpines = [xyzOneSpine[0] for xyzOneSpine in xyzSpines]
     yPlotSpines = [xyzOneSpine[1] for xyzOneSpine in xyzSpines]
-
+    print(xPlotSpines)
     # Line to connect points
     x = [xPlotSpines, xPlotLines]
     y = [yPlotSpines, yPlotLines]
@@ -142,16 +139,6 @@ def spineROIplot():
     plt.plot(xPlotLines, yPlotLines, 'ob')
     plt.plot(xPlotSpines, yPlotSpines, 'or')
     print('plotting')
-
-    # idx = 22
-
-    # # Plotting just one set of points first to figure out algorithm
-    # x = [xPlotSpines[idx], xPlotLines[idx]]
-    # y = [yPlotSpines[idx], yPlotLines[idx]]
-    # plt.plot(x, y, 'ow', linestyle="--")
-    # plt.plot(xPlotLines[idx], yPlotLines[idx], 'ob')
-    # plt.plot(xPlotSpines[idx], yPlotSpines[idx], 'or')
-    # print('plotting')
     
     width = 3
     extendHead = 3
@@ -167,7 +154,7 @@ def spineROIplot():
     fourthCoordYArray = []
 
     for idx, x in enumerate(xPlotLines):
-        print("idx is:", idx)
+        # print("idx is:", idx)
         # a = line point, b = spine point
         Xa = xPlotLines[idx]
         Xb = xPlotSpines[idx]

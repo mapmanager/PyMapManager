@@ -280,7 +280,7 @@ class annotationPlotWidget(QtWidgets.QWidget):
         
         self._currentSlice = sliceNumber
 
-        theseSegments = 2  # all segments
+        theseSegments = None  # all segments
         roiTypes = self._roiTypes
         
         # dfPlot is a row reduced version of backend df (all columns preserved)

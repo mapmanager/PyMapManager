@@ -348,7 +348,7 @@ class baseAnnotations():
     #     return self._columns
     
     def getSegmentPlot(self, segmentID : Union[int, List[int], None],
-                        roiTypes : list, 
+                        roiTypes : Union[str, List[str]] , 
                         zSlice : Union[int, None] = None,
                         zPlusMinus : int = 0,
                         ) -> pd.DataFrame:
@@ -360,8 +360,13 @@ class baseAnnotations():
             zSlice: The slice to get
             zPlusMinus: 
         """
-        
-        #logger.info(f'segmentID:{segmentID} roiTypes:{roiTypes} zSlice:{zSlice}')
+        # if(isinstance(segmentID, np.uint16)):
+        #     segmentID = int(segmentID)
+
+        # #logger.info(f'segmentID:{segmentID} roiTypes:{roiTypes} zSlice:{zSlice}')
+
+        # if(isinstance(roiTypes, str)):
+        #     roiTypes = list(roiTypes)
 
         # reduce by roiType
         df = self._df[self._df['roiType'].isin(roiTypes)]

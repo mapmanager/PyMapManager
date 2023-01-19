@@ -2,6 +2,7 @@
 """
 #import os
 import enum
+import math
 from pprint import pprint
 from typing import List, Union
 
@@ -89,6 +90,8 @@ class pointAnnotations(baseAnnotations):
         Args:
             roiType:
             segmentID:
+
+        TODO: Add more parameters that are optional (image, lineAnnotations)
         """
 
         newRow = super().addAnnotation(*args,**kwargs)
@@ -97,6 +100,10 @@ class pointAnnotations(baseAnnotations):
         self._df.loc[newRow, 'segmentID'] = segmentID
 
         # find brightest path to line segment
+
+        # if roiType == pointTypes.spineROI:
+        #     self._calculateSingleBrightestIndex()
+
         #self.reconnectToSegment(newRow)
 
         return newRow
@@ -155,6 +162,92 @@ class pointAnnotations(baseAnnotations):
         dfSpines = dfPoints[dfPoints['roiType'] == 'spineROI']
         dfSpines = dfSpines[dfSpines['segmentID']==segmentID]
         return dfSpines
+
+    # Call this when creating a new 
+    def _calculateSingleBrightestIndex(self, stack, channel: int, spineRowIdx: int, lineAnnotation, img):
+        """
+            Args:
+                stack: the stack that we are using to acquire all the data
+                channel: current channel used for image analysis
+                spineRowIdx: Row index of the current spine
+
+            Return:
+                Brightest index of a line point for one spine point
+        """
+        import pymapmanager
+        # lineAnnotation = stack.getLineAnnotations()
+        # img = stack.getImageChannel(channel = channel)
+        segmentID = self.getValue("segmentID", spineRowIdx)
+        # print(type(segmentID), segmentID)
+     
+        # call backend function within lineAnnotations
+        segmentZYX = lineAnnotation.getZYXlist(int(segmentID), ['linePnt'])
+
+        # Pull out into list z y x 
+        x = self.getValue("x", spineRowIdx)
+        y = self.getValue("y", spineRowIdx)
+        z = self.getValue("y", spineRowIdx)
+
+        # Bug:
+        # segmentZYX = lineAnnotation.getSegment_xyz(segmentID)
+        # print("segmentZYX: ", type(segmentZYX))
+        # print("segmentZYX[0]: ", segmentZYX[0])
+        # import sys
+        # sys.exit(0)
+        # call utility function
+        # Check to see if this val is correct before storing into dataframe
+        brightestIndex = pymapmanager.utils._findBrightestIndex(x, y, z, segmentZYX, img)
+
+        # Store into backend
+        # backendIdx
+        self.setValue("brightestIndex", spineRowIdx, brightestIndex)
+
+        return brightestIndex
+
+    def calculateBrightestIndexes(self, stack, channel: int, 
+                    segmentID : Union[int, List[int], None],
+                    lineAnnotation,
+                    img):
+        """
+            Function to calculate brightest indexes within one segment or multiple segments and 
+            saves them into the back end
+        """
+        # lineAnnotation = stack.getLineAnnotations()
+        # img = stack.getImageChannel(channel = channel)
+        if segmentID is None:
+            # grab all segment IDs into a list
+            segmentID = lineAnnotation.getSegmentList()
+
+        elif (isinstance(segmentID, int)):
+            newIDlist = []
+            newIDlist.append(segmentID)
+            segmentID = newIDlist
+
+        segmentSpineDFs = []
+
+        # List of all segmentID dataframes 
+        for id in segmentID:
+            segmentSpineDFs.append(self.getSegmentSpines(id))
+
+        # Loop through all segments in the given list
+        for index in range(len(segmentID)):
+            currentDF = segmentSpineDFs[index]
+            # Looping through all spines connected to one segment
+            for idx, val in enumerate(currentDF["index"]):
+                # print(val)
+                # val = current index
+                self._calculateSingleBrightestIndex(stack, channel, val, lineAnnotation, img)
+                print("stored", idx)
+
+
+
+
+    # function to set brightest index in column
+        # add for one spine when a new one is added
+        # loop to do it for all spines within a segment / for multiple segments
+    # 2nd function to return 4 coords to rectangle 
+    # Both take in lineannotations
+    #  _function used internally for one spine
 
 if __name__ == '__main__':
     pass

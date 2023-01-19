@@ -356,7 +356,6 @@ class lineAnnotations(baseAnnotations):
         """
         return self.getDataFrame()['segmentID'].to_numpy()
 
-
     def getSegment(self, segmentID : Union[int, List[int]] = None) -> pd.DataFrame:
         """Get all annotations rows for one segment id.
         """
@@ -376,8 +375,10 @@ class lineAnnotations(baseAnnotations):
         return dfOneSegment
 
     def getRadiusLines(self, segmentID : Union[int, List[int]] = None):
-        # TODO (cudmore) this should be a member function of lineAnnotations class
-        # 2nd parameter segmentID: Union(Int, List(int), None)
+        """
+            Calculates all the xyz coordinates for the Shaft ROI for given segment(s)
+            and places them into the backend as columns within the dataframe
+        """
        
         if segmentID is None:
             # grab all segment IDs into a list
@@ -413,10 +414,7 @@ class lineAnnotations(baseAnnotations):
         segmentROIXend = []
         segmentROIYend = []
 
-        # pd.df index
-        # offset = 0
-
-        # Change so that you loop through each segment individually
+        # Looping through each segment individually
         # Nested for loop
         for index in range(len(segmentID)):
             print("segmentID index", index)
@@ -495,6 +493,28 @@ class lineAnnotations(baseAnnotations):
                 self.setValue("yRight", val, orthogonalROIYend[i])
                 self.setValue("zRight", val, orthogonalROIZend[i])
 
-        
+    def getZYXlist(self, segmentID : Union[int, List[int], None],
+                    roiTypes : Union[str, List[str]]):
+        """
+            Args:
+                segmentID: number or list of numbers of the segment that you want to get zyx
+                coordinates from
+                roiTypes: the roiType that will filter the dataframe 
+            
+            Returns:
+                list of zyx coordinates for particular segment(s) and roiType(s)
+
+        """
+        segmentDF = self.getSegmentPlot(int(segmentID), roiTypes)
+        segmentX = segmentDF["x"].tolist()
+        segmentY = segmentDF["y"].tolist()
+        segmentZ = segmentDF["z"].tolist()
+
+        segmentZYX = []
+        for index, x in enumerate(segmentX):
+            segmentZYX.append([segmentZ[index], segmentY[index], segmentX[index]])
+
+        return segmentZYX
+ 
 if __name__ == '__main__':
     pass
