@@ -1,5 +1,7 @@
 from pprint import pprint
 
+import pytest
+
 import numpy as np
 
 import pymapmanager
@@ -18,14 +20,16 @@ def test_point_annotation():
     x = 10
     y = 20
     z = 30
-    pa.addAnnotation(roiType, x=x, y=y, z=z)
+    segmentID = 0
+    pa.addAnnotation(roiType, x=x, y=y, z=z, segmentID=segmentID)
     assert len(pa) == 1
 
     roiType = pointTypes.spineROI
     x = 11
     y = 21
     z = 31
-    pa.addAnnotation(roiType, x=x, y=y, z=z)
+    segmentID = 0
+    pa.addAnnotation(roiType, x=x, y=y, z=z, segmentID=segmentID)
     assert len(pa) == 2
     assert pa.numAnnotations == 2
 

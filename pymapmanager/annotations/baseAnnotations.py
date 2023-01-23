@@ -438,7 +438,7 @@ class baseAnnotations():
             return _ret[0]
 
     def getValues(self,
-                    colName : Union[str, List[str]],
+                    colName : List[str],
                     rowIdx : Union[int, List[int], None] = None,
                     ) -> Union[np.ndarray, None]:
         """Get value(s) from a column or list of columns.
