@@ -8,6 +8,7 @@ import errno
 #from lib2to3.pgen2.pgen import DFAState  # for FileNotFoundError
 import os
 import time
+import traceback
 from pprint import pprint
 
 from typing import List, Union  # , Callable, Iterator, Optional
@@ -348,33 +349,36 @@ class baseAnnotations():
     #     return self._columns
     
     def getSegmentPlot(self, segmentID : Union[int, List[int], None],
-                        roiTypes : list, 
+                        roiTypes : Union[List[str], None] = None, 
                         zSlice : Union[int, None] = None,
                         zPlusMinus : int = 0,
                         ) -> pd.DataFrame:
         """Get a pd.DataFrame to plot.
 
         Args:
-            segmentId: A single segment (int), a list of segments [int], or None for all segments.
-            roiTypes: List of annotation roitType
-            zSlice: The slice to get
-            zPlusMinus: 
+            segmentID: A single segment (int), a list of segments [int], or None for all segments.
+            roiTypes: List of annotation roitType or None for all roiType
+            zSlice: The image slice (z) to limit returned annotations.
+            zPlusMinus: Include annotations with z +/- this value
         """
         
-        #logger.info(f'segmentID:{segmentID} roiTypes:{roiTypes} zSlice:{zSlice}')
-
         # reduce by roiType
-        df = self._df[self._df['roiType'].isin(roiTypes)]
-        
-        #print('  df after reduce by roiType:', len(df), 'for roiTypes:', roiTypes)
+        if isinstance(roiTypes, str):
+            roiTypes = [roiTypes]
+        if roiTypes is not None:
+            df = self._df[self._df['roiType'].isin(roiTypes)]
+        else:
+            df = self._df
 
-        # Reduce by segmentID
+        # Reduce by [segmentID]
         if segmentID is None:
             segmentID = df['segmentID'].unique()
+        elif isinstance(segmentID, list):
+            pass
         elif isinstance(segmentID, int):
             segmentID = [segmentID]
         else:
-            logger.error(f'did not understand segmentID:{segmentID}')
+            logger.error(f'did not understand segmentID:{segmentID} of {type(segmentID)}')
             return
 
         df = df[df['segmentID'].isin(segmentID)]
@@ -477,7 +481,8 @@ class baseAnnotations():
         #except (IndexingError) as e:
         #    logger.error(f'IndexingError: {e}')
         except (KeyError) as e:
-            logger.error(f'bad rowIdx(s) {rowIdx}, range is 0...{len(self)-1}')
+            logger.error(f'bad rowIdx(s) {rowIdx}, colName:{colName} range is 0...{len(self)-1}')
+            print(traceback.format_exc())
             return None
 
     def getValuesWithCondition(self,

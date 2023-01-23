@@ -10,7 +10,7 @@ from qtpy import QtGui, QtCore, QtWidgets
 from pymapmanager._logger import logger
 
 import pymapmanager.annotations
-from pymapmanager.annotations.pointAnnotations import pointTypes
+# from pymapmanager.annotations.pointAnnotations import pointTypes
 
 from pymapmanager.interface import myTableView
 from pymapmanager.interface._data_model import pandasModel
@@ -125,8 +125,12 @@ class annotationListWidget(QtWidgets.QWidget):
             #self.getMyModel().beginResetModel()
 
         elif event.key() in [QtCore.Qt.Key_Escape]:
+            # cancel all selections
             self.on_table_selection(None)
             self._myTableView.mySelectRows(None)
+    
+        elif event.key() == QtCore.Qt.Key_N:
+            logger.info('open note setting dialog for selected annotation (todo: what is the selected annotation!!!')
 
         else:
             super().keyPressEvent(event)
@@ -140,6 +144,8 @@ class annotationListWidget(QtWidgets.QWidget):
     
     def _setModel(self):
         """Set model of tabel view to full pandas dataframe of underlying annotations.
+        
+        TODO: we need to limit this to roiType like (spineRoi, controlPnt)
         """
         dfPoints = self._annotations.getDataFrame()
         myModel = pandasModel(dfPoints)
@@ -238,14 +244,15 @@ class annotationListWidget(QtWidgets.QWidget):
 
         self._blockSlots = False
 
-    def slot_selectAnnotation(self, rows : List[int]):
+    def slot_selectAnnotation(self, rows : List[int], isAlt : bool = False):
         """Select annotation at index.
         
-        This is called when user selects point in (for example) a
-        pyqtgraph plot.
+        This is called when user selects point in (for example)
+        a pyqtgraph plot.
 
         Args:
             rows: annotation(s) index to select
+            isAlt: if Alt key was down on selection (not used here)
         """
         logger.info(f'annotationListWidget() rows:{rows}')
         
@@ -439,11 +446,11 @@ class lineListWidget(annotationListWidget):
             # TODO (cudmore): get list of selected segments from list
             _segment = [None]
             logger.info(f'  -->> emit signalDeletingSegment() segment:{_segment}')
-            self.signalDeletingSegment(_segment)
+            self.signalDeletingSegment.emit(_segment)
         else:
             logger.warning(f'did not understand buttonName:{buttonName}')
 
-    def slot_selectAnnotation(self, rows : Union[List[int], None]):
+    def slot_selectAnnotation(self, rows : Union[List[int], None], isAlt : bool = False):
         """Select annotation at index.
         
         We need to derive this for line table as it shows a list of segments
@@ -454,6 +461,7 @@ class lineListWidget(annotationListWidget):
 
         Args:
             rows: Annotation(s) index to select, if None then cancel selection.
+            isAlt: If Alt key was down during selection (not used)
         """
         logger.info(f'lineListWidget() rows:{rows}')
         
@@ -478,14 +486,14 @@ class lineListWidget(annotationListWidget):
         self._myTableView.mySelectRows(segmentIDs)
 
 class pointListWidget(annotationListWidget):
-    signalNewRoiType = QtCore.Signal(pymapmanager.annotations.pointTypes)
+    #signalNewRoiType = QtCore.Signal(pymapmanager.annotations.pointTypes)
     """Signal when user selects the new roi type
 
     Args:
         pointType: The point type on new annotation.
     """
     
-    signalDisplayRoiType = QtCore.Signal(object)
+    #signalDisplayRoiType = QtCore.Signal(object)
     """Signal when user selects the roi type(s) to display.
         If 'all' is selected then list is all roiType.
     
@@ -498,7 +506,51 @@ class pointListWidget(annotationListWidget):
     #                 parent=None):
     #     super().__init__(pointAnnotations, title, parent)
 
-    def _initToolbar(self) -> QtWidgets.QVBoxLayout:
+    def __init__(self, *args,**kwargs):
+
+        # TODO (Cudmore) eventually limit this list to one/two pointTypes
+        # first we need to implement selectRow() on user click and programatically.
+
+        self._displayPointTypeList = [pymapmanager.annotations.pointTypes.spineROI.value]
+        self._displayPointTypeList = None  # for now, all roiType
+        # list of pointType(s) we will display
+
+        # our base class is calling set model, needs to be after we create _displayPointTypeList
+        super().__init__(*args,**kwargs)
+
+        self._setModel()
+        #self.setDisplayPointType(pymapmanager.annotations.pointTypes.spineROI)
+
+    def setDisplayPointType(self, pointType : pymapmanager.annotations.pointTypes):
+        """Displaly just one pointType(s) in the table.
+        
+        Use this to switch between spineROI and controlPnt
+        
+        TODO: also add limiting to segmentID
+            When user select a segmentID, we limit to that segmentID
+        """
+        self._displayPointTypeList = [pointType.value]
+        self._setModel()
+
+    def _setModel(self):
+        """Set model of tabel view to full pandas dataframe of underlying annotations.
+        
+        TODO: we need to limit this to roiType like (spineRoi, controlPnt)
+        """
+        dfPoints = self._annotations.getDataFrame()
+        
+        # reduce by _displayPointTypeList
+        # dfPoints = dfPoints[dfPoints['roiType'].isin(self._displayOptionsDict)]
+        #dfPoints = dfPoints[dfPoints['roiType'].isin(['spineROI'])]
+        if self._displayPointTypeList is not None:
+            dfPoints = dfPoints[dfPoints['roiType'].isin(self._displayPointTypeList)]
+        
+        dfPoints = dfPoints.reset_index()
+
+        myModel = pandasModel(dfPoints)
+        self._myTableView.mySetModel(myModel)
+
+    def old_initToolbar(self) -> QtWidgets.QVBoxLayout:
         """Initialize the toolbar with controls.
 
         Returns:
@@ -514,6 +566,7 @@ class pointListWidget(annotationListWidget):
         aLabel = QtWidgets.QLabel('New')
         newRoiType_hBoxLayout.addWidget(aLabel, alignment=_alignLeft)
 
+        # popup with point types
         pointTypes = pymapmanager.annotations.pointTypes
         self._newRoiTypeComboBox = QtWidgets.QComboBox()
         for _item in pointTypes:
@@ -544,7 +597,7 @@ class pointListWidget(annotationListWidget):
 
         return vControlLayout
 
-    def on_new_roitype_popup(self, roiType : str):
+    def old_on_new_roitype_popup(self, roiType : str):
         """User selected item in new item popup.
         """
         logger.info(f'roiType: {roiType}')
@@ -553,7 +606,7 @@ class pointListWidget(annotationListWidget):
         logger.info(f'  -->> emit signalNewRoiType() roiTypeEnum:{roiTypeEnum}')
         self.signalNewRoiType.emit(roiTypeEnum)
 
-    def on_display_roitype_popup(self, roiType : str):
+    def old_on_display_roitype_popup(self, roiType : str):
         """User selected item in roi types to display.
         Notes:
             roiType can be 'all'

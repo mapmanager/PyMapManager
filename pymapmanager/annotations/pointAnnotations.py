@@ -81,7 +81,7 @@ class pointAnnotations(baseAnnotations):
 
     def addAnnotation(self,
                     roiType : pointTypes,
-                    segmentID : int = float('nan'),
+                    segmentID : Union[int, None] = None,
                     *args,**kwargs):
         """
         Add an annotation of a particular roiType.
@@ -90,6 +90,10 @@ class pointAnnotations(baseAnnotations):
             roiType:
             segmentID:
         """
+
+        if roiType == pointTypes.spineROI and segmentID is None:
+            logger.error(f'All spineROI require an int segmentID, got {segmentID}')
+            return
 
         newRow = super().addAnnotation(*args,**kwargs)
 
@@ -155,6 +159,29 @@ class pointAnnotations(baseAnnotations):
         dfSpines = dfPoints[dfPoints['roiType'] == 'spineROI']
         dfSpines = dfSpines[dfSpines['segmentID']==segmentID]
         return dfSpines
+
+    def _isValid(self):
+        """Check that all annotations are valid.
+        
+        For example:
+            spineROI requires (segmentID, brightestIdx)
+            controlPnt requires (segmentID)
+        """
+        isTrue = True
+        for idx, row in self._df.iterrows():
+            if row['roiType'] == 'spineROI':
+                if row['segmentID'] >= 0:
+                    pass
+                else:
+                    logger.error(f"row {idx} spineROI does not have a segmentID, found {row['segmentID']}")
+                    isTrue = False
+                if row['brightestIndex'] >= 0:
+                    pass
+                else:
+                    logger.warning(f"row {idx} spineROI does not have a brightestIndex, found {row['brightestIndex']}. Need to use util._findBrightestIndex()")
+                    #isTrue = False
+        
+        return isTrue
 
 if __name__ == '__main__':
     pass

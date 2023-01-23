@@ -81,6 +81,10 @@ class myTableView(QtWidgets.QTableView):
         """
         modelIndex = self.myModel.index(rowIdx, 0)  # rowIdx is in 'model' coordinates
         visualRow = self.proxy.mapFromSource(modelIndex).row()
+
+        # if we filtered/reduced, we need to use column 'index'
+        # df.loc[df['column_name'] == some_value]
+
         logger.info(f'model rowIdx:{rowIdx} corresponds to visual row:{visualRow}')
         super().selectRow(visualRow)
 

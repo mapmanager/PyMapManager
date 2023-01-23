@@ -2,6 +2,7 @@ import time
 from typing import List, Union  # , Callable, Iterator, Optional
 
 import numpy as np
+import pandas as pd
 
 from qtpy import QtGui, QtCore, QtWidgets
 import pyqtgraph as pg
@@ -24,7 +25,7 @@ class annotationPlotWidget(QtWidgets.QWidget):
     Abstract class (not useable on its own), instantiated from a derived class (pointPlotWidget and linePlotWidget)
     """
 
-    signalAnnotationClicked = QtCore.Signal(int)
+    signalAnnotationClicked = QtCore.Signal(int, bool)  # (annotation idx, isAlt)
     """Signal emitted when user click on an annotation.
     
     Args:
@@ -159,9 +160,10 @@ class annotationPlotWidget(QtWidgets.QWidget):
         
         Visually select the annotation and emit signalAnnotationClicked
         """
-        logger.info(f'annotationPlotWidget()')
-        # print(f'  points:{type(points)}')
-        # print(f'  event:{event}')
+        logger.info(f'annotationPlotWidget() {type(self)}')
+
+        modifiers = QtWidgets.QApplication.queryKeyboardModifiers()
+        isAlt = modifiers == QtCore.Qt.AltModifier
 
         for idx, oneEvent in enumerate(event):
             if idx > 0:
@@ -175,11 +177,11 @@ class annotationPlotWidget(QtWidgets.QWidget):
             #self._selectedAnnotation = dbIdx
             
             # visually select in scatter
-            self._selectAnnotation(dbIdx)
+            self._selectAnnotation(dbIdx, isAlt)
 
             # emit point selection signal
-            logger.info(f'-->> emit signalAnnotationClicked dbIdx:{dbIdx}')
-            self.signalAnnotationClicked.emit(dbIdx)
+            logger.info(f'  -->> emit signalAnnotationClicked dbIdx:{dbIdx} isAlt:{isAlt}')
+            self.signalAnnotationClicked.emit(dbIdx, isAlt)
 
             # implement left/right arrow to select prev/next point
 
@@ -253,6 +255,9 @@ class annotationPlotWidget(QtWidgets.QWidget):
         Notes:
             This resets our state (_dfPlot) and requires a full refetch from the backend.
         """
+        if not isinstance(roiTypeList, list):
+            roiTypeList = [roiTypeList]
+        
         logger.info(f'roiTypeList:{roiTypeList}')
 
         self._roiTypes = []
@@ -280,9 +285,11 @@ class annotationPlotWidget(QtWidgets.QWidget):
         
         self._currentSlice = sliceNumber
 
-        theseSegments = 2  # all segments
+        theseSegments = None  # None for all segments
         roiTypes = self._roiTypes
         
+        #logger.info(f'plotting roiTypes:{roiTypes} for {type(self)}')
+
         # dfPlot is a row reduced version of backend df (all columns preserved)
         if 0 and self._dfPlot is not None:
             # TODO: Fix logic, we need to fetch all annotations
@@ -302,20 +309,22 @@ class annotationPlotWidget(QtWidgets.QWidget):
 
         self._scatter.setData(x,y)
 
-        # make a color column based on roiType
-        # TODO: change black to use color from dictionary
-        # dfPlot['color'] = '#0000FF'
-        dfPlot['color'] = 'b'
-        #dfPlot['color'][dfPlot['roiType'] == 'controlPnt'] = '#FF0000'
-        _colorList = dfPlot['color'].tolist()
-        self._scatter.setBrush(_colorList)
+        # jan 2023, do i need to set the brush every time after setData() ???
+        if 0:
+            # make a color column based on roiType
+            # TODO: change black to use color from dictionary
+            # dfPlot['color'] = '#0000FF'
+            dfPlot['color'] = 'b'
+            #dfPlot['color'][dfPlot['roiType'] == 'controlPnt'] = '#FF0000'
+            _colorList = dfPlot['color'].tolist()
+            self._scatter.setBrush(_colorList)
 
         # update the view
         self._view.update()
 
         stopTime = time.time()
         msElapsed = (stopTime-startTime) * 1000
-        logger.info(f'Took {round(msElapsed,2)} ms')
+        #logger.info(f'Took {round(msElapsed,2)} ms {type(self)}')
 
     def slot_addedAnnotation(self, addDict : dict):
         """Slot called after an annotation was added.
@@ -363,9 +372,10 @@ class pointPlotWidget(annotationPlotWidget):
         
         self._displayOptionsLines = displayOptionsLines
 
-        # define the roi types we will display
-        # see: slot_setDisplayTypes
-        self._roiTypes = ['spineROI', 'controlPnt']
+        # define the roi types we will display, see: slot_setDisplayTypes()
+        # when user is editing a segment, just plot controlPnt
+        # self._roiTypes = ['spineROI', 'controlPnt']
+        self._roiTypes = ['spineROI']
 
         #self._buildUI()
 
@@ -394,6 +404,8 @@ class pointPlotWidget(annotationPlotWidget):
 
     def slot_setSlice(self, sliceNumber : int):
         super().slot_setSlice(sliceNumber=sliceNumber)
+
+        return 
 
         # TODO: update new scatter line connection plot code
         # getCurrentSegment of the slice instead of all segments?
@@ -466,24 +478,21 @@ class pointPlotWidget(annotationPlotWidget):
         #     # yPlotSpines.append(yPlotLines[index])
         #     yPlotSpines.append(np.nan)
 
+        # TODO (cudmore) do not loop, just get each (x, y) as a list
         # for idx, spine in dfSegmentSpines.iterrows()
         for index, xyzOneSpine in dfPlotSpines.iterrows():
-            # print("xyzOneSpine test:", xyzOneSpine)
-            xPlotSpines.append(xyzOneSpine['x'])
-            xPlotLine = self.lineAnnotations.getValue(['x'], xyzOneSpine['brightestIndex'])
-            # print("xPlotLine", xPlotLine)
-            xPlotSpines.append(xPlotLine)
-            xPlotSpines.append(np.nan)
+            _brightestIndex = xyzOneSpine['brightestIndex']
+            #print(_brightestIndex, type(_brightestIndex))
+            if not pd.isnull(_brightestIndex):
+                xPlotSpines.append(xyzOneSpine['x'])
+                xPlotLine = self.lineAnnotations.getValue(['x'], xyzOneSpine['brightestIndex'])
+                xPlotSpines.append(xPlotLine)
+                xPlotSpines.append(np.nan)
 
-            yPlotSpines.append(xyzOneSpine['y'])
-            yPlotLine = self.lineAnnotations.getValue(['y'], xyzOneSpine['brightestIndex'])
-            # print("xPlotLine", xPlotLine)
-            yPlotSpines.append(yPlotLine)
-            yPlotSpines.append(np.nan)
-
-            # print("xyzOneSpine['x']:", xyzOneSpine['x'])
-            # print("xyzOneSpine['y']:", xyzOneSpine['y'])
-            # print("xyzOneSpine['brightestIndex']:", xyzOneSpine['brightestIndex'])
+                yPlotSpines.append(xyzOneSpine['y'])
+                yPlotLine = self.lineAnnotations.getValue(['y'], xyzOneSpine['brightestIndex'])
+                yPlotSpines.append(yPlotLine)
+                yPlotSpines.append(np.nan)
 
         # self._spineConnections.setData(x, y)
         # self._spineConnections.setData(xPlotLines, yPlotLines)
@@ -502,8 +511,7 @@ class linePlotWidget(annotationPlotWidget):
         """
         super().__init__(annotations, pgView, displayOptions, parent)
 
-        # define the roi types we will display
-        # see: slot_setDisplayTypes
+        # define the roi types we will display, see: slot_setDisplayTypes()
         self._roiTypes = ['linePnt']
         self._buildUI()
 
@@ -515,13 +523,14 @@ class linePlotWidget(annotationPlotWidget):
         self._selectSegment(segmentID)
     
     def _selectSegment(self, segmentID : Union[List[int], None]):
-        """Select an entire segment"""
+        """Visually select an entire segment"""
         if segmentID is None:
             x = []
             y = []
         else:
             if isinstance(segmentID, int):
                 segmentID = [segmentID]
+            # all rows from list [segmentID]
             dfPlot = self._annotations._df[self._annotations._df['segmentID'].isin(segmentID)]
             x = dfPlot['x'].tolist()
             y = dfPlot['y'].tolist()

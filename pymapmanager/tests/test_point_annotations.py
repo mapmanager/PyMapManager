@@ -65,5 +65,25 @@ def test_point_annotation():
 
     pprint(pa.getDataFrame())
 
+
+def test_isValid():
+    # need to include some test data
+    # path = '../../PyMapManager-Data/one-timepoint/rr30a_s0/rr30a_s0_la.txt
+    pa = pymapmanager.annotations.pointAnnotations()
+    assert len(pa) == 0
+
+    # add
+    roiType = pointTypes.spineROI
+    x = 10
+    y = 20
+    z = 30
+    segmentID = 0
+    pa.addAnnotation(roiType, segmentID, x=x, y=y, z=z)
+
+    # this will be false as we have not connected the spine to the line/backbone
+    # not sure how to implement this here as we need an image to do that!
+    assert pa._isValid() == True
+
 if __name__ == '__main__':
-    test_point_annotation()
+    #test_point_annotation()
+    test_isValid()
