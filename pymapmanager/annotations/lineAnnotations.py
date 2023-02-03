@@ -374,8 +374,10 @@ class lineAnnotations(baseAnnotations):
 
         return dfOneSegment
 
-    def getRadiusLines(self, segmentID : Union[int, List[int]] = None):
+    def getRadiusLines(self, segmentID : Union[int, List[int]] = None, length = 1):
         """
+            length = integer by which we scale the size of the left, right points from the line point
+
             Calculates all the xyz coordinates for the Shaft ROI for given segment(s)
             and places them into the backend as columns within the dataframe
         """
@@ -454,7 +456,8 @@ class lineAnnotations(baseAnnotations):
                 yPrev = yPlot[idx-1 + offset]
                 yNext = yPlot[idx+1 + offset]
 
-                adjustY, adjustX = pymapmanager.utils.computeTangentLine((xPrev,yPrev), (xNext,yNext))
+                # length = 3
+                adjustY, adjustX = pymapmanager.utils.computeTangentLine((xPrev,yPrev), (xNext,yNext), length)
 
                 segmentROIXinitial.append(xCurrent-adjustX)
                 segmentROIYinitial.append(yCurrent-adjustY)

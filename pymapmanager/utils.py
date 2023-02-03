@@ -108,7 +108,7 @@ def _findBrightestIndex(x, y, z, zyxLine : List[List[float]], image: np.ndarray,
     # return brightestIndex + firstPoint, candidatePoints, closestIndex
     return brightestIndex + firstPoint
 
-def computeTangentLine(startPoint: tuple, stopPoint: tuple) -> tuple: 
+def computeTangentLine(startPoint: tuple, stopPoint: tuple, length) -> tuple: 
     """ Given a start point and stop point return the 
 
     Args: 
@@ -120,7 +120,7 @@ def computeTangentLine(startPoint: tuple, stopPoint: tuple) -> tuple:
     """
     # xPrev = startPoint[0]
     # yPrev = startPoint[1]
-    extendHead = 1
+    extendHead = length
 
     dXsegment = stopPoint[0] - startPoint[0]
     dYsegment = stopPoint[1] - startPoint[1]
