@@ -57,7 +57,7 @@ for idx, row in enumerate(pointAnnotation):
 pointAnnotation.save(forceSave = True)
 
 oneRectangleCoords = calculateRectangleROIcoords(xBrightestLine[0], yBrightestLine[0], xSpine[0], ySpine[0])
-print("oneRectangleCoords[0][0]: ", oneRectangleCoords[0][0])
+# print("oneRectangleCoords[0][0]: ", oneRectangleCoords[0][0])
 
 # xBox = [oneRectangleCoords[0], oneRectangleCoords[2], oneRectangleCoords[4], oneRectangleCoords[6], oneRectangleCoords[0]]
 # yBox = [oneRectangleCoords[1], oneRectangleCoords[3], oneRectangleCoords[5], oneRectangleCoords[7], oneRectangleCoords[1]]
@@ -65,8 +65,11 @@ xBox = [oneRectangleCoords[0][0], oneRectangleCoords[1][0], oneRectangleCoords[2
 yBox = [oneRectangleCoords[0][1], oneRectangleCoords[1][1], oneRectangleCoords[2][1], oneRectangleCoords[3][1], oneRectangleCoords[0][1]]
 plt.plot(xBox, yBox, '.y', linestyle="--")
 
-totalPoints = calculateLineROIcoords(brightestIndex, 2, lineAnnotation)
-print("totalPoints", totalPoints)
+# TODO: Check segmentID
+# Don't include point when its out of bounds
+totalPoints = calculateLineROIcoords(brightestIndex, 4, lineAnnotation)
+
+# print("totalPoints", totalPoints)
 # print("totalPoints", totalPoints[:,0])
 # x, y = totalPoints.T
 # plt.scatter(x,y)
@@ -91,6 +94,18 @@ for idx, val in enumerate(xBrightestLine):
 
 lineSpineConnectionX = [xBrightestLine, modifiedSpinePointsX]
 lineSpineConnectionY = [yBrightestLine, modifiedSpinePointsY]
+
+
+x_min = 425
+x_max = 440
+y_min = 243.26839826839827
+y_max = 216.96969696969697
+    # # Why does the y go the other way?
+plt.axis([x_min, x_max, y_min, y_max])
+# plt.axis([x_min, x_max, y_max, y_min])
+# plt.ylim(y_min, y_max)
+# plt.xlim(x_min,x_max)
+
 
 plt.plot(lineSpineConnectionX, lineSpineConnectionY, '.g', linestyle="--")
 
