@@ -60,9 +60,10 @@ for idx, row in enumerate(pointAnnotation):
 pointAnnotation.save(forceSave = True)
 
 oneRectangleCoords = calculateRectangleROIcoords(xBrightestLine[0], yBrightestLine[0], xSpine[0], ySpine[0])
-xBox = [oneRectangleCoords[0], oneRectangleCoords[2], oneRectangleCoords[4], oneRectangleCoords[6], oneRectangleCoords[0]]
-yBox = [oneRectangleCoords[1], oneRectangleCoords[3], oneRectangleCoords[5], oneRectangleCoords[7], oneRectangleCoords[1]]
-
+# xBox = [oneRectangleCoords[0], oneRectangleCoords[2], oneRectangleCoords[4], oneRectangleCoords[6], oneRectangleCoords[0]]
+# yBox = [oneRectangleCoords[1], oneRectangleCoords[3], oneRectangleCoords[5], oneRectangleCoords[7], oneRectangleCoords[1]]
+xBox = [oneRectangleCoords[0][0], oneRectangleCoords[1][0], oneRectangleCoords[2][0], oneRectangleCoords[3][0], oneRectangleCoords[0][0]]
+yBox = [oneRectangleCoords[0][1], oneRectangleCoords[1][1], oneRectangleCoords[2][1], oneRectangleCoords[3][1], oneRectangleCoords[0][1]]
 
 plt.plot(xBox, yBox, '.y', linestyle="--")
 

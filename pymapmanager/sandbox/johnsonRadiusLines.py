@@ -54,7 +54,8 @@ if __name__ == "__main__":
     # segmentROIplot()
     # segmentID = 0
 
-    lineAnnotations.getRadiusLines([0,1])
+    # lineAnnotations.getRadiusLines([0,1])
+    lineAnnotations.getRadiusLines(None, 3)
 
     # from pymapmanager.utils import getRadiusLines
     # getRadiusLines(lineAnnotations)

@@ -63,15 +63,15 @@ def calculateRectangleROIcoords(xPlotLines, yPlotLines, xPlotSpines, yPlotSpines
     adjustX = adjustY/ (np.tan(angle))
 
     # Used to extend back of rectangle ROI
-    # firstCoordX = Xa - Dy - adjustX
-    # firstCoordY = Ya + Dx - adjustY
-    # secondCoordX = Xa + Dy - adjustX
-    # secondCoordY = Ya - Dx - adjustY
+    firstCoordX = Xa - Dy - adjustX
+    firstCoordY = Ya + Dx - adjustY
+    secondCoordX = Xa + Dy - adjustX
+    secondCoordY = Ya - Dx - adjustY
 
-    firstCoordX = Xa - Dy 
-    firstCoordY = Ya + Dx 
-    secondCoordX = Xa + Dy 
-    secondCoordY = Ya - Dx 
+    # firstCoordX = Xa - Dy 
+    # firstCoordY = Ya + Dx 
+    # secondCoordX = Xa + Dy 
+    # secondCoordY = Ya - Dx 
 
     thirdCoordX = Xb + Dy + adjustX
     fourthCoordX = Xb - Dy + adjustX
@@ -135,11 +135,8 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations):
     return coordinateList
 
 def plotOutline(rectanglePoly, linePoly):
-    # print("rectanglePoly", rectanglePoly)
-    # print("linePoly", linePoly)
+
     nx, ny = 1000, 1000
-    # poly_verts = [(1,1),(1,4),(3,4),(3,1)] 
-    # poly_verts2 = [(1,1),(1,5),(3,5),(3,1)] 
 
     # Create vertex coordinates for each grid cell...
     # (<0,0> is at the top left of the grid in this system)
@@ -152,85 +149,116 @@ def plotOutline(rectanglePoly, linePoly):
     points = np.vstack((y,x)).T
     # print("points", points)
 
-    path = Path(linePoly)
-    mask1 = path.contains_points(points, radius=0)
-    # print(grid1)
-    mask1 = mask1.reshape((ny,nx))
-    mask1 = mask1.astype(int)
-    # print("mask1, ", mask1)
-    # plt.plot(mask1, 'y')
-    plt.imshow(mask1)
-    # plt.show()
+    segmentPath = Path(linePoly)
+    segmentMask = segmentPath.contains_points(points, radius=0)
+    segmentMask = segmentMask.reshape((ny,nx))
+    segmentMask = segmentMask.astype(int)
     
-    path2 = Path(rectanglePoly)
-    mask2 = path2.contains_points(points, radius=0)
-    # print(grid1)
-    mask2 = mask2.reshape((ny,nx))
-    mask2 = mask2.astype(int)
-    # plt.plot(mask2, 'y')
-    # plt.imshow(mask2)
-    
+    spinePath = Path(rectanglePoly)
+    spineMask = spinePath.contains_points(points, radius=0)
+    spineMask = spineMask.reshape((ny,nx))
+    spineMask = spineMask.astype(int)
 
-    combinedMasks = mask1 + mask2
-    # combinedMasks[combinedMasks == 2] = 
-    # combinedMasks[combinedMasks == 2] = 0
-    # combinedMasks[combinedMasks == 2] = 1
-    # combinedMasks = combinedMasks + mask2
-    # combinedMasks[combinedMasks == 3] = 2
-    # combinedMasks[combinedMasks == 1] = 0
-    # combinedMasks = combinedMasks - mask1
-    # combinedMasks = mask2 - mask1
-    # print(combinedMasks)
+    combinedMasks = segmentMask + spineMask
+    combinedMasks[combinedMasks == 2] = 3
+    combinedMasks = combinedMasks + segmentMask
+    combinedMasks[combinedMasks > 1] = 0
+    finalSpineMask = combinedMasks
 
-    # masktoDialate = mask1 + mask2
-    # masktoDialate[masktoDialate == 2] = 2
-    import scipy
+    coords = np.column_stack(np.where(finalSpineMask > 0))
+
+    # for index, val in enumerate(coords):
+    #     coords[index] = val + [1, 1]
+        # print(index)
+
+    plt.plot(coords[:,1], coords[:,0], 'mo')
+
+    calculateCandidateMasks(finalSpineMask, 1, 1)
+
+def candidatePoints(steps, numPts):
+    """  """
+
+def calculateCandidateMasks(mask, steps, numPts):
+    """ 
+    Args:
+        mask: The mask that will be moved around to check for intensity at various positions
+        steps: How many steps in the x,y direction the points in the mask will move
+        numPts: (has to be odd)Total number of moves made (total positions that we will check for intensity)
+        # TODO:
+    Return: 
+        Values of mask at position with lowest intensity
+    """
+    from scipy import ndimage
+    # struct = 
+    labelArray, numLabels = ndimage.label(mask)
+    sizes = ndimage.sum(mask, labelArray, range(numLabels + 1))
+    # TODO: take the label that contains the original spine point
+    # TODO: loop through all the labels and pull out the x,y coordinates coords
+    # Check if the original x,y points is within those coords (using numpy.argwhere)
+    for label in np.arange(1, numLabels+1, 1):
+        currentCandidate =  np.argwhere(labelArray == label)
+        # Check if the original x,y point in the current candidate
+        print(label)
+        print(currentCandidate)
+    # TODO: save dict in backend in separated columns
+
+    import sys
+    sys.exit()
+    # Create an image where each region is painted with its size
+    sizeImg = sizes[labelArray]
+    # Filter image so only region with largest size remains
+    maxSize = max(sizes)
+    finalMask = sizeImg >= maxSize
+
+    coords = np.column_stack(np.where(finalMask > 0))
+
+
+    for i in range(numPts):
+        for index, val in enumerate(coords):
+            coords[index] = val + [-steps, steps]
+
+        
+
+    # for i in numPts:
+        # Move to coords
+
+        # Check the intensity
+        # skimage.measure.profile_line
+
+        # Keep track of position with current lowest intensity
+
+    # Ensure that coords are within boundaries of image
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    # import scipy
     # print(combinedMasks)
-    struct = scipy.ndimage.generate_binary_structure(2, 2)
+    # struct = scipy.ndimage.generate_binary_structure(2, 2)
     # Get points surrounding the altered combined mask
     # dialating a mask turns all values greater than 1 to 1
-    dialatedMask = scipy.ndimage.binary_dilation(combinedMasks, structure = struct, iterations = 1)
-    dialatedMask = dialatedMask.astype(int)
+    # dialatedMask = scipy.ndimage.binary_dilation(combinedMasks, structure = struct, iterations = 1)
+    # dialatedMask = dialatedMask.astype(int)
     # dialatedMask[dialatedMask < 0] = 0
 
-    intersectionMask = mask1 + mask2
-    intersectionMask[intersectionMask == 1] = 0
-    intersectionMask[intersectionMask ==  2] = 1
-    dialatedIntersection = scipy.ndimage.binary_dilation(intersectionMask, structure = struct, iterations = 1)
-    dialatedIntersection = dialatedIntersection.astype(int)
-
+    # intersectionMask = mask1 + mask2
+    # intersectionMask[intersectionMask == 1] = 0
+    # intersectionMask[intersectionMask ==  2] = 1
+    # dialatedIntersection = scipy.ndimage.binary_dilation(intersectionMask, structure = struct, iterations = 1)
+    # dialatedIntersection = dialatedIntersection.astype(int)
 
     # negativeDialation = scipy.ndimage.binary_dilation(masktoDialate, structure = struct, iterations = -1)
     # negativeDialation = dialatedMask.astype(int)
-
-    testMask = mask2 - mask1
-    # Remove the inner mask (combined mask) to get the outline
-    outlineMask = dialatedMask - combinedMasks
-    outlineMask[outlineMask < 0] = 0
-    outlineMask = outlineMask + dialatedIntersection
-    outlineMask = outlineMask - mask1
-    # outlineMask[outlineMask > 1] == 1
-
-    # outlineMask[outlineMask < 0] = 0
-    # outlineMask = outlineMask + mask1 
-    # outlineMask = dialatedMask - mask1
-    # reverseOutline = combinedMasks - dialatedMask
-    print(combinedMasks)
-
-    # print(outlineMask)
-    # coords = np.column_stack(np.where(testMask > 0))
-    coords = np.column_stack(np.where(outlineMask > 0))
-    # coords2 = np.column_stack(np.where(combinedMasks > 1))
-    # plt.figure()
-    plt.plot(coords[:,1], coords[:,0], 'mo')
-    # plt.show(block=False)
-
-    # plt.figure()
-    # plt.plot(coords2[:,1], coords2[:,0], 'bo')
-    # plt.show(block=False)
-
-
-    
 
 
     # coords = np.column_stack(np.where(combinedMasks > 0))

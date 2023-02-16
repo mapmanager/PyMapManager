@@ -67,7 +67,7 @@ plt.plot(xBox, yBox, '.y', linestyle="--")
 
 # TODO: Check segmentID
 # Don't include point when its out of bounds
-totalPoints = calculateLineROIcoords(brightestIndex, 4, lineAnnotation)
+totalPoints = calculateLineROIcoords(brightestIndex, 5, lineAnnotation)
 
 # print("totalPoints", totalPoints)
 # print("totalPoints", totalPoints[:,0])
@@ -109,6 +109,7 @@ plt.axis([x_min, x_max, y_min, y_max])
 
 plt.plot(lineSpineConnectionX, lineSpineConnectionY, '.g', linestyle="--")
 
+# print out other line points along with brightestLine
 plt.plot(xBrightestLine, yBrightestLine, '.r', 'o')
 plt.plot(xSpine, ySpine, '.b', 'o')
 plt.imshow(img)

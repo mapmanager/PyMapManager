@@ -70,7 +70,8 @@ hull = ConvexHull(coords)
 print(hull)
 print(coords)
 # print(hull.simplices)
-plt.plot(coords[:,0], coords[:,1], 'o')
+# plt.plot(coords[:,0], coords[:,1], 'o')
+plt.plot(coords[:,1], coords[:,0], 'o')
 
 # Simplex is indexes for original list of coords
 for simplex in hull.simplices:
@@ -85,6 +86,15 @@ for simplex in hull.simplices:
 
     # break
     # plt.plot(coords[simplex], coords[simplex], 'k')
+
+# x_min = 425
+# x_max = 440
+# y_min = 400
+# y_max = 150
+#     # # Why does the y go the other way?
+# # plt.axis([x_min, x_max, y_min, y_max])
+# plt.ylim(y_min, y_max)
+# plt.xlim(x_min,x_max)
 
 plt.show()
 # plt.imshow(dialatedMask)
