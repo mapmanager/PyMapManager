@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from pymapmanager.pmmUtils import calculateRectangleROIcoords
 from pymapmanager.pmmUtils import calculateLineROIcoords
 from pymapmanager.pmmUtils import plotOutline
+from pymapmanager.pmmUtils import calculateCandidateMasks
 from matplotlib.path import Path
 
 stackPath = '../PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
@@ -77,7 +78,15 @@ plt.plot(totalPoints[:,0], totalPoints[:,1], 'w')
 
 # print("test list: ", [tuple(x) for x in totalPoints.tolist()])
 # Convert totalPoints into correct format
-plotOutline(oneRectangleCoords, [tuple(x) for x in totalPoints.tolist()])
+finalSpineMask = plotOutline(oneRectangleCoords, [tuple(x) for x in totalPoints.tolist()])
+
+# Musty be in y,x order
+originalSpinePoint = [int(ySpine[0]), int(xSpine[0])]
+calculateCandidateMasks(finalSpineMask, 1, 1, originalSpinePoint)
+
+
+
+
 
 # print("xSpine[0]: ", xSpine[0])
 # print("xBrightestLine: ", xBrightestLine)

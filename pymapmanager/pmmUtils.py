@@ -171,19 +171,34 @@ def plotOutline(rectanglePoly, linePoly):
     #     coords[index] = val + [1, 1]
         # print(index)
 
-    plt.plot(coords[:,1], coords[:,0], 'mo')
+    # plt.plot(coords[:,1], coords[:,0], 'mo')
 
-    calculateCandidateMasks(finalSpineMask, 1, 1)
+    return finalSpineMask
+    # calculateCandidateMasks(finalSpineMask, 1, 1)
 
-def candidatePoints(steps, numPts):
-    """  """
+def candidatePoints(steps, numPts, originalPoint):
+    """  Generate list of candidate points where mask will be moved"""
+    # TODO: Figure out how to move the mask centered on those points
+    coordList = []
+    originalY = originalPoint[0]
+    originalX = originalPoint[1]
+    
+    for i in range(numPts+1):
+        coordList.append([originalY + steps, originalX])
+        coordList.append([originalY - steps, originalX])
+        coordList.append([originalY, originalX + steps])
+        coordList.append([originalY, originalX - steps])
 
-def calculateCandidateMasks(mask, steps, numPts):
+    return coordList
+
+def calculateCandidateMasks(mask, steps, numPts, originalSpinePoint):
     """ 
     Args:
         mask: The mask that will be moved around to check for intensity at various positions
         steps: How many steps in the x,y direction the points in the mask will move
         numPts: (has to be odd)Total number of moves made (total positions that we will check for intensity)
+        originalSpinePoint: The coordinates of the original spine point (y,x) that will be used to check which labeled area 
+        we need to manipulate
         # TODO:
     Return: 
         Values of mask at position with lowest intensity
@@ -193,29 +208,40 @@ def calculateCandidateMasks(mask, steps, numPts):
     labelArray, numLabels = ndimage.label(mask)
     sizes = ndimage.sum(mask, labelArray, range(numLabels + 1))
     # TODO: take the label that contains the original spine point
-    # TODO: loop through all the labels and pull out the x,y coordinates coords
+    # TODO: loop through all the labels and pull out the x,y coordinates 
     # Check if the original x,y points is within those coords (using numpy.argwhere)
+    # finalCandidate = 0
+    currentLabel = 0
+    # print(originalSpinePoint)
     for label in np.arange(1, numLabels+1, 1):
         currentCandidate =  np.argwhere(labelArray == label)
         # Check if the original x,y point in the current candidate
-        print(label)
-        print(currentCandidate)
+        if(originalSpinePoint in currentCandidate):
+            currentLabel = label
+            break
+        
+        # print(currentCandidate)
     # TODO: save dict in backend in separated columns
+    print(currentLabel)
+    # import sys
+    # sys.exit()
 
-    import sys
-    sys.exit()
-    # Create an image where each region is painted with its size
-    sizeImg = sizes[labelArray]
-    # Filter image so only region with largest size remains
-    maxSize = max(sizes)
-    finalMask = sizeImg >= maxSize
+    # # Create an image where each region is painted with its size
+    # sizeImg = sizes[labelArray]
+    # # Filter image so only region with largest size remains
+    # maxSize = max(sizes)
+    # finalMask = sizeImg >= maxSize
 
-    coords = np.column_stack(np.where(finalMask > 0))
+    finalMask = np.argwhere(labelArray == currentLabel)
+    print(finalMask)
+    # print(finalCandidate)
+    # coords = np.column_stack(np.where(finalMask > 0))
+    # print(coords)
+    plt.plot(finalMask[:,1], finalMask[:,0], 'mo')
 
-
-    for i in range(numPts):
-        for index, val in enumerate(coords):
-            coords[index] = val + [-steps, steps]
+    # for i in range(numPts):
+    #     for index, val in enumerate(coords):
+    #         coords[index] = val + [-steps, steps]
 
         
 
