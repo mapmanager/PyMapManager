@@ -80,13 +80,15 @@ plt.plot(totalPoints[:,0], totalPoints[:,1], 'w')
 # Convert totalPoints into correct format
 finalSpineMask = plotOutline(oneRectangleCoords, [tuple(x) for x in totalPoints.tolist()])
 
-# Musty be in y,x order
+# Must be in y,x order
 originalSpinePoint = [int(ySpine[0]), int(xSpine[0])]
-calculateCandidateMasks(finalSpineMask, 1, 1, originalSpinePoint)
+calculateCandidateMasks(finalSpineMask, 2, 3, originalSpinePoint, img=img)
+
+# return calculateCandidateMasks()
 
 
-
-
+import sys
+sys.exit()
 
 # print("xSpine[0]: ", xSpine[0])
 # print("xBrightestLine: ", xBrightestLine)

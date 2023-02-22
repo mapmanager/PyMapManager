@@ -136,7 +136,8 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations):
 
 def plotOutline(rectanglePoly, linePoly):
 
-    nx, ny = 1000, 1000
+    # TODO: Change this to detect image shape rather than have it hard coded
+    nx, ny = 1024, 1024
 
     # Create vertex coordinates for each grid cell...
     # (<0,0> is at the top left of the grid in this system)
@@ -176,26 +177,54 @@ def plotOutline(rectanglePoly, linePoly):
     return finalSpineMask
     # calculateCandidateMasks(finalSpineMask, 1, 1)
 
-def candidatePoints(steps, numPts, originalPoint):
-    """  Generate list of candidate points where mask will be moved"""
-    # TODO: Figure out how to move the mask centered on those points
-    coordList = []
-    originalY = originalPoint[0]
-    originalX = originalPoint[1]
+# def candidatePoints(distance, numPts, originalPoint):
+#     """ Generate list of candidate points where mask will be moved """
+#     # TODO: Figure out how to move the mask centered on those points
+#     coordList = []
+#     originalY = originalPoint[0]
+#     originalX = originalPoint[1]
     
-    for i in range(numPts+1):
-        coordList.append([originalY + steps, originalX])
-        coordList.append([originalY - steps, originalX])
-        coordList.append([originalY, originalX + steps])
-        coordList.append([originalY, originalX - steps])
+#     xStart = originalX - (math.floor(numPts/2) + 1) * distance
+#     xEnd = originalX + (math.floor(numPts/2) + 1) * distance
 
-    return coordList
+#     yStart = originalY - (math.floor(numPts/2) + 1) * distance
+#     yEnd = originalY + (math.floor(numPts/2) + 1) * distance
 
-def calculateCandidateMasks(mask, steps, numPts, originalSpinePoint):
+#     xList = np.arange(xStart, xEnd, distance)
+#     yList = np.arange(yStart, yEnd, distance)
+
+#     for xPoint in xList:
+#         for yPoint in yList:
+#             coordList.append([xPoint, yPoint])
+
+#     return coordList
+
+
+def getOffset(distance, numPts):
+    """ Generate list of candidate points where mask will be moved """
+    # TODO: Figure out how to move the mask centered on those points
+    coordOffsetList = []
+
+    xStart = - (math.floor(numPts/2)) * distance
+    xEnd = (math.floor(numPts/2) + 1) * distance
+
+    yStart = - (math.floor(numPts/2)) * distance
+    yEnd = (math.floor(numPts/2) + 1) * distance
+
+    xList = np.arange(xStart, xEnd, distance)
+    yList = np.arange(yStart, yEnd, distance)
+
+    for xPoint in xList:
+        for yPoint in yList:
+            coordOffsetList.append([xPoint, yPoint])
+
+    return coordOffsetList
+
+def calculateCandidateMasks(mask, distance, numPts, originalSpinePoint, img):
     """ 
     Args:
         mask: The mask that will be moved around to check for intensity at various positions
-        steps: How many steps in the x,y direction the points in the mask will move
+        distance: How many steps in the x,y direction the points in the mask will move
         numPts: (has to be odd)Total number of moves made (total positions that we will check for intensity)
         originalSpinePoint: The coordinates of the original spine point (y,x) that will be used to check which labeled area 
         we need to manipulate
@@ -205,7 +234,9 @@ def calculateCandidateMasks(mask, steps, numPts, originalSpinePoint):
     """
     from scipy import ndimage
     # struct = 
+    # print(mask)
     labelArray, numLabels = ndimage.label(mask)
+    # print("label array:", labelArray)
     sizes = ndimage.sum(mask, labelArray, range(numLabels + 1))
     # TODO: take the label that contains the original spine point
     # TODO: loop through all the labels and pull out the x,y coordinates 
@@ -220,24 +251,53 @@ def calculateCandidateMasks(mask, steps, numPts, originalSpinePoint):
             currentLabel = label
             break
         
-        # print(currentCandidate)
     # TODO: save dict in backend in separated columns
-    print(currentLabel)
-    # import sys
-    # sys.exit()
+    # print(currentLabel)
 
-    # # Create an image where each region is painted with its size
-    # sizeImg = sizes[labelArray]
-    # # Filter image so only region with largest size remains
-    # maxSize = max(sizes)
-    # finalMask = sizeImg >= maxSize
-
+    # Note: points are returned in y,x form
     finalMask = np.argwhere(labelArray == currentLabel)
-    print(finalMask)
-    # print(finalCandidate)
     # coords = np.column_stack(np.where(finalMask > 0))
-    # print(coords)
     plt.plot(finalMask[:,1], finalMask[:,0], 'mo')
+
+    offsetList = getOffset(distance = distance, numPts = numPts)
+    import skimage
+
+    # image=np.array(img) 
+    # print("image.shape is", image.shape)
+
+    # import sys
+    # sys.exit(0)
+    # labelArray[labelArray != label] = 0
+    # print("label", labelArray)
+    lowestIntensity = 0
+    for offset in offsetList:
+        # print(offset)
+        currentIntensity = 0
+        adjustedMask = finalMask + offset
+        # adjustedMask = np.bool_(adjustedMask)
+
+        # print(adjustedMask)
+        # print(adjustedMask[0][0])
+        # maskedImage = img[adjustedMask[2][0]][adjustedMask[2][1]]
+        # Possibly loop through the adjustmask x and y
+        # maskedImage = np.mean(img[adjustedMask])
+
+        for index, value in enumerate(adjustedMask):
+            maskedImageIntensity = img[adjustedMask[index][0]][adjustedMask[index][1]]
+            # print(maskedImage)
+            currentIntensity += maskedImageIntensity
+
+        if(lowestIntensity == 0):
+            lowestIntensity = currentIntensity
+        if(currentIntensity < lowestIntensity):
+            lowestIntensity = currentIntensity
+
+        print(lowestIntensity)
+        # maskedImage = img[225]
+        # print(maskedImage)
+        # break
+
+        # print(movedMask)
 
     # for i in range(numPts):
     #     for index, val in enumerate(coords):
@@ -255,11 +315,41 @@ def calculateCandidateMasks(mask, steps, numPts, originalSpinePoint):
 
     # Ensure that coords are within boundaries of image
 
+def calculateMaskDict(mask, image):
+    count=np.count_nonzero(mask)
+    sum = image[mask == 1].sum()
+    min = image[mask == 1].min()
+    max = image[mask == 1].max()
+    mean = image[mask == 1].mean()
+    std = image[mask == 1].std()
+    # Coords
+
+    maskDict = {"count": count, 
+                "sum": sum}
+    print("maskDict", maskDict)
+
+    return 
 
 
+if __name__ == "__main__":
+    mask = np.zeros((2,2))
+    # image = np.ones((2,2))
 
+    # mask[(1,1)] = 1
+    # mask[(0,0)] = 1
 
+    # coords = np.argwhere(mask > 0)
+    # # Generate candidates given arguments: steps and n(pts)
+    # # Translate coords by addings dx, dy
+    # # Check within bounds of image
+    # # keep dict with lowest intensity
 
+    # # backend function for lineannotation to return mask
+    # # Backend function for pointannotation to return mask for final spine mask
+    # print(coords)
+    # calculateMaskDict(mask = mask, image = image)
+
+    # print(getOffset(1, 1))
 
 
 
