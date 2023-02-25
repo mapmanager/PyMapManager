@@ -74,7 +74,7 @@ def test_int_columns():
     
     Run this from command line with
         ```
-        pytest -k 'test_int_columns
+        pytest -k 'test_int_columns'
         ```
     """
     pa = pymapmanager.annotations.pointAnnotations()
@@ -88,8 +88,6 @@ def test_int_columns():
     segmentID = 0
     pa.addAnnotation(roiType, x=x, y=y, z=z, segmentID=segmentID)
     assert len(pa) == 1
-
-    #print(pa.columns.getColumnNames())
 
     # set some intensity columns
     _intDict  = {
