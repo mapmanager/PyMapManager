@@ -1,5 +1,5 @@
 from .stack import stack
-from .mmMap import mmMap
+#from .mmMap import mmMap
 from . import utils
 from . import mmImport
 
