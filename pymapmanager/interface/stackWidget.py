@@ -167,7 +167,7 @@ class stackWidget(QtWidgets.QMainWindow):
         It will bubble up from myPyQtGraphPlotWidget children
             when they do not handle a keypress.
         """
-        logger.info('')
+        logger.info('TODO: refactor this to not get called')
         if event.key() in [QtCore.Qt.Key_BracketLeft]:
             # toggle the left control bar
             self.togglePointTable()
@@ -688,11 +688,10 @@ class stackWidget(QtWidgets.QMainWindow):
                                                         imgData,
                                                         )
 
-        logger.info(f'  newAnnotationRow:{newAnnotationRow}')
-
         # if we made it here, we added a new annotation
         # emit a signal to notify other widgets that this was successful
         # e.g. the plot of the annotations will show the new point
+        logger.info(f'  New annotation added at row:{newAnnotationRow}')
         addDict['newAnnotationRow'] = newAnnotationRow
         self.signalAddedAnnotation.emit(addDict)
         
@@ -1747,7 +1746,7 @@ class myPyQtGraphPlotWidget(pg.PlotWidget):
             event: QtGui.QKeyEvent
         """
 
-        logger.info(type(event))
+        logger.info(f'class myPyQtGraphPlotWidget() user pressed key with text "{event.text()}" and PyQt enum {event.key()}')
         
         if event.key() in [QtCore.Qt.Key_Enter, QtCore.Qt.Key_Return]:
             self._setFullView()

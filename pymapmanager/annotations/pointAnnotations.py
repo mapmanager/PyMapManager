@@ -181,54 +181,79 @@ class pointAnnotations(baseAnnotations):
         return newRow
 
     def updateSpineInt(self, spineIdx, xyzLineSegment, channelNumber : int, imgData : np.array):
-        """Update all spine intensity measurements for a spine.
+        """Update all spine intensity measurements for:
+            (1) a spine mask roi
+            (2) minimal background roi (from a grid of candidates).
 
-        This includes spine and background.
-
-        This get called on
-            - new spine
-            - user moves spine
-            - user modifies the segment xyz tracing
-
-        Update all intensity measures for a given spine
-            Including:
+        Update all intensity measures for a given spine including:
             brightestIdx: brightest path from spine xyz to segment line
             all colmns for spine intensity (sSum, sMin, sMax, ...)
             all columns for spine background intensity (bsSum, bsMin, bsMax, ...)
 
+        This get called on
+            - new spine
+            - user moves spine
+            - user modifies the segment zyx tracing
+
         We need to know a lot of extra information
-            - (x,y,z) coordinates of the segment we are connecting to (brightes path)
-            - imgdAta: the raw image data to search
+            - xyzLineSegment: coordinates of the segment we are connecting to (brightes path)
+            - channelNumber: int
+            - imgData: the raw image data to search
+
+        Args:
+            spineIdx (int) the row index into the pandas dataframe we are updating
+            xyzLineSegment (List(z,y,x)): A list of (z,y,x) point we want to connect to (via brightest index)
+            channelNumber (int) the channel number we are connecting to, needed to get the correct column name with _ch<channelNumber>
+            imgData (np.ndarray) the actual image data to search in
         """
+        logger.info('This is setting lots of columns in our backend with all intensity measurements')
         segmentID = self.getValue('segmentID', spineIdx)
         chStr = str(channelNumber)
         
         # 1) find brightest path to line segment
         #brightestIndex = self.reconnectToSegment(spineIdx, xyzLineSegment, imgData)
+        
+        # 1.1) set the backend valu
         #self.setValue('brightestIndex', spineIdx, brightestIndex)
 
-        # 2) calculate spine roi (spine rectangle - segment polygon)
+        # 2) calculate spine roi (spine rectangle - segment polygon) ... complicated
 
-        # 3) calculate dict with spine (minInt, maxInt, sumInt, ....)
+        # 3) calculate dict for spine with keys ('Sum', 'Min', 'Max', 'Mean', ....)
         #   and store as columns in our pandas dataframe
         spineIntDict = {
-            'sum': 111,
-            'mean': 222.2,
-            'min': 0,
-            'max': 214,
+            # making up fake values here
+            'Sum': 111,
+            'Mean': 222.2,
+            'Min': 0,
+            'Max': 214,
+            # ... other keys
         }
         self.setIntValue(spineIdx, 'spine', channelNumber, spineIntDict)
 
         # 4) translate the roi in a grid to find dimmest position
-        #   calculate dict with background (bsMinInt, bsMaxInt, bsSumInt, ...)
+        #   calculate dict with background ('Sum', 'Min', 'Max', 'Mean', ....)
         #   and store as column in our pandas dataframe
         spineBackgroundIntDict = {
-            'sum': 555,
-            'mean': 666.6,
-            'min': 0,
-            'max': 99,
+            # making up fake values here
+            'Sum': 555,
+            'Mean': 666.6,
+            'Min': 0,
+            'Max': 99,
+            # ... other keys
         }
         self.setIntValue(spineIdx, 'spineBackground', channelNumber, spineBackgroundIntDict)
+
+        #
+        # DEBUG
+        #
+        # retreive the value and print the dict
+        # see: tests/test_point_annotations.test_int_columns()
+        # logger.info('!!! we just added a spine, here are the value of the spine intensity:')
+        # debugSpineIntDict = self.getIntValue(spineIdx, 'spine', channelNumber)
+        # print(debugSpineIntDict)
+        # logger.info('  and the background (I made these up)')
+        # debugBackgroundSpineIntDict = self.getIntValue(spineIdx, 'spineBackground', channelNumber)
+        # print(debugBackgroundSpineIntDict)
 
     def reconnectToSegment(self, rowIdx : int):
         """
