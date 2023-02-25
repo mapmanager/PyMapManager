@@ -119,6 +119,7 @@ class lineAnnotations(baseAnnotations):
     def getSegment_xyz(self, segmentID : Union[int, List[int], None] = None) -> List[List[int]]:
         """Get a list of (z,y,x) values from segment(s).
 
+            TODO: cudmore wrote this, it is also returning 'index' and 'segmentID'
         Args:
             segmentID:
         """
@@ -130,6 +131,22 @@ class lineAnnotations(baseAnnotations):
         zyxList = []  # a list of segments, each segment is np.ndarray of (z,y,x)
         for oneSegmentID in segmentID:
             zyx = self.getValuesWithCondition(['z', 'y', 'x', 'index', 'segmentID'],
+                            compareColNames='segmentID',
+                            comparisons=comparisonTypes.equal,
+                            compareValues=oneSegmentID)
+            zyxList.append(zyx)
+
+        return zyxList
+
+    def get_zyx_list(self, segmentID : Union[int, List[int], None] = None) -> List[List[int]]:
+        if segmentID is None:
+            segmentID = self.unique('segmentID')  # unique() does not work for float
+        elif not isinstance(segmentID, list):
+            segmentID = [segmentID]
+
+        zyxList = []  # a list of segments, each segment is np.ndarray of (z,y,x)
+        for oneSegmentID in segmentID:
+            zyx = self.getValuesWithCondition(['z', 'y', 'x'],
                             compareColNames='segmentID',
                             comparisons=comparisonTypes.equal,
                             compareValues=oneSegmentID)

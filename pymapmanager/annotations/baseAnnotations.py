@@ -82,6 +82,8 @@ class Columns():
         return typeDict
 
     def getColumnNames(self):
+        """Get a list of all column names.
+        """
         return [item.getName() for item in self._colList]
     
     def addColumn(self, colItem : ColumnItem):
@@ -405,12 +407,28 @@ class baseAnnotations():
         """
         return self._df
 
+    def rowColIs(self, rowIdx : int, colStr : str, value) -> bool:
+        """Return true if row/col have value.
+        """
+        return self._df.at[rowIdx, colStr] == value
+
+    def getRows_v2(self, rows : Union[List[int], int], asDict : bool = False) -> Union[pd.DataFrame,dict]:
+        """Get rows from dataframe (all columns).
+        
+        Args:
+            rows (int): rows to get
+            asDict (bool): IF True then return dictionary, otherwise return DataFrame
+        """
+        if asDict:
+            return self._df.loc[rows].to_dict()         
+        else:
+            return self._df.loc[rows]
+
     def getRows(self,
                 colStr : str,
                 value,
                 operator : comparisonTypes = comparisonTypes.equal) -> List[int]:
-        """
-        Get a list of rows (int) corresponding to the values in a column
+        """Get a list of rows (int) corresponding to the values in a column
         
         Args:
             colStr: The column to interogate
@@ -535,7 +553,7 @@ class baseAnnotations():
         return values
 
     def setValue(self, colName : str, row : int, value):
-        """Set a single value.
+        """Set a single value in a row and column.
         
         Args:
             colName (str)
@@ -601,7 +619,8 @@ class baseAnnotations():
 
     def addAnnotation(self, 
                     x : int, y : int, z : int,
-                    rowIdx : int = None) -> int:
+                    channel : Union[int,None] = None,
+                    rowIdx : Union[int,None] = None) -> int:
         """
         Add a new annotation at pixel (x,y,z).
         
@@ -609,6 +628,7 @@ class baseAnnotations():
             x (int): Pixel
             y (int):
             z (int):
+            channel (int): Image channel number for the annotation
             rowIdx (Union(int,None)): If specified then insert before the row index
                     otherwise, append
 

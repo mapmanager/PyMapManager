@@ -1,4 +1,6 @@
 
+from .stackWidget import stackWidget
+
 from ._table_widget import myTableView
 #from _data_model import pandasModel
 

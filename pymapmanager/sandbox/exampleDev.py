@@ -24,10 +24,15 @@ def run():
     app = QtWidgets.QApplication(sys.argv)
 
     # open a stack window using myStack
-    bsw = stackWidget(myStack=myStack)
+    sw = stackWidget(myStack=myStack)
+
+    sw.setPosition(left=200, top=200, width=700, height=500)
+
     # useful on startup, to snap to an image
-    bsw._myGraphPlotWidget.slot_setSlice(30)
-    bsw.show()
+    #bsw._myGraphPlotWidget.slot_setSlice(30)    
+    sw.zoomToPointAnnotation(85, isAlt=True, select=True)
+
+    sw.show()
 
     # put test code here
 

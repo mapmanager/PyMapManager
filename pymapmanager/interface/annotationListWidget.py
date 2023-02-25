@@ -55,12 +55,15 @@ class annotationListWidget(QtWidgets.QWidget):
         List[int]: List of row selection to be deleted.
     """
 
-    def __init__(self, annotations : pymapmanager.annotations.baseAnnotations,
+    def __init__(self,
+                    theStackWidget,
+                    annotations : pymapmanager.annotations.baseAnnotations,
                     title : str,
                     displayOptionsDict : dict,
                     parent = None):
         """
         Args:
+            theStackWidget:
             annotations:
             title:
             displayOptions:
@@ -70,6 +73,7 @@ class annotationListWidget(QtWidgets.QWidget):
 
         logger.info(f'{title} {type(annotations)}')
 
+        self._stackWidget = theStackWidget
         self._annotations : pymapmanager.annotations.baseAnnotations = annotations
         self._title : str = title
         self._displayOptionsDict = displayOptionsDict
@@ -244,7 +248,7 @@ class annotationListWidget(QtWidgets.QWidget):
 
         self._blockSlots = False
 
-    def slot_selectAnnotation(self, rows : List[int], isAlt : bool = False):
+    def slot_selectAnnotation(self, rows : List[int], setSlice : bool = False, doZoom : bool = False):
         """Select annotation at index.
         
         This is called when user selects point in (for example)
@@ -265,6 +269,8 @@ class annotationListWidget(QtWidgets.QWidget):
         
         # select in table
         self._myTableView.mySelectRows(rows)
+
+        #logger.warning(f'todo: need to set the table row')
 
     def old_slot_addAnnotation(self, rows : List[int], dictList : List[dict]):
         """Add annotations from list.
@@ -419,11 +425,20 @@ class lineListWidget(annotationListWidget):
         self._deleteSegmentButton.clicked.connect(_callback)
         hBoxLayout.addWidget(self._deleteSegmentButton, alignment=_alignLeft)
 
+        # trace and cancel (A*)
+        self._traceCancelButton = QtWidgets.QPushButton('trace')  # toggle b/w trace/cancel
+        self._traceCancelButton.setEnabled(_editSegment)
+        _callback = lambda state, buttonName='trace_cancel': self.on_button_clicked(state, buttonName)
+        self._traceCancelButton.clicked.connect(_callback)
+        hBoxLayout.addWidget(self._traceCancelButton, alignment=_alignLeft)
+        
         hBoxLayout.addStretch()  # required for alignment=_alignLeft 
 
         return vControlLayout
 
     def on_edit_checkbox(self, state : int):
+        """Toggle segment edit .
+        """
         # checkbox can have 3-states
         if state > 0:
             state = True
@@ -432,6 +447,44 @@ class lineListWidget(annotationListWidget):
 
         self._addSegmentButton.setEnabled(state)
         self._deleteSegmentButton.setEnabled(state)
+        
+        #
+        # trace/cancel button should only be activated when there is
+        # 1) a point annotation controlPnt selection
+        # 2) it is not the first control pnt in a segmentID
+        # Need to run this code every time there is a new point selection
+        rowIdx, rowDict = self._stackWidget.annotationSelection.getPointSelection()
+        logger.info(f'  rowIdx:{rowIdx}')
+        if not state or rowIdx is None or len(rowIdx)>1:
+           # no selection, always off
+           traceState = False
+        else:
+            rowIdx = rowIdx[0]
+
+            pa = self._stackWidget.getStack().getPointAnnotations()
+            isControlPnt = pa.rowColIs(rowIdx, 'roiType', 'controlPnt')
+            logger.info(f'  isControlPnt: {isControlPnt} {type(isControlPnt)}')
+            if not isControlPnt:
+                traceState = False
+            else:
+                segmentID = pa.getValue('segmentID', rowIdx)
+                # if isControl pnt and not the first in a segmentID
+                logger.info(f'  segmentId:{segmentID}')
+                #la = self._stackWidget.getStack().getLineAnnotations()
+                # not the correct function,
+                # we need to determine if it is the first controlPnt in the point annotations
+                # startRow, _stopRow = la._segmentStartRow(segmentID)
+                # still not correct, we need just control pnt from one segmentID
+                # logger.error('fix this !!!')
+                # _idx = pa.getRoiType_col('index', pymapmanager.annotations.pointTypes.controlPnt)
+                _controlPnt = pymapmanager.annotations.pointTypes.controlPnt
+                _idx = pa.getTypeAndSegmentColumn('index', _controlPnt, segmentID)
+                _idx = _idx[0]
+                logger.info(f'  _idx:{_idx}')
+                traceState = rowIdx > _idx
+        #
+        self._traceCancelButton.setEnabled(traceState)
+
 
         logger.info(f'  -->> emit signalEditSegments() state:{state}')
         self.signalEditSegments.emit(state)
@@ -447,6 +500,8 @@ class lineListWidget(annotationListWidget):
             _segment = [None]
             logger.info(f'  -->> emit signalDeletingSegment() segment:{_segment}')
             self.signalDeletingSegment.emit(_segment)
+        elif buttonName =='trace_cancel':
+            logger.info('trace or cancel !!! implement this')
         else:
             logger.warning(f'did not understand buttonName:{buttonName}')
 

@@ -20,6 +20,7 @@ from pymapmanager.interface.stackWidget import stackWidget
 
 from pymapmanager._logger import logger
 
+
 class AStarThread(Thread):
     def __init__(self,
             image : np.ndarray,

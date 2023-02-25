@@ -91,7 +91,9 @@ class myTableView(QtWidgets.QTableView):
     def mySelectRows(self, rows : Set[int]):
         """Make a new row selection from viewer.
         """
-                        
+
+        logger.info(f'rows:{rows}')
+
         # to stop event recursion
         self.blockUpdate = True
         
@@ -111,7 +113,7 @@ class myTableView(QtWidgets.QTableView):
                 column = 0
                 row = list(rows)[0]
                 index = self.model().index(row, column)
-                self.scrollTo(index)
+                self.scrollTo(index, QtWidgets.QAbstractItemView.PositionAtTop)  # EnsureVisible
             else:
                 #print('  CLEARING SELECTION')
                 self.clearSelection()

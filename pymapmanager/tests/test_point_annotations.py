@@ -69,6 +69,46 @@ def test_point_annotation():
 
     pprint(pa.getDataFrame())
 
+def test_int_columns():
+    """Test that we can add and get intensity columns.
+    
+    Run this from command line with
+        ```
+        pytest -k 'test_int_columns
+        ```
+    """
+    pa = pymapmanager.annotations.pointAnnotations()
+    assert len(pa) == 0
+
+    # test add
+    roiType = pointTypes.spineROI
+    x = 10
+    y = 20
+    z = 30
+    segmentID = 0
+    pa.addAnnotation(roiType, x=x, y=y, z=z, segmentID=segmentID)
+    assert len(pa) == 1
+
+    #print(pa.columns.getColumnNames())
+
+    # set some intensity columns
+    _intDict  = {
+        'Sum': 111,
+        'Mean': 222.2,
+        'Min': 0,
+        'Max':333
+    }
+    _row = 0
+    _roiStr = 'spine'
+    _channel = 1
+    pa.setIntValue(_row, _roiStr, _channel, _intDict)
+
+    # get the values back and check they are what we just set
+    intDict = pa.getIntValue(_row, _roiStr, _channel)
+    assert intDict['Sum'] == 111
+    assert intDict['Mean'] == 222.2
+    assert intDict['Min'] == 0
+    assert intDict['Max'] == 333
 
 def test_isValid():
     # need to include some test data
@@ -84,7 +124,7 @@ def test_isValid():
     segmentID = 0
     pa.addAnnotation(roiType, segmentID, x=x, y=y, z=z)
 
-    # this will be false as we have not connected the spine to the line/backbone
+    # this will be false as we have not connected the spine to the line/segment
     # not sure how to implement this here as we need an image to do that!
     assert pa._isValid() == True
 

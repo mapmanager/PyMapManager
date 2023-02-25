@@ -97,12 +97,21 @@ class annotationPlotWidget(QtWidgets.QWidget):
         
         _pen = pg.mkPen(width=width, color=color)
         _pen = None
-        self._scatter = pg.ScatterPlotItem(pen=_pen,
+
+        # feb 2023, switching from ScatterPlotItem to PlotDataItem (for 'connect' argument
+        self._scatter = pg.PlotDataItem(pen=_pen,
+                            symbolPen=None, # feb 2023
                             symbol=symbol,
                             size=size,
-                            color = color)
+                            color = color,
+                            connect='all')
+        # self._scatter = pg.ScatterPlotItem(pen=_pen,
+        #                     symbol=symbol,
+        #                     size=size,
+        #                     color = color)
         self._scatter.setZValue(zorder)  # put it on top, may need to change '10'
-        self._scatter.sigClicked.connect(self._on_mouse_click) 
+        # self._scatter.sigClicked.connect(self._on_mouse_click) 
+        self._scatter.sigPointsClicked.connect(self._on_mouse_click) 
         self._view.addItem(self._scatter)
     
         # user selection
@@ -159,15 +168,23 @@ class annotationPlotWidget(QtWidgets.QWidget):
         """Respond to user click on scatter plot.
         
         Visually select the annotation and emit signalAnnotationClicked
-        """
-        logger.info(f'annotationPlotWidget() {type(self)}')
-
+        
+        Args:
+            points (PlotDataItem)
+            event (List[SpotItem]):
+            """
         modifiers = QtWidgets.QApplication.queryKeyboardModifiers()
         isAlt = modifiers == QtCore.Qt.AltModifier
+
+        logger.info(f'annotationPlotWidget() {type(self)}')
+        logger.info(f'  points:{points}')
+        logger.info(f'  event:{event}')
+        logger.info(f'  isAlt:{isAlt}')
 
         for idx, oneEvent in enumerate(event):
             if idx > 0:
                 break
+
             plotIdx = oneEvent.index()
             #print('  plot index:', plotIdx)
 
@@ -224,7 +241,9 @@ class annotationPlotWidget(QtWidgets.QWidget):
         # logger.info(f'  y:{x} {type(y)}')
         
         self._scatterUserSelection.setData(x, y)
-        self._view.update()
+        
+        # set data calls this?
+        # self._view.update()
 
     def slot_selectAnnotation(self, dbIdx : List[int], isAlt : bool):
         """Respond to user selection of annotations.
@@ -253,7 +272,7 @@ class annotationPlotWidget(QtWidgets.QWidget):
             roiTypeList: A list of roiType to display.
         
         Notes:
-            This resets our state (_dfPlot) and requires a full refetch from the backend.
+            This resets our state (_dfPlot) and requires a full refresh from the backend.
         """
         if not isinstance(roiTypeList, list):
             roiTypeList = [roiTypeList]
@@ -301,14 +320,23 @@ class annotationPlotWidget(QtWidgets.QWidget):
             dfPlot = self._annotations.getSegmentPlot(theseSegments, roiTypes, sliceNumber)
             self._dfPlot = dfPlot
 
-        x = dfPlot['x']
-        y = dfPlot['y']
+        x = dfPlot['x'].tolist()  # x is pandas.core.series.Series
+        y = dfPlot['y'].tolist()
 
         # TODO: Can get rid of this and just use dfPlot, use dfPlot at index 
         self._currentPlotIndex = dfPlot['index'].tolist()
 
+        # feb 2023, if we are only displaying controlPnt then connect lines in scatter
+        if len(roiTypes)==1 and roiTypes[0]==pymapmanager.annotations.pointTypes.controlPnt:
+            doLine = True
+            #self._scatter.connect(True)
+        else:
+            doLine = False
+            #self._scatter.connect(False)
+        
+        # connect is from ('all' 'pairs', 'finite')
         self._scatter.setData(x,y)
-
+            
         # jan 2023, do i need to set the brush every time after setData() ???
         if 0:
             # make a color column based on roiType
@@ -319,8 +347,10 @@ class annotationPlotWidget(QtWidgets.QWidget):
             _colorList = dfPlot['color'].tolist()
             self._scatter.setBrush(_colorList)
 
+        # 20230206 removed while implementing tracing thread
+        # as far as I understand, setData() calls this
         # update the view
-        self._view.update()
+        #self._view.update()
 
         stopTime = time.time()
         msElapsed = (stopTime-startTime) * 1000
@@ -536,4 +566,5 @@ class linePlotWidget(annotationPlotWidget):
             y = dfPlot['y'].tolist()
 
         self._scatterUserSelection.setData(x, y)
-        self._view.update()
+        # setData calls this ???
+        # self._view.update()

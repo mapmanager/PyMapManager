@@ -69,6 +69,16 @@ python -m tox
     version = 0.0.9
     ```
 
+## TODO (20230201)
+
+    - in stackWidget, catch user moving window and set position in options dict
+
+    - as you are writing code, you can start writing test immediately. To call one pytest function, use
+
+    ```
+    pytest pymapmanager/tests/test_mmMap.py::test_mmMap_init
+    ```
+    
 ## TODO (20220329):
 	- Remove toolbars (top-left) for (delete, add, select, zoom).
 	- Replace these with interface including
