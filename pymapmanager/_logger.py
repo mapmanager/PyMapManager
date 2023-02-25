@@ -16,7 +16,8 @@ handler.setLevel(logging_level)
 # this gives us the filename _lologger()
 # [%(name)s()]
 # [%(module)s()]
-formatter = logging.Formatter('%(levelname)7s - [%(module)s()] %(filename)s %(funcName)s() line:%(lineno)d -- %(message)s')
+#formatter = logging.Formatter('%(levelname)7s - [%(module)s()] %(filename)s %(funcName)s() line:%(lineno)d -- %(message)s')
+formatter = logging.Formatter('%(levelname)7s - %(filename)s %(funcName)s() line:%(lineno)d -- %(message)s')
 handler.setFormatter(formatter)
 
 logger.addHandler(handler)

@@ -9,3 +9,8 @@ from .annotationListWidget import lineListWidget
 
 from .annotationPlotWidget import linePlotWidget
 from .annotationPlotWidget import pointPlotWidget
+
+from .imagePlotWidget import ImagePlotWidget
+from .histogramWidget import HistogramWidget
+from .stackWidgetToolbars import TopToolBar
+from .stackWidgetToolbars import StatusToolbar

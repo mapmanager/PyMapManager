@@ -36,6 +36,29 @@ def _findClosestIndex(x, y, z, xyzLine : List[List[float]]) -> int:
             closestIdx = idx
     return closestIdx
 
+def _getIntensityFromMask(imgMask :np.ndarray, img : np.ndarray) -> dict:
+    """Given an image a mask, compute intensity measurements of the image in the mask.
+     
+    Return a dict with intensity measurements like ('sum', 'mean', 'std', 'min', 'max')
+
+    Args:
+        imgMask: 1 is in mask, 0 is background
+        img:
+    """
+    maskIntensities = img[imgMask==1]
+
+    #print(f'  _getRoiIntensities() maskIntensities: {maskIntensities.shape} {maskIntensities.dtype}')
+                
+    theDict = {
+        'Sum': maskIntensities.sum(),
+        'Mean': maskIntensities.mean(),
+        'Std': maskIntensities.std(),
+        'Min': maskIntensities.min(),
+        'Max': maskIntensities.max(),
+    }
+
+    return theDict
+
 def _findBrightestIndex(x, y, z, xyzLine : List[List[float]], image) -> int:
     """Find the brightest path in an image volume
         From one point (x,y,z) to the given candidates line (xyzLine).
@@ -43,7 +66,7 @@ def _findBrightestIndex(x, y, z, xyzLine : List[List[float]], image) -> int:
         Returns: index on the line which has the brightest path
 		and list of x y z candidate
 
-        TODO: This function also needs an nparray of the image to search!
+        TODO:
             Rather than a single image slice, pass it a small z-projection centered on z
             use pmm.stack.getMaxProjectSlice() to do this.
     """
@@ -53,10 +76,10 @@ def _findBrightestIndex(x, y, z, xyzLine : List[List[float]], image) -> int:
     #    This will be the seed point for searching for the brigtest path
     closestIndex = _findClosestIndex(x, y, z, xyzLine)
     
-#     print(temp)
+    # print(temp)
     # 3) using intensity profile, find the point on the line with the brightest path (from the spine point)
     # See: https://scikit-image.org/docs/stable/api/skimage.measure.html#skimage.measure.profile_line
-#     print(xyzLine[closestPoint-numPnts])
+    # print(xyzLine[closestPoint-numPnts])
     firstPoint = closestIndex-numPnts
     lastPoint = closestIndex+numPnts
     

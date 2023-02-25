@@ -437,7 +437,10 @@ class lineListWidget(annotationListWidget):
         return vControlLayout
 
     def on_edit_checkbox(self, state : int):
-        """Toggle segment edit .
+        """Toggle segment edit.
+
+        A little complicated, we want to
+        change the text in _traceCancelButton b/w 'Trace' and 'Cancel'
         """
         # checkbox can have 3-states
         if state > 0:
@@ -455,11 +458,11 @@ class lineListWidget(annotationListWidget):
         # Need to run this code every time there is a new point selection
         rowIdx, rowDict = self._stackWidget.annotationSelection.getPointSelection()
         logger.info(f'  rowIdx:{rowIdx}')
-        if not state or rowIdx is None or len(rowIdx)>1:
+        if not state or rowIdx is None or isinstance(rowIdx,list)>1:
            # no selection, always off
            traceState = False
         else:
-            rowIdx = rowIdx[0]
+            #rowIdx = rowIdx[0]
 
             pa = self._stackWidget.getStack().getPointAnnotations()
             isControlPnt = pa.rowColIs(rowIdx, 'roiType', 'controlPnt')
@@ -467,6 +470,7 @@ class lineListWidget(annotationListWidget):
             if not isControlPnt:
                 traceState = False
             else:
+                logger.info(f'  checking if control point is > first in segment')
                 segmentID = pa.getValue('segmentID', rowIdx)
                 # if isControl pnt and not the first in a segmentID
                 logger.info(f'  segmentId:{segmentID}')

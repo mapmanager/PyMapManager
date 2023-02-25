@@ -13,6 +13,8 @@ from pymapmanager.annotations import ColumnItem
 from pymapmanager.annotations import comparisonTypes
 from pymapmanager.annotations import fileTypeClass
 
+import pymapmanager.utils
+
 from pymapmanager._logger import logger
 
 class pointTypes(enum.Enum):
@@ -83,7 +85,7 @@ class pointAnnotations(baseAnnotations):
         super().load()
 
     def _addIntColumns(self):
-        """Add (10 * num channels) columns hold intensity analysis.
+        """Add (10 * num channels) columns to hold roi based intensity analysis.
         """
         roiList = ['spine', 'spineBackground']
         statNames = ['Sum', 'Min', 'Max', 'Mean', 'Std']
@@ -91,6 +93,7 @@ class pointAnnotations(baseAnnotations):
         for roiStr in roiList:
             for statName in statNames:
                 for channelNumber  in range(numChannels):
+                    channelNumber += 1  # 1 based
                     # for example 'sSum_ch1'
                     #currColStr = roi + stat + channelStr
                     currColStr = self._getIntColName(roiStr, statName, channelNumber)
@@ -175,6 +178,7 @@ class pointAnnotations(baseAnnotations):
         self._df.loc[newRow, 'roiType'] = roiType.value
         self._df.loc[newRow, 'segmentID'] = segmentID
 
+        # called by stackWidget on new spine roi
         # if roiType == pointTypes.spineROI:
         #      self.updateSpineInt(newRow, xyzLineSegment, channelNumber,imgData)
 
@@ -207,40 +211,49 @@ class pointAnnotations(baseAnnotations):
             imgData (np.ndarray) the actual image data to search in
         """
         logger.info('This is setting lots of columns in our backend with all intensity measurements')
+        logger.info(f'  imgData.shape {imgData.shape}')
+
+        _z = self.getValue('z', spineIdx)
+        _x = self.getValue('x', spineIdx)
+        _y = self.getValue('y', spineIdx)
         segmentID = self.getValue('segmentID', spineIdx)
         chStr = str(channelNumber)
         
         # 1) find brightest path to line segment
         #brightestIndex = self.reconnectToSegment(spineIdx, xyzLineSegment, imgData)
         
-        # 1.1) set the backend valu
+        # 1.1) set the backend value
         #self.setValue('brightestIndex', spineIdx, brightestIndex)
 
         # 2) calculate spine roi (spine rectangle - segment polygon) ... complicated
 
         # 3) calculate dict for spine with keys ('Sum', 'Min', 'Max', 'Mean', ....)
         #   and store as columns in our pandas dataframe
-        spineIntDict = {
-            # making up fake values here
-            'Sum': 111,
-            'Mean': 222.2,
-            'Min': 0,
-            'Max': 214,
-            # ... other keys
-        }
+        
+        # this is fake, replace with real code
+        spineRoiMask = np.empty_like(imgData, dtype=np.uint8)  # TODO actually calulate spineRoiMask
+        spineRoiMask[:][:] = 0
+        spineRoiMask[_y][_x] = 1
+        
+        # get dict with spine intensity measurements
+        spineIntDict = pymapmanager.utils._getIntensityFromMask(spineRoiMask, imgData)
+        
         self.setIntValue(spineIdx, 'spine', channelNumber, spineIntDict)
 
         # 4) translate the roi in a grid to find dimmest position
         #   calculate dict with background ('Sum', 'Min', 'Max', 'Mean', ....)
         #   and store as column in our pandas dataframe
-        spineBackgroundIntDict = {
-            # making up fake values here
-            'Sum': 555,
-            'Mean': 666.6,
-            'Min': 0,
-            'Max': 99,
-            # ... other keys
-        }
+
+        # this is fake, replace with real code
+        _xOffset = 10
+        _yOffset = 20
+        backgroundRoiMask = np.empty_like(imgData)  # TODO actually calulate backgroundRoiMask
+        backgroundRoiMask[:][:] = 0
+        logger.info(f'  backgroundRoiMask:{backgroundRoiMask.shape}')
+        backgroundRoiMask[_y + _yOffset][_x + _xOffset] = 1
+        
+        # get dict with background intensity measurements
+        spineBackgroundIntDict = pymapmanager.utils._getIntensityFromMask(backgroundRoiMask, imgData)
         self.setIntValue(spineIdx, 'spineBackground', channelNumber, spineBackgroundIntDict)
 
         #
