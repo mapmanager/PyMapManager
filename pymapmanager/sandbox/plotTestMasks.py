@@ -13,6 +13,7 @@ channel = 2
 myStack = pmm.stack(stackPath, defaultChannel = channel, loadImageData = True)
 # img = myStack.getImageChannel(channel = channel)
 img = myStack.getMaxProject(channel = channel)
+print("img.dtype", img.dtype)
 
 pointAnnotation = myStack.getPointAnnotations()
 lineAnnotation = myStack.getLineAnnotations()
@@ -87,8 +88,8 @@ calculateCandidateMasks(finalSpineMask, 2, 3, originalSpinePoint, img=img)
 # return calculateCandidateMasks()
 
 
-import sys
-sys.exit()
+# import sys
+# sys.exit()
 
 # print("xSpine[0]: ", xSpine[0])
 # print("xBrightestLine: ", xBrightestLine)

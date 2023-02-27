@@ -220,6 +220,9 @@ def getOffset(distance, numPts):
 
     return coordOffsetList
 
+# Code to create brightest index called when user creates a new spine
+# Save dictionary original spine ROI mask by itself
+# Called when user creates a new spine
 def calculateCandidateMasks(mask, distance, numPts, originalSpinePoint, img):
     """ 
     Args:
@@ -238,10 +241,10 @@ def calculateCandidateMasks(mask, distance, numPts, originalSpinePoint, img):
     labelArray, numLabels = ndimage.label(mask)
     # print("label array:", labelArray)
     sizes = ndimage.sum(mask, labelArray, range(numLabels + 1))
-    # TODO: take the label that contains the original spine point
-    # TODO: loop through all the labels and pull out the x,y coordinates 
+    
+    # Take the label that contains the original spine point
+    # Loop through all the labels and pull out the x,y coordinates 
     # Check if the original x,y points is within those coords (using numpy.argwhere)
-    # finalCandidate = 0
     currentLabel = 0
     # print(originalSpinePoint)
     for label in np.arange(1, numLabels+1, 1):
@@ -260,75 +263,85 @@ def calculateCandidateMasks(mask, distance, numPts, originalSpinePoint, img):
     plt.plot(finalMask[:,1], finalMask[:,0], 'mo')
 
     offsetList = getOffset(distance = distance, numPts = numPts)
-    import skimage
 
     # image=np.array(img) 
     # print("image.shape is", image.shape)
 
-    # import sys
-    # sys.exit(0)
     # labelArray[labelArray != label] = 0
     # print("label", labelArray)
-    lowestIntensity = 0
+    lowestIntensity = math.inf
+    lowestIntensityOffset = 0
     for offset in offsetList:
         # print(offset)
         currentIntensity = 0
         adjustedMask = finalMask + offset
-        # adjustedMask = np.bool_(adjustedMask)
 
-        # print(adjustedMask)
-        # print(adjustedMask[0][0])
-        # maskedImage = img[adjustedMask[2][0]][adjustedMask[2][1]]
-        # Possibly loop through the adjustmask x and y
-        # maskedImage = np.mean(img[adjustedMask])
+        # # Boundary check
+        # # If out of bounds skip that offset
+        # # Alternate approach: acquire coordinates in mask, acquire smallest, biggest x and check within bounds
+        # for index, val in enumerate(adjustedMask):
+        #     # print(adjustedMask[index][0])
 
-        for index, value in enumerate(adjustedMask):
-            maskedImageIntensity = img[adjustedMask[index][0]][adjustedMask[index][1]]
-            # print(maskedImage)
-            currentIntensity += maskedImageIntensity
+        #     if(adjustedMask[index][0] < -512 or adjustedMask[index][0]  > 512):        
+        #         print("under bound")  
+        #         outOfBounds = True     
+        #         break
 
-        if(lowestIntensity == 0):
-            lowestIntensity = currentIntensity
+        #     if(adjustedMask[index][1] < -512 or adjustedMask[index][1] > 512):
+        #         print("over bound")
+        #         outOfBounds = True  
+        #         break
+   
+        # Sum the intensity for all the points that the mask covers the image
+        # TODO: wrap 
+        try:
+            img[adjustedMask]
+
+        except(IndexError) as e:
+            # logger.error("Out of bounds")
+            print("Out of bounds")
+            continue
+    
+        totalIntensity = np.sum(img[adjustedMask])
+        currentIntensity = totalIntensity
+
+        # print("currentIntensity", currentIntensity)
+        # if(lowestIntensity == 0):
+        #     lowestIntensity = currentIntensity
+        #     lowestIntensityOffset = offset
+
         if(currentIntensity < lowestIntensity):
             lowestIntensity = currentIntensity
+            lowestIntensityOffset = offset
 
-        print(lowestIntensity)
-        # maskedImage = img[225]
-        # print(maskedImage)
-        # break
-
-        # print(movedMask)
-
-    # for i in range(numPts):
-    #     for index, val in enumerate(coords):
-    #         coords[index] = val + [-steps, steps]
-
-        
-
-    # for i in numPts:
-        # Move to coords
-
-        # Check the intensity
-        # skimage.measure.profile_line
-
-        # Keep track of position with current lowest intensity
-
-    # Ensure that coords are within boundaries of image
+            # print("lowestIntensity", lowestIntensity)
+            # print("lowestIntensityOffset", lowestIntensityOffset)
+    
+    # print(calculateMaskDict(finalMask + lowestIntensityOffset, img))
+    return calculateMaskDict(finalMask + lowestIntensityOffset, img)
 
 def calculateMaskDict(mask, image):
-    count=np.count_nonzero(mask)
-    sum = image[mask == 1].sum()
-    min = image[mask == 1].min()
-    max = image[mask == 1].max()
-    mean = image[mask == 1].mean()
-    std = image[mask == 1].std()
+    """
+        mask = mask at offset with lowest intensity
+    """
+    count = np.count_nonzero(mask)
+    sum = image[mask].sum()
+    min = image[mask].min()
+    max = image[mask].max()
+    mean = image[mask].mean()
+    std = image[mask].std()
     # Coords
 
     maskDict = {"count": count, 
-                "sum": sum}
+                "sum": sum,
+               "min": min,
+               "max": max,
+               "mean": mean,
+               "std": std}
+
     print("maskDict", maskDict)
 
-    return 
+    return maskDict
 
 
 if __name__ == "__main__":
