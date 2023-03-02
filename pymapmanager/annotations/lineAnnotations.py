@@ -45,9 +45,69 @@ class lineAnnotations(baseAnnotations):
         )
         self.addColumn(colItem)
 
+        # Add columns xLeft ...
+        colItem = ColumnItem(
+            name = 'xLeft',
+            type = int,  
+            units = '',
+            humanname = 'xLeft',
+            description = 'xLeft'
+        )
+        self.addColumn(colItem)
+
+        colItem = ColumnItem(
+            name = 'yLeft',
+            type = int,  
+            units = '',
+            humanname = 'yLeft',
+            description = 'yLeft'
+        )
+        self.addColumn(colItem)
+
+        colItem = ColumnItem(
+            name = 'zLeft',
+            type = int,  
+            units = '',
+            humanname = 'zLeft',
+            description = 'zLeft'
+        )
+        self.addColumn(colItem)
+
+      # Add columns xLeft ...
+        colItem = ColumnItem(
+            name = 'xRight',
+            type = int,  
+            units = '',
+            humanname = 'xRight',
+            description = 'xRight'
+        )
+        self.addColumn(colItem)
+
+        colItem = ColumnItem(
+            name = 'yRight',
+            type = int,  
+            units = '',
+            humanname = 'yRight',
+            description = 'yRight'
+        )
+        self.addColumn(colItem)
+
+        colItem = ColumnItem(
+            name = 'zRight',
+            type = int,  
+            units = '',
+            humanname = 'zRight',
+            description = 'zRight'
+        )
+        self.addColumn(colItem)
+
         self.load()
 
         self.buildSegmentDatabase()
+
+     
+
+
 
     def buildSegmentDatabase(self, segmentID : Union[List[int], int, None] = None):
         """Rebuild summary database of each line segment.
@@ -313,14 +373,168 @@ class lineAnnotations(baseAnnotations):
         """
         return self.getDataFrame()['segmentID'].to_numpy()
 
-
-    def getSegment(self, segmentID : int) -> pd.DataFrame:
+    def getSegment(self, segmentID : Union[int, List[int]] = None) -> pd.DataFrame:
         """Get all annotations rows for one segment id.
         """
+        # Change this to accept a list int or None
+        # if segmentID is None:
+        #     segmentList = range(self.numSegments)
+        # elif not isinstance(segmentID, list):
+        #     segmentList = [segmentID]
+
+        # print("segmentID: within getsegment", segmentID)
         dfLines = self._df  # All of our annotation classes are represented as a dataframe (_df)
+        # print("dflines ", dfLines)
         dfOneSegment = dfLines[dfLines['roiType']=='linePnt']
+        # print("dfOneSegment ", dfOneSegment)
         dfOneSegment = dfOneSegment[dfLines['segmentID']==segmentID]
+
         return dfOneSegment
-        
+
+    def getRadiusLines(self, segmentID : Union[int, List[int]] = None, length = 1):
+        """
+            length = integer by which we scale the size of the left, right points from the line point
+
+            Calculates all the xyz coordinates for the Shaft ROI for given segment(s)
+            and places them into the backend as columns within the dataframe
+        """
+       
+        if segmentID is None:
+            # grab all segment IDs into a list
+            segmentID = self.getSegmentList()
+
+        elif (isinstance(segmentID, int)):
+            newIDlist = []
+            newIDlist.append(segmentID)
+            segmentID = newIDlist
+
+        print("segmentID: ", segmentID)
+
+        # Change to one segment when put into lineAnnotation.py
+        # segmentDF = segmentID
+        # print(segmentDF)
+        # segmentDF = self.getSegment(segmentID)
+        segmentDFs = []
+
+        # List of all segmentID dataframes 
+        for id in segmentID:
+            segmentDFs.append(self.getSegment(id))
+
+        # print("segment df is:", segmentDFs)
+
+        # xPlot = segmentDF['x']
+        # yPlot = segmentDF['y']
+        # zPlot = segmentDF['z']
+        # print(xPlot)
+        # print(zPlot)
+
+        segmentROIXinitial = []
+        segmentROIYinitial = []
+        segmentROIXend = []
+        segmentROIYend = []
+
+        # Looping through each segment individually
+        # Nested for loop
+        for index in range(len(segmentID)):
+            print("segmentID index", index)
+            currentDF = segmentDFs[index]
+            # print("currentDF", currentDF)
+            xPlot = currentDF['x']
+            # print("xPlot, ", xPlot)
+            yPlot = currentDF['y']
+            zPlot = currentDF['z']
+            # get the value of the first index for that segments dataframe
+            offset = currentDF['index'].iloc[0]
+            # offset = currentDF.get_value()
+            print("offset, ", offset)
+
+            # Initialize empty lists
+            # nan is included to ensure that orthogonal line isnt drawn at the beginning
+            orthogonalROIXinitial = [np.nan]
+            orthogonalROIYinitial = [np.nan]
+            orthogonalROIZinitial = [np.nan]
+            orthogonalROIXend = [np.nan]
+            orthogonalROIYend = [np.nan]
+            orthogonalROIZend = [np.nan]
+
+            for idx, val in enumerate(xPlot):
+                # print("entered 2nd loop")
+                # Exclude first and last points since they do not have a previous or next point 
+                # that is needed for calculation
+                if idx == 0 or idx == len(xPlot)-1:
+                    continue
+                
+                xCurrent = xPlot[idx + offset]
+                yCurrent = yPlot[idx + offset]
+
+                xPrev = xPlot[idx-1 + offset]
+                xNext = xPlot[idx+1 + offset]
+
+                yPrev = yPlot[idx-1 + offset]
+                yNext = yPlot[idx+1 + offset]
+
+                # length = 3
+                adjustY, adjustX = pymapmanager.utils.computeTangentLine((xPrev,yPrev), (xNext,yNext), length)
+
+                segmentROIXinitial.append(xCurrent-adjustX)
+                segmentROIYinitial.append(yCurrent-adjustY)
+                
+                segmentROIXend.append(xCurrent+adjustX)
+                segmentROIYend.append(yCurrent+adjustY)
+
+                orthogonalROIXinitial.append(xCurrent-adjustY)
+                orthogonalROIYinitial.append(yCurrent+adjustX)
+                orthogonalROIZinitial.append(zPlot[idx + offset])
+
+                orthogonalROIXend.append(xCurrent+adjustY)
+                orthogonalROIYend.append(yCurrent-adjustX)
+                orthogonalROIZend.append(zPlot[idx + offset])
+            
+                # Add nan at the end of each list since previous for loop excludes the last point
+            orthogonalROIXinitial.append(np.nan)
+            orthogonalROIYinitial.append(np.nan)
+            orthogonalROIZinitial.append(np.nan)
+
+            orthogonalROIXend.append(np.nan)
+            orthogonalROIYend.append(np.nan)
+            orthogonalROIZend.append(np.nan)
+
+            # Acquire all indexs with the current 'index' segment
+            indexes = currentDF['index']
+            for i, val in enumerate(indexes):
+                # print(val)
+                # Here val is the actual index within the dataframe
+                # while i is the new index respective to each segment
+                self.setValue("xLeft", val, orthogonalROIXinitial[i])
+                self.setValue("yLeft", val, orthogonalROIYinitial[i])
+                self.setValue("zLeft", val, orthogonalROIZinitial[i])
+                
+                self.setValue("xRight", val, orthogonalROIXend[i])
+                self.setValue("yRight", val, orthogonalROIYend[i])
+                self.setValue("zRight", val, orthogonalROIZend[i])
+
+    def getZYXlist(self, segmentID : Union[int, List[int], None],
+                    roiTypes : Union[str, List[str]]):
+        """
+            Args:
+                segmentID: number or list of numbers of the segment that you want to get zyx
+                coordinates from
+                roiTypes: the roiType that will filter the dataframe 
+            
+            Returns:
+                list of zyx coordinates for particular segment(s) and roiType(s)
+
+        """
+        segmentDF = self.getSegmentPlot(int(segmentID), roiTypes)
+        segmentX = segmentDF["x"].tolist()
+        segmentY = segmentDF["y"].tolist()
+        segmentZ = segmentDF["z"].tolist()
+
+        segmentZYX = []
+        for index, x in enumerate(segmentX):
+            segmentZYX.append([segmentZ[index], segmentY[index], segmentX[index]])
+
+        return segmentZYX
+ 
 if __name__ == '__main__':
     pass
