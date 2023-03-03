@@ -1,6 +1,7 @@
 """
 """
 import os
+import enum
 from typing import List, Union
 
 import numpy as np
@@ -13,6 +14,15 @@ from pymapmanager.annotations import comparisonTypes
 import pymapmanager.analysis
 
 from pymapmanager._logger import logger
+
+
+class linePointTypes(enum.Enum):
+    """
+    These Enum values are used to map to str (rather than directly using a str)
+    """
+    controlPnt = "controlPnt"
+    pivotPnt = "pivotPnt"
+    linePnt = "linePnt"
 
 class lineAnnotations(baseAnnotations):
     """
@@ -248,6 +258,8 @@ class lineAnnotations(baseAnnotations):
 
     @property
     def numSegments(self):
+        """Get the number of segment IDs.
+        """
         parentList = self._df['segmentID'].unique()
         return len(parentList)
 
@@ -266,14 +278,33 @@ class lineAnnotations(baseAnnotations):
             return None, None
 
     def addAnnotation(self, 
-                    x : int, y : int, z : int,
+                    roiType : linePointTypes,
                     segmentID : int,
+                    x : int, y : int, z : int,
                     rowIdx = None,
                     ) -> int:
-        addedRow = super().addAnnotation(x, y, z, rowIdx=rowIdx)
-        self.at[addedRow, 'segmentID'] = segmentID
+        newRow = super().addAnnotation(x, y, z, rowIdx=rowIdx)
+        self._df.loc[newRow, 'roiType'] = roiType.value
+        self.at[newRow, 'segmentID'] = segmentID
 
-    def addSegment(self, pointList : List[List[int]]):
+    def addEmptySegment(self):
+        """Add an empty line segment.
+        
+        Empty line segments start with just a linePointTypes.pivotPnt
+        
+        Returns:
+            The row index of the pivotPnt
+        """
+        x = np.nan
+        y = np.nan
+        z = np.nan
+        newRow = super().addAnnotation(x, y, z)
+        self._df.loc[newRow, 'roiType'] = linePointTypes.pivotPnt.value
+        self.at[newRow, 'segmentID'] = self.numSegments
+        
+        return newRow
+    
+    def not_used_addSegment(self, pointList : List[List[int]]):
         """
         Add a new segment from a list of [z,y,x] points.
         

@@ -1,5 +1,5 @@
 
-import pymapmanager
+import pymapmanager as pymapmanager
 import pymapmanager.annotations
 from pymapmanager._logger import logger
 
@@ -37,7 +37,11 @@ def testLineLength():
     logger.info(f'length2D:{length2D} length3D:{length3D}')
     assert length2D[0] == 710.6639308643568
     assert length3D[0] == 714.3529067913599
-    
+
+def test_addEmptySegment():
+    la = pymapmanager.annotations.lineAnnotations()
+    la.addEmptySegment()
+
 if __name__ == '__main__':
     la = testLineLoad()
     testLineLength(la)

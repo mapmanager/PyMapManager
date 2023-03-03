@@ -25,6 +25,7 @@ class pointTypes(enum.Enum):
     spineROI = "spineROI"  # pointAnnotations
     controlPnt = "controlPnt"
     #pivotPnt = "pivotPnt"
+    #pivotPnt = "globalPivotPnt"
     #linePnt = "linePnt"  # lineAnnotations
 
 class pointAnnotations(baseAnnotations):

@@ -9,7 +9,8 @@ import pymapmanager.interface
 
 from pymapmanager._logger import logger
 
-class ImagePlotWidget(pg.PlotWidget):
+# class ImagePlotWidget(pg.PlotWidget):
+class ImagePlotWidget(QtWidgets.QWidget):
     """A plot widget (pg.PlotWidget) to plot
         - image
         - annotations (point and lines)
@@ -30,7 +31,9 @@ class ImagePlotWidget(pg.PlotWidget):
     """Signal emitted when mouse is moved.
     """
 
-    signalCancelSelection = QtCore.Signal(object, object)
+    signalAnnotationSelection2 = QtCore.Signal(object)  # pymapmanager.annotations.SelectionEvent
+    #signalCancelSelection = QtCore.Signal(object, object)
+    signalCancelSelection2 = QtCore.Signal(object)  # pymapmanager.annotations.SelectEvent
     """Signal emitted on keyboard 'esc' to cancel all selections
     
     Args:
@@ -38,7 +41,7 @@ class ImagePlotWidget(pg.PlotWidget):
         isAlt (bool): True if Alt key is down (not used)
         """
     
-    signalAddingAnnotation = QtCore.Signal(dict)
+    signalAddingAnnotation = QtCore.Signal(object)
     """Signal emitted when user shift_click to create a new annotation.
     
     Args:
@@ -86,10 +89,6 @@ class ImagePlotWidget(pg.PlotWidget):
 
         self.refreshSlice()
 
-    @property
-    def old_contrastDict(self):
-        return self._contrastDict    
-        
     def wheelEvent(self, event):
         """Respond to mouse wheel and set new slice.
 
@@ -98,10 +97,14 @@ class ImagePlotWidget(pg.PlotWidget):
         Args:
             event: PyQt5.QtGui.QWheelEvent
         """        
+        logger.info('')
         modifiers = QtWidgets.QApplication.keyboardModifiers()
         if modifiers == QtCore.Qt.ControlModifier:
             # zoom in/out with mouse
-            super().wheelEvent(event)
+            # on macOS this corresponds to 'command' key
+            #super().wheelEvent(event)
+            self._plotWidget.orig_wheelEvent(event)
+            pass
         else:
             # set slice
             yAngleDelta = event.angleDelta().y()
@@ -179,7 +182,15 @@ class ImagePlotWidget(pg.PlotWidget):
         elif event.key() == QtCore.Qt.Key_Escape:
             # cancel all user selections
             logger.info(f'  -->> emit signalCancelSelection CANCEL')
-            self.signalCancelSelection.emit(None, False)  # (selIdx, isAlt)
+            
+            #self.signalCancelSelection.emit(None, False)  # (selIdx, isAlt)
+
+            # two signals, one for each of our plots (point, line)
+            _pointSelectionEvent = pymapmanager.annotations.SelectionEvent(self._aPointPlot._annotations)
+            self.signalCancelSelection2.emit(_pointSelectionEvent)
+
+            _segmentSelectionEvent = pymapmanager.annotations.SelectionEvent(self._aLinePlot._annotations)
+            self.signalCancelSelection2.emit(_segmentSelectionEvent)
 
         elif event.key() in [QtCore.Qt.Key_Delete, QtCore.Qt.Key_Backspace]:
             # cancel all user selections
@@ -265,16 +276,20 @@ class ImagePlotWidget(pg.PlotWidget):
             # logger.info(f'Adding point annotation roiType:{roiType} segmentID:{segmentID} x:{x}, y:{y}, z{z}')
             # self._myStack.getPointAnnotations().addAnnotation(roiType, segmentID, x, y, z)
 
-            newDict = {
-                # 'roiType': roiType,  # type is pymapmanager.annotations.pointTypes
-                # 'segmentID': segmentID,
-                'x': x,
-                'y': y,
-                'z': z,
-            }
-            logger.info(f'-->> signalAddingAnnotation.emit {newDict}')
-
-            self.signalAddingAnnotation.emit(newDict)
+            # our imagePlotWidgethas multiple plot types of annotations
+            # we don't know the type to be added
+            # the parent window we are in needs to make that choice, best we can do is give up (z,y,x) of proposed new annotation
+            # 
+            # newDict = {
+            #     # 'roiType': roiType,  # type is pymapmanager.annotations.pointTypes
+            #     # 'segmentID': segmentID,
+            #     'x': x,
+            #     'y': y,
+            #     'z': z,
+            # }
+            _addAnnotationEvent = pymapmanager.annotations.AddAnnotationEvent(z, y, x)
+            logger.info(f'-->> signalAddingAnnotation.emit {_addAnnotationEvent}')
+            self.signalAddingAnnotation.emit(_addAnnotationEvent)
 
     def _onMouseMoved_scene(self, pos):
         """As user moves mouse, grab and emit the pixel (x, y, intensity).
@@ -312,9 +327,9 @@ class ImagePlotWidget(pg.PlotWidget):
         """
         imageBoundingRect = self._myImage.boundingRect()
         padding = 0.0
-        self.setRange(imageBoundingRect, padding=padding)
+        self._plotWidget.setRange(imageBoundingRect, padding=padding)
  
-    def slot_zoomToPoint(self, x, y, zoomFieldOfView=300):
+    def _zoomToPoint(self, x, y, zoomFieldOfView=300):
         """Zoom to point (x,y) with a width/height of widthHeight.
         
         Args:
@@ -333,12 +348,36 @@ class ImagePlotWidget(pg.PlotWidget):
         _zoomRect = QtCore.QRectF(l, t, w, h)
 
         padding = 0.0
-        self.setRange(_zoomRect, padding=padding)
+        self._plotWidget.setRange(_zoomRect, padding=padding)
        
     def slot_setSlice(self, sliceNumber):
         if self._blockSlots:
             return
         self._setSlice(sliceNumber)
+
+    def slot_selectAnnotation2(self, selectionEvent : pymapmanager.annotations.SelectionEvent):
+        if self._blockSlots:
+            return
+        self._selectAnnotation(selectionEvent)
+    
+    def _selectAnnotation(self, selectionEvent : pymapmanager.annotations.SelectionEvent):
+        self._blockSlots = True
+        
+        self.signalAnnotationSelection2.emit(selectionEvent)
+        
+        if selectionEvent.isAlt:
+            #if selectionEvent.type == pymapmanager.annotations.pointAnnotations:
+            if selectionEvent.isPointSelection():
+                print('!!! SET SLICE AND ZOOM')
+                rowIdx = selectionEvent.getRows()
+                rowIdx = rowIdx[0]
+                x = selectionEvent.annotationObject.getValue('x', rowIdx)
+                y = selectionEvent.annotationObject.getValue('y', rowIdx)
+                z = selectionEvent.annotationObject.getValue('z', rowIdx)
+                self._zoomToPoint(x, y)
+                self._setSlice(z)
+
+        self._blockSlots = False
 
     def slot_setContrast(self, contrastDict):
         #logger.info(f'contrastDict:')
@@ -529,6 +568,7 @@ class ImagePlotWidget(pg.PlotWidget):
 
         # emit
         #logger.info(f'  -->> emit signalUpdateSlice() _currentSlice:{self._currentSlice}')
+
         self._blockSlots = True
         self.signalUpdateSlice.emit(self._currentSlice)
         self._blockSlots = False
@@ -548,14 +588,28 @@ class ImagePlotWidget(pg.PlotWidget):
     def _buildUI(self):
         #self.setAspectLocked(True)
 
+        hBoxLayout = QtWidgets.QHBoxLayout()
+
+        # we are now a QWidget
+        self._plotWidget = pg.PlotWidget()  # pyqtgraph.widgets.PlotWidget.PlotWidget
+        # monkey patch wheel event
+        logger.warning(f'remember, we are monkey patching plotWidget wheel event')
+        logger.info(f'  self._plotWidget:{self._plotWidget}')
+        self._plotWidget.orig_wheelEvent = self._plotWidget.wheelEvent
+        self._plotWidget.wheelEvent = self.wheelEvent
+
+        hBoxLayout.addWidget(self._plotWidget)
+
+        # without this scatter plot are in wrong order (x/y swapped)
         pg.setConfigOption('imageAxisOrder','row-major')
-        self.setAspectLocked(True)
-        self.getViewBox().invertY(True)
-        self.getViewBox().setAspectLocked()
-        self.hideButtons() # Causes auto-scale button (‘A’ in lower-left corner) to be hidden for this PlotItem
+        
+        self._plotWidget.setAspectLocked(True)
+        self._plotWidget.getViewBox().invertY(True)
+        self._plotWidget.getViewBox().setAspectLocked()
+        self._plotWidget.hideButtons() # Causes auto-scale button (‘A’ in lower-left corner) to be hidden for this PlotItem
         # this is required for mouse callbacks to have proper x/y position !!!
-        self.hideAxis('left')
-        self.hideAxis('bottom')
+        self._plotWidget.hideAxis('left')
+        self._plotWidget.hideAxis('bottom')
         #self.hideAxis('top')
         #self.hideAxis('right')
 
@@ -567,23 +621,38 @@ class ImagePlotWidget(pg.PlotWidget):
         self._myImage = pg.ImageItem(fakeData)
         #self._myImage.setContentsMargins(0, 0, 0, 0)
         #self._myImage.setBorder(None)
-        self.addItem(self._myImage)
+        self._plotWidget.addItem(self._myImage)
 
-        self.scene().sigMouseMoved.connect(self._onMouseMoved_scene)
-        self.scene().sigMouseClicked.connect(self._onMouseClick_scene) # works but confusing coordinates
+        self._plotWidget.scene().sigMouseMoved.connect(self._onMouseMoved_scene)
+        self._plotWidget.scene().sigMouseClicked.connect(self._onMouseClick_scene) # works but confusing coordinates
 
         # add point plot of pointAnnotations
         pointAnnotations = self._myStack.getPointAnnotations()
         lineAnnotations = self._myStack.getLineAnnotations()
         _displayOptions = self._displayOptionsDict['pointDisplay']
         _displayOptionsLine = self._displayOptionsDict['spineLineDisplay']
-        self._aPointPlot = pymapmanager.interface.pointPlotWidget(pointAnnotations, self, _displayOptions, _displayOptionsLine, lineAnnotations, self._myStack)
+        self._aPointPlot = pymapmanager.interface.pointPlotWidget(pointAnnotations,
+                                                                self._plotWidget,
+                                                                _displayOptions,
+                                                                _displayOptionsLine,
+                                                                lineAnnotations,
+                                                                self._myStack)
+        self._aPointPlot.signalAnnotationClicked2.connect(self.slot_selectAnnotation2)
+        self.signalAnnotationSelection2.connect(self._aPointPlot.slot_selectAnnotation2)
+        self.signalUpdateSlice.connect(self._aPointPlot.slot_setSlice)
+
 
         # add line plot of lineAnnotations
         lineAnnotations = self._myStack.getLineAnnotations()
         _displayOptions = self._displayOptionsDict['lineDisplay']
-        self._aLinePlot = pymapmanager.interface.linePlotWidget(lineAnnotations, self, _displayOptions)
-        
+        self._aLinePlot = pymapmanager.interface.linePlotWidget(lineAnnotations,
+                                                                self._plotWidget,
+                                                                _displayOptions)
+
+        self._aLinePlot.signalAnnotationClicked2.connect(self.slot_selectAnnotation2)
+        self.signalAnnotationSelection2.connect(self._aLinePlot.slot_selectAnnotation2)
+        self.signalUpdateSlice.connect(self._aLinePlot.slot_setSlice)
+
         # connect mouse clicks in annotation view to proper table
         # self._aLinePlot.signalAnnotationClicked.connect()
 
@@ -595,4 +664,58 @@ class ImagePlotWidget(pg.PlotWidget):
         self._myTracingMask = pg.ImageItem(_fakeData)
         #self._myImage.setContentsMargins(0, 0, 0, 0)
         #self._myImage.setBorder(None)
-        self.addItem(self._myTracingMask)
+        self._plotWidget.addItem(self._myTracingMask)
+
+        _numSlices = self._myStack.numSlices
+        self._stackSlider = StackSlider(_numSlices)
+        self._stackSlider.signalUpdateSlice.connect(self._setSlice)
+        self.signalUpdateSlice.connect(self._stackSlider.slot_setSlice)
+
+        hBoxLayout.addWidget(self._stackSlider)
+
+        self.setLayout(hBoxLayout)
+
+class StackSlider(QtWidgets.QSlider):
+    """Slider to set the stack image slice.
+
+    Assuming stack is not going to change slices.
+    
+    TODO: put this in ImagePlotWidget and derive that from widget.
+        Add a hBoxLayout
+    """
+
+    # signal/emit
+    #updateSliceSignal = QtCore.pyqtSignal(str, object) # object can be a dict
+    signalUpdateSlice = QtCore.Signal(object) # (int) : slice number
+
+    def __init__(self, numSlices):
+        super().__init__(QtCore.Qt.Vertical)
+        self.setMaximum(numSlices-1)
+        self.setMinimum(0)
+
+        # to go from top:0 to bottom:numImages
+        self.setInvertedAppearance(True)
+        self.setInvertedControls(True)
+        if numSlices < 2:
+            self.setDisabled(True)
+
+        #
+        # slider signal
+        # valueChanged()    Emitted when the slider's value has changed. The tracking() determines whether this signal is emitted during user interaction.
+        # sliderPressed()    Emitted when the user starts to drag the slider.
+        # sliderMoved()    Emitted when the user drags the slider.
+        # sliderReleased()    Emitted when the user releases the slider.
+
+        self.sliderMoved.connect(self._updateSlice)
+        self.valueChanged.connect(self._updateSlice) # abb 20200829
+        #self.valueChanged.connect(self.sliceSliderValueChanged)
+
+    def _updateSlice(self, sliceNumber, doEmit=True):
+        self.setValue(sliceNumber)
+        if doEmit:
+            self.signalUpdateSlice.emit(sliceNumber)
+
+    def slot_setSlice(self, sliceNumber):
+        #logger.info(sliceNumber)
+        self._updateSlice(sliceNumber, doEmit=False)
+        self.update()  # required by QSlider

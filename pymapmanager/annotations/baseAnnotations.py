@@ -5,7 +5,6 @@ We will derive (point, line) annotations from this
 from email import header
 import enum
 import errno
-#from lib2to3.pgen2.pgen import DFAState  # for FileNotFoundError
 import os
 import time
 import traceback
@@ -15,9 +14,107 @@ from typing import List, Union  # , Callable, Iterator, Optional
 
 import numpy as np
 import pandas as pd
-#from pydantic import create_model_from_typeddict
+
+import pymapmanager.annotations
 
 from pymapmanager._logger import logger
+
+class AddAnnotationEvent():
+    """Added annotations are proposed as just (z,y,x) points
+    
+    The parent stack window decides the pointType based on the state of the window
+    
+    We have two different point types enumes, one for pointAnnotation and one for line annotations
+        pymapamanger.annotations.pointAnnotation.pointTypes
+        pymapamanger.annotations.lineAnnotations.linePointTypes
+    """
+    def __init__(self, z : float, y : float, x : float, pointType = None):
+        self._dict = {
+            'x': x,
+            'y': y,
+            'z': z,
+            'pointType': pointType,
+            'annotationObject': None,
+            'addedRowIdx': None,
+        }      
+
+    def getZYX(self):
+        return self._dict['z'], self._dict['y'], self._dict['x']
+    
+    def setPointType(self, pointType):
+        """
+        Args:
+            pointType is a enum from one of
+                pymapamanger.annotations.pointAnnotation.pointTypes
+                pymapamanger.annotations.lineAnnotations.linePointTypes
+        """
+        self._dict['pointType'] = pointType
+
+    def getPointType(self):
+        return self._dict['pointType']
+    
+    def setAddedRow(self, addedRow : int):
+        self._dict['addedRowIdx'] = addedRow
+
+    def getAddedRow(self):
+        return self._dict['addedRowIdx']
+
+class SelectionEvent():
+    """Created and emited on an annotation selection.
+    """
+    def __init__(self,
+                 annotation : "baseAnnotations",
+                 rowIdx : List[int] = None,
+                 isEsc : bool = False,
+                 isAlt : bool = False,
+                 isShift : bool = False,
+                 ):
+        
+        if isinstance(rowIdx, int):
+            rowIdx = [rowIdx]
+        
+        self._selDict = {
+            'annotationObject': annotation,
+            'rowIdx': rowIdx,
+            'isEsc': isEsc,
+            'isAlt': isAlt,
+            'isShift': isShift
+        }
+
+    def __str__(self):
+        _str = ''  # f"  {self.type}" + '\n'
+        for k,v in self._selDict.items():
+            _str += f'  {k}: {v}' + '\n'
+        return _str
+
+    def isPointSelection(self):
+        return self.type == pymapmanager.annotations.pointAnnotations
+    
+    def isLineSelection(self):
+        return self.type == pymapmanager.annotations.lineAnnotations
+    
+    @property
+    def type(self):
+        return type(self._selDict['annotationObject'])
+    
+    @property
+    def annotationObject(self) -> "pymapmanager.annotations.baseAnnotations":
+        return self._selDict['annotationObject']
+    
+    def getRows(self):
+        return self._selDict['rowIdx']
+
+    @property
+    def isEsc(self):
+        return self._selDict['isEsc']
+
+    @property
+    def isAlt(self):
+        return self._selDict['isAlt']
+
+    @property
+    def isShift(self):
+        return self._selDict['isShift']
 
 class fileTypeClass(enum.Enum):
     mapmanager_igor = 'mapmanager_igor'
@@ -147,7 +244,10 @@ class baseAnnotations():
         return theDict
 
     def __init__(self, path : Union[str, None] = None):
-        """
+        """Base class for annotations.
+
+        MAnager a pandas dataframe, one row per annotation with named columns.
+
         Args:
             path (str | None): Full path to a file (a csv file). If None then wait to create on save.
         """
@@ -310,13 +410,6 @@ class baseAnnotations():
             return x
         else:
             raise StopIteration
-
-    # don't make this class ack like a dictionary?
-    def old__getitem__(self, item):
-        return self._df[item]
-    
-    def old__setitem__(self, item, value):
-        self._df[item] = value
 
     @property
     def shape(self):

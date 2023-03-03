@@ -1,7 +1,7 @@
 
 import os
 import sys, traceback
-from typing import List, Union  # , Callable, Iterator, Optional
+from typing import List, Union, Tuple  # , Callable, Iterator, Optional
 
 from pprint import pprint
 
@@ -162,7 +162,7 @@ class stackWidgetState():
     def setImageChannel(self, imageChannel : int):
         self._imageChannel = imageChannel
 
-    def getPointSelection(self) -> (int, dict):
+    def getPointSelection(self) -> Tuple[int, dict]:
         """
         Returns:
             pointSelection: row
@@ -170,7 +170,7 @@ class stackWidgetState():
         """
         return self._pointSelection, self._pointRowDict
 
-    def getSegmentSelection(self) -> (int, dict):
+    def getSegmentSelection(self) -> Tuple[int, dict]:
         """
         Returns:
             segmentSelection: row
@@ -209,7 +209,7 @@ class stackWidget(QtWidgets.QMainWindow):
 
     signalSetStatus = QtCore.Signal(str)
 
-    signalAddedAnnotation = QtCore.Signal(dict)
+    signalAddedAnnotation = QtCore.Signal(object)
 
     signalDeletedAnnotation = QtCore.Signal(dict)
     """Signal emitted when an annotation is deleted.
@@ -218,7 +218,8 @@ class stackWidget(QtWidgets.QMainWindow):
     The main stack widget is the only one that can actually delete from the backend.
     """
     
-    signalSelectAnnotation = QtCore.Signal(int, bool, bool)  # index, setSlice, doZoom
+    # signalSelectAnnotation = QtCore.Signal(int, bool, bool)  # index, setSlice, doZoom
+    signalSelectAnnotation2 = QtCore.Signal(object)  # pymapmanager.annotations.SelectionEvent
 
     def __init__(self, path : str = None, myStack : pymapmanager.stack = None):
         """
@@ -388,12 +389,12 @@ class stackWidget(QtWidgets.QMainWindow):
     def toggleImageView(self):
         """Hide/show the image.
         """
-        self._myGraphPlotWidget.toggleImageView()
+        self._imagePlotWidget.toggleImageView()
 
     def toggleTracingView(self):
         """Hide/show the tracing (pooints and lines)
         """
-        self._myGraphPlotWidget.toggleTracingView()
+        self._imagePlotWidget.toggleTracingView()
         
     def toggleContrastWidget(self):
         """Hide/show the contrast widget.
@@ -424,30 +425,9 @@ class stackWidget(QtWidgets.QMainWindow):
 
         mainMenu = self.menuBar()
 
-        # channels
-
-        # 1
-        # self.channelShortcut_1 = QtWidgets.QShortcut(QtGui.QKeySequence("1"), self)
-        # _callback = lambda item='1': self.on_user_channel(item)
-        # self.channelShortcut_1.activated.connect(_callback)
-
-        # channelOneAction = QtWidgets.QAction('Channel 1', self)
-        # channelOneAction.setShortcut('1')
-        # _callback = lambda checked, item='1': self.on_user_channel(checked,item)
-        # channelOneAction.triggered.connect(_callback)
-
-        # 2
-        # self.channelShortcut_2 = QtWidgets.QShortcut(QtGui.QKeySequence("2"), self)
-        # _callback = lambda item='2': self.on_user_channel(item)
-        # self.channelShortcut_2.activated.connect(_callback)
-
         # close
         self.closeShortcut = QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+W"), self)
         self.closeShortcut.activated.connect(self.on_user_close)
-
-        # contrast
-        # self.contrastShortcut = QtWidgets.QShortcut(QtGui.QKeySequence("C"), self)
-        # self.contrastShortcut.activated.connect(self.toggleContrastWidget)
 
         # stack menubar
         stackMenu = mainMenu.addMenu('&Stack')
@@ -495,14 +475,6 @@ class stackWidget(QtWidgets.QMainWindow):
 
         #stackMenu.addAction(channelOneAction)
 
-    def old_on_user_channel(self, checked : bool, item : str):
-        """Respond to user changing channel.
-        
-        Args:
-            item: Item triggered: '1' for channel 1, '2' for channel 2, etc
-        """
-        logger.info(f'checked:{checked} item:{item}')
-        
     def on_user_close(self):
         logger.info('')
         self.close()
@@ -514,7 +486,6 @@ class stackWidget(QtWidgets.QMainWindow):
         centralWidget = QtWidgets.QWidget(self)
 
         hBoxLayout_main = QtWidgets.QHBoxLayout(centralWidget)
-        #hBoxLayout_main = QtWidgets.QHBoxLayout()
 
         centralWidget.setLayout(hBoxLayout_main)
 
@@ -531,17 +502,11 @@ class stackWidget(QtWidgets.QMainWindow):
         hBoxLayout = QtWidgets.QHBoxLayout()
 
         # main image plot with scatter of point and lien annotations
-        self._myGraphPlotWidget = pymapmanager.interface.ImagePlotWidget(self.myStack,
+        self._imagePlotWidget = pymapmanager.interface.ImagePlotWidget(self.myStack,
                                 self._contrastDict,
                                 self._colorLutDict,
                                 self._displayOptionsDict)
-        hBoxLayout.addWidget(self._myGraphPlotWidget)
-
-        # slider to set slice
-        # TODO: put this into ImagePlotWidget, to do that we need to reroute a lot of signals!!!
-        _numSlices = self.myStack.numSlices
-        _stackSlider = myStackSlider(_numSlices)
-        hBoxLayout.addWidget(_stackSlider)
+        hBoxLayout.addWidget(self._imagePlotWidget)
 
         vBoxLayout.addLayout(hBoxLayout)  # image and slider
 
@@ -618,102 +583,66 @@ class stackWidget(QtWidgets.QMainWindow):
 
         #
         # connect signal/slot
-        _stackSlider.signalUpdateSlice.connect(self._myGraphPlotWidget.slot_setSlice)
-        _stackSlider.signalUpdateSlice.connect(self._histogramWidget.slot_setSlice)
-        _stackSlider.signalUpdateSlice.connect(_statusToolbar.slot_setSlice)
-        _stackSlider.signalUpdateSlice.connect(self.slot_setSlice)
 
-        # programatically select an annotation
-        self.signalSelectAnnotation.connect(self._myPointListWidget.slot_selectAnnotation)
-        self.signalSelectAnnotation.connect(self._myGraphPlotWidget._aPointPlot.slot_selectAnnotation)
+        self._imagePlotWidget.signalCancelSelection2.connect(self.slot_selectAnnotation2)
+
+        self._imagePlotWidget.signalUpdateSlice.connect(self._histogramWidget.slot_setSlice)
+        self._imagePlotWidget.signalUpdateSlice.connect(_statusToolbar.slot_setSlice)
+        self._imagePlotWidget.signalUpdateSlice.connect(self.slot_setSlice)
         
-        # when user hits escape key
-        self._myGraphPlotWidget.signalCancelSelection.connect(self._myPointListWidget.slot_selectAnnotation)
-        self._myGraphPlotWidget.signalCancelSelection.connect(self._myLineListWidget.slot_selectAnnotation)
-        self._myGraphPlotWidget.signalCancelSelection.connect(self._myGraphPlotWidget._aPointPlot.slot_selectAnnotation)
-        self._myGraphPlotWidget.signalCancelSelection.connect(self._myGraphPlotWidget._aLinePlot.slot_selectAnnotation)
-        self._myGraphPlotWidget.signalCancelSelection.connect(self._myGraphPlotWidget._aLinePlot.slot_selectSegment)
-        # jan 2023
-        self._myGraphPlotWidget.signalCancelSelection.connect(self.slot_selectSegment)
+        self._imagePlotWidget.signalChannelChange.connect(self.slot_setChannel)
+        self._imagePlotWidget.signalChannelChange.connect(self._histogramWidget.slot_setChannel)
+        self._imagePlotWidget.signalChannelChange.connect(_topToolbar.slot_setChannel)
 
-        self._myGraphPlotWidget.signalUpdateSlice.connect(self._histogramWidget.slot_setSlice)
-        self._myGraphPlotWidget.signalUpdateSlice.connect(_stackSlider.slot_setSlice)
-        self._myGraphPlotWidget.signalUpdateSlice.connect(_statusToolbar.slot_setSlice)
-        self._myGraphPlotWidget.signalUpdateSlice.connect(self.slot_setSlice)
-        # self._myGraphPlotWidget.signalUpdateSlice.connect(self._myGraphPlotWidget._aPointPlot.slot_setSlice)
-        
-        self._myGraphPlotWidget.signalChannelChange.connect(self.slot_setChannel)
-        self._myGraphPlotWidget.signalChannelChange.connect(self._histogramWidget.slot_setChannel)
-        self._myGraphPlotWidget.signalChannelChange.connect(_topToolbar.slot_setChannel)
+        self._imagePlotWidget.signalMouseMove.connect(_statusToolbar.slot_updateStatus)
 
-        self._myGraphPlotWidget.signalMouseMove.connect(_statusToolbar.slot_updateStatus)
-
+        # TODO: make a self.signalChannelChange and connect all children to it
         _topToolbar.signalChannelChange.connect(self.slot_setChannel)
         _topToolbar.signalChannelChange.connect(self._histogramWidget.slot_setChannel)
-        _topToolbar.signalChannelChange.connect(self._myGraphPlotWidget.slot_setChannel)
-        _topToolbar.signalSlidingZChanged.connect(self._myGraphPlotWidget.slot_setSlidingZ)
+        _topToolbar.signalChannelChange.connect(self._imagePlotWidget.slot_setChannel)
+        _topToolbar.signalSlidingZChanged.connect(self._imagePlotWidget.slot_setSlidingZ)
 
-        self._histogramWidget.signalContrastChange.connect(self._myGraphPlotWidget.slot_setContrast)
+        self._histogramWidget.signalContrastChange.connect(self._imagePlotWidget.slot_setContrast)
 
-        # connect user click in image/annotation view with annotation table
-        self._myGraphPlotWidget._aPointPlot.signalAnnotationClicked.connect(self._myPointListWidget.slot_selectAnnotation)
-        self._myGraphPlotWidget._aPointPlot.signalAnnotationClicked.connect(self.slot_selectPoint)
+        # 2 switch to
+        # connect our children signals to our slot
+        self._myPointListWidget.signalRowSelection2.connect(self.slot_selectAnnotation2)
+        self._myLineListWidget.signalRowSelection2.connect(self.slot_selectAnnotation2)
 
-        self._myGraphPlotWidget._aLinePlot.signalAnnotationClicked.connect(self._myLineListWidget.slot_selectAnnotation)
-        
-        # connect user click in annotation table with image/annotation view
-        self._myPointListWidget.signalRowSelection.connect(self._myGraphPlotWidget._aPointPlot.slot_selectAnnotation)
-        self._myPointListWidget.signalRowSelection.connect(self.slot_selectPoint)
+        self._imagePlotWidget.signalAnnotationSelection2.connect(self.slot_selectAnnotation2)
+        self._imagePlotWidget.signalAnnotationSelection2.connect(self.slot_selectAnnotation2)
 
-        self._myLineListWidget.signalRowSelection.connect(self._myGraphPlotWidget._aLinePlot.slot_selectSegment)
-        self._myLineListWidget.signalRowSelection.connect(self.slot_selectSegment)
-        #self._myLineListWidget.signalSelectSegment.connect(self._myGraphPlotWidget._aLinePlot.slot_selectSegment)
+        self.signalSelectAnnotation2.connect(self._myPointListWidget.slot_selectAnnotation2)
+        self.signalSelectAnnotation2.connect(self._myLineListWidget.slot_selectAnnotation2)
 
-        # when user alt+clicks on point or line table
-        # _myGraphPlotWidget wil propogate with chained signalSet slice to other pieces of interface
-        # like (status bar, contrast/histogram widget, stack slider)
-        self._myPointListWidget.signalSetSlice.connect(self._myGraphPlotWidget.slot_setSlice)
-        self._myLineListWidget.signalSetSlice.connect(self._myGraphPlotWidget.slot_setSlice)
-
-        self._myPointListWidget.signalSetSlice.connect(self.slot_setSlice)
-        self._myLineListWidget.signalSetSlice.connect(self.slot_setSlice)
-
-        self._myPointListWidget.signalZoomToPoint.connect(self._myGraphPlotWidget.slot_zoomToPoint)
-        self._myLineListWidget.signalZoomToPoint.connect(self._myGraphPlotWidget.slot_zoomToPoint)
+        self.signalSelectAnnotation2.connect(self._imagePlotWidget.slot_selectAnnotation2)
+        self.signalSelectAnnotation2.connect(self._imagePlotWidget.slot_selectAnnotation2)
 
         # on user click '+' segment
         self._myLineListWidget.signalAddSegment.connect(self.slot_addSegment)
 
-        #  send current slice for connecting spines and lines
-        # jan 18, was this?
-        # self._myPointListWidget.signalSetSlice.connect(self._myGraphPlotWidget._aPointPlot.slot_setDisplayType)
-        self._myPointListWidget.signalSetSlice.connect(self._myGraphPlotWidget._aPointPlot.slot_setSlice)
-
-        # change roiType we are displaying point plot
-        # self._myPointListWidget.signalDisplayRoiType.connect(self._myGraphPlotWidget._aPointPlot.slot_setDisplayType)
-
         # set edit state of line segments
         self._myLineListWidget.signalEditSegments.connect(self.slot_editSegments)
 
-        #
         # adding annotation, will veto if no segment selection
-        self._myGraphPlotWidget.signalAddingAnnotation.connect(self.slot_addingAnnotation)
+        self._imagePlotWidget.signalAddingAnnotation.connect(self.slot_addingAnnotation)
         
         # emitted when we actually add an annotation to the backend
-        self.signalAddedAnnotation.connect(self._myGraphPlotWidget._aPointPlot.slot_addedAnnotation)
+        self.signalAddedAnnotation.connect(self._imagePlotWidget._aPointPlot.slot_addedAnnotation)
         self.signalAddedAnnotation.connect(self._myPointListWidget.slot_addedAnnotation)
         #self.signalAddedAnnotation.connect(self._myLineListWidget.slot_addedAnnotation)
        
         #
         # # delete annotations
-        self._myGraphPlotWidget.signalDeletingAnnotation.connect(self.slot_deletingAnnotation)
+        self._imagePlotWidget.signalDeletingAnnotation.connect(self.slot_deletingAnnotation)
         self._myPointListWidget.signalDeletingAnnotation.connect(self.slot_deletingAnnotation)
         self._myLineListWidget.signalDeletingAnnotation.connect(self.slot_deletingAnnotation)
         
-        self.signalDeletedAnnotation.connect(self._myGraphPlotWidget._aPointPlot.slot_deletedAnnotation)
+        self.signalDeletedAnnotation.connect(self._imagePlotWidget._aPointPlot.slot_deletedAnnotation)
         self.signalDeletedAnnotation.connect(self._myPointListWidget.slot_deletedAnnotation)
         self.signalDeletedAnnotation.connect(self._myLineListWidget.slot_deletedAnnotation)
 
+        # determine size of window
         left = self._displayOptionsDict['windowState']['left']
         top = self._displayOptionsDict['windowState']['top']
         width = self._displayOptionsDict['windowState']['width']
@@ -730,15 +659,39 @@ class stackWidget(QtWidgets.QMainWindow):
         self.resize(width, height)
 
     def slot_addSegment(self):
-        """Respond to user clicking add segment"""
-        logger.info('')
+        """Respond to user clicking add segment
+        
+        Add an empty segment
+        """
+        logger.info('MARCH 2 ... FIX THIS')
 
-    def slot_addingAnnotation(self, addDict : dict):
+        # add the new segment by appending a pivitPnt
+        newAnnotationRow = self.myStack.getLineAnnotations().addEmptySegment()
+
+        # addDict = {
+        #     'x' : np.nan,
+        #     'y' : np.nan,
+        #     'z' : np.nan,
+        #     'newAnnotationRow': newAnnotationRow
+        # }
+        
+        z,y,x = np.nan, np.nan, np.nan
+        _addEvent = pymapmanager.annotations.AddAnnotationEvent(z, y, x)
+        _addEvent.setAddedRow(newAnnotationRow)
+
+        self.signalAddedAnnotation.emit(_addEvent)
+        
+        # update the text in the status bar
+        self.signalSetStatus.emit(f'Added new segment "{newAnnotationRow}')
+    
+    def slot_addingAnnotation(self, addEvent : pymapmanager.annotations.AddAnnotationEvent):
         """Respond to user shit+click to make a new annotation (in ImagePlotWidget).
 
         Based on our state
             - we may reject this proposed 'adding' of an annotation.
             - if our state is valid, decide on the type of point to make.
+            - by default make new spineRoi point annotation
+            - If we are doEditSegments then make a lew controlPnt line annotation
 
         Args:
             addDict: A dictionary with keys ['x', 'y', 'z']
@@ -747,6 +700,8 @@ class stackWidget(QtWidgets.QMainWindow):
             ImagePlotWidget signalAddingAnnotation
 
         """
+
+        doEditSegments = self._displayOptionsDict['windowState']['doEditSegments']
 
         # decide if new annotation is valid given the window state
         # both spineROI and controlPnt require a single segment selection
@@ -765,25 +720,31 @@ class stackWidget(QtWidgets.QMainWindow):
             self.signalSetStatus.emit(f'Did not create annotation, requires viewing one image channel, got {imageChannel}')
             return
         
-        x = addDict['x']
-        y = addDict['y']
-        z = addDict['z']
-        
+        # x = addDict['x']
+        # y = addDict['y']
+        # z = addDict['z']
+        z,y,x = addEvent.getZYX()
+
         # decide on pointTypes based on window state
         if self._displayOptionsDict['windowState']['doEditSegments']:
-            # add a controlPnt
-            roiType = pymapmanager.annotations.pointTypes.controlPnt
+            # add a controlPnt to line annotations
+            roiType = pymapmanager.annotations.linePointTypes.controlPnt
+            # add the new annotation to the backend
+            newAnnotationRow = self.myStack.getLineAnnotations().addAnnotation(roiType,
+                                                                                _selectSegment,
+                                                                                x, y, z,
+                                                                                imageChannel)
         else:
-            # add a spineROI
+            # add a spineROI to point annotations
             roiType = pymapmanager.annotations.pointTypes.spineROI
+            # add the new annotation to the backend
+            newAnnotationRow = self.myStack.getPointAnnotations().addAnnotation(roiType,
+                                                                                _selectSegment,
+                                                                                x, y, z,
+                                                                                imageChannel)
 
-        logger.info(f'=== Adding point annotation roiType:{roiType} _selectSegment:{_selectSegment} x:{x}, y:{y}, z{z}')
+        logger.info(f'=== Added point annotation roiType:{roiType} _selectSegment:{_selectSegment} x:{x}, y:{y}, z{z}')
 
-        # add the new annotation to the backend
-        newAnnotationRow = self.myStack.getPointAnnotations().addAnnotation(roiType,
-                                                                            _selectSegment,
-                                                                            x, y, z,
-                                                                            imageChannel)
 
         # adding a spine roi require lots of additional book-keeping
         if roiType == pymapmanager.annotations.pointTypes.spineROI:
@@ -808,8 +769,10 @@ class stackWidget(QtWidgets.QMainWindow):
         # emit a signal to notify other widgets that this was successful
         # e.g. the plot of the annotations will show the new point
         logger.info(f'  New annotation added at row:{newAnnotationRow}')
-        addDict['newAnnotationRow'] = newAnnotationRow
-        self.signalAddedAnnotation.emit(addDict)
+        #addDict['newAnnotationRow'] = newAnnotationRow
+        addEvent.setAddedRow(newAnnotationRow)
+        logger.info(f'  -->> emit signalAddedAnnotation')
+        self.signalAddedAnnotation.emit(addEvent)
         
         # update the text in the status bar
         self.signalSetStatus.emit(f'Added new {roiType.value} annotation.')
@@ -877,25 +840,23 @@ class stackWidget(QtWidgets.QMainWindow):
 
         # logger.info(f'  -->> emit signalDisplayRoiType() roiTypeEnumList:{roiTypeEnumList}')
         # self.signalDisplayRoiType.emit(roiTypeEnumList)
-        self._myGraphPlotWidget._aPointPlot.slot_setDisplayType(roiTypeEnumList)
+        self._imagePlotWidget._aPointPlot.slot_setDisplayType(roiTypeEnumList)
 
-    def slot_selectPoint(self, rowIdx : Union[List[int], None], isAlt : bool):
-        """Respond to user selecting a point annotation.
+    def slot_selectAnnotation2(self, selectionEvent : pymapmanager.annotations.SelectionEvent):
+        logger.info(selectionEvent)
         
-        Notes:
-            For now from list, what about from line plot scatter?
-        """
-        logger.info(f'rowIdx:{rowIdx} isAlt:{isAlt}')
-        self.annotationSelection.setPointSelection(rowIdx)
-
-    def slot_selectSegment(self, segmentID : Union[List[int], None], isAlt : bool):
-        """Respond to user selecting a segment ID.
+        rows = selectionEvent.getRows()
         
-        Notes:
-            For now from list, what about from line plot scatter?
-        """
-        logger.info(f'segmentID:{segmentID} isAlt:{isAlt}')
-        self.annotationSelection.setSegmentSelection(segmentID)
+        # determine the type of event
+        if selectionEvent.type == pymapmanager.annotations.pointAnnotations:
+            self.annotationSelection.setPointSelection(rows)
+        elif selectionEvent.type == pymapmanager.annotations.lineAnnotations:
+            self.annotationSelection.setSegmentSelection(rows)
+        else:
+            logger.error(f'did not understand selectionEvent.type: {selectionEvent.type}')
+            return
+        
+        self.signalSelectAnnotation2.emit(selectionEvent)
 
     def slot_setChannel(self, channel : int):
         logger.info(f'channel:{channel}')
@@ -908,68 +869,32 @@ class stackWidget(QtWidgets.QMainWindow):
     def zoomToPointAnnotation(self, idx : int, isAlt : bool = False, select : bool = False):
         """Zoom to a point annotation.
         
+        This should be called externally. For example, when selecting a point in a stackMap.
+
         Args:
             idx: point annotation to zoom to
             isAlt: if we zoom or not
             select: if True then select the point
         """
-        x = self.myStack.getPointAnnotations().getValue('x', idx)
-        y = self.myStack.getPointAnnotations().getValue('y', idx)
-        z = self.myStack.getPointAnnotations().getValue('z', idx)
+        # x = self.myStack.getPointAnnotations().getValue('x', idx)
+        # y = self.myStack.getPointAnnotations().getValue('y', idx)
+        # z = self.myStack.getPointAnnotations().getValue('z', idx)
 
-        self._myGraphPlotWidget.slot_setSlice(z) 
-        if isAlt:
-            self._myGraphPlotWidget.slot_zoomToPoint(x,y)
+        # self._imagePlotWidget.slot_setSlice(z) 
+        # if isAlt:
+        #     self._imagePlotWidget.slot_zoomToPoint(x,y)
 
-        if select:
-            self._myGraphPlotWidget._aPointPlot._selectAnnotation(idx, isAlt)
-            self._myGraphPlotWidget._aPointPlot.signalAnnotationClicked.emit(idx, isAlt)
+        # if select:
+        #     self._imagePlotWidget._aPointPlot._selectAnnotation(idx, isAlt)
+        #     self._imagePlotWidget._aPointPlot.signalAnnotationClicked.emit(idx, isAlt)
+
+        _pointAnnotations = self.myStack.getPointAnnotations()
+        _selectionEvent = pymapmanager.annotations.SelectionEvent(_pointAnnotations,
+                                                                    rowIdx=idx,
+                                                                    isAlt=isAlt)
+        logger.info(f'  -->> emit signalSelectAnnotation2')
+        self.signalSelectAnnotation2.emit(_selectionEvent)
             
-class myStackSlider(QtWidgets.QSlider):
-    """Slider to set the stack image slice.
-
-    Assuming stack is not going to change slices.
-    
-    TODO: put this in ImagePlotWidget and derive that from widget.
-        Add a hBoxLayout
-    """
-
-    # signal/emit
-    #updateSliceSignal = QtCore.pyqtSignal(str, object) # object can be a dict
-    signalUpdateSlice = QtCore.Signal(object) # (int) : slice number
-
-    def __init__(self, numSlices):
-        super().__init__(QtCore.Qt.Vertical)
-        self.setMaximum(numSlices-1)
-        self.setMinimum(0)
-
-        # to go from top:0 to bottom:numImages
-        self.setInvertedAppearance(True)
-        self.setInvertedControls(True)
-        if numSlices < 2:
-            self.setDisabled(True)
-
-        #
-        # slider signal
-        # valueChanged()    Emitted when the slider's value has changed. The tracking() determines whether this signal is emitted during user interaction.
-        # sliderPressed()    Emitted when the user starts to drag the slider.
-        # sliderMoved()    Emitted when the user drags the slider.
-        # sliderReleased()    Emitted when the user releases the slider.
-
-        self.sliderMoved.connect(self._updateSlice)
-        self.valueChanged.connect(self._updateSlice) # abb 20200829
-        #self.valueChanged.connect(self.sliceSliderValueChanged)
-
-    def _updateSlice(self, sliceNumber, doEmit=True):
-        self.setValue(sliceNumber)
-        if doEmit:
-            self.signalUpdateSlice.emit(sliceNumber)
-
-    def slot_setSlice(self, sliceNumber):
-        #logger.info(sliceNumber)
-        self._updateSlice(sliceNumber, doEmit=False)
-        self.update()  # required by QSlider
-
 if __name__ == '__main__':
     from pprint import pprint
     
@@ -997,13 +922,14 @@ if __name__ == '__main__':
         # path = '/Users/cudmore/Sites/PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
         # path = '/Users/johns/Documents/GitHub/PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
         path = '../PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
+        #path = '../PyMapManager-Data/empty-timepoint/rr30a_s0_ch2.tif'
         myStack = pymapmanager.stack(path=path)
         
         myStack.loadImages(channel=1)
         myStack.loadImages(channel=2)
         
         # do this once and save into backend and file
-        myStack.createBrightestIndexes(channelNum = 2)
+        #myStack.createBrightestIndexes(channelNum = 2)
 
         print('myStack:', myStack)
 
@@ -1028,10 +954,12 @@ if __name__ == '__main__':
         bsw = stackWidget(myStack=myStack)
 
         # useful on startup, to snap to an image
-        bsw._myGraphPlotWidget.slot_setSlice(30)
+        #bsw._imagePlotWidget.slot_setSlice(30)
+        
+        # select a point and zoom
         bsw.zoomToPointAnnotation(10, isAlt=True, select=True)
 
-        #bsw._myGraphPlotWidget.slot_zoomToPoint(xZoom, yZoom, zoomFieldOfView = 100)
+        #bsw._imagePlotWidget.slot_zoomToPoint(xZoom, yZoom, zoomFieldOfView = 100)
 
         bsw.show()
 
