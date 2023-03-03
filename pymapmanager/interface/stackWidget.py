@@ -801,6 +801,7 @@ class stackWidget(QtWidgets.QMainWindow):
                                                         xyzSegment,
                                                         imageChannel,
                                                         imgSliceData,
+                                                        la
                                                         )
 
         # if we made it here, we added a new annotation

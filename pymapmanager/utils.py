@@ -10,6 +10,7 @@ import math
 import numpy as np
 import pandas as pd
 import skimage
+from matplotlib.path import Path
 
 def setsAreEqual(a, b):
 	"""Return true if sets (a, b) are equal.
@@ -126,7 +127,6 @@ def _findBrightestIndex(x, y, z, zyxLine : List[List[float]], image: np.ndarray,
     # print("brightestIndex:", brightestIndex)
        
     # print("brightestIndex: ", brightestIndex, "index: ", index)
-    # for now, just return the closest point
     # return brightestIndex + firstPoint, candidatePoints, closestIndex
     return brightestIndex + firstPoint
 
@@ -285,6 +285,241 @@ def getRadiusLines(lineAnnotations):
     # dfPlot = self._annotations.getSegmentPlot(theseSegments, roiTypes, sliceNumber)
     # roiTypes = "linePnt"
     # sliceNumber = None
+
+#  Functions for calculation ROI masks
+def calculateRectangleROIcoords(xPlotSpines, yPlotSpines, xPlotLines, yPlotLines):
+    """
+        Args:
+            spineCoords:
+                xPlotSpines - x coordinate of the spine
+                yPlotSpines - y coordinate of the spine
+            brightestLineCoords:
+                xPlotLines: x coordinate of the brightest index in line
+                yPlotLines: y coordinate of the brightest index in line
+
+        Returns:
+            a list containing each the x and y values of each coordinate
+
+            alternatively we could change it to have
+            a list of tuples representing the 4 coordinates of the rectangle
+            example: [ ( 1, 2), (3, 4), (5, 6) , (7,8) ]
+    """
+    width = 3
+    # Value to extend the rectangle ROI
+    # Currently also extends the tail as well
+    extendHead = 3
+    # extendTail= 3
+
+    Xa = xPlotLines
+    Xb = xPlotSpines
+    Ya = yPlotLines
+    Yb = yPlotSpines
+
+    Dx = Xb - Xa
+    Dy = Yb - Ya
+    originalDx = Xb - Xa
+    originalDy = Yb - Ya
+    D = math.sqrt(Dx * Dx + Dy * Dy)
+
+    Dx = width * Dx / D 
+    Dy = width * Dy / D
+
+    # firstCoordX = Xa - Dy 
+    # firstCoordY = Ya + Dx
+    # secondCoordX = Xa + Dy
+    # secondCoordY = Ya - Dx
+
+    angle = np.arctan2(originalDy,originalDx) 
+    adjustY = np.sin(angle) * extendHead
+    adjustX = adjustY/ (np.tan(angle))
+
+    # Used to extend back of rectangle ROI
+    firstCoordX = Xa - Dy - adjustX
+    firstCoordY = Ya + Dx - adjustY
+    secondCoordX = Xa + Dy - adjustX
+    secondCoordY = Ya - Dx - adjustY
+
+    # firstCoordX = Xa - Dy 
+    # firstCoordY = Ya + Dx 
+    # secondCoordX = Xa + Dy 
+    # secondCoordY = Ya - Dx 
+
+    thirdCoordX = Xb + Dy + adjustX
+    fourthCoordX = Xb - Dy + adjustX
+    thirdCoordY = Yb - Dx + adjustY
+    fourthCoordY = Yb + Dx + adjustY
+
+    return [(firstCoordX, firstCoordY), (secondCoordX, secondCoordY), (thirdCoordX, thirdCoordY), (fourthCoordX, fourthCoordY)]
+
+def calculateLineROIcoords(lineIndex, radius, lineAnnotations):
+    """
+        Args:
+            lineIndex: Index within lineAnnotations where we start.
+            radius: Integer value to determine many other indexes we move from the original lineIndex
+                -> example: radius = 1, lineIndex, = 1 -> plotting index: 0,1,2
+            lineAnnotations
+
+        Returns:
+            a list containing each the x and y values of each coordinate
+
+            alternatively we could change it to have
+            a list of tuples representing the 4 coordinates of the rectangle
+            example: [ ( 1, 2), (3, 4), (5, 6) , (7,8) ]
+    """
+    # TODO:
+    # Check for the segmentID for the lineIdex
+    # Get list of points just within that SegmentID
+
+    # totalPoints = radius * 2 + 1
+    # totalPoints = list(range(radius*-2, radius*2+1))
+    totalPoints = list(range(-radius, radius+1))
+    # totalPoints = len(lineAnnotations)
+    coordinateList = []
+    for i in totalPoints:
+        # print("i", i)
+        # print("lineIndex", lineIndex)
+        # print(len(lineAnnotations))
+        # Account for beginning and end of LineAnnotations indexing
+        # TODO: checking within in the segment 
+        if(lineIndex+i >= 0 and lineIndex+i <= len(lineAnnotations)):
+            coordinateList.append([lineAnnotations.getValue("xLeft", lineIndex+i), 
+            lineAnnotations.getValue("yLeft", lineIndex+i)])
+
+    # totalPoints = totalPoints.reverse()
+    totalPoints.reverse()
+    # print(totalPoints)
+    # Probably need to reverse this order
+    for i in totalPoints:
+        # Account for beginning and end of LineAnnotations indexing
+        if(lineIndex+i >= 0 and lineIndex+i <= len(lineAnnotations)):
+            coordinateList.append([lineAnnotations.getValue("xRight", lineIndex+i), 
+            lineAnnotations.getValue("yRight", lineIndex+i)]) 
+
+    totalPoints.reverse()
+    # print("totalPoints[0]", totalPoints[0])
+    # Append the first coordinate at the end to make a fully closed polygon
+    # Since we reversed the original list it would be at the end
+    coordinateList.append([lineAnnotations.getValue("xLeft", lineIndex+totalPoints[0]), 
+            lineAnnotations.getValue("yLeft", lineIndex+totalPoints[0])])
+
+    coordinateList = np.array(coordinateList)
+    return coordinateList
+
+def calculateFinalMask(rectanglePoly, linePoly):
+
+    # TODO: Change this to detect image shape rather than have it hard coded
+    nx, ny = 1024, 1024
+
+    # Create vertex coordinates for each grid cell...
+    # (<0,0> is at the top left of the grid in this system)
+    # y and x's are reversed
+    # x, y = np.meshgrid(np.arange(nx), np.arange(ny))
+    y, x = np.meshgrid(np.arange(ny), np.arange(nx))
+
+    y, x = y.flatten(), x.flatten()
+
+    points = np.vstack((y,x)).T
+
+    segmentPath = Path(linePoly)
+    segmentMask = segmentPath.contains_points(points, radius=0)
+    segmentMask = segmentMask.reshape((ny,nx))
+    segmentMask = segmentMask.astype(int)
+    
+    spinePath = Path(rectanglePoly)
+    spineMask = spinePath.contains_points(points, radius=0)
+    spineMask = spineMask.reshape((ny,nx))
+    spineMask = spineMask.astype(int)
+
+    combinedMasks = segmentMask + spineMask
+    combinedMasks[combinedMasks == 2] = 3
+    combinedMasks = combinedMasks + segmentMask
+    combinedMasks[combinedMasks > 1] = 0
+    finalSpineMask = combinedMasks
+
+    coords = np.column_stack(np.where(finalSpineMask > 0))
+
+    return finalSpineMask
+
+def getOffset(distance, numPts):
+    """ Generate list of candidate points where mask will be moved """
+    # TODO: Figure out how to move the mask centered on those points
+    coordOffsetList = []
+
+    xStart = - (math.floor(numPts/2)) * distance
+    xEnd = (math.floor(numPts/2) + 1) * distance
+
+    yStart = - (math.floor(numPts/2)) * distance
+    yEnd = (math.floor(numPts/2) + 1) * distance
+
+    xList = np.arange(xStart, xEnd, distance)
+    yList = np.arange(yStart, yEnd, distance)
+
+    for xPoint in xList:
+        for yPoint in yList:
+            coordOffsetList.append([xPoint, yPoint])
+
+    return coordOffsetList
+
+def calculateLowestIntensityMask(mask, distance, numPts, originalSpinePoint, img):
+    """ 
+    Args:
+        mask: The mask that will be moved around to check for intensity at various positions
+        distance: How many steps in the x,y direction the points in the mask will move
+        numPts: (has to be odd)Total number of moves made (total positions that we will check for intensity)
+        originalSpinePoint: The coordinates of the original spine point (y,x) that will be used to check which labeled area 
+        we need to manipulate
+        # TODO:
+    Return: 
+        Values of mask at position with lowest intensity
+    """
+    from scipy import ndimage
+    # struct = 
+    # print(mask)
+    labelArray, numLabels = ndimage.label(mask)
+    # print("label array:", labelArray)
+    sizes = ndimage.sum(mask, labelArray, range(numLabels + 1))
+    
+    # Take the label that contains the original spine point
+    # Loop through all the labels and pull out the x,y coordinates 
+    # Check if the original x,y points is within those coords (using numpy.argwhere)
+    currentLabel = 0
+    # print(originalSpinePoint)
+    for label in np.arange(1, numLabels+1, 1):
+        currentCandidate =  np.argwhere(labelArray == label)
+        # Check if the original x,y point in the current candidate
+        if(originalSpinePoint in currentCandidate):
+            currentLabel = label
+            break
+
+    # Note: points are returned in y,x form
+    finalMask = np.argwhere(labelArray == currentLabel)
+
+    offsetList = getOffset(distance = distance, numPts = numPts)
+
+    lowestIntensity = math.inf
+    lowestIntensityOffset = 0
+    lowestIntensityMask = None
+    for offset in offsetList:
+        # print(offset)
+        currentIntensity = 0
+        adjustedMask = finalMask + offset
+
+        try:
+            img[adjustedMask]
+
+        except(IndexError) as e:
+            # logger.error("Out of bounds")
+            print("Out of bounds")
+            continue
+    
+        totalIntensity = np.sum(img[adjustedMask])
+        currentIntensity = totalIntensity
+        if(currentIntensity < lowestIntensity):
+            lowestIntensity = currentIntensity
+            lowestIntensityOffset = offset
+            lowestIntensityMask = adjustedMask
+
+    return lowestIntensityMask
 
 def runDebug():
     pass

@@ -185,7 +185,7 @@ class pointAnnotations(baseAnnotations):
 
         return newRow
 
-    def updateSpineInt(self, spineIdx, xyzLineSegment, channelNumber : int, imgData : np.array):
+    def updateSpineInt(self, spineIdx, zyxLineSegment, channelNumber : int, imgData : np.array, la):
         """Update all spine intensity measurements for:
             (1) a spine mask roi
             (2) minimal background roi (from a grid of candidates).
@@ -201,15 +201,16 @@ class pointAnnotations(baseAnnotations):
             - user modifies the segment zyx tracing
 
         We need to know a lot of extra information
-            - xyzLineSegment: coordinates of the segment we are connecting to (brightes path)
+            - zyxLineSegment: coordinates of the segment we are connecting to (brightes path)
             - channelNumber: int
             - imgData: the raw image data to search
 
         Args:
             spineIdx (int) the row index into the pandas dataframe we are updating
-            xyzLineSegment (List(z,y,x)): A list of (z,y,x) point we want to connect to (via brightest index)
+            zyxLineSegment (List(z,y,x)): A list of (z,y,x) point we want to connect to (via brightest index)
             channelNumber (int) the channel number we are connecting to, needed to get the correct column name with _ch<channelNumber>
             imgData (np.ndarray) the actual image data to search in
+            la: lineAnnotations
         """
         logger.info('This is setting lots of columns in our backend with all intensity measurements')
         logger.info(f'  imgData.shape {imgData.shape}')
@@ -222,22 +223,40 @@ class pointAnnotations(baseAnnotations):
         
         # 1) find brightest path to line segment
         #brightestIndex = self.reconnectToSegment(spineIdx, xyzLineSegment, imgData)
-        
+        brightestIndex = self._calculateSingleBrightestIndex(channel = channelNumber, spineRowIdx = spineIdx
+                                                             , zyxLineSegment = zyxLineSegment, img = imgData)
+
         # 1.1) set the backend value
-        #self.setValue('brightestIndex', spineIdx, brightestIndex)
+        self.setValue('brightestIndex', spineIdx, brightestIndex)
 
         # 2) calculate spine roi (spine rectangle - segment polygon) ... complicated
 
+        # xPlotLines, yPlotLines, xPlotSpines, yPlotSpines
+        # pass in line annotations to index at brightestIndex?
+
+        xBrightestLine = zyxLineSegment[brightestIndex][2]
+        yBrightestLine = zyxLineSegment[brightestIndex][1]
+        spineRectROI = pymapmanager.utils.calculateRectangleROIcoords(xPlotSpines = _x, yPlotSpines = _y,
+                                                                      xPlotLines = xBrightestLine,
+                                                                      yPlotLines = yBrightestLine)
+        radius = 3
+        lineSegmentROI = pymapmanager.utils.calculateLineROIcoords(lineIndex = brightestIndex,
+                                                                   radius = radius,
+                                                                   lineAnnotations = la)
+
+        finalSpineROIMask = pymapmanager.utils.calculateFinalMask(rectanglePoly = spineRectROI, 
+                                                                  linePoly = lineSegmentROI)
+
+
         # 3) calculate dict for spine with keys ('Sum', 'Min', 'Max', 'Mean', ....)
         #   and store as columns in our pandas dataframe
-        
         # this is fake, replace with real code
-        spineRoiMask = np.empty_like(imgData, dtype=np.uint8)  # TODO actually calulate spineRoiMask
-        spineRoiMask[:][:] = 0
-        spineRoiMask[_y][_x] = 1
+        # spineRoiMask = np.empty_like(imgData, dtype=np.uint8)  # TODO actually calulate spineRoiMask
+        # spineRoiMask[:][:] = 0
+        # spineRoiMask[_y][_x] = 1
         
         # get dict with spine intensity measurements
-        spineIntDict = pymapmanager.utils._getIntensityFromMask(spineRoiMask, imgData)
+        spineIntDict = pymapmanager.utils._getIntensityFromMask(finalSpineROIMask, imgData)
         
         self.setIntValue(spineIdx, 'spine', channelNumber, spineIntDict)
 
@@ -246,13 +265,21 @@ class pointAnnotations(baseAnnotations):
         #   and store as column in our pandas dataframe
 
         # this is fake, replace with real code
-        _xOffset = 10
-        _yOffset = 20
-        backgroundRoiMask = np.empty_like(imgData)  # TODO actually calulate backgroundRoiMask
-        backgroundRoiMask[:][:] = 0
-        logger.info(f'  backgroundRoiMask:{backgroundRoiMask.shape}')
-        backgroundRoiMask[_y + _yOffset][_x + _xOffset] = 1
+        # _xOffset = 10
+        # _yOffset = 20
+        # backgroundRoiMask = np.empty_like(imgData)  # TODO actually calulate backgroundRoiMask
+        # backgroundRoiMask[:][:] = 0
+        # logger.info(f'  backgroundRoiMask:{backgroundRoiMask.shape}')
+        # backgroundRoiMask[_y + _yOffset][_x + _xOffset] = 1
         
+        # mask, distance, numPts, originalSpinePoint, img
+        distance = 2
+        numPts = 3
+        originalSpinePoint = [int(_y), int(_x)]
+        backgroundRoiMask = pymapmanager.utils.calculateLowestIntensityMask(mask = finalSpineROIMask, distance = distance
+                                                                            , numPts = numPts
+                                                                            , originalSpinePoint = originalSpinePoint)  
+
         # get dict with background intensity measurements
         spineBackgroundIntDict = pymapmanager.utils._getIntensityFromMask(backgroundRoiMask, imgData)
         self.setIntValue(spineIdx, 'spineBackground', channelNumber, spineBackgroundIntDict)
@@ -365,13 +392,16 @@ class pointAnnotations(baseAnnotations):
                     #isTrue = False
         
         return isTrue
-    # Call this when creating a new 
-    def _calculateSingleBrightestIndex(self, stack, channel: int, spineRowIdx: int, lineAnnotation, img):
+    
+    # Call this when creating a new spine
+    # OLD: def _calculateSingleBrightestIndex(self, channel: int, spineRowIdx: int, lineAnnotation, img):
+    def _calculateSingleBrightestIndex(self, channel: int, spineRowIdx: int, zyxLineSegment, img):
         """
             Args:
                 stack: the stack that we are using to acquire all the data
                 channel: current channel used for image analysis
                 spineRowIdx: Row index of the current spine
+                zyxLineSegment: List of z,y,x for each coordinate for in the specific line segment that we are looking at. 
 
             Return:
                 Brightest index of a line point for one spine point
@@ -379,13 +409,13 @@ class pointAnnotations(baseAnnotations):
         import pymapmanager
         # lineAnnotation = stack.getLineAnnotations()
         # img = stack.getImageChannel(channel = channel)
-        segmentID = self.getValue("segmentID", spineRowIdx)
+        # segmentID = self.getValue("segmentID", spineRowIdx)
         # print(type(segmentID), segmentID)
      
         # call backend function within lineAnnotations
-        segmentZYX = lineAnnotation.getZYXlist(int(segmentID), ['linePnt'])
+        # segmentZYX = lineAnnotation.getZYXlist(int(segmentID), ['linePnt'])
 
-        # Pull out into list z y x 
+        # # Pull out into list z y x 
         x = self.getValue("x", spineRowIdx)
         y = self.getValue("y", spineRowIdx)
         z = self.getValue("y", spineRowIdx)
@@ -398,11 +428,11 @@ class pointAnnotations(baseAnnotations):
         # sys.exit(0)
         # call utility function
         # Check to see if this val is correct before storing into dataframe
-        brightestIndex = pymapmanager.utils._findBrightestIndex(x, y, z, segmentZYX, img)
+        brightestIndex = pymapmanager.utils._findBrightestIndex(x, y, z, zyxLineSegment, img)
 
         # Store into backend
         # backendIdx
-        self.setValue("brightestIndex", spineRowIdx, brightestIndex)
+        # self.setValue("brightestIndex", spineRowIdx, brightestIndex)
 
         return brightestIndex
 
