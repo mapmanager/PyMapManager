@@ -17,21 +17,24 @@ from pymapmanager.interface._data_model import pandasModel
 
 class annotationListWidget(QtWidgets.QWidget):
 
-    signalSetSlice = QtCore.Signal(int)
+    # removed feb 27
+    # signalSetSlice = QtCore.Signal(int)
     """Signal emitted when user alt+clicks on row.
     
     Args:
         slineNumber(int): The z-slice from annotation 'z'
     """
     
-    signalZoomToPoint = QtCore.Signal(object, object)
+    # removed feb 27
+    # signalZoomToPoint = QtCore.Signal(object, object)
     """Signal emitted when user selects alt+row
         Zoom to the point (x,y)
     Args:
         x:
         y:
     """
-    signalRowSelection = QtCore.Signal(object, object)
+    signalRowSelection2 = QtCore.Signal(object)
+    #signalRowSelection = QtCore.Signal(object, object)
     """Sigmal emmited when user selects a row(s)
     
     Args:
@@ -229,22 +232,34 @@ class annotationListWidget(QtWidgets.QWidget):
 
         self._blockSlots = True
 
-        if isAlt:
-            if 'z' in self._annotations._df.columns:
-                firstRow = rowList[0]
-                newSlice = self._annotations._df.loc[firstRow, 'z']
-                logger.info(f'  -->> emit signalSetSlice newSlice:{newSlice}') 
-                self.signalSetSlice.emit(newSlice)
+        # removed feb 27
+        # if isAlt:
+            # if 'z' in self._annotations._df.columns:
+            #     firstRow = rowList[0]
+            #     newSlice = self._annotations._df.loc[firstRow, 'z']
+            #     logger.info(f'  -->> emit signalSetSlice newSlice:{newSlice}') 
+            #     self.signalSetSlice.emit(newSlice)
 
-                x = self._annotations._df.loc[firstRow, 'x']
-                y = self._annotations._df.loc[firstRow, 'y']
-                logger.info(f'  -->> emit signalZoomToPoint x:{x} y:{y}') 
-                self.signalZoomToPoint.emit(x, y)
-            else:
-                logger.warning(f'Underlying table does not have "z" column. Snapping to image slice will not work')
+            #     x = self._annotations._df.loc[firstRow, 'x']
+            #     y = self._annotations._df.loc[firstRow, 'y']
+            #     logger.info(f'  -->> emit signalZoomToPoint x:{x} y:{y}') 
+            #     self.signalZoomToPoint.emit(x, y)
+            # else:
+            #     logger.warning(f'Underlying table does not have "z" column. Snapping to image slice will not work')
 
-        logger.info(f'  -->> emit signalRowSelection rowList:{rowList}, isAlt:{isAlt}') 
-        self.signalRowSelection.emit(rowList, isAlt)
+        
+        # version 1
+        #self.signalRowSelection.emit(rowList, isAlt)
+
+        # version 2
+        _selectionEvent = pymapmanager.annotations.SelectionEvent(self._annotations,
+                                                                  rowIdx=rowList,
+                                                                  isAlt=isAlt)
+
+        logger.info(f'  -->> emit signalRowSelection2')
+        logger.info(f'{_selectionEvent}') 
+
+        self.signalRowSelection2.emit(_selectionEvent)
 
         self._blockSlots = False
 
@@ -272,6 +287,24 @@ class annotationListWidget(QtWidgets.QWidget):
 
         #logger.warning(f'todo: need to set the table row')
 
+        # update our 'trace' button
+        #self._updateTracingButton()
+
+    def slot_selectAnnotation2(self, selectionEvent : pymapmanager.annotations.SelectionEvent):
+        """
+        TODO: check that selectionEvent.type == type(self._annotation)
+        """
+        if self._blockSlots:
+            # blocks recursion
+            return
+
+        # logger.info('')
+        # print(selectionEvent)
+
+        if selectionEvent.type == type(self._annotations):
+            rows = selectionEvent.getRows()
+            self._myTableView.mySelectRows(rows)
+
     def old_slot_addAnnotation(self, rows : List[int], dictList : List[dict]):
         """Add annotations from list.
         
@@ -288,17 +321,18 @@ class annotationListWidget(QtWidgets.QWidget):
         # df = 
         #self.getMyModel().myAppendRow(df)
 
-    def slot_addedAnnotation(self, addDict : dict):
+    def slot_addedAnnotation(self, addAnnotationEvent : pymapmanager.annotations.AddAnnotationEvent):
         """Called after user creates a new annotation in parent stack window.
         """
-        logger.info(f'addDict:{addDict}')
+        logger.info(f'')
         
         # TODO (cudmore): we need to implement finer grained updates like just updating what was added
 
         self._setModel()
 
         # TODO: set the selection to newAnnotationRow
-        newAnnotationRow = addDict['newAnnotationRow']
+        #newAnnotationRow = addDict['newAnnotationRow']
+        newAnnotationRow = addAnnotationEvent.getAddedRow()
         self.slot_selectAnnotation(newAnnotationRow)
         
     def slot_deletedAnnotation(self, delDict : dict):
@@ -406,7 +440,7 @@ class lineListWidget(annotationListWidget):
         # edit checkbox
         aCheckbox = QtWidgets.QCheckBox('Edit')
         aCheckbox.setChecked(_editSegment)
-        aCheckbox.stateChanged.connect(self.on_edit_checkbox)
+        aCheckbox.stateChanged.connect(self.on_segment_edit_checkbox)
         hBoxLayout.addWidget(aCheckbox, alignment=_alignLeft)
         # aLabel = QtWidgets.QLabel('Edit')
         # hBoxLayout.addWidget(aLabel, alignment=_alignLeft)
@@ -414,21 +448,21 @@ class lineListWidget(annotationListWidget):
         # new line segment button
         self._addSegmentButton = QtWidgets.QPushButton('+')
         self._addSegmentButton.setEnabled(_editSegment)
-        _callback = lambda state, buttonName='+': self.on_button_clicked(state, buttonName)
+        _callback = lambda state, buttonName='+': self.on_segment_button_clicked(state, buttonName)
         self._addSegmentButton.clicked.connect(_callback)
         hBoxLayout.addWidget(self._addSegmentButton, alignment=_alignLeft)
 
         # delete line segment button
         self._deleteSegmentButton = QtWidgets.QPushButton('-')
         self._deleteSegmentButton.setEnabled(_editSegment)
-        _callback = lambda state, buttonName='-': self.on_button_clicked(state, buttonName)
+        _callback = lambda state, buttonName='-': self.on_segment_button_clicked(state, buttonName)
         self._deleteSegmentButton.clicked.connect(_callback)
         hBoxLayout.addWidget(self._deleteSegmentButton, alignment=_alignLeft)
 
         # trace and cancel (A*)
         self._traceCancelButton = QtWidgets.QPushButton('trace')  # toggle b/w trace/cancel
         self._traceCancelButton.setEnabled(_editSegment)
-        _callback = lambda state, buttonName='trace_cancel': self.on_button_clicked(state, buttonName)
+        _callback = lambda state, buttonName='trace_cancel': self.on_segment_button_clicked(state, buttonName)
         self._traceCancelButton.clicked.connect(_callback)
         hBoxLayout.addWidget(self._traceCancelButton, alignment=_alignLeft)
         
@@ -436,29 +470,21 @@ class lineListWidget(annotationListWidget):
 
         return vControlLayout
 
-    def on_edit_checkbox(self, state : int):
-        """Toggle segment edit.
-
-        A little complicated, we want to
-        change the text in _traceCancelButton b/w 'Trace' and 'Cancel'
+    def _updateTracingButton(self, rowIdx):
+        """Turn tracing button on/off depending on state.
         """
-        # checkbox can have 3-states
-        if state > 0:
-            state = True
-        else:
-            state = False
-
-        self._addSegmentButton.setEnabled(state)
-        self._deleteSegmentButton.setEnabled(state)
-        
         #
         # trace/cancel button should only be activated when there is
         # 1) a point annotation controlPnt selection
         # 2) it is not the first control pnt in a segmentID
         # Need to run this code every time there is a new point selection
-        rowIdx, rowDict = self._stackWidget.annotationSelection.getPointSelection()
+        
+        _doEditSegments = self._displayOptionsDict['doEditSegments']
+        
+        logger.info(f'_doEditSegments: {_doEditSegments}')
+
         logger.info(f'  rowIdx:{rowIdx}')
-        if not state or rowIdx is None or isinstance(rowIdx,list)>1:
+        if not _doEditSegments or rowIdx is None or isinstance(rowIdx,list):
            # no selection, always off
            traceState = False
         else:
@@ -473,7 +499,7 @@ class lineListWidget(annotationListWidget):
                 logger.info(f'  checking if control point is > first in segment')
                 segmentID = pa.getValue('segmentID', rowIdx)
                 # if isControl pnt and not the first in a segmentID
-                logger.info(f'  segmentId:{segmentID}')
+                logger.info(f'    segmentId:{segmentID}')
                 #la = self._stackWidget.getStack().getLineAnnotations()
                 # not the correct function,
                 # we need to determine if it is the first controlPnt in the point annotations
@@ -482,24 +508,52 @@ class lineListWidget(annotationListWidget):
                 # logger.error('fix this !!!')
                 # _idx = pa.getRoiType_col('index', pymapmanager.annotations.pointTypes.controlPnt)
                 _controlPnt = pymapmanager.annotations.pointTypes.controlPnt
+                
+                # get the first row that is a control pnt
                 _idx = pa.getTypeAndSegmentColumn('index', _controlPnt, segmentID)
                 _idx = _idx[0]
-                logger.info(f'  _idx:{_idx}')
+                
+                logger.info(f'  first controlPnt is _idx: {_idx}')
+                logger.info(f'  user selected rowIdx: {rowIdx}')
+                
+                # make sure our rowID is not the first control point
                 traceState = rowIdx > _idx
         #
+        logger.info(f'  traceState: {traceState}')
         self._traceCancelButton.setEnabled(traceState)
 
+    def on_segment_edit_checkbox(self, state : int):
+        """Respond to user toggling segment edit checkbox.
+
+        A little complicated, we want to
+        change the text in _traceCancelButton b/w 'Trace' and 'Cancel'
+        """
+        # checkbox can have 3-states
+        if state > 0:
+            state = True
+        else:
+            state = False
+
+        # change the state of the stack widget !!!
+        self._displayOptionsDict['doEditSegments'] = state
+                         
+        self._addSegmentButton.setEnabled(state)
+        self._deleteSegmentButton.setEnabled(state)
+        
+        # get current selected point
+        rowIdx, rowDict = self._stackWidget.annotationSelection.getPointSelection()
+        
+        self._updateTracingButton(rowIdx)
 
         logger.info(f'  -->> emit signalEditSegments() state:{state}')
         self.signalEditSegments.emit(state)
 
-    def on_button_clicked(self, state, buttonName : str):
-        logger.info(f'buttonName:{buttonName}')
+    def on_segment_button_clicked(self, state, buttonName : str):
+        logger.info(f'buttonName is: "{buttonName}"')
         if buttonName == '+':
             logger.info(f'  -->> emit signalAddSegment()')
             self.signalAddSegment.emit()
         elif buttonName == '-':
-            logger.info(f'')
             # TODO (cudmore): get list of selected segments from list
             _segment = [None]
             logger.info(f'  -->> emit signalDeletingSegment() segment:{_segment}')
@@ -508,6 +562,32 @@ class lineListWidget(annotationListWidget):
             logger.info('trace or cancel !!! implement this')
         else:
             logger.warning(f'did not understand buttonName:{buttonName}')
+
+    def slot_selectAnnotations2(self, selectionEvent : pymapmanager.annotations.SelectionEvent):
+        if self._blockSlots:
+            # blocks recursion
+            return
+
+        if selectionEvent.type != type(self._annotations):
+            return
+    
+        rows = selectionEvent.getRows()
+
+        # convert absolute row(s) in annotation list to segmentID
+        # and select segmentID in table
+        if rows is None:
+            segmentIDs = None
+        else:
+            dfRows = self._annotations._df.loc[rows]
+            segmentIDs = dfRows['segmentID'].tolist()
+
+        logger.info(f'  selecting: segmentIDs:{segmentIDs}')
+        
+        # select in table
+        self._myTableView.mySelectRows(segmentIDs)
+
+        # toggle tracing button on/off depending on selection
+        self._updateTracingButton(rows)
 
     def slot_selectAnnotation(self, rows : Union[List[int], None], isAlt : bool = False):
         """Select annotation at index.
@@ -543,6 +623,9 @@ class lineListWidget(annotationListWidget):
         
         # select in table
         self._myTableView.mySelectRows(segmentIDs)
+
+        # toggle tracing button on/off depending on selection
+        self._updateTracingButton(rows)
 
 class pointListWidget(annotationListWidget):
     #signalNewRoiType = QtCore.Signal(pymapmanager.annotations.pointTypes)

@@ -9,6 +9,7 @@ import pyqtgraph as pg
 
 from pymapmanager._logger import logger
 import pymapmanager.stack
+import pymapmanager.annotations
 
 # import utils
 
@@ -26,6 +27,7 @@ class annotationPlotWidget(QtWidgets.QWidget):
     """
 
     signalAnnotationClicked = QtCore.Signal(int, bool)  # (annotation idx, isAlt)
+    signalAnnotationClicked2 = QtCore.Signal(object)  # pymapmanager.annotations.SelectionEvent
     """Signal emitted when user click on an annotation.
     
     Args:
@@ -170,15 +172,16 @@ class annotationPlotWidget(QtWidgets.QWidget):
         Visually select the annotation and emit signalAnnotationClicked
         
         Args:
-            points (PlotDataItem)
-            event (List[SpotItem]):
+            points (pyqtgraph.graphicsItems.PlotDataItem.PlotDataItem)
+            event (List[pyqtgraph.graphicsItems.ScatterPlotItem.SpotItem]):
             """
         modifiers = QtWidgets.QApplication.queryKeyboardModifiers()
         isAlt = modifiers == QtCore.Qt.AltModifier
 
-        logger.info(f'annotationPlotWidget() {type(self)}')
+        logger.info(f'')
+        logger.info(f'  self:{self}')
         logger.info(f'  points:{points}')
-        logger.info(f'  event:{event}')
+        logger.info(f'  first event:{event[0]}')
         logger.info(f'  isAlt:{isAlt}')
 
         for idx, oneEvent in enumerate(event):
@@ -198,7 +201,13 @@ class annotationPlotWidget(QtWidgets.QWidget):
 
             # emit point selection signal
             logger.info(f'  -->> emit signalAnnotationClicked dbIdx:{dbIdx} isAlt:{isAlt}')
-            self.signalAnnotationClicked.emit(dbIdx, isAlt)
+            
+            #self.signalAnnotationClicked.emit(dbIdx, isAlt)
+
+            _selectionEvent = pymapmanager.annotations.SelectionEvent(self._annotations,
+                                                                      rowIdx=dbIdx,
+                                                                      isAlt=isAlt)
+            self.signalAnnotationClicked2.emit(_selectionEvent)
 
             # implement left/right arrow to select prev/next point
 
@@ -222,7 +231,13 @@ class annotationPlotWidget(QtWidgets.QWidget):
 
             # loc[] is actual row index (not row label)
             # TODO (Cudmore) write API function to do this
-            dfPrint = self._annotations._df.loc[dbIdx]
+            try:
+                dfPrint = self._annotations._df.loc[dbIdx]
+            except (KeyError) as e:
+                logger.error(f'KeyError fetching dbIdx: {dbIdx}')
+                print(self._annotations._df)
+                return
+            
             x = dfPrint['x'].tolist()
             y = dfPrint['y'].tolist()
         
@@ -244,6 +259,13 @@ class annotationPlotWidget(QtWidgets.QWidget):
         
         # set data calls this?
         # self._view.update()
+
+    def slot_selectAnnotation2(self, selectionEvent : "pymapmanager.annotations.SelectionEvent"):
+        #logger.info('')
+        if selectionEvent.type == type(self._annotations):
+            rowIdx = selectionEvent.getRows()
+            isAlt = selectionEvent.isAlt
+            self._selectAnnotation(rowIdx, isAlt)
 
     def slot_selectAnnotation(self, dbIdx : List[int], isAlt : bool):
         """Respond to user selection of annotations.
@@ -356,17 +378,17 @@ class annotationPlotWidget(QtWidgets.QWidget):
         msElapsed = (stopTime-startTime) * 1000
         #logger.info(f'Took {round(msElapsed,2)} ms {type(self)}')
 
-    def slot_addedAnnotation(self, addDict : dict):
+    def slot_addedAnnotation(self, addAnnotationEvent : pymapmanager.annotations.AddAnnotationEvent):
         """Slot called after an annotation was added.
         """
 
         # order matters, we need to set slice before selecting new annotation
 
-        # refresh scatte
+        # refresh scatter
         self._refreshSlice()
 
         # select the new annotaiton
-        newAnnotationRow = addDict['newAnnotationRow']
+        newAnnotationRow = addAnnotationEvent.getAddedRow()
         self._selectAnnotation(newAnnotationRow)
 
     def slot_deletedAnnotation(self, deleteDict : dict):
@@ -415,7 +437,7 @@ class pointPlotWidget(annotationPlotWidget):
         self._myStack = stack
 
         self._buildUI()
-        self._view.signalUpdateSlice.connect(self.slot_setSlice)
+        # self._view.signalUpdateSlice.connect(self.slot_setSlice)
 
     # def set_currentImage(self, )
     def _buildUI(self):
@@ -546,9 +568,28 @@ class linePlotWidget(annotationPlotWidget):
         self._buildUI()
 
         self._buildUI()
-        self._view.signalUpdateSlice.connect(self.slot_setSlice)
+        # self._view.signalUpdateSlice.connect(self.slot_setSlice)
 
-    def slot_selectSegment(self, segmentID : int, isAlt : bool):
+    def slot_selectAnnotation2(self, selectionEvent : "pymapmanager.annotations.SelectionEvent"):
+        logger.info('linePlotWidget ... rowidx is segment ID')
+        logger.info(f'{selectionEvent}')
+        #if selectionEvent.type == type(self._annotations):
+        if selectionEvent.isLineSelection():
+            rowIdx = selectionEvent.getRows()
+            isAlt = selectionEvent.isAlt
+            
+            logger.info(f'  fetching rowIdx:{rowIdx}')
+            
+            # if rowIdx is None or len(rowIdx)==0:
+            #     segmentID = None
+            # else:
+            #     segmentID = self._annotations.getValue('segmentID', rowIdx)
+            
+            segmentID = rowIdx
+            self._selectSegment(segmentID)
+            #self._selectAnnotation(rowIdx, isAlt)
+
+    def old_slot_selectSegment(self, segmentID : int, isAlt : bool):
         logger.info(f'segmentID:{segmentID} isAlt:{isAlt}')
         self._selectSegment(segmentID)
     
