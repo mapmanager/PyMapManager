@@ -73,7 +73,7 @@ def _loadStackAndGetSpine(rowIdx):
 
 def run():
     # I chose spine 110 arbitrarily
-    rowIdx = 110
+    rowIdx = 200
 
     myLittleDict = _loadStackAndGetSpine(rowIdx)
     imgSlice = myLittleDict['imgSlice']

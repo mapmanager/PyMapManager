@@ -78,6 +78,57 @@ class pointAnnotations(baseAnnotations):
         
         self.addColumn(colItem)
 
+        colItem = ColumnItem(
+            name = 'xLine',
+            type = 'float',  # 'Int64' is pandas way to have an int64 with nan values
+            units = '',
+            humanname = 'xLine',
+            description = 'X coordinate of the brightest point within the line that the spine is connected to'
+        )
+        
+        self.addColumn(colItem)
+
+        colItem = ColumnItem(
+            name = 'yLine',
+            type = 'float',  # 'Int64' is pandas way to have an int64 with nan values
+            units = '',
+            humanname = 'yLine',
+            description = 'Y coordinate of the brightest point within the line that the spine is connected to'
+        )
+        
+        self.addColumn(colItem)
+
+        colItem = ColumnItem(
+            name = 'zLine',
+            type = 'float',  # 'Int64' is pandas way to have an int64 with nan values
+            units = '',
+            humanname = 'zLine',
+            description = 'Z coordinate of the brightest point within the line that the spine is connected to'
+        )
+        
+        self.addColumn(colItem)
+
+        colItem = ColumnItem(
+            name = 'xBackgroundOffset',
+            type = 'float',  # 'Int64' is pandas way to have an int64 with nan values
+            units = '',
+            humanname = 'xBackgroundOffset',
+            description = ''
+        )
+        
+        self.addColumn(colItem)
+
+        colItem = ColumnItem(
+            name = 'yBackgroundOffset',
+            type = 'float',  # 'Int64' is pandas way to have an int64 with nan values
+            units = '',
+            humanname = 'yBackgroundOffset',
+            description = ''
+        )
+        
+        self.addColumn(colItem)
+
+
         # feb 2023 with Johnson on zoom
         self._addIntColumns()
 
@@ -101,7 +152,7 @@ class pointAnnotations(baseAnnotations):
                     currColStr = self._getIntColName(roiStr, statName, channelNumber)
                     colItem = ColumnItem(
                         name = currColStr,
-                        type = 'Int64',  # 'Int64' is pandas way to have an int64 with nan values
+                        type = 'float',  # 'Int64' is pandas way to have an int64 with nan values
                         units = '',
                         humanname = '',
                         description = ''
@@ -216,6 +267,7 @@ class pointAnnotations(baseAnnotations):
         logger.info('This is setting lots of columns in our backend with all intensity measurements')
         logger.info(f'  imgData.shape {imgData.shape}')
 
+        logger.info(f"spineIdx:{spineIdx}")
         _z = self.getValue('z', spineIdx)
         _x = self.getValue('x', spineIdx)
         _y = self.getValue('y', spineIdx)
@@ -227,6 +279,8 @@ class pointAnnotations(baseAnnotations):
         brightestIndex = self._calculateSingleBrightestIndex(channel = channelNumber, spineRowIdx = spineIdx
                                                              , zyxLineSegment = zyxLineSegment, img = imgData)
 
+        logger.info(f"brightestIndex:{brightestIndex}")
+
         # 1.1) set the backend value
         self.setValue('brightestIndex', spineIdx, brightestIndex)
 
@@ -237,17 +291,30 @@ class pointAnnotations(baseAnnotations):
 
         xBrightestLine = zyxLineSegment[brightestIndex][2]
         yBrightestLine = zyxLineSegment[brightestIndex][1]
+        zBrightestLine = zyxLineSegment[brightestIndex][0]
+        self.setValue('xLine', spineIdx, xBrightestLine)
+        self.setValue('yLine', spineIdx, yBrightestLine)
+        self.setValue('zLine', spineIdx, zBrightestLine)
+        logger.info(f"xBrightestLine:{xBrightestLine}")
+        logger.info(f"yBrightestLine:{yBrightestLine}")
+
         spineRectROI = pymapmanager.utils.calculateRectangleROIcoords(xPlotSpines = _x, yPlotSpines = _y,
                                                                       xPlotLines = xBrightestLine,
                                                                       yPlotLines = yBrightestLine)
+
+        logger.info(f"spineRectROI:{spineRectROI}")
+
         radius = 3
         lineSegmentROI = pymapmanager.utils.calculateLineROIcoords(lineIndex = brightestIndex,
                                                                    radius = radius,
                                                                    lineAnnotations = la)
 
+        logger.info(f"lineSegmentROI:{lineSegmentROI}")
+
         finalSpineROIMask = pymapmanager.utils.calculateFinalMask(rectanglePoly = spineRectROI, 
                                                                   linePoly = lineSegmentROI)
-
+                                                                
+        logger.info(f"finalSpineROIMask:{finalSpineROIMask}")
 
         # 3) calculate dict for spine with keys ('Sum', 'Min', 'Max', 'Mean', ....)
         #   and store as columns in our pandas dataframe
@@ -258,8 +325,14 @@ class pointAnnotations(baseAnnotations):
         
         # get dict with spine intensity measurements
         spineIntDict = pymapmanager.utils._getIntensityFromMask(finalSpineROIMask, imgData)
-        
+
+        logger.info(f"spineIntDict:{spineIntDict}")
+
         self.setIntValue(spineIdx, 'spine', channelNumber, spineIntDict)
+
+
+        # debugSpineIntDict = self.setIntValue(spineIdx, 'spine', channelNumber, spineIntDict)
+        print("spineIntDict", spineIntDict)
 
         # 4) translate the roi in a grid to find dimmest position
         #   calculate dict with background ('Sum', 'Min', 'Max', 'Mean', ....)
@@ -277,13 +350,33 @@ class pointAnnotations(baseAnnotations):
         distance = 2
         numPts = 3
         originalSpinePoint = [int(_y), int(_x)]
-        backgroundRoiMask = pymapmanager.utils.calculateLowestIntensityMask(mask = finalSpineROIMask, distance = distance
+        print("finalSpineROIMask", finalSpineROIMask.shape)
+        backgroundRoiOffset = pymapmanager.utils.calculateLowestIntensityOffset(mask = finalSpineROIMask, distance = distance
                                                                             , numPts = numPts
-                                                                            , originalSpinePoint = originalSpinePoint)  
+                                                                            , originalSpinePoint = originalSpinePoint, img=imgData)  
+
+        self.setValue('xBackgroundOffset', spineIdx, backgroundRoiOffset[0])
+        self.setValue('yBackgroundOffset', spineIdx, backgroundRoiOffset[1])
+
+        backgroundMask = pymapmanager.utils.calculateBackgroundMask(finalSpineROIMask, backgroundRoiOffset)
+
+        # TODO: offset original mask to get BackgroundROIMASK
+        # Alternately calculate values of points within mask rather than using actual mask
+        # backgroundRoiMask = finalSpineROIMask                                    
+        #print("backgroundRoiMask", backgroundRoiMask.shape)
+
+        #logger.info(f"backgroundRoiMask.shape:{backgroundRoiMask.shape}")
 
         # get dict with background intensity measurements
-        spineBackgroundIntDict = pymapmanager.utils._getIntensityFromMask(backgroundRoiMask, imgData)
+        # backgroundRoiAsList = np.argwhere(finalSpineROIMask==1)
+        # backgroundRoiAsList += backgroundRoiOffset # for each point in lhs, add the pone point on the rhs
+
+        spineBackgroundIntDict = pymapmanager.utils._getIntensityFromMask(backgroundMask, imgData)
+        
         self.setIntValue(spineIdx, 'spineBackground', channelNumber, spineBackgroundIntDict)
+
+        # debugBackgroundSpineIntDict = self.setIntValue(spineIdx, 'spineBackground', channelNumber, spineBackgroundIntDict)
+        # print("debugBackgroundSpineIntDict", debugBackgroundSpineIntDict)
 
         #
         # DEBUG
@@ -296,6 +389,10 @@ class pointAnnotations(baseAnnotations):
         # logger.info('  and the background (I made these up)')
         # debugBackgroundSpineIntDict = self.getIntValue(spineIdx, 'spineBackground', channelNumber)
         # print(debugBackgroundSpineIntDict)
+
+        # Figure out how to display the rectangle region on the interface.
+        # Order the coordinates in the right order to plot
+        #   - improve on the shape of the polygon
 
     def reconnectToSegment(self, rowIdx : int):
         """
@@ -433,14 +530,19 @@ class pointAnnotations(baseAnnotations):
 
         # Store into backend
         # backendIdx
-        # self.setValue("brightestIndex", spineRowIdx, brightestIndex)
+        self.setValue("brightestIndex", spineRowIdx, brightestIndex)
 
         return brightestIndex
 
-    def calculateBrightestIndexes(self, stack, channel: int, 
-                    segmentID : Union[int, List[int], None],
-                    lineAnnotation,
-                    img):
+    # def calculateBrightestIndexes(self, stack, channel: int, 
+    #                 segmentID : Union[int, List[int], None],
+    #                 lineAnnotation,
+    #                 img):
+
+    def calculateBrightestIndexes(self, channel: int, 
+                segmentID : Union[int, List[int], None],
+                lineAnnotation,
+                img):
         """
             Function to calculate brightest indexes within one segment or multiple segments and 
             saves them into the back end
@@ -469,7 +571,7 @@ class pointAnnotations(baseAnnotations):
             for idx, val in enumerate(currentDF["index"]):
                 # print(val)
                 # val = current index
-                self._calculateSingleBrightestIndex(stack, channel, val, lineAnnotation, img)
+                self._calculateSingleBrightestIndex(channel, val, lineAnnotation, img)
                 print("stored", idx)
 
 

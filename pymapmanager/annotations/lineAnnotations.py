@@ -208,21 +208,17 @@ class lineAnnotations(baseAnnotations):
 
         return zyxList
 
-    def get_zyx_list(self, segmentID : Union[int, List[int], None] = None) -> List[List[int]]:
-        if segmentID is None:
-            segmentID = self.unique('segmentID')  # unique() does not work for float
-        elif not isinstance(segmentID, list):
-            segmentID = [segmentID]
+    def get_zyx_list(self, segmentID : int) -> List[List[int]]:
+        """ Given a single segment ID, return a list of a list of z y x coordinates
+        Arguments:
+            SegmentID: int
+        """
+        zyx = self.getValuesWithCondition(['z', 'y', 'x'],
+                        compareColNames='segmentID',
+                        comparisons=comparisonTypes.equal,
+                        compareValues=segmentID)
 
-        zyxList = []  # a list of segments, each segment is np.ndarray of (z,y,x)
-        for oneSegmentID in segmentID:
-            zyx = self.getValuesWithCondition(['z', 'y', 'x'],
-                            compareColNames='segmentID',
-                            comparisons=comparisonTypes.equal,
-                            compareValues=oneSegmentID)
-            zyxList.append(zyx)
-
-        return zyxList
+        return zyx
 
     '''
     # experimenting with displaying line segments as napari `tracks` layer

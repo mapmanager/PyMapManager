@@ -5,12 +5,17 @@ These should not include any imports beyond things like
     - 
 """
 
+from ast import Tuple
 from typing import List
 import math
 import numpy as np
 import pandas as pd
 import skimage
 from matplotlib.path import Path
+from scipy import ndimage
+
+
+from pymapmanager._logger import logger
 
 def setsAreEqual(a, b):
 	"""Return true if sets (a, b) are equal.
@@ -32,9 +37,12 @@ def _findClosestIndex(x, y, z, zyxLine : List[List[float]]) -> int:
         # dx = abs(x - point[0])
         # dy = abs(y - point[1])
         # dz = abs(z - point[2])
+        print("x y z",x,y,z)
         dx = abs(x - point[2])
         dy = abs(y - point[1])
         dz = abs(z - point[0])
+        print("point[0]:", point[0],point[1],point[2])
+        print("dx dy dz:", dx, dy, dz)
         _dist = math.sqrt( dx**2 + dy**2 + dz**2)
         if _dist < dist:
             dist = _dist
@@ -50,7 +58,40 @@ def _getIntensityFromMask(imgMask :np.ndarray, img : np.ndarray) -> dict:
         imgMask: 1 is in mask, 0 is background
         img:
     """
+    # print("imgMask:", imgMask.shape)
+    # print("img:", img.shape)
+    # logger.info(f"imgMask.shape:{imgMask.shape}")
+
     maskIntensities = img[imgMask==1]
+
+    #print(f'  _getRoiIntensities() maskIntensities: {maskIntensities.shape} {maskIntensities.dtype}')
+                
+    theDict = {
+        'Sum': maskIntensities.sum(),
+        'Mean': maskIntensities.mean(),
+        'Std': maskIntensities.std(),
+        'Min': maskIntensities.min(),
+        'Max': maskIntensities.max(),
+    }
+
+    return theDict
+    
+def _getIntensityFromMask2(imgMaskList, img : np.ndarray) -> dict:
+    """Given an image a mask, compute intensity measurements of the image in the mask.
+     
+    Return a dict with intensity measurements like ('sum', 'mean', 'std', 'min', 'max')
+
+    Args:
+        imgMask: 1 is in mask, 0 is background
+        img:
+    """
+    # print("imgMask:", imgMask.shape)
+    # print("img:", img.shape)
+    # logger.info(f"imgMask.shape:{imgMask.shape}")
+
+    y = imgMaskList[:,0]
+    x = imgMaskList[:,1]
+    maskIntensities = img[y,x]
 
     #print(f'  _getRoiIntensities() maskIntensities: {maskIntensities.shape} {maskIntensities.dtype}')
                 
@@ -460,7 +501,7 @@ def getOffset(distance, numPts):
 
     return coordOffsetList
 
-def calculateLowestIntensityMask(mask, distance, numPts, originalSpinePoint, img):
+def calculateLowestIntensityOffset(mask, distance, numPts, originalSpinePoint, img):
     """ 
     Args:
         mask: The mask that will be moved around to check for intensity at various positions
@@ -470,9 +511,9 @@ def calculateLowestIntensityMask(mask, distance, numPts, originalSpinePoint, img
         we need to manipulate
         # TODO:
     Return: 
-        Values of mask at position with lowest intensity
+
+        The offset with lowest intensity
     """
-    from scipy import ndimage
     # struct = 
     # print(mask)
     labelArray, numLabels = ndimage.label(mask)
@@ -494,6 +535,8 @@ def calculateLowestIntensityMask(mask, distance, numPts, originalSpinePoint, img
     # Note: points are returned in y,x form
     finalMask = np.argwhere(labelArray == currentLabel)
 
+    logger.info(f'finalMask.shape:{finalMask.shape}')
+
     offsetList = getOffset(distance = distance, numPts = numPts)
 
     lowestIntensity = math.inf
@@ -503,23 +546,40 @@ def calculateLowestIntensityMask(mask, distance, numPts, originalSpinePoint, img
         # print(offset)
         currentIntensity = 0
         adjustedMask = finalMask + offset
+        adjustedMaskY = adjustedMask[:,0]
+        adjustedMaskX = adjustedMask[:,1]
 
         try:
-            img[adjustedMask]
+            pixelIntensityofMask = img[adjustedMaskY,adjustedMaskX]
 
         except(IndexError) as e:
             # logger.error("Out of bounds")
             print("Out of bounds")
             continue
     
-        totalIntensity = np.sum(img[adjustedMask])
+        totalIntensity = np.sum(pixelIntensityofMask)
         currentIntensity = totalIntensity
         if(currentIntensity < lowestIntensity):
             lowestIntensity = currentIntensity
             lowestIntensityOffset = offset
-            lowestIntensityMask = adjustedMask
+            # lowestIntensityMask = pixelIntensityofMask
 
-    return lowestIntensityMask
+    return lowestIntensityOffset
+
+def calculateBackgroundMask(spineMask, offset):
+    maskCoords = np.argwhere(spineMask == 1)
+    backgroundPointList = maskCoords + offset
+
+    # Separate into x and y
+    # Construct the 2D mask using the offset background
+    backgroundPointsX = backgroundPointList[:,1]
+    backgroundPointsY = backgroundPointList[:,0]
+
+    backgroundMask = np.zeros(spineMask.shape, dtype = np.uint8)
+    backgroundMask[backgroundPointsY,backgroundPointsX] = 1
+
+    return backgroundMask
+
 
 def runDebug():
     pass

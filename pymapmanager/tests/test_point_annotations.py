@@ -108,6 +108,33 @@ def test_int_columns():
     assert intDict['Min'] == 0
     assert intDict['Max'] == 333
 
+# def test_spine_connect():
+
+#     # bad form, we can't assume we have pymapmanager-data
+#     import pymapmanager
+#     import pymapmanager.annotations
+#     path = '../PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
+#     myStack = pymapmanager.stack(path=path)
+        
+#     myStack.loadImages(channel=1)
+#     myStack.loadImages(channel=2)
+
+#     pa = myStack.getPointAnnotations()
+#     la = myStack.getLineAnnotations()
+
+#     spineIdx = 10
+#     segmentID = pa.getValue('segmentID', spineIdx)
+#     z = pa.getValue('z', spineIdx)
+
+#     zyxLineSegment = myStack.getLineAnnotations().get_zyx_list(segmentID=segmentID)
+
+#     channelNumber = 2
+#     # imgData = myStack.getImageChannel(channelNumber)
+
+#     imgData = myStack.getImageSlice(z, channelNumber)
+
+#     pa.updateSpineInt(spineIdx, zyxLineSegment, channelNumber, imgData, la)
+
 def test_isValid():
     # need to include some test data
     # path = '../../PyMapManager-Data/one-timepoint/rr30a_s0/rr30a_s0_la.txt

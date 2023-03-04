@@ -751,7 +751,7 @@ class stackWidget(QtWidgets.QMainWindow):
             # grab the zyx of the selected segment
             la = self.getStack().getLineAnnotations()
             xyzSegment = la.get_zyx_list(_selectSegment)
-
+                        
             # grab the raw image data the user is viewing
             #imgData = self.getStack().getImageChannel(imageChannel)
             _imageSlice = self.annotationSelection.getCurrentSlice()  # could use z
