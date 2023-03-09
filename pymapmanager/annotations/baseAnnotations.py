@@ -1002,7 +1002,7 @@ class baseAnnotations():
             file.write(headerStr)
 
         with open(self.filePath, 'a') as file:
-            self._df.to_csv(file, header=True, index=False)
+            self._df.to_csv(file, header=True, index=False, lineterminator = '\r')
         
     def _getHeaderStr(self):
         """Get header as string.
