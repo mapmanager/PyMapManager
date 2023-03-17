@@ -13,7 +13,7 @@ import pandas as pd
 import skimage
 from matplotlib.path import Path
 from scipy import ndimage
-
+import scipy
 
 from pymapmanager._logger import logger
 
@@ -33,16 +33,17 @@ def _findClosestIndex(x, y, z, zyxLine : List[List[float]]) -> int:
     # print()
     dist = float('inf') # np.inf
     closestIdx = None
+    # print("zyxLine", zyxLine)
     for idx, point in enumerate(zyxLine):
         # dx = abs(x - point[0])
         # dy = abs(y - point[1])
         # dz = abs(z - point[2])
-        print("x y z",x,y,z)
+        # print("x y z",x,y,z)
         dx = abs(x - point[2])
         dy = abs(y - point[1])
         dz = abs(z - point[0])
-        print("point[0]:", point[0],point[1],point[2])
-        print("dx dy dz:", dx, dy, dz)
+        # print("point[0]:", point[0],point[1],point[2])
+        # print("dx dy dz:", dx, dy, dz)
         _dist = math.sqrt( dx**2 + dy**2 + dz**2)
         if _dist < dist:
             dist = _dist
@@ -202,130 +203,137 @@ def computeTangentLine(startPoint: tuple, stopPoint: tuple, length) -> tuple:
 # Function to return the polygons 
 
 # def getRadiusLines(lineAnnotations: pmm.annotations.lineAnnotations):
-def getRadiusLines(lineAnnotations):
-    # TODO (cudmore) this should be a member function of lineAnnotations class
-    # 2nd parameter segmentID: Union(Int, List(int), None)
-    # if segmentID is None:
-        # grab all segments into a list
-    # else if(isInstance(segmentID, int)):
-    #   segmentID = list[segmentID]
+# def getRadiusLines(lineAnnotations, medianFilterWidth : int = 5):
+#     # TODO (cudmore) this should be a member function of lineAnnotations class
+#     # 2nd parameter segmentID: Union(Int, List(int), None)
+#     # if segmentID is None:
+#         # grab all segments into a list
+#     # else if(isInstance(segmentID, int)):
+#     #   segmentID = list[segmentID]
 
-    import pymapmanager as pmm
-    #lineAnnotations: pmm.annotations.lineAnnotations
+#     import pymapmanager as pmm
+#     #lineAnnotations: pmm.annotations.lineAnnotations
 
-    extendHead = 5
+#     extendHead = 5
 
-	# print(myStack)
-    # segmentID = 1
-    # pointAnnotations = myStack.getPointAnnotations()
-    # lineAnnotations = myStack.getLineAnnotations()  
-    lineAnnotations = lineAnnotations
+# 	# print(myStack)
+#     # segmentID = 1
+#     # pointAnnotations = myStack.getPointAnnotations()
+#     # lineAnnotations = myStack.getLineAnnotations()  
+#     lineAnnotations = lineAnnotations
     
-    # segmentDF = lineAnnotations.getSegment(segmentID)
+#     # segmentDF = lineAnnotations.getSegment(segmentID)
 
-    # Change to one segment when put into lineAnnotation.py
-    segmentDF = lineAnnotations._df
+#     # Change to one segment when put into lineAnnotation.py
+#     segmentDF = lineAnnotations._df
+#     segmentID = 0
+#     segmentDF = lineAnnotations.getSegment(segmentID)
 
-    print(segmentDF)
 
-    xPlot = segmentDF['x']
-    yPlot = segmentDF['y']
-    zPlot = segmentDF['z']
-    # print(xPlot)
-    # print(zPlot)
+#     print(segmentDF)
 
-    # ch2_img = myStack.getImageSlice(imageSlice=zPlot[695], channel=channel)
-    # ch2_img = myStack.getImageSlice(imageSlice=zPlot[695], channel=channel)
+#     xPlot = segmentDF['x']
+#     print("xplot.type", xPlot.type)
+#     yPlot = segmentDF['y']
+#     zPlot = segmentDF['z']
 
-    # plt.imshow(ch2_img)
+#     # TODO: We need to smooth the line (in x and y) before calculating left and right coordinates
+#     # import scipy
+#     # xyArray = np.array([xPlot, yPlot])
+#     # filteredArray = scipy.ndimage.median_filter()
 
-    segmentROIXinitial = []
-    segmentROIYinitial = []
-    segmentROIXend = []
-    segmentROIYend = []
+#     # xPlotFiltered = scipy.ndimage.median_filter(xPlot, medianFilterWidth)
+#     # yPlotFiltered = scipy.ndimage.median_filter(yPlot, medianFilterWidth)
 
-    orthogonalROIXinitial = [np.nan]
-    orthogonalROIYinitial = [np.nan]
-    orthogonalROIZinitial = [np.nan]
-    # orthogonalROIXend = []
-    # orthogonalROIYend = []
-    orthogonalROIXend = [np.nan]
-    orthogonalROIYend = [np.nan]
-    orthogonalROIZend = [np.nan]
+#     segmentROIXinitial = []
+#     segmentROIYinitial = []
+#     segmentROIXend = []
+#     segmentROIYend = []
 
-    # pd.df index
-    offset = 0
+#     orthogonalROIXinitial = [np.nan]
+#     orthogonalROIYinitial = [np.nan]
+#     orthogonalROIZinitial = [np.nan]
+#     # orthogonalROIXend = []
+#     # orthogonalROIYend = []
+#     orthogonalROIXend = [np.nan]
+#     orthogonalROIYend = [np.nan]
+#     orthogonalROIZend = [np.nan]
 
-    # Change so that you loop through each segment individually
-    # Nested for loop
-    for idx, val in enumerate(xPlot):
-        # print(val)
-        # Exclude first and last points since they do not have a previous or next point 
-        # that is needed for calculation
-        if idx == 0 or idx == len(xPlot)-1:
-            continue
+#     # pd.df index
+#     offset = 0
+
+#     # Change so that you loop through each segment individually
+#     # Nested for loop
+#     for idx, val in enumerate(xPlot):
+#         # print(val)
+#         # Exclude first and last points since they do not have a previous or next point 
+#         # that is needed for calculation
+#         if idx == 0 or idx == len(xPlot)-1:
+#             continue
         
-        xCurrent = xPlot[idx + offset]
-        yCurrent = yPlot[idx + offset]
+#         xCurrent = xPlot[idx + offset]
+#         yCurrent = yPlot[idx + offset]
 
-        xPrev = xPlot[idx-1 + offset]
-        xNext = xPlot[idx+1 + offset]
+#         xPrev = xPlot[idx-1 + offset]
+#         xNext = xPlot[idx+1 + offset]
 
-        yPrev = yPlot[idx-1 + offset]
-        yNext = yPlot[idx+1 + offset]
+#         yPrev = yPlot[idx-1 + offset]
+#         yNext = yPlot[idx+1 + offset]
 
-        adjustY, adjustX = computeTangentLine((xPrev,yPrev), (xNext,yNext))
+#         adjustY, adjustX = computeTangentLine((xPrev,yPrev), (xNext,yNext))
 
-        segmentROIXinitial.append(xCurrent-adjustX)
-        segmentROIYinitial.append(yCurrent-adjustY)
+#         segmentROIXinitial.append(xCurrent-adjustX)
+#         segmentROIYinitial.append(yCurrent-adjustY)
         
-        segmentROIXend.append(xCurrent+adjustX)
-        segmentROIYend.append(yCurrent+adjustY)
+#         segmentROIXend.append(xCurrent+adjustX)
+#         segmentROIYend.append(yCurrent+adjustY)
 
-        orthogonalROIXinitial.append(xCurrent-adjustY)
-        orthogonalROIYinitial.append(yCurrent+adjustX)
-        orthogonalROIZinitial.append(zPlot[idx + offset])
+#         orthogonalROIXinitial.append(xCurrent-adjustY)
+#         orthogonalROIYinitial.append(yCurrent+adjustX)
+#         # orthogonalROIZinitial.append(zPlot[idx + offset])
 
-        orthogonalROIXend.append(xCurrent+adjustY)
-        orthogonalROIYend.append(yCurrent-adjustX)
-        orthogonalROIZend.append(zPlot[idx + offset])
+#         orthogonalROIXend.append(xCurrent+adjustY)
+#         orthogonalROIYend.append(yCurrent-adjustX)
+#         # orthogonalROIZend.append(zPlot[idx + offset])
 
-        # import matplotlib.pyplot as plt
-        # plt.plot([xCurrent-adjustX,xCurrent+adjustX], [yCurrent-adjustY, yCurrent+adjustY], '.r', linestyle="--")
+#         # import matplotlib.pyplot as plt
+#         # plt.plot([xCurrent-adjustX,xCurrent+adjustX], [yCurrent-adjustY, yCurrent+adjustY], '.r', linestyle="--")
 
-    # TODO: add columns to represent each point to the line annotation object 
-    # Make a column to represent left point, each row is an tuple (x,y,z)
-    # Make a column to represent right point, each row is an tuple (x,y,z)
-    # Or have separate columns xRight, xLeft, yRight, etc...
+#     # TODO: add columns to represent each point to the line annotation object 
+#     # Make a column to represent left point, each row is an tuple (x,y,z)
+#     # Make a column to represent right point, each row is an tuple (x,y,z)
+#     # Or have separate columns xRight, xLeft, yRight, etc...
 
-    # Add nan at the end of each list since previous for loop excludes the last point
-    orthogonalROIXinitial.append(np.nan)
-    orthogonalROIYinitial.append(np.nan)
-    orthogonalROIZinitial.append(np.nan)
+#     # Add nan at the end of each list since previous for loop excludes the last point
+#     orthogonalROIXinitial.append(np.nan)
+#     orthogonalROIYinitial.append(np.nan)
+#     orthogonalROIZinitial.append(np.nan)
 
-    orthogonalROIXend.append(np.nan)
-    orthogonalROIYend.append(np.nan)
-    orthogonalROIZend.append(np.nan)
+#     orthogonalROIXend.append(np.nan)
+#     orthogonalROIYend.append(np.nan)
+#     orthogonalROIZend.append(np.nan)
 
-    # print(orthogonalROIYinitial)
-    lineAnnotations.setColumn("xLeft", orthogonalROIXinitial)
-    temp = lineAnnotations.getValues("xLeft")
-    # print("Xleft: ", temp)
-    # print("length of list: ", len(orthogonalROIXinitial))
+#     # print(orthogonalROIYinitial)
 
-    lineAnnotations.setColumn("yLeft", orthogonalROIYinitial)
-    lineAnnotations.setColumn("zLeft", orthogonalROIZinitial)
+#     # TODO: Move this to backend in separate function
+#     lineAnnotations.setColumn("xLeft", orthogonalROIXinitial)
+#     temp = lineAnnotations.getValues("xLeft")
+#     # print("Xleft: ", temp)
+#     # print("length of list: ", len(orthogonalROIXinitial))
+
+#     lineAnnotations.setColumn("yLeft", orthogonalROIYinitial)
+#     # lineAnnotations.setColumn("zLeft", orthogonalROIZinitial)
     
-    lineAnnotations.setColumn("xRight", orthogonalROIXend)
-    lineAnnotations.setColumn("yRight", orthogonalROIYend)
-    lineAnnotations.setColumn("zRight", orthogonalROIZend)
+#     lineAnnotations.setColumn("xRight", orthogonalROIXend)
+#     lineAnnotations.setColumn("yRight", orthogonalROIYend)
+#     # lineAnnotations.setColumn("zRight", orthogonalROIZend)
 
-    # Plot using what we added to lineannotation
-    # Have a separate function to take in the lineannotation and plot
-    # call this line to get the pd of what we want to plot:
-    # dfPlot = self._annotations.getSegmentPlot(theseSegments, roiTypes, sliceNumber)
-    # roiTypes = "linePnt"
-    # sliceNumber = None
+#     # Plot using what we added to lineannotation
+#     # Have a separate function to take in the lineannotation and plot
+#     # call this line to get the pd of what we want to plot:
+#     # dfPlot = self._annotations.getSegmentPlot(theseSegments, roiTypes, sliceNumber)
+#     # roiTypes = "linePnt"
+#     # sliceNumber = None
 
 #  Functions for calculation ROI masks
 def calculateRectangleROIcoords(xPlotSpines, yPlotSpines, xPlotLines, yPlotLines):
@@ -429,7 +437,7 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations):
     # totalPoints = totalPoints.reverse()
     totalPoints.reverse()
     # print(totalPoints)
-    # Probably need to reverse this order
+    # Reverse the order to record points on the "right side" starting from the end
     for i in totalPoints:
         # Account for beginning and end of LineAnnotations indexing
         if(lineIndex+i >= 0 and lineIndex+i <= len(lineAnnotations)):

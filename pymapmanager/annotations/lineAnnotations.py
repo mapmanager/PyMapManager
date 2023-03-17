@@ -6,7 +6,7 @@ from typing import List, Union
 
 import numpy as np
 import pandas as pd
-
+import scipy
 from pymapmanager.annotations import ColumnItem
 from pymapmanager.annotations import baseAnnotations
 from pymapmanager.annotations import comparisonTypes
@@ -74,14 +74,14 @@ class lineAnnotations(baseAnnotations):
         )
         self.addColumn(colItem)
 
-        colItem = ColumnItem(
-            name = 'zLeft',
-            type = int,  
-            units = '',
-            humanname = 'zLeft',
-            description = 'zLeft'
-        )
-        self.addColumn(colItem)
+        # colItem = ColumnItem(
+        #     name = 'zLeft',
+        #     type = int,  
+        #     units = '',
+        #     humanname = 'zLeft',
+        #     description = 'zLeft'
+        # )
+        # self.addColumn(colItem)
 
       # Add columns xLeft ...
         colItem = ColumnItem(
@@ -102,14 +102,14 @@ class lineAnnotations(baseAnnotations):
         )
         self.addColumn(colItem)
 
-        colItem = ColumnItem(
-            name = 'zRight',
-            type = int,  
-            units = '',
-            humanname = 'zRight',
-            description = 'zRight'
-        )
-        self.addColumn(colItem)
+        # colItem = ColumnItem(
+        #     name = 'zRight',
+        #     type = int,  
+        #     units = '',
+        #     humanname = 'zRight',
+        #     description = 'zRight'
+        # )
+        # self.addColumn(colItem)
 
         self.load()
 
@@ -418,12 +418,14 @@ class lineAnnotations(baseAnnotations):
 
         return dfOneSegment
 
-    def getRadiusLines(self, segmentID : Union[int, List[int]] = None, length = 1):
+    def getRadiusLines(self, segmentID : Union[int, List[int]] = None, length = 1, medianFilterWidth = 5):
         """
-            length = integer by which we scale the size of the left, right points from the line point
-
             Calculates all the xyz coordinates for the Shaft ROI for given segment(s)
             and places them into the backend as columns within the dataframe
+
+        Args:
+            segmentID: a list of ints representing a segment or multiple segments
+            length = integer by which we scale the size of the left, right points from the line point
         """
        
         if segmentID is None:
@@ -470,6 +472,10 @@ class lineAnnotations(baseAnnotations):
             # print("xPlot, ", xPlot)
             yPlot = currentDF['y']
             zPlot = currentDF['z']
+
+            # xPlotFiltered = scipy.ndimage.median_filter(xPlot, medianFilterWidth)
+            # yPlotFiltered = scipy.ndimage.median_filter(yPlot, medianFilterWidth)
+
             # get the value of the first index for that segments dataframe
             offset = currentDF['index'].iloc[0]
             # offset = currentDF.get_value()
@@ -534,11 +540,11 @@ class lineAnnotations(baseAnnotations):
                 # while i is the new index respective to each segment
                 self.setValue("xLeft", val, orthogonalROIXinitial[i])
                 self.setValue("yLeft", val, orthogonalROIYinitial[i])
-                self.setValue("zLeft", val, orthogonalROIZinitial[i])
+                # self.setValue("zLeft", val, orthogonalROIZinitial[i])
                 
                 self.setValue("xRight", val, orthogonalROIXend[i])
                 self.setValue("yRight", val, orthogonalROIYend[i])
-                self.setValue("zRight", val, orthogonalROIZend[i])
+                # self.setValue("zRight", val, orthogonalROIZend[i])
 
     def getZYXlist(self, segmentID : Union[int, List[int], None],
                     roiTypes : Union[str, List[str]]):

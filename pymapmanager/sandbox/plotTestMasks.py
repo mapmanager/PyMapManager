@@ -41,6 +41,7 @@ for idx, row in enumerate(pointAnnotation):
     spineRowIdx = row["index"]
     # print(type(spineRowIdx))
     brightestIndex = pointAnnotation._calculateSingleBrightestIndex(myStack, channel, int(spineRowIdx), lineAnnotation, img)
+    # brightestIndex = pointAnnotation._calculateSingleBrightestIndex(myStack, channel, int(spineRowIdx), lineAnnotation, img)
     print(brightestIndex)
     xBrightestLine.append(xLine[brightestIndex])
     yBrightestLine.append(yLine[brightestIndex])
