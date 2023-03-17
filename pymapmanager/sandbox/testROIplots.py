@@ -10,7 +10,7 @@ from matplotlib.path import Path
 import numpy as np
 
 
-# Sandbox 
+# Sandbox using code from plotTestMasks.py
 # Used to see if masks are offsetted properly
 # TODO: Check if scipy.ndimage.median_filter() works in lineAnnotation plotRadiusLines()
 
@@ -88,8 +88,26 @@ backgroundMask = pymapmanager.utils.calculateBackgroundMask(finalMaskPoly, lowes
 # plt.plot(backgroundMask)
 
 coords = np.column_stack(np.where(backgroundMask == 1))
+
+import scipy
+# print(combinedMasks)
+struct = scipy.ndimage.generate_binary_structure(2, 2)
+# Get points surrounding the altered combined mask
+dialatedMask = scipy.ndimage.binary_dilation(finalMaskPoly, structure = struct, iterations = 1)
+dialatedMask = dialatedMask.astype(int)
+# Remove the inner mask (combined mask) to get the outline
+outlineMask = dialatedMask - finalMaskPoly
+# Loop through to create list of coordinates for the polygon
+# print(outlineMask)
+coordsOfMaskOutline = np.column_stack(np.where(outlineMask > 0))
+
 # print(coords)
-plt.plot(coords[:,1], coords[:,0], 'go')
+# plt.plot(coords[:,1], coords[:,0], 'go')
+# https://stackoverflow.com/questions/67735537/how-to-sort-coordinates-in-python-in-a-clockwise-direction
+# TODO: Test sorting from stackOverflow
+plt.plot(coordsOfMaskOutline[:,1], coordsOfMaskOutline[:,0], 'ko')
+
+# Used outline by removing coordinates from
 
 # return calculateCandidateMasks()
 

@@ -60,7 +60,7 @@ outlineMask = dialatedMask - combinedMasks
 coords = np.column_stack(np.where(outlineMask > 0))
 # print(coords)
 
-# plt.imshow(outlineMask)
+plt.imshow(outlineMask)
 
 from scipy.spatial import ConvexHull
 import matplotlib.pyplot as plt
@@ -75,10 +75,10 @@ plt.plot(coords[:,1], coords[:,0], 'o')
 
 # Simplex is indexes for original list of coords
 for simplex in hull.simplices:
-    print("simplex", simplex)
-    print("coords[simplex, 0]", coords[simplex, 0])
-    print("coords[simplex, 1]", coords[simplex, 1])
-    print("coords[simplex]", coords[simplex])
+    # print("simplex", simplex)
+    # print("coords[simplex, 0]", coords[simplex, 0])
+    # print("coords[simplex, 1]", coords[simplex, 1])
+    # print("coords[simplex]", coords[simplex])
     # print("coords[simplex, 1]", coords[simplex])
 
     # plt.plot(coords[simplex, 0], coords[simplex, 1], 'k')
