@@ -14,6 +14,7 @@ import skimage
 from matplotlib.path import Path
 from scipy import ndimage
 import scipy
+from math import atan2
 
 from pymapmanager._logger import logger
 
@@ -172,7 +173,7 @@ def _findBrightestIndex(x, y, z, zyxLine : List[List[float]], image: np.ndarray,
     # return brightestIndex + firstPoint, candidatePoints, closestIndex
     return brightestIndex + firstPoint
 
-def computeTangentLine(startPoint: tuple, stopPoint: tuple, length) -> tuple: 
+def computeTangentLine(startPoint: tuple, stopPoint: tuple, extendHead = 1) -> tuple: 
     """ Given a start point and stop point return the 
 
     Args: 
@@ -184,7 +185,7 @@ def computeTangentLine(startPoint: tuple, stopPoint: tuple, length) -> tuple:
     """
     # xPrev = startPoint[0]
     # yPrev = startPoint[1]
-    extendHead = length
+    # extendHead = length
 
     dXsegment = stopPoint[0] - startPoint[0]
     dYsegment = stopPoint[1] - startPoint[1]
@@ -353,6 +354,7 @@ def calculateRectangleROIcoords(xPlotSpines, yPlotSpines, xPlotLines, yPlotLines
             a list of tuples representing the 4 coordinates of the rectangle
             example: [ ( 1, 2), (3, 4), (5, 6) , (7,8) ]
     """
+    # TODO: move this to the parameter list
     width = 3
     # Value to extend the rectangle ROI
     # Currently also extends the tail as well
@@ -400,6 +402,62 @@ def calculateRectangleROIcoords(xPlotSpines, yPlotSpines, xPlotLines, yPlotLines
 
     return [(firstCoordX, firstCoordY), (secondCoordX, secondCoordY), (thirdCoordX, thirdCoordY), (fourthCoordX, fourthCoordY)]
 
+def calculateTopTwoRectCoords(xPlotSpines, yPlotSpines, xPlotLines, yPlotLines):
+    """
+        Args:
+            spineCoords:
+                xPlotSpines - x coordinate of the spine
+                yPlotSpines - y coordinate of the spine
+            brightestLineCoords:
+                xPlotLines: x coordinate of the brightest index in line
+                yPlotLines: y coordinate of the brightest index in line
+
+        Returns:
+            a list containing each the x and y values of the top two coordinate
+
+            alternatively we could change it to have
+            a list of tuples representing the 4 coordinates of the rectangle
+            example: [ ( 1, 2), (3, 4), (5, 6) , (7,8) ]
+    """
+    # TODO: move this to the parameter list
+    width = 3
+    # Value to extend the rectangle ROI
+    # Currently also extends the tail as well
+    extendHead = 3
+    # extendTail= 3
+
+    Xa = xPlotLines
+    Xb = xPlotSpines
+    Ya = yPlotLines
+    Yb = yPlotSpines
+
+    Dx = Xb - Xa
+    Dy = Yb - Ya
+    originalDx = Xb - Xa
+    originalDy = Yb - Ya
+    D = math.sqrt(Dx * Dx + Dy * Dy)
+
+    Dx = width * Dx / D 
+    Dy = width * Dy / D
+
+    angle = np.arctan2(originalDy,originalDx) 
+    adjustY = np.sin(angle) * extendHead
+    adjustX = adjustY/ (np.tan(angle))
+
+    # Used to extend back of rectangle ROI
+    firstCoordX = Xa - Dy - adjustX
+    firstCoordY = Ya + Dx - adjustY
+    secondCoordX = Xa + Dy - adjustX
+    secondCoordY = Ya - Dx - adjustY
+
+    # thirdCoordX = Xb + Dy + adjustX
+    # fourthCoordX = Xb - Dy + adjustX
+    # thirdCoordY = Yb - Dx + adjustY
+    # fourthCoordY = Yb + Dx + adjustY
+
+    return [(firstCoordY, firstCoordX), (secondCoordY, secondCoordX)]
+
+
 def calculateLineROIcoords(lineIndex, radius, lineAnnotations):
     """
         Args:
@@ -410,6 +468,7 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations):
 
         Returns:
             a list containing each the x and y values of each coordinate
+            format [[x,y]]
 
             alternatively we could change it to have
             a list of tuples representing the 4 coordinates of the rectangle
@@ -485,9 +544,31 @@ def calculateFinalMask(rectanglePoly, linePoly):
     combinedMasks[combinedMasks > 1] = 0
     finalSpineMask = combinedMasks
 
-    coords = np.column_stack(np.where(finalSpineMask > 0))
+    # coords = np.column_stack(np.where(finalSpineMask > 0))
 
     return finalSpineMask
+
+def convertCoordsToMask(poly):
+
+    # TODO: Change this to detect image shape rather than have it hard coded
+    nx, ny = 1024, 1024
+
+    # Create vertex coordinates for each grid cell...
+    # (<0,0> is at the top left of the grid in this system)
+    # y and x's are reversed
+    # x, y = np.meshgrid(np.arange(nx), np.arange(ny))
+    y, x = np.meshgrid(np.arange(ny), np.arange(nx))
+
+    y, x = y.flatten(), x.flatten()
+
+    points = np.vstack((y,x)).T
+
+    polyPath = Path(poly)
+    polyMask = polyPath.contains_points(points, radius=0)
+    polyMask = polyMask.reshape((ny,nx))
+    polyMask = polyMask.astype(int)
+
+    return polyMask
 
 def getOffset(distance, numPts):
     """ Generate list of candidate points where mask will be moved """
@@ -588,7 +669,118 @@ def calculateBackgroundMask(spineMask, offset):
 
     return backgroundMask
 
+def argsort(seq):
+    #http://stackoverflow.com/questions/3382352/equivalent-of-numpy-argsort-in-basic-python/3382369#3382369
+    #by unutbu
+    #https://stackoverflow.com/questions/3382352/equivalent-of-numpy-argsort-in-basic-python
+    # from Boris Gorelik
+    return sorted(range(len(seq)), key=seq.__getitem__)
 
+def rotational_sort(list_of_xy_coords, centre_of_rotation_xy_coord, clockwise=True):
+    cx,cy=centre_of_rotation_xy_coord
+    # for x,y in list_of_xy_coords:
+    #     print(y)
+    angles = [atan2(x-cx, y-cy) for x,y in list_of_xy_coords]
+    # print(angles)
+    indices = argsort(angles)
+    # print(indices)
+    if clockwise:
+        # temp = [list_of_xy_coords[i] for i in indices]
+        # finalList = []
+        # for i in temp:
+        #     finalList.append(temp[i][0]])
+        temp = [list_of_xy_coords[i] for i in indices]
+        # Convert to numpy array to avoid type error when plotting
+        return np.array(temp)
+    else:
+        # Convert to np.array later
+        return [list_of_xy_coords[i] for i in indices[::-1]]
+
+def checkLabel(mask, _xSpine, _ySpine):
+    """ Filters out a mask so that extra segments will be removed
+    Returns the label of the segment which contains the original spintPoint
+    """
+    labelArray, numLabels = ndimage.label(mask)
+    # print("current labelArray", labelArray)
+
+    # Take the label that contains the original spine point
+    # Loop through all the labels and pull out the x,y coordinates 
+    # Check if the original x,y points is within those coords (using numpy.argwhere)
+    originalSpinePoint = [int(_ySpine), int(_xSpine)]
+    # originalSpinePoint = [int(_xSpine), int(_ySpine)]
+    currentLabel = 0
+    # print(originalSpinePoint)
+    for label in np.arange(1, numLabels+1, 1):
+        currentCandidate =  np.argwhere(labelArray == label)
+        # Check if the original x,y point in the current candidate
+        if(originalSpinePoint in currentCandidate):
+            currentLabel = label
+            # print("current label", currentLabel)
+            break
+    
+    return currentLabel
+
+# Take points of Xleft or Xright
+# Check to see if they are in the mask (expanded outline mask)
+# Returns the points within XLeft or Xright that are in the mask
+def getSegmentROIPoints(coordsOfMask, linePolyCoords):
+    """
+        Return points of left/Right segmentROI within the OutlineMask
+        that is used to form the polygon of the sectioned SpineROI
+    """
+
+    # List of Coordinates that are actually part of the spine ROI
+    filteredCoordList = []
+
+    # maskCoords = np.column_stack(np.where(mask > 0))
+    coordsOfMask = coordsOfMask.tolist()
+    print("coords", coordsOfMask)
+    print("type of coords", type(coordsOfMask))
+
+    for index, value in enumerate(linePolyCoords):
+        # print("value", value)
+        XValue = value[0]
+        YValue = value[1]
+        
+        fracX, wholeX = math.modf(XValue)
+        fracY, wholeY = math.modf(YValue)
+
+        # roundedXValue = math.ceil(value[0])
+        # roundedYValue = math.ceil(value[1])
+        # roundedCoords = [roundedYValue, roundedXValue]
+        if(fracX > 0.5):
+            roundedXValue = math.ceil(value[0])
+        else:
+            roundedXValue = math.floor(value[0])
+        if(fracY > 0.5):
+            roundedYValue = math.ceil(value[1])
+        else:
+            roundedYValue = math.floor(value[1])
+
+        # roundedCoords = [roundedYValue, roundedXValue]
+        roundedCoords = np.array([roundedYValue, roundedXValue])
+        roundedCoords = roundedCoords.tolist()
+        # roundedCoords = np.array([roundedXValue, roundedYValue])
+
+        # print("roundedCoords", roundedCoords)
+
+        # if(roundedCoords in coordsOfMask):
+        #     print("roundedCoords", index, roundedCoords)
+        #     filteredCoordList.append(roundedCoords)
+        # else:
+        #     print("not in list", index, roundedCoords)
+        if(roundedCoords in coordsOfMask):
+            # Its checking to see if one of the x,y value matches but not for booth?
+            print("roundedCoords", index, roundedCoords)
+            print("roundedCoords", index, roundedCoords)
+            filteredCoordList.append(roundedCoords)
+        else:
+            print("not in list", index, roundedCoords)
+
+    # print("filteredCoordList", filteredCoordList)
+    return np.array(filteredCoordList)
+
+    
 def runDebug():
     pass
     # plt.plot(xBox, yBox, 'oy', linestyle="--")

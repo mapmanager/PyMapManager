@@ -645,6 +645,15 @@ class baseAnnotations():
             values = values.flatten() # ensure 1D (for napari)
         return values
 
+    def _setModTime(self, row):
+        """Called everytime a value is modified in the backend
+
+        Args:
+            row (int)
+        """
+        self._dataModified = True
+        self._df.loc[row, 'mSeconds'] = time.time()  # modification time
+
     def setValue(self, colName : str, row : int, value):
         """Set a single value in a row and column.
         
@@ -653,6 +662,8 @@ class baseAnnotations():
             row (int)
             value (???)
         """
+        self._setModTime(row)
+
         if not self.columns.columnIsValid(colName):
             logger.warning(f'did not find "{colName}" in columns')
             return
@@ -756,7 +767,8 @@ class baseAnnotations():
         #if segmentID is not None:
         #    self._df.loc[rowIdx, 'segmentID'] = segmentID
 
-        self._dataModified = True
+        # self._dataModified = True
+        self._setModTime(rowIdx)
 
         return rowIdx
 

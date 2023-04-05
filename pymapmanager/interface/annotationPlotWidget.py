@@ -436,6 +436,8 @@ class pointPlotWidget(annotationPlotWidget):
         # self._myImage = myImage
         self._myStack = stack
 
+        self.img =  self._myStack.getMaxProject(channel = self._channel)
+
         self._buildUI()
         # self._view.signalUpdateSlice.connect(self.slot_setSlice)
 
@@ -453,6 +455,47 @@ class pointPlotWidget(annotationPlotWidget):
         self._spineConnections = self._view.plot([],[],pen=pg.mkPen(width=width, color=color), symbol=symbol)
         self._spineConnections.setZValue(zorder) 
         self._view.addItem(self._spineConnections)
+
+        self._spinePolygon = self._view.plot([],[],pen=pg.mkPen(width=width, color=color), symbol=symbol)
+        self._spinePolygon.setZValue(zorder) 
+        self._view.addItem(self._spinePolygon)
+
+    def slot_selectAnnotation2(self, selectionEvent : "pymapmanager.annotations.SelectionEvent"):
+        super().slot_selectAnnotation2(selectionEvent)
+        logger.info('pointPlotWidget XXX')
+        # logger.info(f'{self._getClassName()}')
+        if not selectionEvent.isPointSelection():
+            return
+        _selectedRows = selectionEvent.getRows()
+        xCoordsList = []
+        yCoordsList = []
+
+        # segmentID = self.pointAnnotations.getValue('segmentID', spineIdx)
+        # zyxList = self.lineAnnotations.get_zyx_list(segmentID)
+        # brightestIndex = self.pointAnnotations._calculateSingleBrightestIndex(self._channel, int(_selectedRows), zyxList, self.img)
+
+        for _selectedRow in _selectedRows:
+            logger.info(f'selectedRow {_selectedRow}')
+
+            jaggedPolygon = self.pointAnnotations.calculateJaggedPolygon(self.lineAnnotations, _selectedRow, self._channel, self.img)
+            
+            # draw spine roi for _selectedRow (a row in point annotations back end)
+            # use self.lineAnnotations
+            # xCoords, yCoords = self.pointAnnotations.getSpineRoi(_selectedRow)
+            
+            # get the x and y coordinates of your jagged spine roi
+            # xCoords = self.pointAnnotations.getValue('x', _selectedRow) + 100  #[100, 500]
+            # yCoords = self.pointAnnotations.getValue('y',_selectedRow) + 100  #[900, 200]
+            # xCoordsList.append(xCoords)
+            # yCoordsList.append(yCoords)
+
+            # xCoordsList.append(np.nan)
+            # yCoordsList.append(np.nan)
+
+        #
+        # self._spinePolygon.setData(xCoordsList, yCoordsList)
+        self._spinePolygon.setData(jaggedPolygon[:,1], jaggedPolygon[:,0])
+        self._view.update()
 
     def slot_setSlice(self, sliceNumber : int):
         super().slot_setSlice(sliceNumber=sliceNumber)
