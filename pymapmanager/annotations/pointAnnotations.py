@@ -662,7 +662,8 @@ class pointAnnotations(baseAnnotations):
 
         topTwoRectCoords = pymapmanager.utils.calculateTopTwoRectCoords(xBrightestLine[0], yBrightestLine[0], _xSpine, _ySpine)
         finalSetOfCoords = segmentROIpointsWithinMask.tolist()
-        finalSetOfCoords.insert(0,topTwoRectCoords[0])
+        finalSetOfCoords.insert(0,topTwoRectCoords[1])
+        finalSetOfCoords.append(topTwoRectCoords[0])
         finalSetOfCoords.append(topTwoRectCoords[1])
         finalSetOfCoords =  np.array(finalSetOfCoords)
         # print("segmentROIpointsWithinMask", segmentROIpointsWithinMask)
