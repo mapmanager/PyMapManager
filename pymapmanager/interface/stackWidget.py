@@ -3,14 +3,14 @@ import os
 import sys, traceback
 from typing import List, Union, Tuple  # , Callable, Iterator, Optional
 
-from pprint import pprint
+# from pprint import pprint
 
 from qtpy import QtGui, QtCore, QtWidgets
 
 import numpy as np
 import pyqtgraph as pg
 
-import qdarkstyle
+#import qdarkstyle
 
 import pymapmanager
 import pymapmanager.annotations
@@ -757,7 +757,9 @@ class stackWidget(QtWidgets.QMainWindow):
             _imageSlice = self.annotationSelection.getCurrentSlice()  # could use z
             imgSliceData = self.getStack().getImageSlice(_imageSlice, imageChannel)
 
-            # this does lots, (i) connect spine to brightest index on segment, calculate all spine intensity for a channel
+            # this does lots:
+            #   (i) connect spine to brightest index on segment
+            #   (ii) calculate all spine intensity for a channel
             self.myStack.getPointAnnotations().updateSpineInt(newAnnotationRow,
                                                         xyzSegment,
                                                         imageChannel,
@@ -894,9 +896,13 @@ class stackWidget(QtWidgets.QMainWindow):
                                                                     isAlt=isAlt)
         logger.info(f'  -->> emit signalSelectAnnotation2')
         self.signalSelectAnnotation2.emit(_selectionEvent)
-            
-if __name__ == '__main__':
-    from pprint import pprint
+
+import qdarktheme
+
+# Enable HiDPI.
+qdarktheme.enable_hi_dpi()
+
+def run():
     
     try:
         # withJavaBridge = False
@@ -934,10 +940,12 @@ if __name__ == '__main__':
         print('myStack:', myStack)
 
         # run pyqt interface
-        os.environ['QT_API'] = 'pyqt5'
+        #os.environ['QT_API'] = 'pyqt5'
+        
         app = QtWidgets.QApplication(sys.argv)
 
-        app.setStyleSheet(qdarkstyle.load_stylesheet())
+        #app.setStyleSheet(qdarkstyle.load_stylesheet())
+        qdarktheme.setup_theme()
 
         logger.info(f'app font: {app.font().family()} {app.font().pointSize()}')
         _fontSize = 12
@@ -966,7 +974,7 @@ if __name__ == '__main__':
         sys.exit(app.exec_())
 
     except Exception as e:
-        logger.error('\nEXCEPTION: stackWidget.main()')
+        logger.error('\nEXCEPTION: stackWidget.run()')
         print(traceback.format_exc())
         # if withJavaBridge:
         #     myJavaBridge.stop()
@@ -974,3 +982,6 @@ if __name__ == '__main__':
         pass
         # if withJavaBridge:
         #     myJavaBridge.stop()
+
+if __name__ == '__main__':
+    run()

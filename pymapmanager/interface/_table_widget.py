@@ -49,6 +49,8 @@ class myTableView(QtWidgets.QTableView):
 
         self.setSortingEnabled(True)
 
+        self.setAlternatingRowColors(True)
+
         # to allow click on already selected row
         #self.clicked.connect(self.on_user_click_row)
 

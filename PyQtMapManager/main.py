@@ -11,10 +11,11 @@
 
 #from __future__ import unicode_literals
 import sys, os, math
+import errno
 
 import numpy as np
 
-import qdarkstyle
+#import qdarkstyle
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
@@ -27,10 +28,10 @@ from mmApp import mmApplicationWindow
 
 if __name__ == '__main__':
 
-    if 1:
+    if 0:
         app = QtWidgets.QApplication(sys.argv)
         #app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api=os.environ['PYQTGRAPH_QT_LIB']))
-        app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api='pyqt5'))
+        #app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api='pyqt5'))
 
         aw = mmApplicationWindow()
         #aw.setWindowTitle("%s" % progname)
@@ -42,9 +43,13 @@ if __name__ == '__main__':
             defaultMap = '/media/cudmore/data/richard/rr30a/rr30a.txt' 
             if not os.path.isfile(defaultMap):
                 # TODO: Remove and just do logger.error('xxx')
-                raise IOError(ENOENT, 'mmApp did not find defaultMap:', defaultMap)
-            print('loading default map:', defaultMap)
-            aw.loadMap(defaultMap)
+                # raise IOError(ENOENT, 'mmApp did not find defaultMap:', defaultMap)
+
+                raise FileNotFoundError(
+                    errno.ENOENT, os.strerror(errno.ENOENT), defaultMap)
+
+        print('loading default map:', defaultMap)
+        aw.loadMap(defaultMap)
         # # load from online repository
         if 0:
             urlmap = 'rr30a'

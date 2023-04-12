@@ -42,7 +42,7 @@ def runFilter():
     plt.plot(xPlot, yPlot, '.-k')  # raw data
     #plt.plot(yFiltered, '.-r')
     plt.show()
-
+    
 def filterOneSegment(segmentID : int, medianFilterWidth : int = 5):
     """
     

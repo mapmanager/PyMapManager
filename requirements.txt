@@ -8,4 +8,5 @@ tifffile
 matplotlib
 pyqtgraph
 PyQt5
-qdarkstyle
+#qdarkstyle
+pyqtdarktheme

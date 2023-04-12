@@ -111,11 +111,11 @@ class pandasModel(QtCore.QAbstractTableModel):
                     theColor = QtCore.QVariant(QtGui.QColor(face_color))
                     return theColor         
                 elif index.row() % 2 == 0:
-                        #return QtCore.QVariant()
-                        return QtCore.QVariant(QtGui.QColor('#111122'))
+                        return QtCore.QVariant()
+                        #return QtCore.QVariant(QtGui.QColor('#111122'))
                 else:
                     return QtCore.QVariant()
-                    return QtCore.QVariant(QtGui.QColor('#666666'))
+                    #return QtCore.QVariant(QtGui.QColor('#666666'))
         #
         return QtCore.QVariant()
 

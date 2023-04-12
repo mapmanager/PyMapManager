@@ -694,6 +694,8 @@ class baseAnnotations():
                 # TODO (cudmore) switch this to pd.Int64Dtype
                 row[colIdx] = float('nan')
             #elif isinstance(theType, float):
+            elif theType == 'float':
+                row[colIdx] = float('nan')
             elif theTypeStr == "<class 'float'>":
                 row[colIdx] = float('nan')
             #elif isinstance(theType, str):
