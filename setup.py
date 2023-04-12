@@ -59,9 +59,10 @@ setup(
 	extras_require={
         'gui': [
 			'matplotlib',
+			'qtpy',
+            'PyQt5',
             'pyqtgraph',
 			#'PyQt5==5.12 # 5.12 is only version where QComboBox works # 5.15.2',
-			'PyQt5',
 			#'qdarkstyle',
             'pyqtdarktheme',
 		],

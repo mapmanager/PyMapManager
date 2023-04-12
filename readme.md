@@ -21,26 +21,30 @@ PyMapManager has a modular architecture with the following components:
 
 ## Install
 
-Create a virtual environment
+Create and activate a conda virtual environment
 
 ```
-conda create -y -n pmm-env python=3.8
+conda create -y -n pmm-env python=3.11
 conda activate pmm-env
+```
+
+Clone the GitHub repository
+
+```
+git clone git@github.com:mapmanager/PyMapManager.git
+cd PyMapManager
 ```
 
 Install the backend from source
 
 ```
-git clone git@github.com:mapmanager/PyMapManager.git
-cd PyMapManager
 pip install -e .
 ```
 
 Install the front-end desktop GUI and backend
 
-```
-git clone git@github.com:mapmanager/PyMapManager.git
-cd PyMapManager
+**Important.** On arm (m1) macOS, you need to first install PyQt5 using `conda install pyqt`
+
 pip install -e .[gui]
 ```
 
@@ -48,6 +52,16 @@ If you are using the `zsh` shell, you need to install using quotes (") like
 
 ```
 pip install -e ".[gui]"
+```
+
+## Run
+
+We are still in the early stages of development.
+
+Make sure you have the `PyMapManager-Data` folder in the same folder as `PyMapManager`.
+
+```
+python pymapmanager/interface/stackWidget.py
 ```
 
 ## Desktop Application

@@ -6,7 +6,8 @@ tifffile
 
 # interface
 matplotlib
-pyqtgraph
+qtpy
 PyQt5
+pyqtgraph
 #qdarkstyle
 pyqtdarktheme
