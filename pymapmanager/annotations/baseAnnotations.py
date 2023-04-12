@@ -82,8 +82,10 @@ class SelectionEvent():
         }
 
     def __str__(self):
-        _str = ''  # f"  {self.type}" + '\n'
+        _str = '\n'  # f"  {self.type}" + '\n'
         for k,v in self._selDict.items():
+            if k == 'annotationObject':
+                v = type(v)
             _str += f'  {k}: {v}' + '\n'
         return _str
 

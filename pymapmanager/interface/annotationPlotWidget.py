@@ -179,10 +179,10 @@ class annotationPlotWidget(QtWidgets.QWidget):
         isAlt = modifiers == QtCore.Qt.AltModifier
 
         logger.info(f'')
-        logger.info(f'  self:{self}')
-        logger.info(f'  points:{points}')
-        logger.info(f'  first event:{event[0]}')
-        logger.info(f'  isAlt:{isAlt}')
+        # logger.info(f'  self:{self}')
+        # logger.info(f'  points:{points}')
+        # logger.info(f'  first event:{event[0]}')
+        # logger.info(f'  isAlt:{isAlt}')
 
         for idx, oneEvent in enumerate(event):
             if idx > 0:
@@ -200,13 +200,14 @@ class annotationPlotWidget(QtWidgets.QWidget):
             self._selectAnnotation(dbIdx, isAlt)
 
             # emit point selection signal
-            logger.info(f'  -->> emit signalAnnotationClicked dbIdx:{dbIdx} isAlt:{isAlt}')
-            
+            #logger.info(f'  -->> emit signalAnnotationClicked dbIdx:{dbIdx} isAlt:{isAlt}')
             #self.signalAnnotationClicked.emit(dbIdx, isAlt)
 
             _selectionEvent = pymapmanager.annotations.SelectionEvent(self._annotations,
                                                                       rowIdx=dbIdx,
                                                                       isAlt=isAlt)
+            
+            logger.info(f'  -->> emit signalAnnotationClicked2 {_selectionEvent}')
             self.signalAnnotationClicked2.emit(_selectionEvent)
 
             # implement left/right arrow to select prev/next point
@@ -607,7 +608,7 @@ class linePlotWidget(annotationPlotWidget):
 
     def slot_selectAnnotation2(self, selectionEvent : "pymapmanager.annotations.SelectionEvent"):
         logger.info('linePlotWidget ... rowidx is segment ID')
-        logger.info(f'{selectionEvent}')
+        #logger.info(f'{selectionEvent}')
         #if selectionEvent.type == type(self._annotations):
         if selectionEvent.isLineSelection():
             rowIdx = selectionEvent.getRows()

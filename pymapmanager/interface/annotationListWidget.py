@@ -193,14 +193,14 @@ class annotationListWidget(QtWidgets.QWidget):
         
         # TODO (Cudmore) Figure out how to set font of (cell, row/vert header, col/horz header)
         #   and reduce row size to match font
-        _fontSize = 11
-        aFont = QtGui.QFont('Arial', _fontSize)
-        self._myTableView.setFont(aFont)  # set the font of the cells
-        self._myTableView.horizontalHeader().setFont(aFont)
-        self._myTableView.verticalHeader().setFont(aFont)
+        # _fontSize = 11
+        # aFont = QtGui.QFont('Arial', _fontSize)
+        # self._myTableView.setFont(aFont)  # set the font of the cells
+        # self._myTableView.horizontalHeader().setFont(aFont)
+        # self._myTableView.verticalHeader().setFont(aFont)
 
-        self._myTableView.verticalHeader().setDefaultSectionSize(_fontSize)  # rows
-        self._myTableView.verticalHeader().setMaximumSectionSize(_fontSize)
+        # self._myTableView.verticalHeader().setDefaultSectionSize(_fontSize)  # rows
+        # self._myTableView.verticalHeader().setMaximumSectionSize(_fontSize)
         #self._myTableView.horizontalHeader().setDefaultSectionSize(_fontSize)  # rows
         #self._myTableView.horizontalHeader().setMaximumSectionSize(_fontSize)
         self._myTableView.resizeRowsToContents()
@@ -256,8 +256,7 @@ class annotationListWidget(QtWidgets.QWidget):
                                                                   rowIdx=rowList,
                                                                   isAlt=isAlt)
 
-        logger.info(f'  -->> emit signalRowSelection2')
-        logger.info(f'{_selectionEvent}') 
+        logger.info(f'  -->> emit signalRowSelection2 {_selectionEvent}')
 
         self.signalRowSelection2.emit(_selectionEvent)
 

@@ -368,13 +368,15 @@ class ImagePlotWidget(QtWidgets.QWidget):
         if selectionEvent.isAlt:
             #if selectionEvent.type == pymapmanager.annotations.pointAnnotations:
             if selectionEvent.isPointSelection():
-                print('!!! SET SLICE AND ZOOM')
+                #print('!!! SET SLICE AND ZOOM')
                 rowIdx = selectionEvent.getRows()
                 rowIdx = rowIdx[0]
                 x = selectionEvent.annotationObject.getValue('x', rowIdx)
                 y = selectionEvent.annotationObject.getValue('y', rowIdx)
                 z = selectionEvent.annotationObject.getValue('z', rowIdx)
+                logger.info(f' calling _zoomToPoint with x:{x} and y:{y}')
                 self._zoomToPoint(x, y)
+                logger.info(f' calling _setSlice with z:{z}')
                 self._setSlice(z)
 
         self._blockSlots = False

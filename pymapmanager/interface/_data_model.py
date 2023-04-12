@@ -29,7 +29,7 @@ class pandasModel(QtCore.QAbstractTableModel):
         
         self._data = data
 
-        self._myFont = QtGui.QFont('Arial', pointSize=10)
+        #self._myFont = QtGui.QFont('Arial', pointSize=10)
 
     def rowCount(self, parent=None):
         return self._data.shape[0]
@@ -67,9 +67,9 @@ class pandasModel(QtCore.QAbstractTableModel):
                 #realRow = self._data.index[index.row()]
                 realRow = index.row()
                 columnName = self._data.columns[index.column()]
-                if columnName == 'Symbol':
-                    # make symbols larger
-                    return QtCore.QVariant(QtGui.QFont('Arial', pointSize=16))
+                # if columnName == 'Symbol':
+                #     # make symbols larger
+                #     return QtCore.QVariant(QtGui.QFont('Arial', pointSize=16))
                 #return QtGui.QFont('Arial', pointSize=11)
                 return QtCore.QVariant()
                 #return QtCore.QVariant(self._myFont)
@@ -212,8 +212,8 @@ class pandasModel(QtCore.QAbstractTableModel):
             #     # make symbols larger
             #     return QtCore.QVariant(QtGui.QFont('Arial', pointSize=16))
             
-            return QtCore.QVariant(self._myFont)
-            #return QtCore.QVariant()
+            #return QtCore.QVariant(self._myFont)
+            return QtCore.QVariant()
             
         #
         return QtCore.QVariant()

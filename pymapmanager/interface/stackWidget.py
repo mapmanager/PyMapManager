@@ -845,7 +845,8 @@ class stackWidget(QtWidgets.QMainWindow):
         self._imagePlotWidget._aPointPlot.slot_setDisplayType(roiTypeEnumList)
 
     def slot_selectAnnotation2(self, selectionEvent : pymapmanager.annotations.SelectionEvent):
-        logger.info(selectionEvent)
+        logger.info('')
+        #logger.info(selectionEvent)
         
         rows = selectionEvent.getRows()
         
@@ -947,17 +948,17 @@ def run():
         #app.setStyleSheet(qdarkstyle.load_stylesheet())
         qdarktheme.setup_theme()
 
-        logger.info(f'app font: {app.font().family()} {app.font().pointSize()}')
-        _fontSize = 12
-        aFont = QtGui.QFont('Arial', _fontSize)
-        app.setFont(aFont, "QLabel")
-        #app.setFont(aFont, "QComboBox")
-        app.setFont(aFont, "QPushButton")
-        app.setFont(aFont, "QCheckBox")
-        app.setFont(aFont, "QSpinBox")
-        app.setFont(aFont, "QDoubleSpinBox")
-        app.setFont(aFont, "QTableView")
-        app.setFont(aFont, "QToolBar")
+        # logger.info(f'app font: {app.font().family()} {app.font().pointSize()}')
+        # _fontSize = 12
+        # aFont = QtGui.QFont('Arial', _fontSize)
+        # app.setFont(aFont, "QLabel")
+        # #app.setFont(aFont, "QComboBox")
+        # app.setFont(aFont, "QPushButton")
+        # app.setFont(aFont, "QCheckBox")
+        # app.setFont(aFont, "QSpinBox")
+        # app.setFont(aFont, "QDoubleSpinBox")
+        # app.setFont(aFont, "QTableView")
+        # app.setFont(aFont, "QToolBar")
 
         bsw = stackWidget(myStack=myStack)
 
