@@ -1,3 +1,0 @@
-qdarkstyle
-matplotlib
-pyqt5
