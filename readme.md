@@ -45,6 +45,7 @@ Install the front-end desktop GUI and backend
 
 **Important.** On arm (m1) macOS, you need to first install PyQt5 using `conda install pyqt`
 
+```
 pip install -e .[gui]
 ```
 
