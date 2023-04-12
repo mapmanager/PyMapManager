@@ -898,12 +898,25 @@ class stackWidget(QtWidgets.QMainWindow):
         logger.info(f'  -->> emit signalSelectAnnotation2')
         self.signalSelectAnnotation2.emit(_selectionEvent)
 
-import qdarktheme
+def getBundledDir():
+    """Get the working directory where user preferences are save.
 
-# Enable HiDPI.
-qdarktheme.enable_hi_dpi()
+    This will be source code folder when running from source,
+      will be a more freeform folder when running as a frozen app/exe
+    """
+    if getattr(sys, "frozen", False):
+        # we are running in a bundle (frozen)
+        bundle_dir = sys._MEIPASS
+    else:
+        # we are running in a normal Python environment
+        bundle_dir = os.path.dirname(os.path.abspath(__file__))
+    return bundle_dir
 
 def run():
+    import qdarktheme
+
+    # Enable HiDPI.
+    qdarktheme.enable_hi_dpi()
     
     try:
         # withJavaBridge = False
@@ -959,6 +972,10 @@ def run():
         # app.setFont(aFont, "QDoubleSpinBox")
         # app.setFont(aFont, "QTableView")
         # app.setFont(aFont, "QToolBar")
+
+        appIconPath = os.path.join(getBundledDir(), 'icons', 'mapmanager-icon.png')
+        logger.info(f'appIconPath:{appIconPath}')
+        app.setWindowIcon(QtGui.QIcon(appIconPath))
 
         bsw = stackWidget(myStack=myStack)
 
