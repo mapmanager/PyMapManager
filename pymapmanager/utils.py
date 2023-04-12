@@ -155,9 +155,11 @@ def _findBrightestIndex(x, y, z, zyxLine : List[List[float]], image: np.ndarray,
     for index, candidatePoint in enumerate(candidatePoints):
 #         print(candidatePoint, type(candidatePoint))
 #         print(candidatePoint[0])
-        sourcePoint = np.array([x, y])
+        # sourcePoint = np.array([x, y])
+        sourcePoint = np.array([y, x])
 #         print("SourcePoint:", sourcePoint)
-        destPoint = np.array([candidatePoint[0], candidatePoint[1]])
+        # destPoint = np.array([candidatePoint[0], candidatePoint[1]])
+        destPoint = np.array([candidatePoint[1], candidatePoint[0]])
 #         print("DestPoint:", destPoint)
         candidateProfile = skimage.measure.profile_line(image, sourcePoint, destPoint, linewidth)
         oneSum = np.sum(candidateProfile)
@@ -174,7 +176,7 @@ def _findBrightestIndex(x, y, z, zyxLine : List[List[float]], image: np.ndarray,
     return brightestIndex + firstPoint
 
 def computeTangentLine(startPoint: tuple, stopPoint: tuple, extendHead = 1) -> tuple: 
-    """ Given a start point and stop point return the 
+    """ Given a start point and stop point return the tangent line between them
 
     Args: 
         startPoint: tuple(x, y) representing the starting coordinate
@@ -734,8 +736,8 @@ def getSegmentROIPoints(coordsOfMask, linePolyCoords):
 
     # maskCoords = np.column_stack(np.where(mask > 0))
     coordsOfMask = coordsOfMask.tolist()
-    print("coords", coordsOfMask)
-    print("type of coords", type(coordsOfMask))
+    # print("coords", coordsOfMask)
+    # print("type of coords", type(coordsOfMask))
 
     for index, value in enumerate(linePolyCoords):
         # print("value", value)
@@ -771,11 +773,10 @@ def getSegmentROIPoints(coordsOfMask, linePolyCoords):
         #     print("not in list", index, roundedCoords)
         if(roundedCoords in coordsOfMask):
             # Its checking to see if one of the x,y value matches but not for booth?
-            print("roundedCoords", index, roundedCoords)
-            print("roundedCoords", index, roundedCoords)
+            # print("roundedCoords", index, roundedCoords)
             filteredCoordList.append(roundedCoords)
-        else:
-            print("not in list", index, roundedCoords)
+        # else:
+            # print("not in list", index, roundedCoords)
 
     # print("filteredCoordList", filteredCoordList)
     return np.array(filteredCoordList)

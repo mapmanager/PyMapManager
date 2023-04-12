@@ -474,27 +474,21 @@ class pointPlotWidget(annotationPlotWidget):
         # zyxList = self.lineAnnotations.get_zyx_list(segmentID)
         # brightestIndex = self.pointAnnotations._calculateSingleBrightestIndex(self._channel, int(_selectedRows), zyxList, self.img)
 
-        for _selectedRow in _selectedRows:
-            logger.info(f'selectedRow {_selectedRow}')
+        if(_selectedRows is None):
+            self._spinePolygon.setData([], [])
 
-            jaggedPolygon = self.pointAnnotations.calculateJaggedPolygon(self.lineAnnotations, _selectedRow, self._channel, self.img)
-            
-            # draw spine roi for _selectedRow (a row in point annotations back end)
-            # use self.lineAnnotations
-            # xCoords, yCoords = self.pointAnnotations.getSpineRoi(_selectedRow)
-            
-            # get the x and y coordinates of your jagged spine roi
-            # xCoords = self.pointAnnotations.getValue('x', _selectedRow) + 100  #[100, 500]
-            # yCoords = self.pointAnnotations.getValue('y',_selectedRow) + 100  #[900, 200]
-            # xCoordsList.append(xCoords)
-            # yCoordsList.append(yCoords)
+        elif(len(_selectedRows) == 1):
+          
+            # logger.info(f'selectedRow {_selectedRow}')
+            firstSelectedRow = _selectedRows[0]
 
-            # xCoordsList.append(np.nan)
-            # yCoordsList.append(np.nan)
+            jaggedPolygon = self.pointAnnotations.calculateJaggedPolygon(self.lineAnnotations, firstSelectedRow, self._channel, self.img)
+            
+            self._spinePolygon.setData(jaggedPolygon[:,1], jaggedPolygon[:,0])
 
         #
         # self._spinePolygon.setData(xCoordsList, yCoordsList)
-        self._spinePolygon.setData(jaggedPolygon[:,1], jaggedPolygon[:,0])
+        # self._spinePolygon.setData(jaggedPolygon[:,1], jaggedPolygon[:,0])
         self._view.update()
 
     def slot_setSlice(self, sliceNumber : int):

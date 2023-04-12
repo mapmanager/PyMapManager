@@ -15,6 +15,8 @@ from pymapmanager.annotations import comparisonTypes
 from pymapmanager.annotations import fileTypeClass
 
 import pymapmanager.utils
+import scipy
+from scipy import ndimage
 
 from pymapmanager._logger import logger
 
@@ -550,11 +552,15 @@ class pointAnnotations(baseAnnotations):
             Return:
                 Brightest index of a line point for one spine point
         """
-        import pymapmanager
-        print("spineRowIdx", spineRowIdx)
+        # import pymapmanager
+        # print("spineRowIdx", spineRowIdx)
 
         segmentID = self.getValue("segmentID", spineRowIdx)
-        segmentZYX = lineAnnotation.getZYXlist(int(segmentID), ['linePnt'])
+        segmentID = int(segmentID)
+        # print("segmentID", segmentID)
+        logger.info(f"segmentID {segmentID} spineRowIDX{spineRowIdx}")
+       
+        segmentZYX = lineAnnotation.getZYXlist(segmentID, ['linePnt'])
         # print("segmentZYX", segmentZYX)
         # segmentZYX2 = lineAnnotation.get_zyx_list(spineRowIdx)
         # print("segmentZYX2", segmentZYX2)
@@ -562,11 +568,14 @@ class pointAnnotations(baseAnnotations):
         # # Pull out into list z y x 
         x = self.getValue("x", spineRowIdx)
         y = self.getValue("y", spineRowIdx)
-        z = self.getValue("y", spineRowIdx)
+        z = self.getValue("z", spineRowIdx)
+
+        startRow, _  = lineAnnotation._segmentStartRow(segmentID)
 
         # Check to see if this val is correct before storing into dataframe
         brightestIndex = pymapmanager.utils._findBrightestIndex(x, y, z, segmentZYX, img)
 
+        brightestIndex = brightestIndex + startRow
         # Store into backend
         # backendIdx
         self.setValue("brightestIndex", spineRowIdx, brightestIndex)
@@ -604,6 +613,7 @@ class pointAnnotations(baseAnnotations):
 
         # Loop through all segments in the given list
         for index in range(len(segmentID)):
+            print("index", index)
             currentDF = segmentSpineDFs[index]
             # print("currentDF", currentDF)
             # Looping through all spines connected to one segment
@@ -611,7 +621,7 @@ class pointAnnotations(baseAnnotations):
                 # print("Val", val)
                 # val = current index
                 self.calculateSingleBrightestIndex(channel, val, lineAnnotation, img)
-                print("stored", idx)
+                # print("stored", idx)
 
 
     def calculateJaggedPolygon(self, lineAnnotations, _selectedRow, _channel, img):
@@ -622,9 +632,15 @@ class pointAnnotations(baseAnnotations):
         zyxList = lineAnnotations.get_zyx_list(segmentID)
 
         # Later on retrieve this from the backend
+        # startRow, _  = lineAnnotations._segmentStartRow(segmentID)
+        # brightestIndex = self._calculateSingleBrightestIndex(_channel, int(_selectedRow), zyxList, img)
+        # brightestIndex += startRow
 
-        brightestIndex = self._calculateSingleBrightestIndex(_channel, int(_selectedRow), zyxList, img)
-     
+        brightestIndex = self.getValue('brightestIndex', _selectedRow)
+        brightestIndex = int(brightestIndex)
+
+        logger.info(f"_selectedRow: {_selectedRow} segmentID: {segmentID} brightestIndex: {brightestIndex}")
+
         segmentDF = lineAnnotations.getSegmentPlot(None, ['linePnt'])
         xLine = segmentDF["x"].tolist()
         yLine = segmentDF["y"].tolist()
@@ -643,8 +659,7 @@ class pointAnnotations(baseAnnotations):
         # coordsOfMask = np.column_stack(np.where(finalMaskPoly > 0))
 
         # # print("coordsOfMask", coordsOfMask)
-        import scipy
-        from scipy import ndimage
+
         # print(combinedMasks)
         struct = scipy.ndimage.generate_binary_structure(2, 2)
         # Get points surrounding the altered combined mask
