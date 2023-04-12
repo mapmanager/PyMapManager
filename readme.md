@@ -60,7 +60,7 @@ We are still in the early stages of development.
 Make sure you have the `PyMapManager-Data` folder in the same folder as `PyMapManager`.
 
 ```
-python snadbox/runStackWidget.py
+python sandbox/runStackWidget.py
 ```
 
 ## Desktop Application
