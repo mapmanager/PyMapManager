@@ -1,6 +1,7 @@
 """
     Includes utilities that uses classes within pymapmanager
 """
+import sys, os
 import math
 from typing import List
 
@@ -15,6 +16,20 @@ from matplotlib.path import Path
 import pymapmanager as pmm
 
 from pymapmanager.utils import _findBrightestIndex
+
+def getBundledDir():
+    """Get the working directory where user preferences are save.
+
+    This will be source code folder when running from source,
+      will be a more freeform folder when running as a frozen app/exe
+    """
+    if getattr(sys, "frozen", False):
+        # we are running in a bundle (frozen)
+        bundle_dir = sys._MEIPASS
+    else:
+        # we are running in a normal Python environment
+        bundle_dir = os.path.dirname(os.path.abspath(__file__))
+    return bundle_dir
 
 def calculateRectangleROIcoords(xPlotLines, yPlotLines, xPlotSpines, yPlotSpines):
     """
