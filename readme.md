@@ -1,15 +1,14 @@
+[![PyPI version](https://badge.fury.io/py/pymapmanager.svg)](https://badge.fury.io/py/pymapmanager)
 [![tests](https://github.com/mapmanager/PyMapManager/workflows/Test/badge.svg)](https://github.com/mapmanager/PyMapManager/actions)
 [![codecov](https://codecov.io/gh/mapmanager/PyMapManager/branch/main/graph/badge.svg?token=UIRVU7IZG0)](https://codecov.io/gh/mapmanager/PyMapManager)[![OS](https://img.shields.io/badge/OS-Linux|Windows|macOS-blue.svg)]()
-[![PyPI version](https://badge.fury.io/py/pymapmanager.svg)](https://badge.fury.io/py/pymapmanager)
+<BR>
 [![Python](https://img.shields.io/badge/python-3.8|3.9|3.10|3.11-blue.svg)](https://www.python.org/downloads/release/python-3111/)
 [![License](https://img.shields.io/badge/license-GPLv3-blue)](https://github.com/cudmore/mapmanager/blob/master/LICENSE)
 
 
 PyMapManager is an ecosystem of tools to load and visualize time-series annotations and 3D image volumes. For a complete overview, see the main [PyMapManager](https://mapmanager.net/PyMapManager/) documentation.
 
-<span style="color:red">
 **Note:** This code is under active development and is not ready for general use. Check back later and we will eventually have a working version.
-</span>
 
 <BR>
 
