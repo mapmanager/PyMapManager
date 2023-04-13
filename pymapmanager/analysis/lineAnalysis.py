@@ -4,8 +4,7 @@
 import math
 
 def getLineLength(points, z=None):
-    """
-    Calculate the length of a line from sequential points.
+    """Calculate the length of a line from sequential points.
     
     Args:
         point (np.ndarray): Rows are sequential points, columns are (x,y,z)

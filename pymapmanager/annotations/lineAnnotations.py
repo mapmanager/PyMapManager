@@ -2,7 +2,7 @@
 """
 import os
 import enum
-from typing import List, Union
+from typing import List, Union, Optional
 
 import numpy as np
 import pandas as pd
@@ -28,18 +28,32 @@ class lineAnnotations(baseAnnotations):
     """
     A line annotation encapsulates a list of 3D points to represent a line tracing.
 
-    There are multiple (possible) disjoint line segments, indicated by segmentID
+    There are multiple (possible) disjoint line segments, indicated by segmentID.
+
+    At its core, a line annotation is a CSV file with one row per point
+    and columns denoting properties ofeach points.
+
+    Relevant columns are:
+        'x', 'y', 'z': float
+            Denotes the 3D coordinates of a point
+        segmentID : int
+            Denotes the segment a point belongs to
+        'xLeft', 'yLeft', 'zLeft' : float
+            Denotes the coordinates of a radius orthogonal to the tangent (direction)
+            of the line. This is used to represent the radius of a filament like
+            structure such as a denditic segment, an axon, or a vessel segment.
+        'xRight', 'yRight', 'zRight' : float
+            Same as left (Above). As one walks down the ordered list of points in
+            a line segment, this is the right coordinate for each point.
     """
-    
-    #filePostfixStr = '_l.txt'
-    #userColumns = []  # TODO: Add more
 
     def __init__(self, *args,**kwargs):
         super().__init__(*args,**kwargs)
 
+        # add columns specific to lineAnnotaitons
         colItem = ColumnItem(
             name = 'segmentID',
-            type = 'Int64',  # 'Int64' is pandas way to have an int64 with nan values
+            type = 'Int64',  # 'Int64' allows pandas to have an int with nan values
             units = '',
             humanname = 'Segment ID',
             description = 'Segment ID'
@@ -113,13 +127,10 @@ class lineAnnotations(baseAnnotations):
 
         self.load()
 
-        self.buildSegmentDatabase()
+        self.buildSegmentDatabase() 
+        # creates/updates self._dfSegments : pd.DataFrame
 
-     
-
-
-
-    def buildSegmentDatabase(self, segmentID : Union[List[int], int, None] = None):
+    def buildSegmentDatabase(self, segmentID : List[List[int], int, None] = None):
         """Rebuild summary database of each line segment.
 
         Args:
@@ -151,7 +162,7 @@ class lineAnnotations(baseAnnotations):
             
             # get um length of segment from euclidean distance
             _segmentList = segment.tolist()
-            _length2d, _length3d = self.calculateSegmentLength(_segmentList)
+            _length2d, _length3d = self._calculateSegmentLength(_segmentList)
             _length2d = round(_length2d[0],1)
             _length3d = round(_length3d[0],1)
 
@@ -187,9 +198,10 @@ class lineAnnotations(baseAnnotations):
         return self._dfSegments
 
     def getSegment_xyz(self, segmentID : Union[int, List[int], None] = None) -> List[List[int]]:
-        """Get a list of (z,y,x) values from segment(s).
+        """Get a list of (z,y,x, index, segmentID) values from a segment(s).
 
             TODO: cudmore wrote this, it is also returning 'index' and 'segmentID'
+
         Args:
             segmentID:
         """
@@ -210,6 +222,7 @@ class lineAnnotations(baseAnnotations):
 
     def get_zyx_list(self, segmentID : int) -> List[List[int]]:
         """ Given a single segment ID, return a list of a list of z y x coordinates
+        
         Arguments:
             SegmentID: int
         """
@@ -259,9 +272,8 @@ class lineAnnotations(baseAnnotations):
         parentList = self._df['segmentID'].unique()
         return len(parentList)
 
-    def _segmentStartRow(self, segmentID : int):
-        """
-        Get the first and last row of a given segment
+    def _segmentStartRow(self, segmentID : int) -> tuple(int, int):
+        """Get the first and last row of a given segment.
         
         Args:
             segmentID: The segment to fetch
@@ -279,6 +291,9 @@ class lineAnnotations(baseAnnotations):
                     x : int, y : int, z : int,
                     rowIdx = None,
                     ) -> int:
+        """Add a new point to the line segment with segmentID.
+        """
+        
         newRow = super().addAnnotation(x, y, z, rowIdx=rowIdx)
         self._df.loc[newRow, 'roiType'] = roiType.value
         self.at[newRow, 'segmentID'] = segmentID
@@ -300,7 +315,7 @@ class lineAnnotations(baseAnnotations):
         
         return newRow
     
-    def not_used_addSegment(self, pointList : List[List[int]]):
+    def _not_used_addSegment(self, pointList : List[List[int]]):
         """
         Add a new segment from a list of [z,y,x] points.
         
@@ -340,17 +355,19 @@ class lineAnnotations(baseAnnotations):
 
     def deleteFromSegment(self, points, segmentID):
         """Delete points from a segment.
+        
+        TODO: Not implemented.
         """
         pass
 
     def deleteSegment(self, segmentID : Union[int, List[int]]):
-        """
-        Delete an entire segment based on segmentID.
+        """Delete an entire segment based on segmentID.
         
         Args:
             segmentID (int): A single segmentID or a list of segmentID to delete.
         
-        TODO (cudmore) check that segmentID is in DataFrame, otherwise nothing is deleted.
+        TODO (cudmore) check that segmentID is in DataFrame,
+            otherwise nothing is deleted.
         """
         
         if not isinstance(segmentID, list):
@@ -360,9 +377,8 @@ class lineAnnotations(baseAnnotations):
             theseRows = self.getRows('segmentID', segment, operator=comparisonTypes.equal)
             self.deleteAnnotation(theseRows)
 
-    def calculateSegmentLength(self, segmentID : Union[int, List[int]] = None):
-        """
-        Calculate the length of segment(s) in um.
+    def _calculateSegmentLength(self, segmentID : Union[int, List[int]] = None):
+        """Calculate the length of segment(s) in um.
         
         Do this using euclidean distance between successive points
         

@@ -3,14 +3,10 @@ import os
 import sys, traceback
 from typing import List, Union, Tuple  # , Callable, Iterator, Optional
 
-# from pprint import pprint
-
 from qtpy import QtGui, QtCore, QtWidgets
 
 import numpy as np
 import pyqtgraph as pg
-
-#import qdarkstyle
 
 import pymapmanager
 import pymapmanager.annotations
@@ -899,5 +895,4 @@ class stackWidget(QtWidgets.QMainWindow):
         self.signalSelectAnnotation2.emit(_selectionEvent)
 
 if __name__ == '__main__':
-    logger.error('depreciated. please run with sandbox/runStackWidget.py')
-    #run()
+    logger.error('Depreciated. please run with "python sandbox/runStackWidget.py"')

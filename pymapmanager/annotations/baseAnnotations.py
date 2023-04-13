@@ -104,6 +104,8 @@ class SelectionEvent():
         return self._selDict['annotationObject']
     
     def getRows(self):
+        """Get list of selected rows, can be None.
+        """
         return self._selDict['rowIdx']
 
     @property
@@ -913,12 +915,12 @@ class baseAnnotations():
         return header
 
     def load(self):
-        """
-        Load annotations from a file.
+        """Load annotations from a file.
 
         Annotations are always in a comma seperated file with a one line header.
+
+        TODO (cudmore) We will always load our native format, rely on `mmImport` to coerce into native.
         """
-        #TODO (cudmore) We will always load our native format, rely on `mmImport` to coerce into native.
         
         if self.filePath is None:
             # no file yet

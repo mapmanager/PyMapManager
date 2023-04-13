@@ -153,8 +153,8 @@ class stack():
         printList.append(f'base name: {self._baseName}')
         printList.append(f'channels: {self.numChannels}')
         printList.append(f'slices: {self.numSlices}')
-        printList.append(f'rows: {self.numImageRows}')
-        printList.append(f'columns: {self.numImageColumns}')
+        # printList.append(f'rows: {self.numImageRows}')
+        # printList.append(f'columns: {self.numImageColumns}')
         printList.append(f'annotations: {self.getPointAnnotations().numAnnotations}')
         printList.append(f'segments: {self.getLineAnnotations().numSegments}')
         
@@ -262,8 +262,7 @@ class stack():
         return self._images[channelIdx]
 
     def getImageChannel(self, channel : int = 1):
-        """
-        Get the entire image channel
+        """Get the entire image channel
         """
         # TODO (cudmore) check that channel < self.maxNumChannels
         
@@ -275,8 +274,7 @@ class stack():
         return self._images[channelIdx]
 
     def getImageSlice(self, imageSlice : int, channel : int = 1):
-        """
-        Get a single image slice from a channel.
+        """Get a single image slice from a channel.
 
         Args:
             slice (int): Image slice. Zero based
@@ -295,8 +293,7 @@ class stack():
         return data
 
     def getMaxProject(self, channel : int = 1):
-        """
-        Get a maximal intensity projection of image slices for one channel.
+        """Get a maximal intensity projection of image slices for one channel.
         """
         channelIdx = channel - 1
         if self._images[channelIdx] is None:
@@ -311,8 +308,7 @@ class stack():
                             upSlices : int = 3, 
                             downSlices : int = 3,
                             func = np.max):
-        """
-        Get a maximal intensity projection of image slices for one channel.
+        """Get a maximal intensity projection of image slices for one channel.
 
         Args:
             imageSlice:
@@ -322,7 +318,7 @@ class stack():
         """
 
         if not isinstance(imageSlice, int):
-        # print("Not an integer")
+            #logger.warning('not an integer, converting')
             imageSlice = int(imageSlice)
 
         channelIdx = channel - 1
@@ -338,25 +334,31 @@ class stack():
 
     def getPixel(self, channel : int, slice : int, y, x) -> int:
         """Get the intensity of a pixel.
+        
+        TODO: Not implemented.
         """
         return -111
 
     @property
     def numChannels(self):
+        """Get the number of color channles in the stack.
+        """
         return self._numChannels
 
-    @property
-    def numImageRows(self):
-        numRows = self._header['yPixels']
-        return numRows
+    # @property
+    # def numImageRows(self):
+    #     numRows = self._header['yPixels']
+    #     return numRows
 
-    @property
-    def numImageColumns(self):
-        numColumns = self._header['xPixels']
-        return numColumns
+    # @property
+    # def numImageColumns(self):
+    #     numColumns = self._header['xPixels']
+    #     return numColumns
 
     @property
     def numSlices(self):
+        """Get the number of images in the stack.
+        """
         numSlices = self._header['zPixels']
         return numSlices
 
@@ -378,104 +380,14 @@ class stack():
         except (FileNotFoundError) as e:
             self._lines = None
 
-    def getPointAnnotations(self):
+    def getPointAnnotations(self) -> pymapmanager.annotations.pointAnnotations:
         return self._annotations
 
-    def getLineAnnotations(self):
+    def getLineAnnotations(self) -> pymapmanager.annotations.lineAnnotations:
         return self._lines
 
-    # TODO (cudmore) this needs to be a two step process
-    # 1) imoprt from file (to get df)
-    # 1.1) in user interface, show user what we are about to import and confirm
-    # 2) import from data
-    
-    # moved to baseAnnotations
-    '''
-    def importFromFile(self, annotationType : str, funcDef, path, finalizeImport=False):
-        header, df = funcDef(path)
-        if finalizeImport:
-            self.importFromData(annotationType, header, df)
-
-        return header, df
-    '''
-
-    # moved to baseAnnotations
-    '''
-    def importFromData(self, annotationType : str, header, df):
-        """Import annotations from a function in pymapmanager.mmImport
-        
-        Args:
-            annotationType (str) From ('points', 'lines')
-            funDef (def) function that takes a path and return (header, df)
-            path (str) Path to file for import
-        """
-        logger.info('')
-
-        # (TODO (cudmore) check that path exists
-        #path = '/Users/cudmore/Sites/PyMapManager-Data/one-timepoint/rr30a_s0_import_mm_igor/rr30a_s0_l.txt'
-        
-        # TODO (cudmore) check that import exists
-        # user specified import function
-        #from pymapmanager.mmImport.importFile import _import_lines_mapmanager_igor
-        #funcDef = _import_lines_mapmanager_igor
-        
-        #header, df = funcDef(path)
-        
-        # TODO (cudmore) check that header is a dict
-        # TODO (cudmore) check that df is a pd.DataFrame
-        
-        #pprint(header)
-        #pprint(df)
-
-        if annotationType == 'points':
-            # assign df to our points
-            pa = self.getPointAnnotations()
-
-            # header
-            for k,v in header.items():
-                pa.setHeaderVal(k, v)
-
-            # data
-            for column in df.columns:
-                #la[column] = df[column]
-                pa.setColumn(column, df[column])
-
-        elif annotationType == 'lines':
-            # assign df to our lines
-            la = self.getLineAnnotations()
-
-            # header
-            for k,v in header.items():
-                la.setHeaderVal(k, v)
-
-            # data
-            for column in df.columns:
-                #la[column] = df[column]
-                la.setColumn(column, df[column])
-    '''
-    
-    def _checkChannel(self, channel : int):
-        """
-        Check that a 1 based channel is legitimate.
-        
-        TODO (cudmore) write general purpose check that a given channel (int) is legitamate.
-        """   
-        pass
-
-    '''
-    def _getBaseName(self):
-        """
-        Name of tif file with no _ch or .tif extension.
-        
-        This is used to create a containing folder.
-        """
-        basePath = self._getBasePath()
-        return os.path.split(basePath)[1]
-    '''
-
     def _inferNumberOfChannels(self):
-        """
-        Infer the number of channels from existing files ending in _ch<n>.tif
+        """Infer the number of channels from existing files ending in _ch<n>.tif
         
         Note: Sometimes user will have a _ch2.tif file but no corresponding _ch1.tif
                 In this case there is only one channel
@@ -495,8 +407,7 @@ class stack():
         return numChannels, tifPathList
 
     def _pathHasChannelStr(self):
-        """
-        Determine if path to tif ends in a _ch str
+        """Determine if path to tif ends in a _ch str
         """
         path = self._tifPath
         for chStr in self.channelStrings:
@@ -505,8 +416,7 @@ class stack():
         return False
 
     def _getBasePath(self):
-        """
-        Get base filename by removing all `self.channelStrings`
+        """Get base filename by removing all `self.channelStrings`
         
         TODO (cudmore) Just do this once, it does not change.
         """
@@ -517,8 +427,7 @@ class stack():
         return basePath
 
     def _makeEnclosingFolder(self):
-        """
-        Make a containing folder from base name to hold all anotations.
+        """Make a containing folder from base name to hold all anotations.
         """
         if os.path.isdir(self._basePath):
             #logger.info(f'Base folder already exists at {basePath}')
@@ -528,8 +437,7 @@ class stack():
             os.mkdir(self._basePath)
 
     def _getEnclosingFolderPath(self):
-        """
-        Get the full path to the enclosing folder.
+        """Get the full path to the enclosing folder.
 
         This is the folder where we save all analysis for a given tif stack.
         """
@@ -538,8 +446,7 @@ class stack():
         return folderPath
 
     def createBrightestIndexes(self, channelNum):
-        """
-        For all spines find brightest indexes within the lines.
+        """For all spines find brightest indexes within the lines.
 
         Notes:
         Temporary Quick Fix
@@ -655,7 +562,6 @@ def connectSpineToLine():
             tmp = las.getSegment_xyz(segmentID=segmentID)
             print(tmp)
 
-    
 def run():
     connectSpineToLine()
 

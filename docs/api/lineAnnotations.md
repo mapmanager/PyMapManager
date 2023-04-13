@@ -1,1 +1,0 @@
-::: pymapmanager.annotations.lineAnnotations

@@ -19,8 +19,7 @@ import pymapmanager.utils
 from pymapmanager._logger import logger
 
 class pointTypes(enum.Enum):
-    """
-    These Enum values are used to map to str (rather than directly using a str)
+    """These Enum values are used to map to str (rather than directly using a str)
     """
     spineROI = "spineROI"  # pointAnnotations
     controlPnt = "controlPnt"
@@ -29,12 +28,11 @@ class pointTypes(enum.Enum):
     #linePnt = "linePnt"  # lineAnnotations
 
 class pointAnnotations(baseAnnotations):
+    """A list of point annotations
+
+    Under the hood, this is a Pandas DataFrame
+    one point per row with columns to specify parameters of each point.
     """
-    A list of annotations (a database)
-    """
-    
-    #filePostfixStr = '_db2.txt'
-    userColumns = ['cPnt']  # TODO: Add more
 
     def __init__(self, *args,**kwargs):
         super().__init__(*args,**kwargs)
@@ -60,22 +58,20 @@ class pointAnnotations(baseAnnotations):
         # Add column for connection index
         colItem = ColumnItem(
             name = 'connectionID',
-            type = 'Int64',  # 'Int64' is pandas way to have an int64 with nan values
+            type = 'Int64',  # 'Int64' is pandas way to have an int with nan values
             units = '',
             humanname = 'connectionID',
             description = 'connectionID'
         )
-        
         self.addColumn(colItem)
 
         colItem = ColumnItem(
             name = 'brightestIndex',
-            type = 'Int64',  # 'Int64' is pandas way to have an int64 with nan values
+            type = 'Int64',  # 'Int64' is pandas way to have an int with nan values
             units = '',
             humanname = 'brightestIndex',
             description = 'brightestIndex'
         )
-        
         self.addColumn(colItem)
 
         colItem = ColumnItem(
@@ -85,7 +81,6 @@ class pointAnnotations(baseAnnotations):
             humanname = 'xLine',
             description = 'X coordinate of the brightest point within the line that the spine is connected to'
         )
-        
         self.addColumn(colItem)
 
         colItem = ColumnItem(
@@ -95,7 +90,6 @@ class pointAnnotations(baseAnnotations):
             humanname = 'yLine',
             description = 'Y coordinate of the brightest point within the line that the spine is connected to'
         )
-        
         self.addColumn(colItem)
 
         colItem = ColumnItem(
@@ -105,7 +99,6 @@ class pointAnnotations(baseAnnotations):
             humanname = 'zLine',
             description = 'Z coordinate of the brightest point within the line that the spine is connected to'
         )
-        
         self.addColumn(colItem)
 
         colItem = ColumnItem(
@@ -115,7 +108,6 @@ class pointAnnotations(baseAnnotations):
             humanname = 'xBackgroundOffset',
             description = ''
         )
-        
         self.addColumn(colItem)
 
         colItem = ColumnItem(
@@ -125,17 +117,14 @@ class pointAnnotations(baseAnnotations):
             humanname = 'yBackgroundOffset',
             description = ''
         )
-        
         self.addColumn(colItem)
 
 
-        # feb 2023 with Johnson on zoom
+        # add a number of columns for ROI intensity analysis
         self._addIntColumns()
 
+        # load from csv if it exists
         self.load()
-
-    def load(self):
-        super().load()
 
     def _addIntColumns(self):
         """Add (10 * num channels) columns to hold roi based intensity analysis.
@@ -160,7 +149,7 @@ class pointAnnotations(baseAnnotations):
                     self.addColumn(colItem)
 
     def _getIntColName(self, roiStr, statStr, channel : int):
-        """Helper function to get an intensity stat column name.
+        """Helper function to get an intensity column name.
         
         Intensity columns are things like: sSum_ch1, bsSum_ch1
 
@@ -213,13 +202,12 @@ class pointAnnotations(baseAnnotations):
                     roiType : pointTypes,
                     segmentID : Union[int, None] = None,
                     *args,**kwargs):
-        """
-        Add an annotation of a particular roiType.
+        """Add an annotation of a particular roiType.
         
         Args:
             roiType:
             segmentID:
-            imgData: image to use for finding brightes path and intensities
+            imgData: image to use for finding brightest path and intensities
         """
 
         if roiType == pointTypes.spineROI and segmentID is None:
@@ -295,6 +283,7 @@ class pointAnnotations(baseAnnotations):
         self.setValue('xLine', spineIdx, xBrightestLine)
         self.setValue('yLine', spineIdx, yBrightestLine)
         self.setValue('zLine', spineIdx, zBrightestLine)
+        
         logger.info(f"xBrightestLine:{xBrightestLine}")
         logger.info(f"yBrightestLine:{yBrightestLine}")
 
@@ -395,11 +384,12 @@ class pointAnnotations(baseAnnotations):
         #   - improve on the shape of the polygon
 
     def reconnectToSegment(self, rowIdx : int):
-        """
-        Connect a point to brightest path to a line segment.
+        """Connect a point to brightest path to a line segment.
 
         Only spineROI are connected like this
 
+        TODO: Not implemented
+        
         Args:
             rowIdx: The row in the table
         

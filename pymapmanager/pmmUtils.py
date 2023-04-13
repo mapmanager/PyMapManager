@@ -1,5 +1,5 @@
 """
-    Includes utilities that uses classes within pymapmanager
+Includes utilities that uses classes within pymapmanager
 """
 import sys, os
 import math
