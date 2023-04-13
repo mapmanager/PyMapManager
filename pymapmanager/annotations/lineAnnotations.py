@@ -130,7 +130,7 @@ class lineAnnotations(baseAnnotations):
         self.buildSegmentDatabase() 
         # creates/updates self._dfSegments : pd.DataFrame
 
-    def buildSegmentDatabase(self, segmentID : List[List[int], int, None] = None):
+    def buildSegmentDatabase(self, segmentID : Union[List[int], int, None] = None):
         """Rebuild summary database of each line segment.
 
         Args:
@@ -272,7 +272,7 @@ class lineAnnotations(baseAnnotations):
         parentList = self._df['segmentID'].unique()
         return len(parentList)
 
-    def _segmentStartRow(self, segmentID : int) -> tuple(int, int):
+    def _segmentStartRow(self, segmentID : int) -> (int, int):
         """Get the first and last row of a given segment.
         
         Args:
