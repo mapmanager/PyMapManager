@@ -62,7 +62,6 @@ setup(
 			'qtpy',
             'PyQt5',  # This will not work on macOS arm
             'pyqtgraph',
-			#'PyQt5==5.12 # 5.12 is only version where QComboBox works # 5.15.2',
             'pyqtdarktheme',
 		],
         'napari': [
@@ -81,6 +80,12 @@ setup(
             'pytest',
             'flake8'
 		],
+        'test': [
+            'pytest',
+            'pytest-cov',
+            #'pytest-qt',
+            'flake8',
+        ]
     },
 
 )
