@@ -458,6 +458,8 @@ class pointPlotWidget(annotationPlotWidget):
         # self._myImage = myImage
         self._myStack = stack
 
+        self.img =  self._myStack.getMaxProject(channel = self._channel)
+
         self._buildUI()
         # self._view.signalUpdateSlice.connect(self.slot_setSlice)
 
@@ -486,31 +488,31 @@ class pointPlotWidget(annotationPlotWidget):
         # logger.info(f'{self._getClassName()}')
         if not selectionEvent.isPointSelection():
             return
-        
-        # this was all sample code for johnson
-        """
         _selectedRows = selectionEvent.getRows()
         xCoordsList = []
         yCoordsList = []
-        for _selectedRow in _selectedRows:
-            # draw spine roi for _selectedRow (a row in point annotations back end)
-            # use self.lineAnnotations
-            # xCoords, yCoords = self.pointAnnotations.getSpineRoi(_selectedRow)
-            
-            # get the x and y coordinates of your jagged spine roi
-            xCoords = self.pointAnnotations.getValue('x', _selectedRow) + 100  #[100, 500]
-            yCoords = self.pointAnnotations.getValue('y',_selectedRow) + 100  #[900, 200]
-            xCoordsList.append(xCoords)
-            yCoordsList.append(yCoords)
 
-            xCoordsList.append(np.nan)
-            yCoordsList.append(np.nan)
+        # segmentID = self.pointAnnotations.getValue('segmentID', spineIdx)
+        # zyxList = self.lineAnnotations.get_zyx_list(segmentID)
+        # brightestIndex = self.pointAnnotations._calculateSingleBrightestIndex(self._channel, int(_selectedRows), zyxList, self.img)
+
+        if(_selectedRows is None):
+            self._spinePolygon.setData([], [])
+
+        elif(len(_selectedRows) == 1):
+          
+            # logger.info(f'selectedRow {_selectedRow}')
+            firstSelectedRow = _selectedRows[0]
+
+            jaggedPolygon = self.pointAnnotations.calculateJaggedPolygon(self.lineAnnotations, firstSelectedRow, self._channel, self.img)
+            
+            self._spinePolygon.setData(jaggedPolygon[:,1], jaggedPolygon[:,0])
 
         #
-        self._spinePolygon.setData(xCoordsList, yCoordsList)
+        # self._spinePolygon.setData(xCoordsList, yCoordsList)
+        # self._spinePolygon.setData(jaggedPolygon[:,1], jaggedPolygon[:,0])
         self._view.update()
-        """
-        
+
     def slot_setSlice(self, sliceNumber : int):
         super().slot_setSlice(sliceNumber=sliceNumber)
 

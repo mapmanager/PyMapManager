@@ -15,6 +15,8 @@ from pymapmanager.annotations import comparisonTypes
 from pymapmanager.annotations import fileTypeClass
 
 import pymapmanager.utils
+import scipy
+from scipy import ndimage
 
 from pymapmanager._logger import logger
 
@@ -529,6 +531,48 @@ class pointAnnotations(baseAnnotations):
     #                 lineAnnotation,
     #                 img):
 
+    def calculateSingleBrightestIndex(self, channel: int, spineRowIdx: int, lineAnnotation, img):
+        """
+            Args:
+                stack: the stack that we are using to acquire all the data
+                channel: current channel used for image analysis
+                spineRowIdx: Row index of the current spine
+                zyxLineSegment: List of z,y,x for each coordinate for in the specific line segment that we are looking at. 
+
+            Return:
+                Brightest index of a line point for one spine point
+        """
+        # import pymapmanager
+        # print("spineRowIdx", spineRowIdx)
+
+        segmentID = self.getValue("segmentID", spineRowIdx)
+        segmentID = int(segmentID)
+        # print("segmentID", segmentID)
+        logger.info(f"segmentID {segmentID} spineRowIDX{spineRowIdx}")
+       
+        segmentZYX = lineAnnotation.getZYXlist(segmentID, ['linePnt'])
+        # print("segmentZYX", segmentZYX)
+        # segmentZYX2 = lineAnnotation.get_zyx_list(spineRowIdx)
+        # print("segmentZYX2", segmentZYX2)
+
+        # # Pull out into list z y x 
+        x = self.getValue("x", spineRowIdx)
+        y = self.getValue("y", spineRowIdx)
+        z = self.getValue("z", spineRowIdx)
+
+        startRow, _  = lineAnnotation._segmentStartRow(segmentID)
+
+        # Check to see if this val is correct before storing into dataframe
+        brightestIndex = pymapmanager.utils._findBrightestIndex(x, y, z, segmentZYX, img)
+
+        brightestIndex = brightestIndex + startRow
+        # Store into backend
+        # backendIdx
+        self.setValue("brightestIndex", spineRowIdx, brightestIndex)
+
+        return brightestIndex
+    
+    # TODO: remove channel
     def calculateBrightestIndexes(self, channel: int, 
                 segmentID : Union[int, List[int], None],
                 lineAnnotation,
@@ -542,6 +586,7 @@ class pointAnnotations(baseAnnotations):
         if segmentID is None:
             # grab all segment IDs into a list
             segmentID = lineAnnotation.getSegmentList()
+            # print("segmentID", segmentID)
 
         elif (isinstance(segmentID, int)):
             newIDlist = []
@@ -554,18 +599,101 @@ class pointAnnotations(baseAnnotations):
         for id in segmentID:
             segmentSpineDFs.append(self.getSegmentSpines(id))
 
+        # print("segmentSpineDFs", segmentSpineDFs)
+
         # Loop through all segments in the given list
         for index in range(len(segmentID)):
+            print("index", index)
             currentDF = segmentSpineDFs[index]
+            # print("currentDF", currentDF)
             # Looping through all spines connected to one segment
             for idx, val in enumerate(currentDF["index"]):
-                # print(val)
+                # print("Val", val)
                 # val = current index
-                self._calculateSingleBrightestIndex(channel, val, lineAnnotation, img)
-                print("stored", idx)
+                self.calculateSingleBrightestIndex(channel, val, lineAnnotation, img)
+                # print("stored", idx)
 
 
+    def calculateJaggedPolygon(self, lineAnnotations, _selectedRow, _channel, img):
+        """ Return coordinates of polygon connecting spine to line within AnnotationPlotWidget.py.
+        This will be used to plot whenever we click a new spine on the interface
+        """
+        segmentID = self.getValue('segmentID', _selectedRow)
+        zyxList = lineAnnotations.get_zyx_list(segmentID)
 
+        # Later on retrieve this from the backend
+        # startRow, _  = lineAnnotations._segmentStartRow(segmentID)
+        # brightestIndex = self._calculateSingleBrightestIndex(_channel, int(_selectedRow), zyxList, img)
+        # brightestIndex += startRow
+
+        brightestIndex = self.getValue('brightestIndex', _selectedRow)
+        brightestIndex = int(brightestIndex)
+
+        logger.info(f"_selectedRow: {_selectedRow} segmentID: {segmentID} brightestIndex: {brightestIndex}")
+
+        segmentDF = lineAnnotations.getSegmentPlot(None, ['linePnt'])
+        xLine = segmentDF["x"].tolist()
+        yLine = segmentDF["y"].tolist()
+        xBrightestLine = []
+        yBrightestLine = []
+        xBrightestLine.append(xLine[brightestIndex])
+        yBrightestLine.append(yLine[brightestIndex])
+
+        _xSpine = self.getValue('x', _selectedRow)
+        _ySpine = self.getValue('y', _selectedRow)
+
+        spinePolyCoords = pymapmanager.utils.calculateRectangleROIcoords(xBrightestLine[0], yBrightestLine[0], _xSpine, _ySpine)
+        linePolyCoords = pymapmanager.utils.calculateLineROIcoords(brightestIndex, 5, lineAnnotations)
+        finalMaskPoly = pymapmanager.utils.calculateFinalMask(spinePolyCoords,linePolyCoords)
+        # print("finalMaskPoly", finalMaskPoly)
+        # coordsOfMask = np.column_stack(np.where(finalMaskPoly > 0))
+
+        # # print("coordsOfMask", coordsOfMask)
+
+        # print(combinedMasks)
+        struct = scipy.ndimage.generate_binary_structure(2, 2)
+        # Get points surrounding the altered combined mask
+        dialatedMask = scipy.ndimage.binary_dilation(finalMaskPoly, structure = struct, iterations = 1)
+
+        labelArray, numLabels = ndimage.label(dialatedMask)
+        currentLabel = pymapmanager.utils.checkLabel(dialatedMask, _xSpine, _ySpine)
+
+        # coordsOfMaskOutline = np.column_stack(np.where(outlineMask > 0))
+
+        coordsOfMask = np.argwhere(labelArray == currentLabel)
+        print("type of coordsOfMask", type(coordsOfMask))
+        # Check for left/ right points within mask
+        segmentROIpointsWithinMask = pymapmanager.utils.getSegmentROIPoints(coordsOfMask, linePolyCoords)
+
+        topTwoRectCoords = pymapmanager.utils.calculateTopTwoRectCoords(xBrightestLine[0], yBrightestLine[0], _xSpine, _ySpine)
+        finalSetOfCoords = segmentROIpointsWithinMask.tolist()
+        finalSetOfCoords.insert(0,topTwoRectCoords[1])
+        finalSetOfCoords.append(topTwoRectCoords[0])
+        finalSetOfCoords.append(topTwoRectCoords[1])
+        finalSetOfCoords =  np.array(finalSetOfCoords)
+        # print("segmentROIpointsWithinMask", segmentROIpointsWithinMask)
+
+        # # Remove the inner mask (combined mask) to get the outline
+        # outlineMask = dialatedMask - finalMaskPoly
+        # # Loop through to create list of coordinates for the polygon
+        # # print(outlineMask)
+
+        # labelArray, numLabels = ndimage.label(outlineMask)
+        # currentLabel = pymapmanager.utils.checkLabel(outlineMask, _xSpine, _ySpine)
+
+        # # coordsOfMaskOutline = np.column_stack(np.where(outlineMask > 0))
+
+        # coordsOfMaskOutline = np.argwhere(labelArray == currentLabel)
+        # # coordsOfMaskOutline = np.argwhere(labelArray == currentLabel)
+        # coordsOfMaskOutline = pymapmanager.utils.rotational_sort(coordsOfMaskOutline, (int(_ySpine), int(_xSpine)), True)
+        # # print("coordsOfMaskOutline", coordsOfMaskOutline)
+
+        # coordsOfMask = np.column_stack(np.where(dialatedMask > 0))
+        # print("coordsOfMask", coordsOfMask)
+        return finalSetOfCoords
+        # return finalMaskPolyCoords
+            
+            
 
     # function to set brightest index in column
         # add for one spine when a new one is added

@@ -874,6 +874,14 @@ class stackWidget(QtWidgets.QMainWindow):
         logger.info(f'currentSlice:{currentSlice}')
         self.annotationSelection.setCurrentSlice(currentSlice)
 
+    def selectSegmentID(self, segmentID: int, isAlt : bool = False):
+        _lineAnnotations = self.myStack.getLineAnnotations()
+        _selectionEvent = pymapmanager.annotations.SelectionEvent(_lineAnnotations,
+                                                                    rowIdx=segmentID,
+                                                                    isAlt=isAlt)
+        logger.info(f'  -->> emit signalSelectAnnotation2')
+        self.signalSelectAnnotation2.emit(_selectionEvent)
+
     def zoomToPointAnnotation(self, idx : int, isAlt : bool = False, select : bool = False):
         """Zoom to a point annotation.
         

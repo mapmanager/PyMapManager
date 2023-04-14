@@ -101,7 +101,7 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations):
             lineIndex: Index within lineAnnotations where we start.
             radius: Integer value to determine many other indexes we move from the original lineIndex
                 -> example: radius = 1, lineIndex, = 1 -> plotting index: 0,1,2
-            lineAnnotations
+            lineAnnotations: lineAnnotations object
 
         Returns:
             a list containing each the x and y values of each coordinate
@@ -149,7 +149,7 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations):
     coordinateList = np.array(coordinateList)
     return coordinateList
 
-def plotOutline(rectanglePoly, linePoly):
+def calculateFinalMask(rectanglePoly, linePoly):
 
     # TODO: Change this to detect image shape rather than have it hard coded
     nx, ny = 1024, 1024
@@ -357,6 +357,31 @@ def calculateMaskDict(mask, image):
     print("maskDict", maskDict)
 
     return maskDict
+
+def plotFinalMask(mask, distance, numPts, originalSpinePoint, img):
+    """ 
+    """
+    from scipy import ndimage
+    labelArray, numLabels = ndimage.label(mask)
+    # print("label array:", labelArray)
+
+    # Take the label that contains the original spine point
+    # Loop through all the labels and pull out the x,y coordinates 
+    # Check if the original x,y points is within those coords (using numpy.argwhere)
+    currentLabel = 0
+    # print(originalSpinePoint)
+    for label in np.arange(1, numLabels+1, 1):
+        currentCandidate =  np.argwhere(labelArray == label)
+        # Check if the original x,y point in the current candidate
+        if(originalSpinePoint in currentCandidate):
+            currentLabel = label
+            break
+        
+    # Note: points are returned in y,x form
+    finalMask = np.argwhere(labelArray == currentLabel)
+    # coords = np.column_stack(np.where(finalMask > 0))
+    plt.plot(finalMask[:,1], finalMask[:,0], 'mo')
+
 
 
 if __name__ == "__main__":

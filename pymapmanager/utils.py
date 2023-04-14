@@ -13,7 +13,8 @@ import pandas as pd
 import skimage
 from matplotlib.path import Path
 from scipy import ndimage
-
+import scipy
+from math import atan2
 
 from pymapmanager._logger import logger
 
@@ -33,16 +34,17 @@ def _findClosestIndex(x, y, z, zyxLine : List[List[float]]) -> int:
     # print()
     dist = float('inf') # np.inf
     closestIdx = None
+    # print("zyxLine", zyxLine)
     for idx, point in enumerate(zyxLine):
         # dx = abs(x - point[0])
         # dy = abs(y - point[1])
         # dz = abs(z - point[2])
-        print("x y z",x,y,z)
+        # print("x y z",x,y,z)
         dx = abs(x - point[2])
         dy = abs(y - point[1])
         dz = abs(z - point[0])
-        print("point[0]:", point[0],point[1],point[2])
-        print("dx dy dz:", dx, dy, dz)
+        # print("point[0]:", point[0],point[1],point[2])
+        # print("dx dy dz:", dx, dy, dz)
         _dist = math.sqrt( dx**2 + dy**2 + dz**2)
         if _dist < dist:
             dist = _dist
@@ -153,9 +155,11 @@ def _findBrightestIndex(x, y, z, zyxLine : List[List[float]], image: np.ndarray,
     for index, candidatePoint in enumerate(candidatePoints):
 #         print(candidatePoint, type(candidatePoint))
 #         print(candidatePoint[0])
-        sourcePoint = np.array([x, y])
+        # sourcePoint = np.array([x, y])
+        sourcePoint = np.array([y, x])
 #         print("SourcePoint:", sourcePoint)
-        destPoint = np.array([candidatePoint[0], candidatePoint[1]])
+        # destPoint = np.array([candidatePoint[0], candidatePoint[1]])
+        destPoint = np.array([candidatePoint[1], candidatePoint[0]])
 #         print("DestPoint:", destPoint)
         candidateProfile = skimage.measure.profile_line(image, sourcePoint, destPoint, linewidth)
         oneSum = np.sum(candidateProfile)
@@ -171,8 +175,8 @@ def _findBrightestIndex(x, y, z, zyxLine : List[List[float]], image: np.ndarray,
     # return brightestIndex + firstPoint, candidatePoints, closestIndex
     return brightestIndex + firstPoint
 
-def computeTangentLine(startPoint: tuple, stopPoint: tuple, length) -> tuple: 
-    """ Given a start point and stop point return the 
+def computeTangentLine(startPoint: tuple, stopPoint: tuple, extendHead = 1) -> tuple: 
+    """ Given a start point and stop point return the tangent line between them
 
     Args: 
         startPoint: tuple(x, y) representing the starting coordinate
@@ -183,7 +187,7 @@ def computeTangentLine(startPoint: tuple, stopPoint: tuple, length) -> tuple:
     """
     # xPrev = startPoint[0]
     # yPrev = startPoint[1]
-    extendHead = length
+    # extendHead = length
 
     dXsegment = stopPoint[0] - startPoint[0]
     dYsegment = stopPoint[1] - startPoint[1]
@@ -202,130 +206,137 @@ def computeTangentLine(startPoint: tuple, stopPoint: tuple, length) -> tuple:
 # Function to return the polygons 
 
 # def getRadiusLines(lineAnnotations: pmm.annotations.lineAnnotations):
-def getRadiusLines(lineAnnotations):
-    # TODO (cudmore) this should be a member function of lineAnnotations class
-    # 2nd parameter segmentID: Union(Int, List(int), None)
-    # if segmentID is None:
-        # grab all segments into a list
-    # else if(isInstance(segmentID, int)):
-    #   segmentID = list[segmentID]
+# def getRadiusLines(lineAnnotations, medianFilterWidth : int = 5):
+#     # TODO (cudmore) this should be a member function of lineAnnotations class
+#     # 2nd parameter segmentID: Union(Int, List(int), None)
+#     # if segmentID is None:
+#         # grab all segments into a list
+#     # else if(isInstance(segmentID, int)):
+#     #   segmentID = list[segmentID]
 
-    import pymapmanager as pmm
-    #lineAnnotations: pmm.annotations.lineAnnotations
+#     import pymapmanager as pmm
+#     #lineAnnotations: pmm.annotations.lineAnnotations
 
-    extendHead = 5
+#     extendHead = 5
 
-	# print(myStack)
-    # segmentID = 1
-    # pointAnnotations = myStack.getPointAnnotations()
-    # lineAnnotations = myStack.getLineAnnotations()  
-    lineAnnotations = lineAnnotations
+# 	# print(myStack)
+#     # segmentID = 1
+#     # pointAnnotations = myStack.getPointAnnotations()
+#     # lineAnnotations = myStack.getLineAnnotations()  
+#     lineAnnotations = lineAnnotations
     
-    # segmentDF = lineAnnotations.getSegment(segmentID)
+#     # segmentDF = lineAnnotations.getSegment(segmentID)
 
-    # Change to one segment when put into lineAnnotation.py
-    segmentDF = lineAnnotations._df
+#     # Change to one segment when put into lineAnnotation.py
+#     segmentDF = lineAnnotations._df
+#     segmentID = 0
+#     segmentDF = lineAnnotations.getSegment(segmentID)
 
-    print(segmentDF)
 
-    xPlot = segmentDF['x']
-    yPlot = segmentDF['y']
-    zPlot = segmentDF['z']
-    # print(xPlot)
-    # print(zPlot)
+#     print(segmentDF)
 
-    # ch2_img = myStack.getImageSlice(imageSlice=zPlot[695], channel=channel)
-    # ch2_img = myStack.getImageSlice(imageSlice=zPlot[695], channel=channel)
+#     xPlot = segmentDF['x']
+#     print("xplot.type", xPlot.type)
+#     yPlot = segmentDF['y']
+#     zPlot = segmentDF['z']
 
-    # plt.imshow(ch2_img)
+#     # TODO: We need to smooth the line (in x and y) before calculating left and right coordinates
+#     # import scipy
+#     # xyArray = np.array([xPlot, yPlot])
+#     # filteredArray = scipy.ndimage.median_filter()
 
-    segmentROIXinitial = []
-    segmentROIYinitial = []
-    segmentROIXend = []
-    segmentROIYend = []
+#     # xPlotFiltered = scipy.ndimage.median_filter(xPlot, medianFilterWidth)
+#     # yPlotFiltered = scipy.ndimage.median_filter(yPlot, medianFilterWidth)
 
-    orthogonalROIXinitial = [np.nan]
-    orthogonalROIYinitial = [np.nan]
-    orthogonalROIZinitial = [np.nan]
-    # orthogonalROIXend = []
-    # orthogonalROIYend = []
-    orthogonalROIXend = [np.nan]
-    orthogonalROIYend = [np.nan]
-    orthogonalROIZend = [np.nan]
+#     segmentROIXinitial = []
+#     segmentROIYinitial = []
+#     segmentROIXend = []
+#     segmentROIYend = []
 
-    # pd.df index
-    offset = 0
+#     orthogonalROIXinitial = [np.nan]
+#     orthogonalROIYinitial = [np.nan]
+#     orthogonalROIZinitial = [np.nan]
+#     # orthogonalROIXend = []
+#     # orthogonalROIYend = []
+#     orthogonalROIXend = [np.nan]
+#     orthogonalROIYend = [np.nan]
+#     orthogonalROIZend = [np.nan]
 
-    # Change so that you loop through each segment individually
-    # Nested for loop
-    for idx, val in enumerate(xPlot):
-        # print(val)
-        # Exclude first and last points since they do not have a previous or next point 
-        # that is needed for calculation
-        if idx == 0 or idx == len(xPlot)-1:
-            continue
+#     # pd.df index
+#     offset = 0
+
+#     # Change so that you loop through each segment individually
+#     # Nested for loop
+#     for idx, val in enumerate(xPlot):
+#         # print(val)
+#         # Exclude first and last points since they do not have a previous or next point 
+#         # that is needed for calculation
+#         if idx == 0 or idx == len(xPlot)-1:
+#             continue
         
-        xCurrent = xPlot[idx + offset]
-        yCurrent = yPlot[idx + offset]
+#         xCurrent = xPlot[idx + offset]
+#         yCurrent = yPlot[idx + offset]
 
-        xPrev = xPlot[idx-1 + offset]
-        xNext = xPlot[idx+1 + offset]
+#         xPrev = xPlot[idx-1 + offset]
+#         xNext = xPlot[idx+1 + offset]
 
-        yPrev = yPlot[idx-1 + offset]
-        yNext = yPlot[idx+1 + offset]
+#         yPrev = yPlot[idx-1 + offset]
+#         yNext = yPlot[idx+1 + offset]
 
-        adjustY, adjustX = computeTangentLine((xPrev,yPrev), (xNext,yNext))
+#         adjustY, adjustX = computeTangentLine((xPrev,yPrev), (xNext,yNext))
 
-        segmentROIXinitial.append(xCurrent-adjustX)
-        segmentROIYinitial.append(yCurrent-adjustY)
+#         segmentROIXinitial.append(xCurrent-adjustX)
+#         segmentROIYinitial.append(yCurrent-adjustY)
         
-        segmentROIXend.append(xCurrent+adjustX)
-        segmentROIYend.append(yCurrent+adjustY)
+#         segmentROIXend.append(xCurrent+adjustX)
+#         segmentROIYend.append(yCurrent+adjustY)
 
-        orthogonalROIXinitial.append(xCurrent-adjustY)
-        orthogonalROIYinitial.append(yCurrent+adjustX)
-        orthogonalROIZinitial.append(zPlot[idx + offset])
+#         orthogonalROIXinitial.append(xCurrent-adjustY)
+#         orthogonalROIYinitial.append(yCurrent+adjustX)
+#         # orthogonalROIZinitial.append(zPlot[idx + offset])
 
-        orthogonalROIXend.append(xCurrent+adjustY)
-        orthogonalROIYend.append(yCurrent-adjustX)
-        orthogonalROIZend.append(zPlot[idx + offset])
+#         orthogonalROIXend.append(xCurrent+adjustY)
+#         orthogonalROIYend.append(yCurrent-adjustX)
+#         # orthogonalROIZend.append(zPlot[idx + offset])
 
-        # import matplotlib.pyplot as plt
-        # plt.plot([xCurrent-adjustX,xCurrent+adjustX], [yCurrent-adjustY, yCurrent+adjustY], '.r', linestyle="--")
+#         # import matplotlib.pyplot as plt
+#         # plt.plot([xCurrent-adjustX,xCurrent+adjustX], [yCurrent-adjustY, yCurrent+adjustY], '.r', linestyle="--")
 
-    # TODO: add columns to represent each point to the line annotation object 
-    # Make a column to represent left point, each row is an tuple (x,y,z)
-    # Make a column to represent right point, each row is an tuple (x,y,z)
-    # Or have separate columns xRight, xLeft, yRight, etc...
+#     # TODO: add columns to represent each point to the line annotation object 
+#     # Make a column to represent left point, each row is an tuple (x,y,z)
+#     # Make a column to represent right point, each row is an tuple (x,y,z)
+#     # Or have separate columns xRight, xLeft, yRight, etc...
 
-    # Add nan at the end of each list since previous for loop excludes the last point
-    orthogonalROIXinitial.append(np.nan)
-    orthogonalROIYinitial.append(np.nan)
-    orthogonalROIZinitial.append(np.nan)
+#     # Add nan at the end of each list since previous for loop excludes the last point
+#     orthogonalROIXinitial.append(np.nan)
+#     orthogonalROIYinitial.append(np.nan)
+#     orthogonalROIZinitial.append(np.nan)
 
-    orthogonalROIXend.append(np.nan)
-    orthogonalROIYend.append(np.nan)
-    orthogonalROIZend.append(np.nan)
+#     orthogonalROIXend.append(np.nan)
+#     orthogonalROIYend.append(np.nan)
+#     orthogonalROIZend.append(np.nan)
 
-    # print(orthogonalROIYinitial)
-    lineAnnotations.setColumn("xLeft", orthogonalROIXinitial)
-    temp = lineAnnotations.getValues("xLeft")
-    # print("Xleft: ", temp)
-    # print("length of list: ", len(orthogonalROIXinitial))
+#     # print(orthogonalROIYinitial)
 
-    lineAnnotations.setColumn("yLeft", orthogonalROIYinitial)
-    lineAnnotations.setColumn("zLeft", orthogonalROIZinitial)
+#     # TODO: Move this to backend in separate function
+#     lineAnnotations.setColumn("xLeft", orthogonalROIXinitial)
+#     temp = lineAnnotations.getValues("xLeft")
+#     # print("Xleft: ", temp)
+#     # print("length of list: ", len(orthogonalROIXinitial))
+
+#     lineAnnotations.setColumn("yLeft", orthogonalROIYinitial)
+#     # lineAnnotations.setColumn("zLeft", orthogonalROIZinitial)
     
-    lineAnnotations.setColumn("xRight", orthogonalROIXend)
-    lineAnnotations.setColumn("yRight", orthogonalROIYend)
-    lineAnnotations.setColumn("zRight", orthogonalROIZend)
+#     lineAnnotations.setColumn("xRight", orthogonalROIXend)
+#     lineAnnotations.setColumn("yRight", orthogonalROIYend)
+#     # lineAnnotations.setColumn("zRight", orthogonalROIZend)
 
-    # Plot using what we added to lineannotation
-    # Have a separate function to take in the lineannotation and plot
-    # call this line to get the pd of what we want to plot:
-    # dfPlot = self._annotations.getSegmentPlot(theseSegments, roiTypes, sliceNumber)
-    # roiTypes = "linePnt"
-    # sliceNumber = None
+#     # Plot using what we added to lineannotation
+#     # Have a separate function to take in the lineannotation and plot
+#     # call this line to get the pd of what we want to plot:
+#     # dfPlot = self._annotations.getSegmentPlot(theseSegments, roiTypes, sliceNumber)
+#     # roiTypes = "linePnt"
+#     # sliceNumber = None
 
 #  Functions for calculation ROI masks
 def calculateRectangleROIcoords(xPlotSpines, yPlotSpines, xPlotLines, yPlotLines):
@@ -345,6 +356,7 @@ def calculateRectangleROIcoords(xPlotSpines, yPlotSpines, xPlotLines, yPlotLines
             a list of tuples representing the 4 coordinates of the rectangle
             example: [ ( 1, 2), (3, 4), (5, 6) , (7,8) ]
     """
+    # TODO: move this to the parameter list
     width = 3
     # Value to extend the rectangle ROI
     # Currently also extends the tail as well
@@ -392,6 +404,62 @@ def calculateRectangleROIcoords(xPlotSpines, yPlotSpines, xPlotLines, yPlotLines
 
     return [(firstCoordX, firstCoordY), (secondCoordX, secondCoordY), (thirdCoordX, thirdCoordY), (fourthCoordX, fourthCoordY)]
 
+def calculateTopTwoRectCoords(xPlotSpines, yPlotSpines, xPlotLines, yPlotLines):
+    """
+        Args:
+            spineCoords:
+                xPlotSpines - x coordinate of the spine
+                yPlotSpines - y coordinate of the spine
+            brightestLineCoords:
+                xPlotLines: x coordinate of the brightest index in line
+                yPlotLines: y coordinate of the brightest index in line
+
+        Returns:
+            a list containing each the x and y values of the top two coordinate
+
+            alternatively we could change it to have
+            a list of tuples representing the 4 coordinates of the rectangle
+            example: [ ( 1, 2), (3, 4), (5, 6) , (7,8) ]
+    """
+    # TODO: move this to the parameter list
+    width = 3
+    # Value to extend the rectangle ROI
+    # Currently also extends the tail as well
+    extendHead = 3
+    # extendTail= 3
+
+    Xa = xPlotLines
+    Xb = xPlotSpines
+    Ya = yPlotLines
+    Yb = yPlotSpines
+
+    Dx = Xb - Xa
+    Dy = Yb - Ya
+    originalDx = Xb - Xa
+    originalDy = Yb - Ya
+    D = math.sqrt(Dx * Dx + Dy * Dy)
+
+    Dx = width * Dx / D 
+    Dy = width * Dy / D
+
+    angle = np.arctan2(originalDy,originalDx) 
+    adjustY = np.sin(angle) * extendHead
+    adjustX = adjustY/ (np.tan(angle))
+
+    # Used to extend back of rectangle ROI
+    firstCoordX = Xa - Dy - adjustX
+    firstCoordY = Ya + Dx - adjustY
+    secondCoordX = Xa + Dy - adjustX
+    secondCoordY = Ya - Dx - adjustY
+
+    # thirdCoordX = Xb + Dy + adjustX
+    # fourthCoordX = Xb - Dy + adjustX
+    # thirdCoordY = Yb - Dx + adjustY
+    # fourthCoordY = Yb + Dx + adjustY
+
+    return [(firstCoordY, firstCoordX), (secondCoordY, secondCoordX)]
+
+
 def calculateLineROIcoords(lineIndex, radius, lineAnnotations):
     """
         Args:
@@ -402,6 +470,7 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations):
 
         Returns:
             a list containing each the x and y values of each coordinate
+            format [[x,y]]
 
             alternatively we could change it to have
             a list of tuples representing the 4 coordinates of the rectangle
@@ -429,7 +498,7 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations):
     # totalPoints = totalPoints.reverse()
     totalPoints.reverse()
     # print(totalPoints)
-    # Probably need to reverse this order
+    # Reverse the order to record points on the "right side" starting from the end
     for i in totalPoints:
         # Account for beginning and end of LineAnnotations indexing
         if(lineIndex+i >= 0 and lineIndex+i <= len(lineAnnotations)):
@@ -477,9 +546,31 @@ def calculateFinalMask(rectanglePoly, linePoly):
     combinedMasks[combinedMasks > 1] = 0
     finalSpineMask = combinedMasks
 
-    coords = np.column_stack(np.where(finalSpineMask > 0))
+    # coords = np.column_stack(np.where(finalSpineMask > 0))
 
     return finalSpineMask
+
+def convertCoordsToMask(poly):
+
+    # TODO: Change this to detect image shape rather than have it hard coded
+    nx, ny = 1024, 1024
+
+    # Create vertex coordinates for each grid cell...
+    # (<0,0> is at the top left of the grid in this system)
+    # y and x's are reversed
+    # x, y = np.meshgrid(np.arange(nx), np.arange(ny))
+    y, x = np.meshgrid(np.arange(ny), np.arange(nx))
+
+    y, x = y.flatten(), x.flatten()
+
+    points = np.vstack((y,x)).T
+
+    polyPath = Path(poly)
+    polyMask = polyPath.contains_points(points, radius=0)
+    polyMask = polyMask.reshape((ny,nx))
+    polyMask = polyMask.astype(int)
+
+    return polyMask
 
 def getOffset(distance, numPts):
     """ Generate list of candidate points where mask will be moved """
@@ -580,7 +671,117 @@ def calculateBackgroundMask(spineMask, offset):
 
     return backgroundMask
 
+def argsort(seq):
+    #http://stackoverflow.com/questions/3382352/equivalent-of-numpy-argsort-in-basic-python/3382369#3382369
+    #by unutbu
+    #https://stackoverflow.com/questions/3382352/equivalent-of-numpy-argsort-in-basic-python
+    # from Boris Gorelik
+    return sorted(range(len(seq)), key=seq.__getitem__)
 
+def rotational_sort(list_of_xy_coords, centre_of_rotation_xy_coord, clockwise=True):
+    cx,cy=centre_of_rotation_xy_coord
+    # for x,y in list_of_xy_coords:
+    #     print(y)
+    angles = [atan2(x-cx, y-cy) for x,y in list_of_xy_coords]
+    # print(angles)
+    indices = argsort(angles)
+    # print(indices)
+    if clockwise:
+        # temp = [list_of_xy_coords[i] for i in indices]
+        # finalList = []
+        # for i in temp:
+        #     finalList.append(temp[i][0]])
+        temp = [list_of_xy_coords[i] for i in indices]
+        # Convert to numpy array to avoid type error when plotting
+        return np.array(temp)
+    else:
+        # Convert to np.array later
+        return [list_of_xy_coords[i] for i in indices[::-1]]
+
+def checkLabel(mask, _xSpine, _ySpine):
+    """ Filters out a mask so that extra segments will be removed
+    Returns the label of the segment which contains the original spintPoint
+    """
+    labelArray, numLabels = ndimage.label(mask)
+    # print("current labelArray", labelArray)
+
+    # Take the label that contains the original spine point
+    # Loop through all the labels and pull out the x,y coordinates 
+    # Check if the original x,y points is within those coords (using numpy.argwhere)
+    originalSpinePoint = [int(_ySpine), int(_xSpine)]
+    # originalSpinePoint = [int(_xSpine), int(_ySpine)]
+    currentLabel = 0
+    # print(originalSpinePoint)
+    for label in np.arange(1, numLabels+1, 1):
+        currentCandidate =  np.argwhere(labelArray == label)
+        # Check if the original x,y point in the current candidate
+        if(originalSpinePoint in currentCandidate):
+            currentLabel = label
+            # print("current label", currentLabel)
+            break
+    
+    return currentLabel
+
+# Take points of Xleft or Xright
+# Check to see if they are in the mask (expanded outline mask)
+# Returns the points within XLeft or Xright that are in the mask
+def getSegmentROIPoints(coordsOfMask, linePolyCoords):
+    """
+        Return points of left/Right segmentROI within the OutlineMask
+        that is used to form the polygon of the sectioned SpineROI
+    """
+
+    # List of Coordinates that are actually part of the spine ROI
+    filteredCoordList = []
+
+    # maskCoords = np.column_stack(np.where(mask > 0))
+    coordsOfMask = coordsOfMask.tolist()
+    # print("coords", coordsOfMask)
+    # print("type of coords", type(coordsOfMask))
+
+    for index, value in enumerate(linePolyCoords):
+        # print("value", value)
+        XValue = value[0]
+        YValue = value[1]
+        
+        fracX, wholeX = math.modf(XValue)
+        fracY, wholeY = math.modf(YValue)
+
+        # roundedXValue = math.ceil(value[0])
+        # roundedYValue = math.ceil(value[1])
+        # roundedCoords = [roundedYValue, roundedXValue]
+        if(fracX > 0.5):
+            roundedXValue = math.ceil(value[0])
+        else:
+            roundedXValue = math.floor(value[0])
+        if(fracY > 0.5):
+            roundedYValue = math.ceil(value[1])
+        else:
+            roundedYValue = math.floor(value[1])
+
+        # roundedCoords = [roundedYValue, roundedXValue]
+        roundedCoords = np.array([roundedYValue, roundedXValue])
+        roundedCoords = roundedCoords.tolist()
+        # roundedCoords = np.array([roundedXValue, roundedYValue])
+
+        # print("roundedCoords", roundedCoords)
+
+        # if(roundedCoords in coordsOfMask):
+        #     print("roundedCoords", index, roundedCoords)
+        #     filteredCoordList.append(roundedCoords)
+        # else:
+        #     print("not in list", index, roundedCoords)
+        if(roundedCoords in coordsOfMask):
+            # Its checking to see if one of the x,y value matches but not for booth?
+            # print("roundedCoords", index, roundedCoords)
+            filteredCoordList.append(roundedCoords)
+        # else:
+            # print("not in list", index, roundedCoords)
+
+    # print("filteredCoordList", filteredCoordList)
+    return np.array(filteredCoordList)
+
+    
 def runDebug():
     pass
     # plt.plot(xBox, yBox, 'oy', linestyle="--")

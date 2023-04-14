@@ -41,7 +41,9 @@ for idx, row in enumerate(pointAnnotation):
         continue
     spineRowIdx = row["index"]
     # print(type(spineRowIdx))
-    brightestIndex = pointAnnotation._calculateSingleBrightestIndex(myStack, channel, int(spineRowIdx), lineAnnotation, img)
+    # brightestIndex = pointAnnotation._calculateSingleBrightestIndex(myStack, channel, int(spineRowIdx), lineAnnotation, img)
+    brightestIndex = pointAnnotation.calculateSingleBrightestIndex(channel, int(spineRowIdx), lineAnnotation, img)
+
     print(brightestIndex)
     xBrightestLine.append(xLine[brightestIndex])
     yBrightestLine.append(yLine[brightestIndex])
@@ -52,8 +54,8 @@ for idx, row in enumerate(pointAnnotation):
     print("xLine[brightestIndex]:", xLine[brightestIndex])
     print("yLine[brightestIndex]:", yLine[brightestIndex])
     print(" ")
-    if(idx > 100):
-        break
+    # if(idx > 100):
+    #     break
     # pointAnnotation._calculateSingleBrightestIndex(myStack, channel, spineRowIdx)
 
 # Save into the backend
