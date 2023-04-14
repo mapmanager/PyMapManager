@@ -26,7 +26,9 @@ class annotationPlotWidget(QtWidgets.QWidget):
     Abstract class (not useable on its own), instantiated from a derived class (pointPlotWidget and linePlotWidget)
     """
 
-    signalAnnotationClicked = QtCore.Signal(int, bool)  # (annotation idx, isAlt)
+    # old
+    #signalAnnotationClicked = QtCore.Signal(int, bool)  # (annotation idx, isAlt)
+    # new
     signalAnnotationClicked2 = QtCore.Signal(object)  # pymapmanager.annotations.SelectionEvent
     """Signal emitted when user click on an annotation.
     
@@ -58,9 +60,10 @@ class annotationPlotWidget(QtWidgets.QWidget):
         self._view = pgView
         self._displayOptions = displayOptions
 
-        self._selectedAnnotation = None
+        #self._selectedAnnotation = None
         # The current selection
-        
+        # depreciated, now use 
+
         self._roiTypes = []
         # list of roiTypes to display
         # when this changes, our 'state' changes and we need to re-fetch _dfPlot
@@ -86,6 +89,11 @@ class annotationPlotWidget(QtWidgets.QWidget):
 
         #self._view.signalUpdateSlice.connect(self.slot_setSlice)
 
+    #def keyPressEvent(self, event : QtGui.QKeyEvent):
+    def keyPressEvent(self, event):
+        logger.info('')
+        # NEVER CALLED???
+
     def _buildUI(self):
         
         # main scatter
@@ -101,19 +109,28 @@ class annotationPlotWidget(QtWidgets.QWidget):
         _pen = None
 
         # feb 2023, switching from ScatterPlotItem to PlotDataItem (for 'connect' argument
-        self._scatter = pg.PlotDataItem(pen=_pen,
-                            symbolPen=None, # feb 2023
-                            symbol=symbol,
-                            size=size,
-                            color = color,
-                            connect='all')
-        # self._scatter = pg.ScatterPlotItem(pen=_pen,
+        # self._scatter = pg.PlotDataItem(pen=_pen,
+        #                     symbolPen=None, # feb 2023
         #                     symbol=symbol,
         #                     size=size,
-        #                     color = color)
+        #                     color = color,
+        #                     connect='all')
+        self._scatter = pg.ScatterPlotItem(pen=_pen,
+                            symbol=symbol,
+                            size=size,
+                            color=color,
+                            hoverable=True
+                            )
+
         self._scatter.setZValue(zorder)  # put it on top, may need to change '10'
-        # self._scatter.sigClicked.connect(self._on_mouse_click) 
-        self._scatter.sigPointsClicked.connect(self._on_mouse_click) 
+        
+        # when using ScatterPlotItem
+        self._scatter.sigClicked.connect(self._on_mouse_click) 
+        self._scatter.sigHovered.connect(self._on_mouse_hover) 
+        # when using PlotDataItem
+        # self._scatter.sigPointsClicked.connect(self._on_mouse_click) 
+        # self._scatter.sigPointsHovered.connect(self._on_mouse_hover)
+
         self._view.addItem(self._scatter)
     
         # user selection
@@ -156,15 +173,33 @@ class annotationPlotWidget(QtWidgets.QWidget):
         visible = not self._scatterUserSelection.isVisible()
         self._scatterUserSelection.setVisible(visible)
 
-    def setSelectedAnnotation(self, dbIdx : List[int]):
-        """Set the currentently selected annotation.
-        """
-        self._selectedAnnotation = dbIdx
-
-    def getSelectedAnnotation(self):
+    def _old_getSelectedAnnotation(self):
         """Get the currentently selected annotation.
         """
         return self._selectedAnnotation
+
+    def _on_mouse_hover(self, points, event):
+        """Respond to mouse hover over scatter plot.
+        """
+        
+        # April 14, activate this to show line point on hover during 'manually connect' spine
+        return
+    
+        #logger.info('')
+
+        dbIdx = None  # by default select nothing
+
+        for idx, oneEvent in enumerate(event):
+            if idx > 0:
+                break
+            plotIdx = oneEvent.index()
+            dbIdx = self._currentPlotIndex[plotIdx]
+
+            # get the roiType
+            roiType = self._annotations.getValue('roiType', dbIdx)
+            logger.info(f'dbIdx:{dbIdx} roiType:{roiType}')
+
+        self._selectAnnotation(dbIdx=dbIdx)
 
     def _on_mouse_click(self, points, event):
         """Respond to user click on scatter plot.
@@ -212,7 +247,9 @@ class annotationPlotWidget(QtWidgets.QWidget):
 
             # implement left/right arrow to select prev/next point
 
-    def _selectAnnotation(self, dbIdx : List[int], isAlt : bool = False):
+    def _selectAnnotation(self,
+                          dbIdx : List[int],
+                          isAlt : bool = False):
         """Select annotations as 'yellow'
 
         Args:
@@ -220,15 +257,12 @@ class annotationPlotWidget(QtWidgets.QWidget):
             isAlt: If True then snap z
         """
         if dbIdx is None:
-            self._selectedAnnotation = None
+            #self._selectedAnnotation = None
             x = []
             y = []
         else:
             if isinstance(dbIdx, int):
                 dbIdx = [dbIdx]
-
-            # remember the point that was selected
-            self._selectedAnnotation = dbIdx
 
             # loc[] is actual row index (not row label)
             # TODO (Cudmore) write API function to do this
@@ -242,22 +276,9 @@ class annotationPlotWidget(QtWidgets.QWidget):
             x = dfPrint['x'].tolist()
             y = dfPrint['y'].tolist()
         
-            # this was to handle alt+click in table view
-            # instead, have table view emit setSlice signal (connected to main image plot slot_setSlice)
-            # if isAlt:
-                # # TODO (cudmore) Fix this, all we want is a int z scalar (one value)
-                # z = dfPrint['z'].tolist()
-                # z = z[0]
-                # z = int(z)
-                # logger.info(f'snapping to z:{z} {type(z)}')
-                # self.slot_setSlice(z)
-
-        logger.info(f'selecting annotation index:{dbIdx}')
-        # logger.info(f'  x:{x} {type(x)}')
-        # logger.info(f'  y:{x} {type(y)}')
+        #logger.info(f'selecting annotation index:{dbIdx}')
         
         self._scatterUserSelection.setData(x, y)
-        
         # set data calls this?
         # self._view.update()
 

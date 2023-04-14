@@ -9,7 +9,6 @@ import pymapmanager.interface
 
 from pymapmanager._logger import logger
 
-# class ImagePlotWidget(pg.PlotWidget):
 class ImagePlotWidget(QtWidgets.QWidget):
     """A plot widget (pg.PlotWidget) to plot
         - image
@@ -59,6 +58,7 @@ class ImagePlotWidget(QtWidgets.QWidget):
                     contrastDict : dict,
                     colorLutDict : dict,
                     displayOptionsDict : dict,
+                    stackWidgetParent,
                     parent=None):
         super().__init__(parent)
         
@@ -66,6 +66,9 @@ class ImagePlotWidget(QtWidgets.QWidget):
         self._contrastDict = contrastDict
         self._colorLutDict = colorLutDict
         self._displayOptionsDict = displayOptionsDict
+
+        self._stackWidgetParent = stackWidgetParent
+        # added to get the current selection
 
         self._currentSlice = 0
         
@@ -97,7 +100,7 @@ class ImagePlotWidget(QtWidgets.QWidget):
         Args:
             event: PyQt5.QtGui.QWheelEvent
         """        
-        logger.info('')
+        #logger.info('')
         modifiers = QtWidgets.QApplication.keyboardModifiers()
         if modifiers == QtCore.Qt.ControlModifier:
             # zoom in/out with mouse
@@ -122,52 +125,84 @@ class ImagePlotWidget(QtWidgets.QWidget):
 
             self._setSlice(newSlice)
 
-    def _deleteAnnotation(self):
-        """Delete the selected annotation.
+    def contextMenuEvent(self, event):
+        """Show a right-click menu.
         
-        This is in response to keyboard del/backspace.
+        This is inherited from QtWidget.
         
-        Note:
-            For now this will only delete selected point annotations in point plot.
-            IT does not delete segments.
+        Notes
+        -----
+        We need to grab the selection of the stack widget.
+        - If a spine is selected, menu should be 'Delete Spine'
+        - If no selection then gray out 'Delete'
         """
-        
-        # for _aLinePlot we will have to types of selected annotation:
-        #   1) point in line
-        #   2) segmentID
-        
-        # we need to know the state of the parent window
-        #   default: delete point annotations of roiType (spineROI)
-        #   in editSegment mode/state, delete line annotations if roiType linePoint
 
-        # for now just delete selected points from our _aPointPlot
-        _selectedAnnotation = self._aPointPlot.getSelectedAnnotation()
-        if _selectedAnnotation is not None:
-            logger.info(f'TODO emit signalDeleteAnnotation dbIdx:{_selectedAnnotation}')
-            
-            # delete from backend
-            # logger.info(f'Deleting point annotation dbIdx:{_selectedAnnotation}')
-            # self._myStack.getPointAnnotations().deleteAnnotation(_selectedAnnotation)
-            
-            deleteDict = {
-                'annotationType': pymapmanager.annotations.annotationType.point,
-                'annotationIndex': _selectedAnnotation,
-                'isSegment': False,
-            }
-            logger.info(f'-->> emit signalDeleteAnnotation deleteDict:{deleteDict}')
-            self.signalDeletingAnnotation.emit(deleteDict)
+        # get the current selection from the parent stack widget
+        currentSelection = self._stackWidgetParent.getCurrentSelection()
+
+        #logger.info(currentSelection)
+
+        # activate menus if we have a point selection
+        isPointSelection = currentSelection.isPointSelection()
+        _selectedRows = currentSelection.getRows()
+        
+        _noSelection = _selectedRows is None
+
+        # some menus require just one selection
+        isOneRowSelection = (_selectedRows is not None) and (len(_selectedRows) == 1)
+        
+        if _noSelection:
+            point_roiType = ''
+            isSpineSelection = False
         else:
-            logger.warning(f'no selection to delete.')
+            point_roiType = currentSelection.getColumnValues('roiType')  # can be None
+            point_roiType = point_roiType[0] #just the first selection
+            isSpineSelection = point_roiType == 'spineROI'
+            point_roiType += ' ' + str(_selectedRows[0])
+
+        _menu = QtWidgets.QMenu(self)
+
+        # only allowed to move spine roi
+        moveAction = _menu.addAction(f'Move {point_roiType}')
+        moveAction.setEnabled(isPointSelection and isOneRowSelection)
+        
+        # only allowed to manually connect spine roi
+        manualConnectAction = _menu.addAction(f'Manually Connect {point_roiType}')
+        manualConnectAction.setEnabled(isSpineSelection and isOneRowSelection)
+
+        _menu.addSeparator()
+        
+        # allowed to delete any point annotation
+        deleteAction = _menu.addAction(f'Delete {point_roiType}')
+        deleteAction.setEnabled(isPointSelection and isOneRowSelection)
+
+        action = _menu.exec_(self.mapToGlobal(event.pos()))
+        
+        #logger.info(f'User selected action: {action}')
+
+        if action == moveAction:
+            logger.info('TODO: moveAction')
+            # annotationPlot Widget has a signal signalMovingAnnotation (not currently used?)
+
+        elif action == manualConnectAction:
+            logger.info('TODO: manualConnect')
+
+        elif action == deleteAction:
+            logger.info('deleting the selected annotation')
+            self._deleteAnnotation()
+
+        else:
+            logger.info('No action?')
 
     def keyPressEvent(self, event : QtGui.QKeyEvent):
-        """
-        Override PyQt key press.
+        """Override PyQt key press.
         
         Args:
             event: QtGui.QKeyEvent
         """
 
-        logger.info(f'user pressed key with text "{event.text()}" and PyQt enum {event.key()}')
+        logger.info('')
+        #logger.info(f'user pressed key with text "{event.text()}" and PyQt enum {event.key()}')
         
         if event.key() in [QtCore.Qt.Key_Enter, QtCore.Qt.Key_Return]:
             self._setFullView()
@@ -193,10 +228,7 @@ class ImagePlotWidget(QtWidgets.QWidget):
             self.signalCancelSelection2.emit(_segmentSelectionEvent)
 
         elif event.key() in [QtCore.Qt.Key_Delete, QtCore.Qt.Key_Backspace]:
-            # cancel all user selections
             # if we have a point selection. delete it from backend
-            
-            #self.signalDeleteAnnotation.emit(None, False)  # (selIdx, isAlt)
             self._deleteAnnotation()
 
         elif event.key() in [QtCore.Qt.Key_Up]:
@@ -225,6 +257,50 @@ class ImagePlotWidget(QtWidgets.QWidget):
             # if not handled by *this, this will continue propogation
             event.setAccepted(False)
             #logger.warning(f'key not understood {event.text()}')
+
+    def _deleteAnnotation(self):
+        """Delete the selected annotation.
+        
+        This is in response to:
+            keyboard del/backspace.
+            context menu delete
+
+        Note:
+            For now this will only delete selected point annotations in point plot.
+            It does not delete segments.
+        """
+        
+        logger.info('')
+        
+        # for _aLinePlot we will have to types of selected annotation:
+        #   1) point in line
+        #   2) segmentID
+        
+        # we need to know the state of the parent window
+        #   default: delete point annotations of roiType (spineROI)
+        #   in editSegment mode/state, delete line annotations if roiType linePoint
+
+        #logger.info('TODO: get rid of _aPointPlot.getSelectedAnnotation() and use parent current selection')
+        # for now just delete selected points from our _aPointPlot
+        #_selectedAnnotation = self._aPointPlot.getSelectedAnnotation()
+
+        # if there is a selection and it is an annotation point (not a line)
+        _currentSelection = self._stackWidgetParent.getCurrentSelection()
+        
+        if not _currentSelection.isPointSelection():
+            return
+        _rows = _currentSelection.getRows()
+        if _rows is None or len(_rows)==0:
+            return
+
+        deleteDict = {
+            'annotationType': pymapmanager.annotations.annotationType.point,
+            'annotationIndex': _rows,
+            'isSegment': False,
+        }
+        logger.info(f'-->> emit signalDeletingAnnotation deleteDict:{deleteDict}')
+        self.signalDeletingAnnotation.emit(deleteDict)
+
 
     #def _onMouseClick_scene(self, event : pg.GraphicsScene.mouseEvents.MouseClickEvent):
     def _onMouseClick_scene(self, event):
@@ -473,7 +549,7 @@ class ImagePlotWidget(QtWidgets.QWidget):
         
         logger.warning(f'THIS IS EXPERIMENTAL _percent_low:{_percent_low} _percent_high:{_percent_high}')
 
-        data = self._myStack.getStack(channel=self._displayThisChannel)
+        data = self._myStack.getImageChannel(channel=self._displayThisChannel)
         percentiles = np.percentile(data, (_percent_low, _percent_high))
 
         logger.info(f'  percentiles:{percentiles}')
@@ -588,8 +664,6 @@ class ImagePlotWidget(QtWidgets.QWidget):
         self._aLinePlot.toggleScatterPlot()
 
     def _buildUI(self):
-        #self.setAspectLocked(True)
-
         hBoxLayout = QtWidgets.QHBoxLayout()
 
         # we are now a QWidget
@@ -615,6 +689,9 @@ class ImagePlotWidget(QtWidgets.QWidget):
         #self.hideAxis('top')
         #self.hideAxis('right')
 
+        # do not show default pg contect menu
+        self._plotWidget.setMenuEnabled(False)
+
         #self.getViewBox().setBorder(0)
 
         # Instances of ImageItem can be used inside a ViewBox or GraphicsView.
@@ -626,7 +703,9 @@ class ImagePlotWidget(QtWidgets.QWidget):
         self._plotWidget.addItem(self._myImage)
 
         self._plotWidget.scene().sigMouseMoved.connect(self._onMouseMoved_scene)
-        self._plotWidget.scene().sigMouseClicked.connect(self._onMouseClick_scene) # works but confusing coordinates
+
+        # works but confusing coordinates
+        self._plotWidget.scene().sigMouseClicked.connect(self._onMouseClick_scene)
 
         # add point plot of pointAnnotations
         pointAnnotations = self._myStack.getPointAnnotations()
@@ -676,6 +755,7 @@ class ImagePlotWidget(QtWidgets.QWidget):
         hBoxLayout.addWidget(self._stackSlider)
 
         self.setLayout(hBoxLayout)
+
 
 class StackSlider(QtWidgets.QSlider):
     """Slider to set the stack image slice.

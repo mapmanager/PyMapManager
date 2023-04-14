@@ -14,3 +14,5 @@ from .imagePlotWidget import ImagePlotWidget
 from .histogramWidget import HistogramWidget
 from .stackWidgetToolbars import TopToolBar
 from .stackWidgetToolbars import StatusToolbar
+
+from .pyMapManagerApp import PyMapManagerApp

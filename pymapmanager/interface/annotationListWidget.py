@@ -52,7 +52,7 @@ class annotationListWidget(QtWidgets.QWidget):
     #signalDeleteRows = QtCore.Signal(object)
     """Signal emmited when user deletes selected rows.
     
-        Uusally with keyboard (delete, backspace)
+        Usually with keyboard (delete, backspace)
     
     Args:
         List[int]: List of row selection to be deleted.
@@ -96,7 +96,8 @@ class annotationListWidget(QtWidgets.QWidget):
         Args:
             event: QKeyEvent
         """
-        #logger.info('')
+        logger.info('')
+        
         if event.key() in [QtCore.Qt.Key_Backspace, QtCore.Qt.Key_Delete]:            
             # delete selected annotations
             # for now, only delete point annotations (implement line annotations later)

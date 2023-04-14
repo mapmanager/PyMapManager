@@ -12,10 +12,11 @@ class TopToolBar(QtWidgets.QToolBar):
     signalChannelChange = QtCore.Signal(object)  # int : channel number
     signalSlidingZChanged = QtCore.Signal(object)  # dict : {checked, upDownSlices}
 
-    def __init__(self, myStack, displayOptionsDict : dict, parent=None):
+    def __init__(self, myStack :pymapmanager.stack,
+                 displayOptionsDict : dict, parent=None):
         super().__init__(parent)
 
-        self._myStack = myStack
+        self._myStack : pymapmanager.stack = myStack
         self._displayOptionsDict = displayOptionsDict
 
         # list of channel strings 1,2,3,...
@@ -25,10 +26,13 @@ class TopToolBar(QtWidgets.QToolBar):
 
         self.setWindowTitle('Stack Toolbar')
 
+        self.setFloatable(False)
+        self.setMovable(False)
+
         #self.setOrientation(QtCore.Qt.Vertical);
         #self.setOrientation(QtCore.Qt.Horizontal);
 
-        myIconSize = 12 #32
+        #myIconSize = 12 #32
         #self.setIconSize(QtCore.QSize(myIconSize,myIconSize))
         self.setToolButtonStyle( QtCore.Qt.ToolButtonTextUnderIcon )
 
@@ -43,12 +47,10 @@ class TopToolBar(QtWidgets.QToolBar):
         self._setStack(self._myStack)
 
     def _setStack(self, theStack : pymapmanager.stack):
-        """Show/hide toolbar actions based on stack.
+        """Set the state of the interface based on a stack.
         
-        Mostly based on number of channels in the image.
-
         Args:
-            theStack: The stack to set the entire window to
+            theStack (pymapmanager.stack): The stack to dislpay in the widget
         """
         self._myStack = theStack
         
@@ -66,6 +68,8 @@ class TopToolBar(QtWidgets.QToolBar):
                 action.setVisible(False)
             if actionName == 'rgb' and numChannels < 2:
                 action.setVisible(False)
+
+        self.slidingUpDown.setMaximum(self._myStack.numSlices)
 
     def _on_channel_callback(self, checked, index):
         """
@@ -94,6 +98,8 @@ class TopToolBar(QtWidgets.QToolBar):
         checked = state == 2
         upDownSlices = self.slidingUpDown.value()
         
+        self.slidingUpDown.setEnabled(state)
+
         d = {
             'checked': checked,
             'upDownSlices': upDownSlices,
@@ -175,7 +181,9 @@ class TopToolBar(QtWidgets.QToolBar):
 
         slidingUpDownLabel = QtWidgets.QLabel('+/-')
         self.slidingUpDown = QtWidgets.QSpinBox()
+        self.slidingUpDown.setMaximum(self._myStack.numSlices)
         self.slidingUpDown.setValue(3)
+        self.slidingUpDown.setEnabled(False)
         self.slidingUpDown.valueChanged.connect(self._on_slidingz_value_changed)
         self.addWidget(slidingUpDownLabel)
         self.addWidget(self.slidingUpDown)
@@ -195,8 +203,11 @@ class StatusToolbar(QtWidgets.QToolBar):
         super().__init__('status', parent)
         self._myStack = myStack
 
-        self.setWindowTitle('xx Status Toolbar')
+        self.setWindowTitle('Status Toolbar')
 
+        self.setFloatable(False)
+        self.setMovable(False)
+        
         self._buildUI()
     
     def slot_updateStatus(self, statusDict):

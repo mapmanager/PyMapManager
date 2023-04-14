@@ -10,7 +10,7 @@ import time
 import traceback
 from pprint import pprint
 
-from typing import List, Union  # , Callable, Iterator, Optional
+from typing import List, Union, Optional  # , Callable, Iterator
 
 import numpy as np
 import pandas as pd
@@ -63,7 +63,7 @@ class SelectionEvent():
     """Created and emited on an annotation selection.
     """
     def __init__(self,
-                 annotation : "baseAnnotations",
+                 annotation : "baseAnnotations" = None,
                  rowIdx : List[int] = None,
                  isEsc : bool = False,
                  isAlt : bool = False,
@@ -103,11 +103,19 @@ class SelectionEvent():
     def annotationObject(self) -> "pymapmanager.annotations.baseAnnotations":
         return self._selDict['annotationObject']
     
-    def getRows(self):
+    def getRows(self) -> Optional[List[int]]:
         """Get list of selected rows, can be None.
+
+        For line selection, will be segmentID
         """
         return self._selDict['rowIdx']
 
+    def getColumnValues(self, colStr):
+        """Get column values for selected annotations.
+        """
+        _values = self.annotationObject.getValues(colStr, self.getRows())
+        return _values
+    
     @property
     def isEsc(self):
         return self._selDict['isEsc']

@@ -113,7 +113,7 @@ class moveToStackWidget(QtWidgets.QWidget):
 
         self._stackWidget = sw
         self._stack = stack                
-        self._stackData = stack.getStack(channel=2)
+        self._stackData = stack.getImageChannel(channel=2)
 
         pa = stack.getPointAnnotations()
         df = pa.getSegmentControlPnts(segmentID=0)

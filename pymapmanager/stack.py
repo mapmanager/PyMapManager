@@ -1,21 +1,26 @@
 """
-A stack contains a 3D Tiff, a list of 3D annotations, and optionally a number of line segment tracings.
+A stack contains a 3D Tiff, a list of 3D annotations,
+and optionally a number of line segment tracings.
 
-A stack can either be a single time-point or be embeded into a session (timepoint) of a :class:`pymapmanager.map`.
+A stack can either be a single time-point or be embeded
+into a session (timepoint) of a :class:`pymapmanager.map`.
 
 The list of 3D annotations is a :class:`pymapmanager.annotations.pointAnnotations`.
 
 The list of line segments is a :class:`pymapmanager.annotations.lineAnnotations`.
 
-Stack annotations are saved in an enclosing folder with the same name as the tif stack file after removing the .tif extension.
-
+Stack annotations are saved in an enclosing folder with
+the same name as the tif stack file after removing the .tif extension.
 """
+
 import sys
 import errno
 import enum
 import json
 import os
 from pprint import pprint
+
+from typing import Optional, List, Union  # , Callable, Iterator, Optional
 
 import numpy as np
 import tifffile
@@ -47,14 +52,14 @@ class stack():
         - TODO (cudmore) we need a <file>.txt json as a header
         - stack does not know (row, col, slices) until loadImages()
         - stack does not know (voxelx, voxely, voxelz) until loadAnnotations
-
         - To remedy this, I have created a <stack>.txt file with some json
     """
 
     maxNumChannels = 4
-    """Maximum number fo color channels. Corresponds to _ch1, _ch2, _ch3, etc"""
+    """Maximum number of color channels. Corresponds to _ch1, _ch2, _ch3, etc"""
 
-    channelStrings = [f'_ch{i}.tif' for i in range(1, maxNumChannels+1)]  # ['_ch1.tif', '_ch2.tif', '_ch3.tif', '_ch4.tif']
+    # ['_ch1.tif', '_ch2.tif', '_ch3.tif', '_ch4.tif']
+    channelStrings = [f'_ch{i}.tif' for i in range(1, maxNumChannels+1)]
     """Possible file name endings indicate color channels"""
     
     # keep track of row order into numpy.ndarray
@@ -64,15 +69,12 @@ class stack():
     imageColIdx = 2
 
     def __init__(self, path : str,
-                defaultChannel : int = 1,
                 loadImageData : bool = True):
-        """
-        Create a stack from .tif file.
+        """Create a stack from .tif file.
         
         Args:
-            tifPath: Full path to a tif file
-            defaultChannel: Default channel to load
-            loadImageData: If True than load default channel
+            path (str): Full path to a tif file
+            loadImageData (bool): If True than load all channels image data
 
         Notes:
             - We need to load czi/lsm/nd2 using  aicsimageio
@@ -107,12 +109,13 @@ class stack():
         self.brightestIndexesAreSet = False
         # Boolean to ensure that brightest indexes are only set once
 
-        # (TODO) add option to not load image data on creation
-        #       when we do not load, we cannot infer header from tifData
+        # When we do not load image data, we cannot infer header from tifData
         imageShape = None
         if loadImageData:
             # load 
-            imageShape = self.loadImages(channel=defaultChannel)
+            for _channel in range(self.numChannels):
+                _channel += 1
+                imageShape = self.loadImages(channel=_channel)
 
         # read from txt file json
         headerDict = self.loadHeader()
@@ -128,12 +131,15 @@ class stack():
             self._header['yPixels'] = imageShape[self.imageRowIdx] if imageShape is not None else None
             self._header['zPixels'] = imageShape[self.imageSliceIdx] if imageShape is not None else None
             # voxels (um per pixel)
-            self._header['xVoxel'] = 0.12  # TODO (cudmore) Fix this fake default
+            # TODO (cudmore) Fix this fake default
+            self._header['xVoxel'] = 0.12
             self._header['yVoxel'] = 0.12
             self._header['zVoxel'] = 1
             # width/height in um
-            self._header['umWidth'] = self._header['xPixels'] * self._header['xVoxel'] if imageShape is not None else None
-            self._header['umHeight'] = self._header['yPixels'] * self._header['yVoxel'] if imageShape is not None else None
+            self._header['umWidth'] = \
+                self._header['xPixels'] * self._header['xVoxel'] if imageShape is not None else None
+            self._header['umHeight'] = \
+                self._header['yPixels'] * self._header['yVoxel'] if imageShape is not None else None
 
             self._header['bitDepth'] = 11
 
@@ -142,10 +148,10 @@ class stack():
         self.loadLines()
 
     @property
-    def header(self):
+    def header(self) -> dict:
         return self._header
     
-    def __str__(self):
+    def __str__(self) -> str:
         """Get the string representation of stack.
         """
         printList = []
@@ -161,13 +167,12 @@ class stack():
         return ' '.join(printList)
 
     def printHeader(self, prefixStr='  '):
-        print(f'== header for stack {self._basePath}')
+        logger.info(f'== header for stack {self._basePath}')
         for k,v in self._header.items():
-            print(f'  {prefixStr}{k} : {v} {type(v)}')
+            logger.info(f'  {prefixStr}{k} : {v} {type(v)}')
 
     def getVoxelShape(self):
-        """
-        Get (slice, y, x) voxel shape in um (from header).
+        """Get (slice, y, x) voxel shape in um (from header).
         """
         xVoxel = self._header['xVoxel']
         yVoxel = self._header['yVoxel']
@@ -203,6 +208,8 @@ class stack():
         return headerPath
 
     def saveHeader(self):
+        """Save the header dict as json.
+        """
         self._makeEnclosingFolder()
 
         headerPath = self._getHeaderPath()
@@ -210,7 +217,9 @@ class stack():
             json.dump(self.header, outfile)
         logger.info(f'Saved header {headerPath}')
 
-    def loadHeader(self):
+    def loadHeader(self) -> dict:
+        """Loader header json file into a dict.
+        """
         headerPath = self._getHeaderPath()
         if os.path.isfile(headerPath):
             logger.info(f'Loading header {headerPath}')
@@ -222,11 +231,11 @@ class stack():
             return None
 
     def save(self, saveImages : bool = False):
-        """
-        Save line and point annotations and optionally the tif stacks
+        """Save line and point annotations.
+
+        TODO: Maybe also save tif data?
         """
         self._makeEnclosingFolder()  # just in case
-        
         self.saveHeader()  # not really neccessary (does not change)
         
         self.getLineAnnotations().save()
@@ -236,11 +245,11 @@ class stack():
             pass
 
     def loadImages(self, channel : int = None):
-        """
-        Load images associated with one channel.
+        """Load images associated with one channel.
         
         Args:
-            channel (int): If None then assume .tif file has no channel and our images data is just one channel.
+            channel (int):
+                If None then assume .tif file has no channel and our images data is just one channel.
         """
         if channel is not None:
             channelIdx = channel -1  # arguments channel is 1 based, real channels are 0 based
@@ -257,23 +266,37 @@ class stack():
             logger.info(f'Loaded tif data {tifData.shape} from tif file: {tifPath}')
             return tifData.shape
 
-    def getStack(self, channel : int = 1) -> np.ndarray:
-        channelIdx = channel - 1
-        return self._images[channelIdx]
-
-    def getImageChannel(self, channel : int = 1):
-        """Get the entire image channel
+    def _old_getStack(self, channel : int = 1) -> Optional[np.ndarray]:
+        """Get the full image volume for one color channel.
         """
-        # TODO (cudmore) check that channel < self.maxNumChannels
+        channelIdx = channel - 1
+        try:
+            return self._images[channelIdx]
+        except (IndexError) as e:
+            logger.warning(f'Max channel is {self.numChannels}')
+            return None
+        
+    def getImageChannel(self,
+                        channel : int = 1
+                        ) -> Optional[np.ndarray]:
+        """Get the full image volume for one color channel.
+        """
         
         # TODO (Cudmore) fix
         if channel is None:
             channel = 1
         
         channelIdx = channel - 1
-        return self._images[channelIdx]
+        try:
+            return self._images[channelIdx]
+        except (IndexError) as e:
+            logger.warning(f'Max channel is {self.numChannels}')
+            return None
 
-    def getImageSlice(self, imageSlice : int, channel : int = 1):
+    def getImageSlice(self,
+                      imageSlice : int,
+                      channel : int = 1
+                      ) -> Optional[np.ndarray]:
         """Get a single image slice from a channel.
 
         Args:
@@ -292,12 +315,12 @@ class stack():
         data =  self._images[channelIdx][imageSlice][:][:]
         return data
 
-    def getMaxProject(self, channel : int = 1):
+    def getMaxProject(self, channel : int = 1) -> Optional[np.ndarray]:
         """Get a maximal intensity projection of image slices for one channel.
         """
         channelIdx = channel - 1
         if self._images[channelIdx] is None:
-            logger.error(f'self._images[channelIdx] is None')
+            logger.error(f'channel {channelIdx} is None')
             return
        
         return self._images[channelIdx].max(axis=self.imageSliceIdx)
@@ -307,7 +330,8 @@ class stack():
                             channel : int = 1, 
                             upSlices : int = 3, 
                             downSlices : int = 3,
-                            func = np.max):
+                            func = np.max
+                            ) -> Optional[np.ndarray]:
         """Get a maximal intensity projection of image slices for one channel.
 
         Args:
@@ -315,6 +339,7 @@ class stack():
             channel:
             upSlices:
             downSlices:
+            func: Reference to np funtion to use like np.max
         """
 
         if not isinstance(imageSlice, int):
@@ -322,47 +347,54 @@ class stack():
             imageSlice = int(imageSlice)
 
         channelIdx = channel - 1
+
         firstSlice = imageSlice - upSlices
         if firstSlice < 0:
             firstSlice = 0
+
         lastSlice = imageSlice + downSlices
-       
         if lastSlice > self.numSlices - 1:
             lastSlice = self.numSlices
-        theRet = self._images[channelIdx][firstSlice:lastSlice].max(axis=self.imageSliceIdx)
+
+        if lastSlice == firstSlice:
+            # handles case where up/down is 0
+            return self._images[channelIdx][firstSlice]
+        else:
+            try:
+                theRet = self._images[channelIdx][firstSlice:lastSlice].max(axis=self.imageSliceIdx)
+            except (ValueError) as e:
+                logger.error(f'upSlices:{upSlices} downSlices:{downSlices} firstSlice:{firstSlice} lastSlice:{lastSlice}')
+                return
+            
         return theRet
 
-    def getPixel(self, channel : int, slice : int, y, x) -> int:
+    def getPixel(self, channel : int, imageSlice : int, y, x) -> int:
         """Get the intensity of a pixel.
         
-        TODO: Not implemented.
+        TODO: Need to get from max project if we are showing that
         """
-        return -111
-
+        _image = self.getImageSlice(imageSlice=imageSlice, channel=channel)
+        try:
+            _intensity = _image[y,x]
+        except (IndexError) as e:
+            #logger.error(f'IndexError x:{x} y:{y}')
+            return np.nan
+        return _intensity
+    
     @property
-    def numChannels(self):
-        """Get the number of color channles in the stack.
+    def numChannels(self) -> int:
+        """Get the number of color channels in the stack.
         """
         return self._numChannels
 
-    # @property
-    # def numImageRows(self):
-    #     numRows = self._header['yPixels']
-    #     return numRows
-
-    # @property
-    # def numImageColumns(self):
-    #     numColumns = self._header['xPixels']
-    #     return numColumns
-
     @property
-    def numSlices(self):
+    def numSlices(self) -> int:
         """Get the number of images in the stack.
         """
         numSlices = self._header['zPixels']
         return numSlices
 
-    def loadAnnotations(self):
+    def loadAnnotations(self) -> None:
         """Load point annotations.
         """
         try:            
@@ -371,7 +403,7 @@ class stack():
         except (FileNotFoundError) as e:
             self._annotations = None
 
-    def loadLines(self):
+    def loadLines(self) -> None:
         """Load line annotations.
         """
         try:

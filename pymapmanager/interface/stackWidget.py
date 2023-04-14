@@ -217,7 +217,10 @@ class stackWidget(QtWidgets.QMainWindow):
     # signalSelectAnnotation = QtCore.Signal(int, bool, bool)  # index, setSlice, doZoom
     signalSelectAnnotation2 = QtCore.Signal(object)  # pymapmanager.annotations.SelectionEvent
 
-    def __init__(self, path : str = None, myStack : pymapmanager.stack = None):
+    def __init__(self,
+                 path : str = None,
+                 myStack : pymapmanager.stack = None,
+                 show : bool = True):
         """
         Args:
             path: path to file
@@ -247,9 +250,18 @@ class stackWidget(QtWidgets.QMainWindow):
         _channel = self._displayOptionsDict['windowState']['defaultChannel']
         self.annotationSelection = stackWidgetState(self, channel=_channel)
 
+        self._currentSelection = pymapmanager.annotations.SelectionEvent()
+        """Keep track of the current selection"""
+
         self._buildUI()
         self._buildMenus()
 
+        if show:
+            self.show()
+
+    def getCurrentSelection(self):
+        return self._currentSelection
+    
     def getStack(self):
         """Get the underlying pympapmanager.stack
         """
@@ -264,8 +276,9 @@ class stackWidget(QtWidgets.QMainWindow):
         logger.info('TODO: refactor this to not get called')
         if event.key() in [QtCore.Qt.Key_BracketLeft]:
             # toggle the left control bar
-            self.togglePointTable()
-            self.toggleLineTable()
+            self.toggleView(False, 'xxx bogus name')
+            # self.togglePointTable()
+            # self.toggleLineTable()
 
     def _getDefaultDisplayOptions(self):
         theDict = {}
@@ -331,7 +344,7 @@ class stackWidget(QtWidgets.QMainWindow):
         for channelIdx in range(self.myStack.numChannels):
             channelNumber = channelIdx + 1
             
-            _stackData = self.myStack.getStack(channel=channelNumber)
+            _stackData = self.myStack.getImageChannel(channel=channelNumber)
             minStackIntensity = np.min(_stackData)
             maxStackIntensity = np.max(_stackData)
 
@@ -382,96 +395,89 @@ class stackWidget(QtWidgets.QMainWindow):
         self._colorLutDict['blue'] = lut
         self._colorLutDict['b'] = lut
 
-    def toggleImageView(self):
-        """Hide/show the image.
+    def toggleView(self, state, name):
+        """Toggle named view widgets on/off.
         """
-        self._imagePlotWidget.toggleImageView()
+        #logger.info(f'state:{state} name:{name}')
+        if name == 'Toolbar':
+            self._topToolbar.setVisible(state)
+        elif name == 'Image':
+            self._imagePlotWidget.toggleImageView()
+        elif name == 'Tracing':
+            self._imagePlotWidget.toggleTracingView()
+        elif name == 'Point Table':
+            self.pointListDock.setVisible(state)
+        elif name == 'Line Table':
+            self.lineListDock.setVisible(state)
+        elif name =='Status Bar':
+            self._statusToolbar.setVisible(state)
+        elif name == 'Contrast':
+            self._histogramWidget.setVisible(state)
+            
+            if state:
+                _channel = self.annotationSelection.getImageChannel()
+                self._histogramWidget.slot_setChannel(_channel)
+                _slice = self.annotationSelection.getCurrentSlice()
+                self._histogramWidget.slot_setSlice(_slice)
 
-    def toggleTracingView(self):
-        """Hide/show the tracing (pooints and lines)
-        """
-        self._imagePlotWidget.toggleTracingView()
-        
-    def toggleContrastWidget(self):
-        """Hide/show the contrast widget.
-        """
-        logger.info('')
-        visible = not self._histogramWidget.isVisible()
-        #self.contrastVisibilityChanged(visible)
-        self._histogramWidget.setVisible(visible)
-        
-        if visible:
-            _channel = self.annotationSelection.getImageChannel()
-            self._histogramWidget.slot_setChannel(_channel)
-            _slice = self.annotationSelection.getCurrentSlice()
-            self._histogramWidget.slot_setSlice(_slice)
+        else:
+            logger.warning(f'Did not understand name: "{name}"')
 
-    def togglePointTable(self):
-        visible = not self.pointListDock.isVisible()
-        self.pointListDock.setVisible(visible)
+    def _buildMenus(self) -> QtWidgets.QMenuBar:
+        """Build a menu for the stack widget."""
 
-    def toggleLineTable(self):
-        visible = not self.lineListDock.isVisible()
-        self.lineListDock.setVisible(visible)
-
-    def contrastVisibilityChanged(self, visible):
-        logger.info('')
-
-    def _buildMenus(self):
+        # TODO: refactor this class to derive from QWidget
+        #   When we do this we lose (i) menu bar and (ii) addDockWidget
 
         mainMenu = self.menuBar()
+        #mainMenu = QtWidgets.QMenuBar()
 
         # close
         self.closeShortcut = QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+W"), self)
-        self.closeShortcut.activated.connect(self.on_user_close)
+        self.closeShortcut.activated.connect(self._on_user_close)
+
+        # keyboard left bracket will toggle point/line widgets
+        # QtCore.Qt.Key_BracketLeft
+        # TODO: make keyboard '[' toggle both point and line lists on/off
+        '''
+        _name = 'Toggle Point and line lists'
+        aAction = QtWidgets.QAction(_name, self)
+        aAction.setShortcut('[')
+        _lambda = lambda val, name=_name: self.toggleView(val, name)
+        aAction.triggered.connect(_lambda)
+        '''
 
         # stack menubar
         stackMenu = mainMenu.addMenu('&Stack')
+        #stackMenu = QtWidgets.QMenuBar()
 
-        # toggle contrast on/off
-        _showContrast = self._displayOptionsDict['windowState']['showContrast']
-        contrastAction = QtWidgets.QAction('Image Contrast', self)
-        contrastAction.setCheckable(True)
-        contrastAction.setChecked(_showContrast)
-        contrastAction.setShortcut('C')
-        contrastAction.triggered.connect(self.toggleContrastWidget)
-        stackMenu.addAction(contrastAction)
-
-        # toggle image on/off
-        aAction = QtWidgets.QAction('Image', self)
-        aAction.setCheckable(True)
-        aAction.setChecked(True)
-        aAction.setShortcut('I')
-        aAction.triggered.connect(self.toggleImageView)
-        stackMenu.addAction(aAction)
-
-        # toggle tracing on/off
-        aAction = QtWidgets.QAction('Tracing', self)
-        aAction.setCheckable(True)
-        aAction.setChecked(True)
-        aAction.setShortcut('T')
-        aAction.triggered.connect(self.toggleTracingView)
-        stackMenu.addAction(aAction)
-
-        # toggle point table on/off
-        aAction = QtWidgets.QAction('Point Table', self)
-        aAction.setCheckable(True)
-        aAction.setChecked(True)
-        aAction.setShortcut('P')
-        aAction.triggered.connect(self.togglePointTable)
-        stackMenu.addAction(aAction)
-
-        # toggle polineint table on/off
-        aAction = QtWidgets.QAction('Line Table', self)
-        aAction.setCheckable(True)
-        aAction.setChecked(True)
-        aAction.setShortcut('L')
-        aAction.triggered.connect(self.toggleLineTable)
-        stackMenu.addAction(aAction)
+        _panelDict = {
+            'Toolbar': '',
+            'Image': 'I',
+            'Tracing': 'T',
+            'Point Table': 'P',
+            'Line Table': 'L',
+            'Status Bar': '',
+            'Contrast': 'C',
+        }
+        for _name,_shortcut in _panelDict.items():
+            aAction = QtWidgets.QAction(_name, self)
+            aAction.setCheckable(True)
+            _visible = True
+            if _name == 'Contrast':
+                _visible = _showContrast = self._displayOptionsDict['windowState']['showContrast']
+            aAction.setChecked(_visible)
+            if _shortcut:
+                aAction.setShortcut(_shortcut)
+            _lambda = lambda val, name=_name: self.toggleView(val, name)
+            aAction.triggered.connect(_lambda)
+            stackMenu.addAction(aAction)
 
         #stackMenu.addAction(channelOneAction)
 
-    def on_user_close(self):
+        return stackMenu
+    
+    def _on_user_close(self):
         logger.info('')
         self.close()
 
@@ -491,9 +497,9 @@ class stackWidget(QtWidgets.QMainWindow):
         hBoxLayout_main.addLayout(vBoxLayout)
 
         # top toolbar
-        _topToolbar = pymapmanager.interface.TopToolBar(self.myStack, self._displayOptionsDict)
-        self.addToolBar(QtCore.Qt.TopToolBarArea, _topToolbar)
-
+        self._topToolbar = pymapmanager.interface.TopToolBar(self.myStack, self._displayOptionsDict)
+        self.addToolBar(QtCore.Qt.TopToolBarArea, self._topToolbar)
+        
         # holds image and slice-slider
         hBoxLayout = QtWidgets.QHBoxLayout()
 
@@ -501,7 +507,8 @@ class stackWidget(QtWidgets.QMainWindow):
         self._imagePlotWidget = pymapmanager.interface.ImagePlotWidget(self.myStack,
                                 self._contrastDict,
                                 self._colorLutDict,
-                                self._displayOptionsDict)
+                                self._displayOptionsDict,
+                                self)
         hBoxLayout.addWidget(self._imagePlotWidget)
 
         vBoxLayout.addLayout(hBoxLayout)  # image and slider
@@ -569,10 +576,10 @@ class stackWidget(QtWidgets.QMainWindow):
         self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.lineListDock)
 
         # status toolbar (bottom)
-        _statusToolbar = pymapmanager.interface.StatusToolbar(self.myStack, parent=self)
-        self.signalSetStatus.connect(_statusToolbar.slot_setStatus)
-        self.addToolBar(QtCore.Qt.BottomToolBarArea, _statusToolbar)
-        #vBoxLayout.addWidget(_statusToolbar)
+        self._statusToolbar = pymapmanager.interface.StatusToolbar(self.myStack, parent=self)
+        self.signalSetStatus.connect(self._statusToolbar.slot_setStatus)
+        self.addToolBar(QtCore.Qt.BottomToolBarArea, self._statusToolbar)
+        #vBoxLayout.addWidget(self._statusToolbar)
 
         # important
         self.setCentralWidget(centralWidget)
@@ -583,20 +590,20 @@ class stackWidget(QtWidgets.QMainWindow):
         self._imagePlotWidget.signalCancelSelection2.connect(self.slot_selectAnnotation2)
 
         self._imagePlotWidget.signalUpdateSlice.connect(self._histogramWidget.slot_setSlice)
-        self._imagePlotWidget.signalUpdateSlice.connect(_statusToolbar.slot_setSlice)
+        self._imagePlotWidget.signalUpdateSlice.connect(self._statusToolbar.slot_setSlice)
         self._imagePlotWidget.signalUpdateSlice.connect(self.slot_setSlice)
         
         self._imagePlotWidget.signalChannelChange.connect(self.slot_setChannel)
         self._imagePlotWidget.signalChannelChange.connect(self._histogramWidget.slot_setChannel)
-        self._imagePlotWidget.signalChannelChange.connect(_topToolbar.slot_setChannel)
+        self._imagePlotWidget.signalChannelChange.connect(self._topToolbar.slot_setChannel)
 
-        self._imagePlotWidget.signalMouseMove.connect(_statusToolbar.slot_updateStatus)
+        self._imagePlotWidget.signalMouseMove.connect(self._statusToolbar.slot_updateStatus)
 
         # TODO: make a self.signalChannelChange and connect all children to it
-        _topToolbar.signalChannelChange.connect(self.slot_setChannel)
-        _topToolbar.signalChannelChange.connect(self._histogramWidget.slot_setChannel)
-        _topToolbar.signalChannelChange.connect(self._imagePlotWidget.slot_setChannel)
-        _topToolbar.signalSlidingZChanged.connect(self._imagePlotWidget.slot_setSlidingZ)
+        self._topToolbar.signalChannelChange.connect(self.slot_setChannel)
+        self._topToolbar.signalChannelChange.connect(self._histogramWidget.slot_setChannel)
+        self._topToolbar.signalChannelChange.connect(self._imagePlotWidget.slot_setChannel)
+        self._topToolbar.signalSlidingZChanged.connect(self._imagePlotWidget.slot_setSlidingZ)
 
         self._histogramWidget.signalContrastChange.connect(self._imagePlotWidget.slot_setContrast)
 
@@ -855,6 +862,8 @@ class stackWidget(QtWidgets.QMainWindow):
             logger.error(f'did not understand selectionEvent.type: {selectionEvent.type}')
             return
         
+        self._currentSelection = selectionEvent
+
         self.signalSelectAnnotation2.emit(selectionEvent)
 
     def slot_setChannel(self, channel : int):
