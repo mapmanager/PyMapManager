@@ -14,7 +14,7 @@ from pymapmanager._logger import logger
 
 
 def run():
-    path = '../PyMapManager-Data/one-timepoint - Copy/rr30a_s0_ch2.tif'
+    path = '../PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
     myStack = pmm.stack(path=path)
     
     myStack.loadImages(channel=1)
@@ -32,7 +32,7 @@ def run():
     myStack.save()
     
 def showInterface():
-    path = '../PyMapManager-Data/one-timepoint - Copy/rr30a_s0_ch2.tif'
+    path = '../PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
     myStack = pmm.stack(path=path)
     
     myStack.loadImages(channel=1)
@@ -62,7 +62,9 @@ def showInterface():
 
 
 def checkSingleSpine():
-    path = '../PyMapManager-Data/one-timepoint - Copy/rr30a_s0_ch2.tif'
+    # path = '../PyMapManager-Data/one-timepoint - Copy/rr30a_s0_ch2.tif'
+    path = '../PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
+
     myStack = pmm.stack(path=path)
     
     myStack.loadImages(channel=1)
@@ -110,5 +112,5 @@ def checkSingleSpine():
 
 if __name__ == '__main__':
     # run()
-    # run()
-    checkSingleSpine()
+    showInterface()
+    # checkSingleSpine()
