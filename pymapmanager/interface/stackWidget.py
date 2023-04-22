@@ -217,6 +217,8 @@ class stackWidget(QtWidgets.QMainWindow):
     # signalSelectAnnotation = QtCore.Signal(int, bool, bool)  # index, setSlice, doZoom
     signalSelectAnnotation2 = QtCore.Signal(object)  # pymapmanager.annotations.SelectionEvent
 
+    signalPointChanged = QtCore.Signal(object)  # pymapmanager.annotations.SelectionEvent
+
     def __init__(self,
                  path : str = None,
                  myStack : pymapmanager.stack = None,
@@ -607,6 +609,8 @@ class stackWidget(QtWidgets.QMainWindow):
 
         self._histogramWidget.signalContrastChange.connect(self._imagePlotWidget.slot_setContrast)
 
+        self.signalPointChanged.connect(self._myPointListWidget.slot_editAnnotations)
+
         # 2 switch to
         # connect our children signals to our slot
         self._myPointListWidget.signalRowSelection2.connect(self.slot_selectAnnotation2)
@@ -619,7 +623,7 @@ class stackWidget(QtWidgets.QMainWindow):
         self.signalSelectAnnotation2.connect(self._myLineListWidget.slot_selectAnnotation2)
 
         self.signalSelectAnnotation2.connect(self._imagePlotWidget.slot_selectAnnotation2)
-        self.signalSelectAnnotation2.connect(self._imagePlotWidget.slot_selectAnnotation2)
+        # self.signalSelectAnnotation2.connect(self._imagePlotWidget.slot_selectAnnotation2)
 
         # on user click '+' segment
         self._myLineListWidget.signalAddSegment.connect(self.slot_addSegment)
@@ -629,6 +633,12 @@ class stackWidget(QtWidgets.QMainWindow):
 
         # adding annotation, will veto if no segment selection
         self._imagePlotWidget.signalAddingAnnotation.connect(self.slot_addingAnnotation)
+
+        # Moving SpineROI by clicking 
+        self._imagePlotWidget.signalMouseClick.connect(self.slot_MovingSpineROI)
+
+        # Creating new connection for existing Spine ROI
+        self._imagePlotWidget.signalMouseClickConnect.connect(self.slot_ConnectSpineROI)
         
         # emitted when we actually add an annotation to the backend
         self.signalAddedAnnotation.connect(self._imagePlotWidget._aPointPlot.slot_addedAnnotation)
@@ -660,7 +670,124 @@ class stackWidget(QtWidgets.QMainWindow):
         """
         self.move(left,top)
         self.resize(width, height)
+    
 
+    def slot_ConnectSpineROI(self, selectionEvent : pymapmanager.annotations.SelectionEvent):
+        """ Responds to user clicking on a line point while we are in "connect" mode for one 
+        spine ROI
+
+        Creates a new connection from a existing spine ROI to a point on a line segment
+        """
+        logger.info('Connecting SpineROI')
+
+        logger.info(f'selectionEvent {selectionEvent}')
+        # TODO
+        # Override data in backend
+        # Using new brightest index 
+
+        if selectionEvent.linePointSelected():
+            # logger.info(f'connecting spine Index {selectionEvent.getAddedRow()}')
+            currentAnnotationRow = selectionEvent.getRows()[0]
+            logger.info(f'connecting spine Index {currentAnnotationRow}')
+
+            imageChannel = self.annotationSelection.getImageChannel()
+            _selectSegment, _segmentRowDict = self.annotationSelection.getSegmentSelection()
+            _selectSegment = _selectSegment[0]
+
+            la = self.getStack().getLineAnnotations()
+            xyzSegment = la.get_zyx_list(_selectSegment)
+                        
+            # grab the raw image data the user is viewing
+            #imgData = self.getStack().getImageChannel(imageChannel)
+            _imageSlice = self.annotationSelection.getCurrentSlice()  # could use z
+            imgSliceData = self.getStack().getImageSlice(_imageSlice, imageChannel)
+
+            roiType = pymapmanager.annotations.pointTypes.spineROI
+
+            #  Needs to be changed to detect new click for linePoint
+            # newSelectedIdx = selectionEvent.getRows()[0]
+            newSelectedIdx = self._currentSelection.getRows()[0]
+
+            # currentAnnotationRow = pa.getAnnotationDict()
+            logger.info(f'newSelectedIdx {newSelectedIdx}')
+            # logger.info(f'newSelectedIdx {newSelectedIdx}')
+            self.myStack.getPointAnnotations().updateSpineConnection(
+                                                        newSelectedIdx,
+                                                        currentAnnotationRow,
+                                                        xyzSegment,
+                                                        imageChannel,
+                                                        imgSliceData,
+                                                        la
+                                                        )
+
+
+    def slot_MovingSpineROI(self, addEvent : pymapmanager.annotations.AddAnnotationEvent):
+        """ Responds to user clicking anywhere on image while we are in "Move" mode for 
+        one spine ROI
+
+        Changes the position of that SpineROI and sets it in the backend
+        """
+        logger.info('Moving SpineROI')
+        logger.info(f'moving spine Index {addEvent.getAddedRow()}')
+        currentAnnotationRow = addEvent.getAddedRow()
+        # Get the index of the point
+        # Use the new values of the click to override the old values within the backend
+        # Recalculate Brightest Index + right/left points
+        imageChannel = self.annotationSelection.getImageChannel()
+        _selectSegment, _segmentRowDict = self.annotationSelection.getSegmentSelection()
+        _selectSegment = _selectSegment[0]
+
+        pa = self.myStack.getPointAnnotations()
+
+        la = self.getStack().getLineAnnotations()
+        xyzSegment = la.get_zyx_list(_selectSegment)
+                    
+        # grab the raw image data the user is viewing
+        #imgData = self.getStack().getImageChannel(imageChannel)
+        _imageSlice = self.annotationSelection.getCurrentSlice()  # could use z
+        # imgSliceData = self.getStack().getImageSlice(_imageSlice, imageChannel)
+        upSlices = 1
+        downSlices = 1
+        imgSliceData = self.getStack().getMaxProjectSlice(_imageSlice, imageChannel, 
+                                                          upSlices=upSlices, downSlices = downSlices)
+
+        roiType = pymapmanager.annotations.pointTypes.spineROI
+        newZYXValues = addEvent.getZYXDictForm()
+        logger.info(f'moving spine newZYXValues {newZYXValues}')
+        # currentAnnotationRow = pa.getAnnotationDict()
+
+        self.myStack.getPointAnnotations().updateSpineInt(newZYXValues,
+                                                    currentAnnotationRow,
+                                                    xyzSegment,
+                                                    imageChannel,
+                                                    imgSliceData,
+                                                    la
+                                                    )
+        
+        # Call the myPointListWidget and interface image to update!!!
+        # TODO: set up as signal slot
+        # Refreshes Spine Point list
+        # self._myPointListWidget._setModel()
+
+        # TODO: Make a signal that sends list of spines that just changed
+        _selectionEvent = pymapmanager.annotations.SelectionEvent(la,
+                                                            rowIdx=currentAnnotationRow
+                                                            )
+        self.signalPointChanged.emit(_selectionEvent)
+
+        # Selects new Spine in list
+        # self._myPointListWidget.slot_selectAnnotation2(self._currentSelection)
+        self.signalSelectAnnotation2.emit(self._currentSelection)
+
+        # Deselect current spine point and Show new spine point
+        # self._imagePlotWidget._aPointPlot.slot_deletedAnnotation()
+        self.signalDeletedAnnotation.emit()
+        
+        # Selects new Spine in image displayed
+        # self._imagePlotWidget._aPointPlot.slot_selectAnnotation2(self._currentSelection)
+
+  
+        
     def slot_addSegment(self):
         """Respond to user clicking add segment
         
@@ -759,11 +886,12 @@ class stackWidget(QtWidgets.QMainWindow):
             #imgData = self.getStack().getImageChannel(imageChannel)
             _imageSlice = self.annotationSelection.getCurrentSlice()  # could use z
             imgSliceData = self.getStack().getImageSlice(_imageSlice, imageChannel)
-
+            newZYXValues = None
             # this does lots:
             #   (i) connect spine to brightest index on segment
             #   (ii) calculate all spine intensity for a channel
-            self.myStack.getPointAnnotations().updateSpineInt(newAnnotationRow,
+            self.myStack.getPointAnnotations().updateSpineInt(newZYXValues,
+                                                        newAnnotationRow,
                                                         xyzSegment,
                                                         imageChannel,
                                                         imgSliceData,

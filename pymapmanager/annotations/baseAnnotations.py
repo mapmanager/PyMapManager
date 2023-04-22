@@ -38,6 +38,14 @@ class AddAnnotationEvent():
             'addedRowIdx': None,
         }      
 
+    def getZYXDictForm(self):
+        dict = {
+            'x': self._dict['x'],
+            'y': self._dict['y'],
+            'z': self._dict['z'],
+        }
+        return dict
+    
     def getZYX(self):
         return self._dict['z'], self._dict['y'], self._dict['x']
     
@@ -68,6 +76,7 @@ class SelectionEvent():
                  isEsc : bool = False,
                  isAlt : bool = False,
                  isShift : bool = False,
+                 lineIdx : List[int] = None,
                  ):
         
         if isinstance(rowIdx, int):
@@ -78,7 +87,8 @@ class SelectionEvent():
             'rowIdx': rowIdx,
             'isEsc': isEsc,
             'isAlt': isAlt,
-            'isShift': isShift
+            'isShift': isShift,
+            'lineIdx': lineIdx
         }
 
     def __str__(self):
@@ -93,15 +103,44 @@ class SelectionEvent():
         return self.type == pymapmanager.annotations.pointAnnotations
     
     def isLineSelection(self):
+        # annotationType = self._selDict['annotationObject']
+        logger.info(f'--->> check type {self.type}')
+        # logger.info(f'--->> controlled type {pymapmanager.annotations.lineAnnotations}')
+        # return annotationType == pymapmanager.annotations.lineAnnotations
+
+        # Altered on 4/19 because self.type would return <class 'type'>
+        # rather than  <class 'pymapmanager.annotations.lineAnnotations.lineAnnotations'>
         return self.type == pymapmanager.annotations.lineAnnotations
+    
+
+    def linePointSelected(self):
+        """
+        isLineSelection is throwing error
+        self.type would return <class 'type'>
+        rather than  <class 'pymapmanager.annotations.lineAnnotations.lineAnnotations'>
+
+        This class was made as a possible fix
+        """
+        annotationType = self._selDict['annotationObject']
+        return annotationType== pymapmanager.annotations.lineAnnotations
     
     @property
     def type(self):
+        # temp = type(self._selDict['annotationObject'])
+        # logger.info(f'--->> IT WORKS {temp}')
+
         return type(self._selDict['annotationObject'])
     
     @property
     def annotationObject(self) -> "pymapmanager.annotations.baseAnnotations":
         return self._selDict['annotationObject']
+    
+    def getLineIdx(self) -> Optional[List[int]]:
+        """Get list of selected rows, can be None.
+
+        For line selection, will be segmentID
+        """
+        return self._selDict['lineIdx']
     
     def getRows(self) -> Optional[List[int]]:
         """Get list of selected rows, can be None.

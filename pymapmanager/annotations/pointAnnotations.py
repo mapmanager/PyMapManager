@@ -227,7 +227,31 @@ class pointAnnotations(baseAnnotations):
 
         return newRow
 
-    def updateSpineInt(self, spineIdx, zyxLineSegment, channelNumber : int, imgData : np.array, la):
+    def updateSpineConnection(self, selectedLinePointIdx, spineIdx, zyxLineSegment, 
+                              channelNumber : int, imgData : np.array, la):
+        """ Update the backend for spine after it was manually connected
+        
+        """
+        # _z = self.getValue('z', spineIdx)
+        # _y = self.getValue('y', spineIdx)
+        # _x = self.getValue('x', spineIdx)
+        
+        # 1) brightest index is manually selected
+        brightestIndex = selectedLinePointIdx
+        logger.info(f"brightestIndex:{brightestIndex}")
+        
+        self.updateSpineInt(newZYXValues = None, spineIdx=spineIdx,
+                            zyxLineSegment= zyxLineSegment,
+                            channelNumber=channelNumber,
+                            imgData = imgData,
+                            la = la,
+                            brightestIndex = brightestIndex)
+        
+        # TODO: Update interface and image to display change
+
+    def updateSpineInt(self, newZYXValues: None, spineIdx, zyxLineSegment, 
+                       channelNumber : int, imgData : np.array, 
+                       la: "pymapmanager.annotations.lineAnnotations", brightestIndex: int = None):
         """Update all spine intensity measurements for:
             (1) a spine mask roi
             (2) minimal background roi (from a grid of candidates).
@@ -248,25 +272,47 @@ class pointAnnotations(baseAnnotations):
             - imgData: the raw image data to search
 
         Args:
+            newZYXValues: is None for when a new Spine is created. When moving Spine it need actual values to replace the old data
+            Either None or A dict(z,y,x)
             spineIdx (int) the row index into the pandas dataframe we are updating
             zyxLineSegment (List(z,y,x)): A list of (z,y,x) point we want to connect to (via brightest index)
             channelNumber (int) the channel number we are connecting to, needed to get the correct column name with _ch<channelNumber>
             imgData (np.ndarray) the actual image data to search in
             la: lineAnnotations
         """
-        logger.info('This is setting lots of columns in our backend with all intensity measurements')
-        logger.info(f'  imgData.shape {imgData.shape}')
+        # logger.info('This is setting lots of columns in our backend with all intensity measurements')
+        # logger.info(f'  imgData.shape {imgData.shape}')
 
-        logger.info(f"spineIdx:{spineIdx}")
-        _z = self.getValue('z', spineIdx)
-        _x = self.getValue('x', spineIdx)
-        _y = self.getValue('y', spineIdx)
+        # logger.info(f"spineIdx:{spineIdx}")
+        if(newZYXValues is None):
+            _z = self.getValue('z', spineIdx)
+            _y = self.getValue('y', spineIdx)
+            _x = self.getValue('x', spineIdx)
+        else:
+            _z = newZYXValues['z']
+            _y = newZYXValues['y']
+            _x = newZYXValues['x']
+            self.setValue('z', spineIdx, _z)
+            self.setValue('y', spineIdx, _y)
+            self.setValue('x', spineIdx, _x)
+
+        # Send signal to update table widget and refresh interface image
+        # _myPointListWidget
+
+        # logger.info(f"x coordinate value :{_x}")
+        # logger.info(f"y coordinate value :{_y}")
+        # logger.info(f"z coordinate value :{_z}")
+
+        # _z = self.getValue('z', spineIdx)
+        # _x = self.getValue('x', spineIdx)
+        # _y = self.getValue('y', spineIdx)
         segmentID = self.getValue('segmentID', spineIdx)
         chStr = str(channelNumber)
         
         # 1) find brightest path to line segment
         #brightestIndex = self.reconnectToSegment(spineIdx, xyzLineSegment, imgData)
-        brightestIndex = self._calculateSingleBrightestIndex(channel = channelNumber, spineRowIdx = spineIdx
+        if (brightestIndex is None):
+            brightestIndex = self._calculateSingleBrightestIndex(channel = channelNumber, spineRowIdx = spineIdx
                                                              , zyxLineSegment = zyxLineSegment, img = imgData)
 
         logger.info(f"brightestIndex:{brightestIndex}")
@@ -293,19 +339,19 @@ class pointAnnotations(baseAnnotations):
                                                                       xPlotLines = xBrightestLine,
                                                                       yPlotLines = yBrightestLine)
 
-        logger.info(f"spineRectROI:{spineRectROI}")
+        # logger.info(f"spineRectROI:{spineRectROI}")
 
         radius = 3
         lineSegmentROI = pymapmanager.utils.calculateLineROIcoords(lineIndex = brightestIndex,
                                                                    radius = radius,
                                                                    lineAnnotations = la)
 
-        logger.info(f"lineSegmentROI:{lineSegmentROI}")
+        # logger.info(f"lineSegmentROI:{lineSegmentROI}")
 
         finalSpineROIMask = pymapmanager.utils.calculateFinalMask(rectanglePoly = spineRectROI, 
                                                                   linePoly = lineSegmentROI)
                                                                 
-        logger.info(f"finalSpineROIMask:{finalSpineROIMask}")
+        # logger.info(f"finalSpineROIMask:{finalSpineROIMask}")
 
         # 3) calculate dict for spine with keys ('Sum', 'Min', 'Max', 'Mean', ....)
         #   and store as columns in our pandas dataframe
@@ -317,7 +363,7 @@ class pointAnnotations(baseAnnotations):
         # get dict with spine intensity measurements
         spineIntDict = pymapmanager.utils._getIntensityFromMask(finalSpineROIMask, imgData)
 
-        logger.info(f"spineIntDict:{spineIntDict}")
+        # logger.info(f"spineIntDict:{spineIntDict}")
 
         self.setIntValue(spineIdx, 'spine', channelNumber, spineIntDict)
 
@@ -366,24 +412,6 @@ class pointAnnotations(baseAnnotations):
         
         self.setIntValue(spineIdx, 'spineBackground', channelNumber, spineBackgroundIntDict)
 
-        # debugBackgroundSpineIntDict = self.setIntValue(spineIdx, 'spineBackground', channelNumber, spineBackgroundIntDict)
-        # print("debugBackgroundSpineIntDict", debugBackgroundSpineIntDict)
-
-        #
-        # DEBUG
-        #
-        # retreive the value and print the dict
-        # see: tests/test_point_annotations.test_int_columns()
-        # logger.info('!!! we just added a spine, here are the value of the spine intensity:')
-        # debugSpineIntDict = self.getIntValue(spineIdx, 'spine', channelNumber)
-        # print(debugSpineIntDict)
-        # logger.info('  and the background (I made these up)')
-        # debugBackgroundSpineIntDict = self.getIntValue(spineIdx, 'spineBackground', channelNumber)
-        # print(debugBackgroundSpineIntDict)
-
-        # Figure out how to display the rectangle region on the interface.
-        # Order the coordinates in the right order to plot
-        #   - improve on the shape of the polygon
 
     def reconnectToSegment(self, rowIdx : int):
         """Connect a point to brightest path to a line segment.

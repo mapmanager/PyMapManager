@@ -530,6 +530,7 @@ class stack():
                 # Add brightestIndex in annotation as a column
                 brightestIndex = pymapmanager.utils._findBrightestIndex(xSpine, ySpine, zSpine, lineSegment, sliceImage)
                 brightestIndexes.append(brightestIndex + startSegmentIndex)
+
                 # Offset index accounts for inital index added onto the actual brightest index
                 offSetIndex = brightestIndex + startSegmentIndex
                 # spine['brightestIndex'] = offSetIndex

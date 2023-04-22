@@ -373,7 +373,8 @@ class annotationListWidget(QtWidgets.QWidget):
         logger.info(f'rows:{rows}')
         self.getMyModel().myDeleteRows(rows)
 
-    def slot_editAnnotations(self, rows : Union[List[int], int], dictList : List[dict]):
+    # def slot_editAnnotations(self, rows : Union[List[int], int], dictList : List[dict]):
+    def slot_editAnnotations(self, selectionEvent: pymapmanager.annotations.SelectionEvent):
         """Modify values in rows(s).
         
         This is called when user:
@@ -384,7 +385,8 @@ class annotationListWidget(QtWidgets.QWidget):
             rows: Annotation rows to edit
             dictList: List of dict with new annotation values
         """
-        logger.info(f'rows:{rows}')
+        logger.info(f'selectionEvent:{selectionEvent}')
+        self._setModel()
         # make df from dictList
         # df = 
         # self.getMyModel().mySetRow(rows, df)

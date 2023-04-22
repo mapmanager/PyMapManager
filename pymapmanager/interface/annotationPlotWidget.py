@@ -413,8 +413,10 @@ class annotationPlotWidget(QtWidgets.QWidget):
         newAnnotationRow = addAnnotationEvent.getAddedRow()
         self._selectAnnotation(newAnnotationRow)
 
-    def slot_deletedAnnotation(self, deleteDict : dict):
+    # OLD def slot_deletedAnnotation(self, deleteDict : dict):
+    def slot_deletedAnnotation(self):
         """Slot called after an annotation was deleted.
+        Also called when moving spine (since original spine is deleted in the process)
         
         Update the interface.
         """
@@ -482,15 +484,18 @@ class pointPlotWidget(annotationPlotWidget):
         self._spinePolygon.setZValue(zorder) 
         self._view.addItem(self._spinePolygon)
 
+    def slot_deletedAnnotation(self):
+        super().slot_deletedAnnotation()
+        # logger.info(f'slot_deletedAnnotation')
+
     def slot_selectAnnotation2(self, selectionEvent : "pymapmanager.annotations.SelectionEvent"):
         super().slot_selectAnnotation2(selectionEvent)
         logger.info('pointPlotWidget XXX')
         # logger.info(f'{self._getClassName()}')
         if not selectionEvent.isPointSelection():
             return
+        
         _selectedRows = selectionEvent.getRows()
-        xCoordsList = []
-        yCoordsList = []
 
         # segmentID = self.pointAnnotations.getValue('segmentID', spineIdx)
         # zyxList = self.lineAnnotations.get_zyx_list(segmentID)
@@ -500,18 +505,19 @@ class pointPlotWidget(annotationPlotWidget):
             self._spinePolygon.setData([], [])
 
         elif(len(_selectedRows) == 1):
-          
+            
             # logger.info(f'selectedRow {_selectedRow}')
             firstSelectedRow = _selectedRows[0]
 
-            jaggedPolygon = self.pointAnnotations.calculateJaggedPolygon(self.lineAnnotations, firstSelectedRow, self._channel, self.img)
-            
-            self._spinePolygon.setData(jaggedPolygon[:,1], jaggedPolygon[:,0])
+            roiType = self.pointAnnotations.getValue("roiType", firstSelectedRow)
 
-        #
-        # self._spinePolygon.setData(xCoordsList, yCoordsList)
-        # self._spinePolygon.setData(jaggedPolygon[:,1], jaggedPolygon[:,0])
-        self._view.update()
+            if roiType == "spineROI":
+            
+                jaggedPolygon = self.pointAnnotations.calculateJaggedPolygon(self.lineAnnotations, firstSelectedRow, self._channel, self.img)
+                
+                self._spinePolygon.setData(jaggedPolygon[:,1], jaggedPolygon[:,0])
+
+                # self._view.update()
 
     def slot_setSlice(self, sliceNumber : int):
         super().slot_setSlice(sliceNumber=sliceNumber)

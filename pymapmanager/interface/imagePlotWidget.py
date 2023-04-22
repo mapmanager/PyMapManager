@@ -53,12 +53,17 @@ class ImagePlotWidget(QtWidgets.QWidget):
     Args:
         dict: 
     """
+    # Moving
+    signalMouseClick = QtCore.Signal(object)
+
+    # Connecting
+    signalMouseClickConnect = QtCore.Signal(object)
 
     def __init__(self, myStack : pymapmanager.stack,
                     contrastDict : dict,
                     colorLutDict : dict,
                     displayOptionsDict : dict,
-                    stackWidgetParent,
+                    stackWidgetParent : "pymapmanager.interface.stackWidget",
                     parent=None):
         super().__init__(parent)
         
@@ -82,6 +87,12 @@ class ImagePlotWidget(QtWidgets.QWidget):
         self._sliceImage = None
 
         self._blockSlots = False
+
+        # Variable to keep track of State, Used for Moving Spine ROI
+        self._mouseMovedState = False
+
+        # Variable to keep track of State, Used creating new connection to an existing Spine ROI
+        self._mouseConnectState = False
 
         self._buildUI()
 
@@ -182,10 +193,17 @@ class ImagePlotWidget(QtWidgets.QWidget):
 
         if action == moveAction:
             logger.info('TODO: moveAction')
+            self._mouseMovedState = True 
+            
+            # Currently using slot_MovingSpineROI within stackWidget to do the logic 
+
             # annotationPlot Widget has a signal signalMovingAnnotation (not currently used?)
 
         elif action == manualConnectAction:
             logger.info('TODO: manualConnect')
+
+            # Detect on mouse click but ensure that it is part of the line
+            self._mouseConnectState = True 
 
         elif action == deleteAction:
             logger.info('deleting the selected annotation')
@@ -304,7 +322,7 @@ class ImagePlotWidget(QtWidgets.QWidget):
 
     #def _onMouseClick_scene(self, event : pg.GraphicsScene.mouseEvents.MouseClickEvent):
     def _onMouseClick_scene(self, event):
-        """If we get shit+click, make new annotation item.
+        """If we get shift+click, make new annotation item.
         
         Just emit the coordinates and have the parent stack window decide
         on the point type given its state
@@ -325,6 +343,46 @@ class ImagePlotWidget(QtWidgets.QWidget):
         modifiers = QtWidgets.QApplication.queryKeyboardModifiers()
         isShift = modifiers == QtCore.Qt.ShiftModifier
         #isAlt = modifiers == QtCore.Qt.AltModifier
+
+        # change the position of the current SpineROI to the new one
+        # Also recaculate brightest index and left/right points
+        pos = event.pos()
+        imagePos : QtCore.QPointF = self._myImage.mapFromScene(pos)
+        # print('  imagePos:', imagePos)
+
+        x = int(imagePos.x())
+        y = int(imagePos.y())
+        z = self._currentSlice
+        # get the current selection from the parent stack widget
+        currentSelection = self._stackWidgetParent.getCurrentSelection()
+        _selectedRows = currentSelection.getRows()
+        addedRowIdx =_selectedRows[0]
+
+        _addAnnotationEvent = pymapmanager.annotations.AddAnnotationEvent(z, y, x)
+        _addAnnotationEvent.setAddedRow(addedRowIdx)
+        logger.info(f'-->> signalMouseClick.emit {_addAnnotationEvent}')
+        
+        # _addAnnotationEvent.setAddedRow(addedRowIdx)
+
+        # logger.info(f'-->> selectionEvent.type {_selectionEvent.type}')
+        # logger.info(f'-->> check type.emit {pymapmanager.annotations.lineAnnotations}')
+            
+        if self._mouseConnectState:
+            tempLinePointIndex = 150
+            _selectionEvent = pymapmanager.annotations.SelectionEvent(pymapmanager.annotations.lineAnnotations, 
+                                                                      rowIdx = addedRowIdx,
+                                                                      lineIdx = tempLinePointIndex)
+            logger.info(f'-->> signalMouseClickConnect.emit {_selectionEvent}')
+            
+            logger.info(f'-->> ENTERING CONNECT STATE')
+            self.signalMouseClickConnect.emit(_selectionEvent)
+            self._mouseConnectState = False
+
+        if self._mouseMovedState:
+            logger.info(f'-->> ENTERING MOOVE STATE')
+            # Either set backend or send signal to set backend?
+            self.signalMouseClick.emit(_addAnnotationEvent)
+            self._mouseMovedState = False
 
         # we always make pointAnnotation
         #   never make lineAnnotation, this comes in after fitting controlPnt
