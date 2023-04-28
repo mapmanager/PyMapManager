@@ -4,13 +4,15 @@ import pymapmanager as pmm
 import matplotlib.pyplot as plt
 from pymapmanager.pmmUtils import calculateRectangleROIcoords
 from pymapmanager.pmmUtils import calculateLineROIcoords
-from pymapmanager.pmmUtils import plotOutline
+# from pymapmanager.pmmUtils import plotOutline
 from pymapmanager.pmmUtils import calculateCandidateMasks
+from pymapmanager.pmmUtils import calculateFinalMask
 from matplotlib.path import Path
 
 stackPath = '../PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
 channel = 2
-myStack = pmm.stack(stackPath, defaultChannel = channel, loadImageData = True)
+# myStack = pmm.stack(stackPath, defaultChannel = channel, loadImageData = True)
+myStack = pmm.stack(stackPath)
 # img = myStack.getImageChannel(channel = channel)
 img = myStack.getMaxProject(channel = channel)
 print("img.dtype", img.dtype)
@@ -40,7 +42,10 @@ for idx, row in enumerate(pointAnnotation):
         continue
     spineRowIdx = row["index"]
     # print(type(spineRowIdx))
-    brightestIndex = pointAnnotation._calculateSingleBrightestIndex(myStack, channel, int(spineRowIdx), lineAnnotation, img)
+    # self, channel: int, spineRowIdx: int, zyxLineSegment, img)
+    segmentID = pointAnnotation.getValue('segmentID', spineRowIdx)
+    xyzSegment = lineAnnotation.get_zyx_list(segmentID)
+    brightestIndex = pointAnnotation._calculateSingleBrightestIndex(myStack, channel, xyzSegment, img)
     # brightestIndex = pointAnnotation._calculateSingleBrightestIndex(myStack, channel, int(spineRowIdx), lineAnnotation, img)
     print(brightestIndex)
     xBrightestLine.append(xLine[brightestIndex])
@@ -80,7 +85,8 @@ plt.plot(totalPoints[:,0], totalPoints[:,1], 'w')
 
 # print("test list: ", [tuple(x) for x in totalPoints.tolist()])
 # Convert totalPoints into correct format
-finalSpineMask = plotOutline(oneRectangleCoords, [tuple(x) for x in totalPoints.tolist()])
+# finalSpineMask = plotOutline(oneRectangleCoords, [tuple(x) for x in totalPoints.tolist()])
+finalSpineMask = calculateFinalMask(oneRectangleCoords, totalPoints)
 
 # Must be in y,x order
 originalSpinePoint = [int(ySpine[0]), int(xSpine[0])]

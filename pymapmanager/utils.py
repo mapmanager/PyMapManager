@@ -509,8 +509,9 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations):
     # print("totalPoints[0]", totalPoints[0])
     # Append the first coordinate at the end to make a fully closed polygon
     # Since we reversed the original list it would be at the end
-    coordinateList.append([lineAnnotations.getValue("xLeft", lineIndex+totalPoints[0]), 
-            lineAnnotations.getValue("yLeft", lineIndex+totalPoints[0])])
+    # 4/28 Removed since we are plotting we a different endpoint in the function jagggedPolygon
+    # coordinateList.append([lineAnnotations.getValue("xLeft", lineIndex+totalPoints[0]), 
+    #         lineAnnotations.getValue("yLeft", lineIndex+totalPoints[0])])
 
     coordinateList = np.array(coordinateList)
     return coordinateList
@@ -573,7 +574,10 @@ def convertCoordsToMask(poly):
     return polyMask
 
 def getOffset(distance, numPts):
-    """ Generate list of candidate points where mask will be moved """
+    """ Generate list of candidate points where mask will be moved 
+    
+    returns in form [[xPoint, yPoint]]
+    """
     # TODO: Figure out how to move the mask centered on those points
     coordOffsetList = []
 
@@ -738,45 +742,49 @@ def getSegmentROIPoints(coordsOfMask, linePolyCoords):
     coordsOfMask = coordsOfMask.tolist()
     # print("coords", coordsOfMask)
     # print("type of coords", type(coordsOfMask))
-
+    logger.info(f"linePolyCoords: {linePolyCoords}")
     for index, value in enumerate(linePolyCoords):
         # print("value", value)
+        
         XValue = value[0]
         YValue = value[1]
         
-        fracX, wholeX = math.modf(XValue)
-        fracY, wholeY = math.modf(YValue)
-
-        # roundedXValue = math.ceil(value[0])
-        # roundedYValue = math.ceil(value[1])
-        # roundedCoords = [roundedYValue, roundedXValue]
-        if(fracX > 0.5):
-            roundedXValue = math.ceil(value[0])
+        # Accounting for cases where we don't have values calculated at the
+        # beginning and end points of a segment
+        if(math.isnan(XValue) or math.isnan(YValue)):
+            continue
         else:
-            roundedXValue = math.floor(value[0])
-        if(fracY > 0.5):
-            roundedYValue = math.ceil(value[1])
-        else:
-            roundedYValue = math.floor(value[1])
+            fracX, wholeX = math.modf(XValue)
+            fracY, wholeY = math.modf(YValue)
 
-        # roundedCoords = [roundedYValue, roundedXValue]
-        roundedCoords = np.array([roundedYValue, roundedXValue])
-        roundedCoords = roundedCoords.tolist()
-        # roundedCoords = np.array([roundedXValue, roundedYValue])
+            if(fracX > 0.5):
+                roundedXValue = math.ceil(value[0])
+            else:
+                roundedXValue = math.floor(value[0])
+            if(fracY > 0.5):
+                roundedYValue = math.ceil(value[1])
+            else:
+                roundedYValue = math.floor(value[1])
 
-        # print("roundedCoords", roundedCoords)
+            # roundedCoords = [roundedYValue, roundedXValue]
+            roundedCoords = np.array([roundedYValue, roundedXValue])
+            roundedCoords = roundedCoords.tolist()
+            # roundedCoords = np.array([roundedXValue, roundedYValue])
 
-        # if(roundedCoords in coordsOfMask):
-        #     print("roundedCoords", index, roundedCoords)
-        #     filteredCoordList.append(roundedCoords)
-        # else:
-        #     print("not in list", index, roundedCoords)
-        if(roundedCoords in coordsOfMask):
-            # Its checking to see if one of the x,y value matches but not for booth?
-            # print("roundedCoords", index, roundedCoords)
-            filteredCoordList.append(roundedCoords)
-        # else:
-            # print("not in list", index, roundedCoords)
+            # print("roundedCoords", roundedCoords)
+
+            # if(roundedCoords in coordsOfMask):
+            #     print("roundedCoords", index, roundedCoords)
+            #     filteredCoordList.append(roundedCoords)
+            # else:
+            #     print("not in list", index, roundedCoords)
+            if(roundedCoords in coordsOfMask):
+                # Its checking to see if one of the x,y value matches but not for booth?
+                # print("roundedCoords", index, roundedCoords)
+                logger.info(f"index: {index} roundedCoords: {roundedCoords}")
+                filteredCoordList.append(roundedCoords)
+            # else:
+                # print("not in list", index, roundedCoords)
 
     # print("filteredCoordList", filteredCoordList)
     return np.array(filteredCoordList)

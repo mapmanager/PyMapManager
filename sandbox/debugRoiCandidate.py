@@ -44,8 +44,8 @@ def _loadStackAndGetSpine(rowIdx):
     """
     
     stackPath = '../PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
-    myStack = pmm.stack(stackPath, defaultChannel=2, loadImageData=True)
-
+    # myStack = pmm.stack(stackPath, defaultChannel=2, loadImageData=True)
+    myStack = pmm.stack(stackPath)
     pa = myStack.getPointAnnotations()
 
     # get one row from point annotations (as dict)

@@ -781,7 +781,12 @@ class stackWidget(QtWidgets.QMainWindow):
 
         # Deselect current spine point and Show new spine point
         # self._imagePlotWidget._aPointPlot.slot_deletedAnnotation()
-        self.signalDeletedAnnotation.emit()
+        deleteDict = {
+                'annotationType': pymapmanager.annotations.annotationType.point,
+                'annotationIndex': currentAnnotationRow,
+                'isSegment': False,
+            }
+        self.signalDeletedAnnotation.emit(deleteDict)
         
         # Selects new Spine in image displayed
         # self._imagePlotWidget._aPointPlot.slot_selectAnnotation2(self._currentSelection)

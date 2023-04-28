@@ -111,6 +111,6 @@ def checkSingleSpine():
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
-    # run()
-    showInterface()
+    run()
+    # showInterface()
     # checkSingleSpine()

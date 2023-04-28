@@ -484,6 +484,10 @@ class pointPlotWidget(annotationPlotWidget):
         self._spinePolygon.setZValue(zorder) 
         self._view.addItem(self._spinePolygon)
 
+        self._spineBackgroundPolygon = self._view.plot([],[],pen=pg.mkPen(width=width, color=color), symbol=symbol)
+        self._spineBackgroundPolygon.setZValue(zorder) 
+        self._view.addItem(self._spineBackgroundPolygon)
+
     def slot_deletedAnnotation(self):
         super().slot_deletedAnnotation()
         # logger.info(f'slot_deletedAnnotation')
@@ -510,12 +514,18 @@ class pointPlotWidget(annotationPlotWidget):
             firstSelectedRow = _selectedRows[0]
 
             roiType = self.pointAnnotations.getValue("roiType", firstSelectedRow)
+            xOffset = self.pointAnnotations.getValue("xBackgroundOffset", firstSelectedRow)
+            yOffset = self.pointAnnotations.getValue("yBackgroundOffset", firstSelectedRow)
+            logger.info(f'xOffset {xOffset} yOffset {yOffset}')
 
             if roiType == "spineROI":
             
                 jaggedPolygon = self.pointAnnotations.calculateJaggedPolygon(self.lineAnnotations, firstSelectedRow, self._channel, self.img)
                 
                 self._spinePolygon.setData(jaggedPolygon[:,1], jaggedPolygon[:,0])
+
+                # Add code to plot the backgroundROI
+                self._spineBackgroundPolygon.setData(jaggedPolygon[:,1] + yOffset, jaggedPolygon[:,0] + xOffset)
 
                 # self._view.update()
 

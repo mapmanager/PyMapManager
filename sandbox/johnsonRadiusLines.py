@@ -1,3 +1,4 @@
+"Use to calculate and store right/ left radius lines for each line point"
 import pymapmanager as pmm
 
 def plotRadiusLines(myStack: pmm.stack):
@@ -55,8 +56,8 @@ if __name__ == "__main__":
     # segmentID = 0
 
     # lineAnnotations.getRadiusLines([0,1])
-    # lineAnnotations.getRadiusLines(None, 3)
-    lineAnnotations.getRadiusLines([0,1], 3)
+    lineAnnotations.getRadiusLines(None, 3)
+    # lineAnnotations.getRadiusLines([0,1], 3)
 
     # from pymapmanager.utils import getRadiusLines
     # getRadiusLines(lineAnnotations)
