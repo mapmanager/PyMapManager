@@ -883,6 +883,8 @@ class stackWidget(QtWidgets.QMainWindow):
 
         # adding a spine roi require lots of additional book-keeping
         if roiType == pymapmanager.annotations.pointTypes.spineROI:
+
+            # TODO: Simplify code to be a function in the backend (in stack?)
             # grab the zyx of the selected segment
             la = self.getStack().getLineAnnotations()
             xyzSegment = la.get_zyx_list(_selectSegment)
@@ -891,6 +893,7 @@ class stackWidget(QtWidgets.QMainWindow):
             #imgData = self.getStack().getImageChannel(imageChannel)
             _imageSlice = self.annotationSelection.getCurrentSlice()  # could use z
             imgSliceData = self.getStack().getImageSlice(_imageSlice, imageChannel)
+            # TODO: change this to getMaxImageSlice
             newZYXValues = None
             # this does lots:
             #   (i) connect spine to brightest index on segment

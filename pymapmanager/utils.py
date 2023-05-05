@@ -159,7 +159,7 @@ def _findBrightestIndex(x, y, z, zyxLine : List[List[float]], image: np.ndarray,
         sourcePoint = np.array([y, x])
 #         print("SourcePoint:", sourcePoint)
         # destPoint = np.array([candidatePoint[0], candidatePoint[1]])
-        destPoint = np.array([candidatePoint[1], candidatePoint[0]])
+        destPoint = np.array([candidatePoint[1], candidatePoint[2]])
 #         print("DestPoint:", destPoint)
         candidateProfile = skimage.measure.profile_line(image, sourcePoint, destPoint, linewidth)
         oneSum = np.sum(candidateProfile)
@@ -403,6 +403,7 @@ def calculateRectangleROIcoords(xPlotSpines, yPlotSpines, xPlotLines, yPlotLines
     fourthCoordY = Yb + Dx + adjustY
 
     return [(firstCoordX, firstCoordY), (secondCoordX, secondCoordY), (thirdCoordX, thirdCoordY), (fourthCoordX, fourthCoordY)]
+    # return [(firstCoordY, firstCoordX), (secondCoordY, secondCoordX), (thirdCoordY, thirdCoordX), (fourthCoordY, fourthCoordX)]
 
 def calculateTopTwoRectCoords(xPlotSpines, yPlotSpines, xPlotLines, yPlotLines):
     """
@@ -460,17 +461,20 @@ def calculateTopTwoRectCoords(xPlotSpines, yPlotSpines, xPlotLines, yPlotLines):
     return [(firstCoordY, firstCoordX), (secondCoordY, secondCoordX)]
 
 
-def calculateLineROIcoords(lineIndex, radius, lineAnnotations):
+def calculateLineROIcoords(lineIndex, radius, lineAnnotations, forFinalMask):
     """
         Args:
             lineIndex: Index within lineAnnotations where we start.
             radius: Integer value to determine many other indexes we move from the original lineIndex
                 -> example: radius = 1, lineIndex, = 1 -> plotting index: 0,1,2
             lineAnnotations
+            forFinalMask: Boolean , true if used for calculating final mask, false if not
+                -> setting to false will add the first original point back. this is for plotting just the segmentROI
 
         Returns:
             a list containing each the x and y values of each coordinate
             format [[x,y]]
+            // tested format [[y,x]] on 5/4/23
 
             alternatively we could change it to have
             a list of tuples representing the 4 coordinates of the rectangle
@@ -484,6 +488,7 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations):
     # totalPoints = list(range(radius*-2, radius*2+1))
     totalPoints = list(range(-radius, radius+1))
     # totalPoints = len(lineAnnotations)
+    logger.info(f'len(lineAnnotations):{len(lineAnnotations)}')
     coordinateList = []
     for i in totalPoints:
         # print("i", i)
@@ -492,8 +497,13 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations):
         # Account for beginning and end of LineAnnotations indexing
         # TODO: checking within in the segment 
         if(lineIndex+i >= 0 and lineIndex+i <= len(lineAnnotations)):
-            coordinateList.append([lineAnnotations.getValue("xLeft", lineIndex+i), 
-            lineAnnotations.getValue("yLeft", lineIndex+i)])
+            # coordinateList.append([lineAnnotations.getValue("xLeft", lineIndex+i), 
+            #     lineAnnotations.getValue("yLeft", lineIndex+i)])
+            xLeft = lineAnnotations.getValue("xLeft", lineIndex+i)
+            yLeft = lineAnnotations.getValue("yLeft", lineIndex+i)
+            if not(math.isnan(xLeft) and math.isnan(yLeft)):
+                coordinateList.append([xLeft, yLeft])
+                print("xLeft is", xLeft)
 
     # totalPoints = totalPoints.reverse()
     totalPoints.reverse()
@@ -502,18 +512,27 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations):
     for i in totalPoints:
         # Account for beginning and end of LineAnnotations indexing
         if(lineIndex+i >= 0 and lineIndex+i <= len(lineAnnotations)):
-            coordinateList.append([lineAnnotations.getValue("xRight", lineIndex+i), 
-            lineAnnotations.getValue("yRight", lineIndex+i)]) 
+            xRight = lineAnnotations.getValue("xRight", lineIndex+i)
+            yRight = lineAnnotations.getValue("yRight", lineIndex+i)
+            if not(math.isnan(xRight) and math.isnan(yRight)):
+                coordinateList.append([xRight, yRight]) 
+                print("yRight is", yRight)
 
     totalPoints.reverse()
     # print("totalPoints[0]", totalPoints[0])
     # Append the first coordinate at the end to make a fully closed polygon
     # Since we reversed the original list it would be at the end
     # 4/28 Removed since we are plotting we a different endpoint in the function jagggedPolygon
-    # coordinateList.append([lineAnnotations.getValue("xLeft", lineIndex+totalPoints[0]), 
-    #         lineAnnotations.getValue("yLeft", lineIndex+totalPoints[0])])
+
+    if not forFinalMask:
+        xLeft = lineAnnotations.getValue("xLeft", lineIndex+totalPoints[0])
+        yLeft = lineAnnotations.getValue("yLeft", lineIndex+totalPoints[0])
+        if not(math.isnan(xLeft) and math.isnan(yLeft)):
+            coordinateList.append([xLeft, yLeft])
 
     coordinateList = np.array(coordinateList)
+
+    # logger.info(f"segmentPolygon coordinateList: {coordinateList}")
     return coordinateList
 
 def calculateFinalMask(rectanglePoly, linePoly):
@@ -552,7 +571,10 @@ def calculateFinalMask(rectanglePoly, linePoly):
     return finalSpineMask
 
 def convertCoordsToMask(poly):
+    """
+    Convert coords of a polygon to mask.
 
+    """
     # TODO: Change this to detect image shape rather than have it hard coded
     nx, ny = 1024, 1024
 
@@ -671,7 +693,12 @@ def calculateBackgroundMask(spineMask, offset):
     backgroundPointsY = backgroundPointList[:,0]
 
     backgroundMask = np.zeros(spineMask.shape, dtype = np.uint8)
+
+    # logger.info(f"backgroundPointsY:{backgroundPointsY}")
+    # logger.info(f"backgroundPointsX:{backgroundPointsX}")
     backgroundMask[backgroundPointsY,backgroundPointsX] = 1
+
+    # Account for out of bounds 
 
     return backgroundMask
 
@@ -704,7 +731,7 @@ def rotational_sort(list_of_xy_coords, centre_of_rotation_xy_coord, clockwise=Tr
 
 def checkLabel(mask, _xSpine, _ySpine):
     """ Filters out a mask so that extra segments will be removed
-    Returns the label of the segment which contains the original spintPoint
+    Returns the label of the segment which contains the original spinePoint
     """
     labelArray, numLabels = ndimage.label(mask)
     # print("current labelArray", labelArray)
@@ -713,16 +740,27 @@ def checkLabel(mask, _xSpine, _ySpine):
     # Loop through all the labels and pull out the x,y coordinates 
     # Check if the original x,y points is within those coords (using numpy.argwhere)
     originalSpinePoint = [int(_ySpine), int(_xSpine)]
+    # originalSpinePoint = np.asarray(originalSpinePoint, dtype=np.intp)
+    # logger.info(f"originalSpinePoint: {originalSpinePoint}")
     # originalSpinePoint = [int(_xSpine), int(_ySpine)]
     currentLabel = 0
     # print(originalSpinePoint)
     for label in np.arange(1, numLabels+1, 1):
-        currentCandidate =  np.argwhere(labelArray == label)
+        currentCandidate = np.argwhere(labelArray == label)
+        logger.info(f"originalSpinePoint: {originalSpinePoint}")
+        logger.info(f"currentCandidate: {currentCandidate}")
+
         # Check if the original x,y point in the current candidate
-        if(originalSpinePoint in currentCandidate):
+        # np.array check sboth values x and y and is true if one of the values is true
+        # Converted to a list to ensure that we check for both values at the same time
+        if(originalSpinePoint in currentCandidate.tolist()):
             currentLabel = label
+            logger.info(f"currentLabel: {currentLabel}")
             # print("current label", currentLabel)
-            break
+            # break
+        # result = np.any(currentCandidate == originalSpinePoint)
+        # if result:
+        #     break
     
     return currentLabel
 
@@ -742,7 +780,8 @@ def getSegmentROIPoints(coordsOfMask, linePolyCoords):
     coordsOfMask = coordsOfMask.tolist()
     # print("coords", coordsOfMask)
     # print("type of coords", type(coordsOfMask))
-    logger.info(f"linePolyCoords: {linePolyCoords}")
+    # logger.info(f"coordsOfMask: {coordsOfMask}")
+    # logger.info(f"linePolyCoords: {linePolyCoords}")
     for index, value in enumerate(linePolyCoords):
         # print("value", value)
         
@@ -781,7 +820,7 @@ def getSegmentROIPoints(coordsOfMask, linePolyCoords):
             if(roundedCoords in coordsOfMask):
                 # Its checking to see if one of the x,y value matches but not for booth?
                 # print("roundedCoords", index, roundedCoords)
-                logger.info(f"index: {index} roundedCoords: {roundedCoords}")
+                # logger.info(f"index: {index} roundedCoords: {roundedCoords}")
                 filteredCoordList.append(roundedCoords)
             # else:
                 # print("not in list", index, roundedCoords)

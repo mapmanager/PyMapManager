@@ -488,6 +488,14 @@ class pointPlotWidget(annotationPlotWidget):
         self._spineBackgroundPolygon.setZValue(zorder) 
         self._view.addItem(self._spineBackgroundPolygon)
 
+        self._segmentPolygon = self._view.plot([],[],pen=pg.mkPen(width=width, color= pg.mkColor(255,255,255), symbol=symbol))
+        self._segmentPolygon.setZValue(zorder) 
+        self._view.addItem(self._segmentPolygon)
+
+        self._segmentBackgroundPolygon = self._view.plot([],[],pen=pg.mkPen(width=width, color=pg.mkColor(255,255,255)), symbol=symbol)
+        self._segmentBackgroundPolygon.setZValue(zorder) 
+        self._view.addItem(self._segmentBackgroundPolygon)
+
     def slot_deletedAnnotation(self):
         super().slot_deletedAnnotation()
         # logger.info(f'slot_deletedAnnotation')
@@ -519,15 +527,23 @@ class pointPlotWidget(annotationPlotWidget):
             logger.info(f'xOffset {xOffset} yOffset {yOffset}')
 
             if roiType == "spineROI":
-            
-                jaggedPolygon = self.pointAnnotations.calculateJaggedPolygon(self.lineAnnotations, firstSelectedRow, self._channel, self.img)
                 
+                # firstSelectedRow = spine row index
+                jaggedPolygon = self.pointAnnotations.calculateJaggedPolygon(self.lineAnnotations, firstSelectedRow, self._channel, self.img)
+                # logger.info(f'jaggedPolygon coordinate list {jaggedPolygon}')
                 self._spinePolygon.setData(jaggedPolygon[:,1], jaggedPolygon[:,0])
 
                 # Add code to plot the backgroundROI
                 self._spineBackgroundPolygon.setData(jaggedPolygon[:,1] + yOffset, jaggedPolygon[:,0] + xOffset)
 
+                radius = 5
+                forFinalMask = False
+                segmentPolygon = self.pointAnnotations.calculateSegmentPolygon(firstSelectedRow, self.lineAnnotations, radius, forFinalMask)
+
+                # logger.info(f'segmentPolygon coordinate list {segmentPolygon}')
+                self._segmentPolygon.setData(segmentPolygon[:,0], segmentPolygon[:,1])
                 # self._view.update()
+                self._segmentBackgroundPolygon.setData(segmentPolygon[:,0] + yOffset, segmentPolygon[:,1] + xOffset)
 
     def slot_setSlice(self, sliceNumber : int):
         super().slot_setSlice(sliceNumber=sliceNumber)

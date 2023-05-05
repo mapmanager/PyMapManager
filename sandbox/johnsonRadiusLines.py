@@ -69,4 +69,4 @@ if __name__ == "__main__":
     myStack = pmm.stack(stackPath)
     myStack.loadImages(channel=channel)
 
-    plotRadiusLines(myStack)
+    # plotRadiusLines(myStack)

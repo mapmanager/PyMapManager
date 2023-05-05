@@ -454,11 +454,6 @@ class lineAnnotations(baseAnnotations):
             segmentID = newIDlist
 
         print("segmentID: ", segmentID)
-
-        # Change to one segment when put into lineAnnotation.py
-        # segmentDF = segmentID
-        # print(segmentDF)
-        # segmentDF = self.getSegment(segmentID)
         segmentDFs = []
 
         # List of all segmentID dataframes 
@@ -466,7 +461,6 @@ class lineAnnotations(baseAnnotations):
             segmentDFs.append(self.getSegment(id))
 
         # print("segment df is:", segmentDFs)
-
         # xPlot = segmentDF['x']
         # yPlot = segmentDF['y']
         # zPlot = segmentDF['z']
@@ -539,7 +533,7 @@ class lineAnnotations(baseAnnotations):
                 orthogonalROIYend.append(yCurrent-adjustX)
                 orthogonalROIZend.append(zPlot[idx + offset])
             
-                # Add nan at the end of each list since previous for loop excludes the last point
+            # Add nan at the end of each list since previous for loop excludes the last point
             orthogonalROIXinitial.append(np.nan)
             orthogonalROIYinitial.append(np.nan)
             orthogonalROIZinitial.append(np.nan)

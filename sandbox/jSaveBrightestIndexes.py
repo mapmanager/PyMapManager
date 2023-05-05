@@ -25,9 +25,12 @@ def run():
     # myStack.createBrightestIndexes(channelNum = 2)
     pointAnnotations = myStack.getPointAnnotations()
     lineAnnotations = myStack.getLineAnnotations()
-    img = myStack.getImageChannel(channel=channel)
+    # img = myStack.getImageChannel(channel=channel)
+    # img = myStack.getMaxProjectSlice
     segmentID = None
-    pointAnnotations.calculateBrightestIndexes(channel, segmentID, lineAnnotations, img)
+    # pointAnnotations.calculateBrightestIndexes(channel, segmentID, lineAnnotations, img)
+    pointAnnotations.calculateBrightestIndexes(myStack, segmentID, channel)
+
 
     myStack.save()
     
