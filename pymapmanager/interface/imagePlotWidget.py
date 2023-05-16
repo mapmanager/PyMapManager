@@ -78,6 +78,7 @@ class ImagePlotWidget(QtWidgets.QWidget):
         self._currentSlice = 0
         
         _channel = self._displayOptionsDict['windowState']['defaultChannel']
+
         self._displayThisChannel = _channel  # 1->0, 2->1, 3->2, etc
         
         self._doSlidingZ = False
@@ -532,11 +533,16 @@ class ImagePlotWidget(QtWidgets.QWidget):
         Args:
             d: dictionary of (checked, upDownSlices)
         """
+
+    
         checked = d['checked']
         upDownSlices = d['upDownSlices']
         logger.info(f'checked:{checked} upDownSlices:{upDownSlices}')
         self._doSlidingZ = checked
-        self._upDownSlices = upDownSlices
+
+        # self._upDownSlices = upDownSlices
+        self._displayOptionsDict['windowState']['zPlusMinus'] = upDownSlices
+
         self.refreshSlice()
 
     def _setChannel(self, channel, doEmit=True):
@@ -664,7 +670,8 @@ class ImagePlotWidget(QtWidgets.QWidget):
             sliceImage[:,:,0] = ch2_image  # red
             sliceImage[:,:,2] = ch2_image  # blue
         elif self._doSlidingZ:
-            upDownSlices = self._upDownSlices
+            # upDownSlices = self._upDownSlices
+            upDownSlices = self._displayOptionsDict['windowState']['zPlusMinus']
             sliceImage = self._myStack.getMaxProjectSlice(sliceNumber,
                                     channel,
                                     upDownSlices, upDownSlices,

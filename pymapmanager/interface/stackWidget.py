@@ -63,6 +63,8 @@ class stackDisplayOptions():
         pass
 
     def _getDefaultDisplayOptions(self):
+        # TODO: make widget to display
+        # TODO: make a version of this for analysis variables
         theDict = {}
 
         # interface.stackWidget
@@ -76,6 +78,9 @@ class stackDisplayOptions():
         theDict['windowState']['top'] = 100  # position on screen
         theDict['windowState']['width'] = 700  # position on screen
         theDict['windowState']['height'] = 500  # position on screen
+
+        # TODO: pass into imageplotwidget
+        theDict['windowState']['zPlusMinus'] = 3
         
         # interface.pointPlotWidget
         theDict['pointDisplay'] = {}
@@ -90,7 +95,10 @@ class stackDisplayOptions():
         theDict['pointDisplay']['symbolUserSelection'] = 'o'
         theDict['pointDisplay']['sizeUserSelection'] = 10
         theDict['pointDisplay']['zorderUserSelection'] = 5  # higher number will visually be on top
-        
+
+        # May 11, 2023 adding value to test
+        theDict['pointDisplay']['zPlusMinus'] = 3
+
         # TODO:
         # Add stuff to control connected line plot
         theDict['spineLineDisplay'] = {}
@@ -116,6 +124,8 @@ class stackDisplayOptions():
         theDict['lineDisplay']['zorderUserSelection'] = 2  # higher number will visually be on top
 
         #
+        theDict['lineDisplay']['zPlusMinus'] = 3
+
         return theDict
 
 class stackWidgetState():

@@ -729,7 +729,8 @@ class pointAnnotations(baseAnnotations):
         # return coordsOfMask
 
     def calculateSegmentPolygon(self, spineRowIndex, lineAnnotations, radius, forFinalMask):
-        """ Used to calculated the segmentPolygon when given as spine row index
+        """ 
+        Used to calculated the segmentPolygon when given a spine row index
 
         """
 
@@ -741,7 +742,7 @@ class pointAnnotations(baseAnnotations):
         return segmentPolygon
 
 
-    def setSingleBackgroundOffset(self, spineRowIdx: int, lineAnnotation, channelNumber, myStack):
+    def setSingleSpineOffsetDictValues(self, spineRowIdx: int, lineAnnotation, channelNumber, myStack):
         """
             Args:
                 stack: the stack that we are using to acquire all the data
@@ -749,7 +750,9 @@ class pointAnnotations(baseAnnotations):
                 spineRowIdx: Row index of the current spine
                 zyxLineSegment: List of z,y,x for each coordinate for in the specific line segment that we are looking at. 
 
-            stores the background offset as well as dictionary values of that offset for a given spine index
+            For one spine, calculates and storee the spine, spinebackground, segment, segmentBackground 
+            as dictionary values in the backend.
+            Also store the offset values needed to get the spine/segment background values.
 
         """
         segmentID = self.getValue("segmentID", spineRowIdx)
@@ -846,14 +849,14 @@ class pointAnnotations(baseAnnotations):
         segmentBackgroundIntDict = pymapmanager.utils._getIntensityFromMask(segmentBackgroundMask, img)
         self.setIntValue(spineRowIdx, 'segmentBackground', channelNumber, segmentBackgroundIntDict)
 
-       # TODO: remove channel
+    # TODO: remove channel
+    # rename to setAllSpineOffsetDictValues
     def setBackGroundMaskOffsets(self, 
                 segmentID : Union[int, List[int], None],
                 lineAnnotation,
                 channelNumber, stack):
         """
-            Function to calculate brightest indexes within one segment or multiple segments and 
-            saves them into the back end
+            Function that calls setSingleSpineOffsetDictValues for all spines in given segment(s)
         """
         # lineAnnotation = stack.getLineAnnotations()
         # img = stack.getImageChannel(channel = channel)
@@ -879,7 +882,7 @@ class pointAnnotations(baseAnnotations):
             currentDF = segmentSpineDFs[index]
             # Looping through all spines connected to one segment
             for idx, val in enumerate(currentDF["index"]):
-                self.setSingleBackgroundOffset(val, lineAnnotation, channelNumber, stack)
+                self.setSingleSpineOffsetDictValues(val, lineAnnotation, channelNumber, stack)
                 # if(val == 83):
                 #     return
 

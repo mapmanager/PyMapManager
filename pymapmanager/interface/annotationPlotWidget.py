@@ -361,7 +361,10 @@ class annotationPlotWidget(QtWidgets.QWidget):
             dfPlot = self._dfPlot
         else:
             # TODO: change to member variable self._dfPlot
-            dfPlot = self._annotations.getSegmentPlot(theseSegments, roiTypes, sliceNumber)
+            # zPlusMinus = 3
+            # print("self._displayOptions", self._displayOptions)
+            zPlusMinus = self._displayOptions['zPlusMinus']  
+            dfPlot = self._annotations.getSegmentPlot(theseSegments, roiTypes, sliceNumber, zPlusMinus = zPlusMinus)
             self._dfPlot = dfPlot
 
         x = dfPlot['x'].tolist()  # x is pandas.core.series.Series
@@ -477,7 +480,7 @@ class pointPlotWidget(annotationPlotWidget):
         # self._spineConnections = pg.ScatterPlotItem(pen=pg.mkPen(width=width,
         #                                     color=color), symbol=symbol, size=size)
         self._spineConnections = self._view.plot([],[],pen=pg.mkPen(width=width, color=color), symbol=symbol)
-        self._spineConnections.setZValue(zorder) 
+        self._spineConnections.setZValue(zorder-4) 
         self._view.addItem(self._spineConnections)
 
         self._spinePolygon = self._view.plot([],[],pen=pg.mkPen(width=width, color=color), symbol=symbol)
@@ -535,6 +538,7 @@ class pointPlotWidget(annotationPlotWidget):
 
                 # Add code to plot the backgroundROI
                 self._spineBackgroundPolygon.setData(jaggedPolygon[:,1] + yOffset, jaggedPolygon[:,0] + xOffset)
+                # self._spineBackgroundPolygon.setData(jaggedPolygon[:,1] + xOffset, jaggedPolygon[:,0] + yOffset)
 
                 radius = 5
                 forFinalMask = False
@@ -548,7 +552,9 @@ class pointPlotWidget(annotationPlotWidget):
     def slot_setSlice(self, sliceNumber : int):
         super().slot_setSlice(sliceNumber=sliceNumber)
 
-        return 
+        zPlusMinus = self._displayOptions['zPlusMinus']  
+        # zPlusMinus = 1
+        # return 
 
         # TODO: update new scatter line connection plot code
         # getCurrentSegment of the slice instead of all segments?
@@ -589,7 +595,8 @@ class pointPlotWidget(annotationPlotWidget):
         theseSegments = None
         roiTypes = ['spineROI']
 
-        dfPlotSpines = self._annotations.getSegmentPlot(theseSegments, roiTypes, sliceNumber)
+        # dfPlotSpines = self._annotations.getSegmentPlot(theseSegments, roiTypes, sliceNumber)
+        dfPlotSpines = self._annotations.getSegmentPlot(theseSegments, roiTypes, sliceNumber, zPlusMinus)
         # dfPlotSpines = self._dfPlot 
 
         # print("dfPlotSpines: ", dfPlotSpines)
@@ -640,7 +647,7 @@ class pointPlotWidget(annotationPlotWidget):
         # self._spineConnections.setData(x, y)
         # self._spineConnections.setData(xPlotLines, yPlotLines)
         self._spineConnections.setData(xPlotSpines, yPlotSpines)
-        self._view.update()
+        # self._view.update()
       
 class linePlotWidget(annotationPlotWidget):
     def __init__(self, annotations : pymapmanager.annotations.lineAnnotations,
