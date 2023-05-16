@@ -503,7 +503,7 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations, forFinalMask):
             yLeft = lineAnnotations.getValue("yLeft", lineIndex+i)
             if not(math.isnan(xLeft) and math.isnan(yLeft)):
                 coordinateList.append([xLeft, yLeft])
-                print("xLeft is", xLeft)
+                # print("xLeft is", xLeft)
 
     # totalPoints = totalPoints.reverse()
     totalPoints.reverse()
@@ -516,27 +516,56 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations, forFinalMask):
             yRight = lineAnnotations.getValue("yRight", lineIndex+i)
             if not(math.isnan(xRight) and math.isnan(yRight)):
                 coordinateList.append([xRight, yRight]) 
-                print("yRight is", yRight)
+                # print("yRight is", yRight)
 
-    totalPoints.reverse()
-    # print("totalPoints[0]", totalPoints[0])
-    # Append the first coordinate at the end to make a fully closed polygon
-    # Since we reversed the original list it would be at the end
-    # 4/28 Removed since we are plotting we a different endpoint in the function jagggedPolygon
-
-    if not forFinalMask:
-        xLeft = lineAnnotations.getValue("xLeft", lineIndex+totalPoints[0])
-        yLeft = lineAnnotations.getValue("yLeft", lineIndex+totalPoints[0])
-        if not(math.isnan(xLeft) and math.isnan(yLeft)):
-            coordinateList.append([xLeft, yLeft])
+    
+    # totalPoints.reverse()
+    # # print("totalPoints[0]", totalPoints[0])
+    # # Append the first coordinate at the end to make a fully closed polygon
+    # # Since we reversed the original list it would be at the end
+    # if not forFinalMask:
+    #     xLeft = lineAnnotations.getValue("xLeft", lineIndex+totalPoints[0])
+    #     yLeft = lineAnnotations.getValue("yLeft", lineIndex+totalPoints[0])
+    #     if not(math.isnan(xLeft) and math.isnan(yLeft)):
+    #         coordinateList.append([xLeft, yLeft])
 
     coordinateList = np.array(coordinateList)
 
+    print("coordinateList", coordinateList)
+
+    medianFilterWidth = 3
+    # filteredX = scipy.signal.medfilt(coordinateList[:,0] , medianFilterWidth)
+    # filteredY= scipy.signal.medfilt(coordinateList[:,1] , medianFilterWidth)
+    
+    # filteredCoordinateList = [filteredX filteredY]
+    # print("filteredCoordinateList", filteredCoordinateList)
     # logger.info(f"segmentPolygon coordinateList: {coordinateList}")
+
+    coordinateList[:,0] = scipy.signal.medfilt(coordinateList[:,0] , medianFilterWidth)
+    coordinateList[:,1] = scipy.signal.medfilt(coordinateList[:,1] , medianFilterWidth)
+
+
+    # coordinateList = scipy.signal.medfilt2d(coordinateList , medianFilterWidth)
+
+    # coordinateList = scipy.signal.medfilt(coordinateList , medianFilterWidth)
+
+    coordinateList = coordinateList.tolist()
+    if not forFinalMask:
+        xLeft = coordinateList[0][0]
+        print("xLeft", xLeft)
+        yLeft = coordinateList[0][1]
+        print("yLeft", yLeft)
+        coordinateList.append([xLeft, yLeft])
+
+    print("coordinate list in list form", coordinateList)
+    coordinateList = np.array(coordinateList)
+    print("filteredCoordinateList in nparray form", coordinateList)
     return coordinateList
 
 def calculateFinalMask(rectanglePoly, linePoly):
-
+    """
+        Calculate the final spine polygon given a the original spine polygon and segment (line) polygon
+    """
     # TODO: Change this to detect image shape rather than have it hard coded
     nx, ny = 1024, 1024
 
@@ -596,7 +625,8 @@ def convertCoordsToMask(poly):
     return polyMask
 
 def getOffset(distance, numPts):
-    """ Generate list of candidate points where mask will be moved 
+    """ 
+    Generate list of candidate points where mask will be moved 
     
     returns in form [[xPoint, yPoint]]
     """
@@ -654,6 +684,7 @@ def calculateLowestIntensityOffset(mask, distance, numPts, originalSpinePoint, i
 
     logger.info(f'finalMask.shape:{finalMask.shape}')
 
+    # TODO: update getOffset to return y,x
     offsetList = getOffset(distance = distance, numPts = numPts)
 
     lowestIntensity = math.inf
@@ -683,8 +714,12 @@ def calculateLowestIntensityOffset(mask, distance, numPts, originalSpinePoint, i
 
     return lowestIntensityOffset
 
-def calculateBackgroundMask(spineMask, offset):
-    maskCoords = np.argwhere(spineMask == 1)
+def calculateBackgroundMask(mask, offset):
+    """
+        Offset the values of a given mask and return the background mask
+        Masks inputted will either be the spine or segment/ dendrite mask.
+    """
+    maskCoords = np.argwhere(mask == 1)
     backgroundPointList = maskCoords + offset
 
     # Separate into x and y
@@ -692,7 +727,7 @@ def calculateBackgroundMask(spineMask, offset):
     backgroundPointsX = backgroundPointList[:,1]
     backgroundPointsY = backgroundPointList[:,0]
 
-    backgroundMask = np.zeros(spineMask.shape, dtype = np.uint8)
+    backgroundMask = np.zeros(mask.shape, dtype = np.uint8)
 
     # logger.info(f"backgroundPointsY:{backgroundPointsY}")
     # logger.info(f"backgroundPointsX:{backgroundPointsX}")
@@ -703,6 +738,9 @@ def calculateBackgroundMask(spineMask, offset):
     return backgroundMask
 
 def argsort(seq):
+    """
+        No longer being used
+    """
     #http://stackoverflow.com/questions/3382352/equivalent-of-numpy-argsort-in-basic-python/3382369#3382369
     #by unutbu
     #https://stackoverflow.com/questions/3382352/equivalent-of-numpy-argsort-in-basic-python
@@ -710,6 +748,10 @@ def argsort(seq):
     return sorted(range(len(seq)), key=seq.__getitem__)
 
 def rotational_sort(list_of_xy_coords, centre_of_rotation_xy_coord, clockwise=True):
+    """
+        No longer being used
+    """
+    
     cx,cy=centre_of_rotation_xy_coord
     # for x,y in list_of_xy_coords:
     #     print(y)
