@@ -16,7 +16,8 @@ import numpy as np
 
 stackPath = '../PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
 channel = 2
-myStack = pmm.stack(stackPath, defaultChannel = channel, loadImageData = True)
+# myStack = pmm.stack(stackPath, defaultChannel = channel, loadImageData = True)
+myStack = pmm.stack(stackPath, loadImageData = True)
 # img = myStack.getImageChannel(channel = channel)
 img = myStack.getMaxProject(channel = channel)
 # print("img.dtype", img.dtype)
@@ -82,12 +83,14 @@ spinePoly = pymapmanager.utils.calculateRectangleROIcoords(xBrightestLine[0], yB
 linePoly = pymapmanager.utils.calculateLineROIcoords(brightestIndex, 5, lineAnnotation)
 finalMaskPoly = pymapmanager.utils.calculateFinalMask(spinePoly,linePoly)
 
-lowestIntensityOffset = pymapmanager.utils.calculateLowestIntensityOffset(finalMaskPoly, 2, 3, originalSpinePoint, img)
+lowestIntensityOffset = pymapmanager.utils.calculateLowestIntensityOffset(finalMaskPoly, 7, 7, originalSpinePoint, img)
 
 backgroundMask = pymapmanager.utils.calculateBackgroundMask(finalMaskPoly, lowestIntensityOffset)
 # plt.plot(backgroundMask)
 
-coords = np.column_stack(np.where(backgroundMask == 1))
+backgroundMaskcoords = np.column_stack(np.where(backgroundMask == 1))
+
+plt.plot(backgroundMaskcoords[:,1], backgroundMaskcoords[:,0], 'go')
 
 import scipy
 # print(combinedMasks)

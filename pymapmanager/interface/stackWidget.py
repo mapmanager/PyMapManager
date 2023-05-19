@@ -63,6 +63,8 @@ class stackDisplayOptions():
         pass
 
     def _getDefaultDisplayOptions(self):
+        # TODO: make widget to display
+        # TODO: make a version of this for analysis variables
         theDict = {}
 
         # interface.stackWidget
@@ -76,6 +78,9 @@ class stackDisplayOptions():
         theDict['windowState']['top'] = 100  # position on screen
         theDict['windowState']['width'] = 700  # position on screen
         theDict['windowState']['height'] = 500  # position on screen
+
+        # TODO: pass into imageplotwidget
+        theDict['windowState']['zPlusMinus'] = 3
         
         # interface.pointPlotWidget
         theDict['pointDisplay'] = {}
@@ -90,7 +95,10 @@ class stackDisplayOptions():
         theDict['pointDisplay']['symbolUserSelection'] = 'o'
         theDict['pointDisplay']['sizeUserSelection'] = 10
         theDict['pointDisplay']['zorderUserSelection'] = 5  # higher number will visually be on top
-        
+
+        # May 11, 2023 adding value to test
+        theDict['pointDisplay']['zPlusMinus'] = 3
+
         # TODO:
         # Add stuff to control connected line plot
         theDict['spineLineDisplay'] = {}
@@ -116,6 +124,8 @@ class stackDisplayOptions():
         theDict['lineDisplay']['zorderUserSelection'] = 2  # higher number will visually be on top
 
         #
+        theDict['lineDisplay']['zPlusMinus'] = 3
+
         return theDict
 
 class stackWidgetState():
@@ -781,7 +791,12 @@ class stackWidget(QtWidgets.QMainWindow):
 
         # Deselect current spine point and Show new spine point
         # self._imagePlotWidget._aPointPlot.slot_deletedAnnotation()
-        self.signalDeletedAnnotation.emit()
+        deleteDict = {
+                'annotationType': pymapmanager.annotations.annotationType.point,
+                'annotationIndex': currentAnnotationRow,
+                'isSegment': False,
+            }
+        self.signalDeletedAnnotation.emit(deleteDict)
         
         # Selects new Spine in image displayed
         # self._imagePlotWidget._aPointPlot.slot_selectAnnotation2(self._currentSelection)
@@ -878,6 +893,8 @@ class stackWidget(QtWidgets.QMainWindow):
 
         # adding a spine roi require lots of additional book-keeping
         if roiType == pymapmanager.annotations.pointTypes.spineROI:
+
+            # TODO: Simplify code to be a function in the backend (in stack?)
             # grab the zyx of the selected segment
             la = self.getStack().getLineAnnotations()
             xyzSegment = la.get_zyx_list(_selectSegment)
@@ -886,6 +903,7 @@ class stackWidget(QtWidgets.QMainWindow):
             #imgData = self.getStack().getImageChannel(imageChannel)
             _imageSlice = self.annotationSelection.getCurrentSlice()  # could use z
             imgSliceData = self.getStack().getImageSlice(_imageSlice, imageChannel)
+            # TODO: change this to getMaxImageSlice
             newZYXValues = None
             # this does lots:
             #   (i) connect spine to brightest index on segment
