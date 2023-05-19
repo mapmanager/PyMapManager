@@ -55,6 +55,7 @@ setup(
         "scipy",
         "scikit-image",
         "tifffile",
+        "brightest-path-lib",
     ],
 	extras_require={
         'gui': [

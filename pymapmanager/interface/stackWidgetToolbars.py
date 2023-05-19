@@ -106,6 +106,13 @@ class TopToolBar(QtWidgets.QToolBar):
         }
         self.signalSlidingZChanged.emit(d)
 
+    def _on_radius_value_changed(self, value):
+        """
+        """
+        logger.info(f'Recalculate left/right given new radius {value}')
+        # call function to recaculate ALL left xy, right xy given a new radius
+
+
     def _on_slidingz_value_changed(self, value):
         checked = self.slidingCheckbox.isChecked()
         upDownSlices = value
@@ -187,6 +194,16 @@ class TopToolBar(QtWidgets.QToolBar):
         self.slidingUpDown.valueChanged.connect(self._on_slidingz_value_changed)
         self.addWidget(slidingUpDownLabel)
         self.addWidget(self.slidingUpDown)
+
+        # add radius
+        radiusLabel = QtWidgets.QLabel('radius')
+        self._radiusSpinBox = QtWidgets.QSpinBox()
+        self._radiusSpinBox.setMaximum(10)
+        self._radiusSpinBox.setValue(3)
+        self._radiusSpinBox.setEnabled(True)
+        self._radiusSpinBox.valueChanged.connect(self._on_radius_value_changed)
+        self.addWidget(radiusLabel)
+        self.addWidget(self._radiusSpinBox)
 
         # colorList = ['Gray', 'Gray Inverted', 'Green', 'Red', 'Blue']
         # self.colorPopup = QtWidgets.QComboBox()

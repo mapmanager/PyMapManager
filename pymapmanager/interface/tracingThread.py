@@ -68,7 +68,7 @@ class AStarWorker(QtCore.QObject):
 
         self._aStarSearch.search()
 
-        logger.info('  WORKER FINISHED')
+        logger.info('  WORKER FINISHED -->> emit signalFinished')
         self.signalFinished.emit()
 
         return
@@ -107,7 +107,6 @@ class moveToStackWidget(QtWidgets.QWidget):
 
     def __init__(self, sw, stack):
         super().__init__()
-        logger.info('!!!!!!!!!!!!!!!!')
         
         self._progressSteps = 0
 
@@ -118,8 +117,6 @@ class moveToStackWidget(QtWidgets.QWidget):
         pa = stack.getPointAnnotations()
         df = pa.getSegmentControlPnts(segmentID=0)
         df = df.reset_index()
-
-        #print(df)
 
         self._queue = Queue()  # we own the queue, monitor directly
 
@@ -132,7 +129,7 @@ class moveToStackWidget(QtWidgets.QWidget):
             y = df.loc[row]['y']
             z = df.loc[row]['z']
         
-            stopRow = 15  # arbitrary choice of where to trace to
+            stopRow = 4  # arbitrary choice of where to trace to
             x2 = df.loc[stopRow]['x']
             y2 = df.loc[stopRow]['y']
             z2 = df.loc[stopRow]['z']
@@ -145,6 +142,7 @@ class moveToStackWidget(QtWidgets.QWidget):
             # to debug, do just 2x point to point tracing
             break
 
+    
     def runLongTask(self):
         """Run tracing between 2 points.
         """
@@ -163,9 +161,11 @@ class moveToStackWidget(QtWidgets.QWidget):
         self.worker.moveToThread(self.thread)
         # Connect signals and slots
         self.thread.started.connect(self.worker.run)
+
         self.worker.signalFinished.connect(self.thread.quit)
-        self.worker.signalFinished.connect(self.worker.deleteLater)
-        self.thread.finished.connect(self.thread.deleteLater)
+        # self.worker.signalFinished.connect(self.worker.deleteLater)
+        # self.thread.finished.connect(self.thread.deleteLater)
+
         #self.worker.signalProgress.connect(self.slot_reportProgress)  # receive points
         
         # Start the thread
@@ -180,6 +180,7 @@ class moveToStackWidget(QtWidgets.QWidget):
         _updateInterval = 250  # wait for this number of results and update plot
         plotItems = []
         #while self.thread.isRunning() or not self._queue.empty():
+        # sometimes get error, RuntimeError: wrapped C/C++ object of type QThread has been deleted
         while self.thread.isRunning() and not self.thread.isFinished():
             # if self.worker._aStarSearch.search_algorithm.found_path:
             #     logger.info('A* search found a path ... exiting while loop to monitor queue')
@@ -205,7 +206,11 @@ class moveToStackWidget(QtWidgets.QWidget):
             QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.ProcessEventsFlag.AllEvents, maxtime)  # maxtime in ms
             
         logger.info('!!! after while')
-        
+        self.slot_workerFinished()
+
+        # self.worker.deleteLater
+        # self.thread.deleteLater
+
         # Final resets
         # self.longRunningBtn.setEnabled(False)
         # self.thread.finished.connect(
@@ -216,8 +221,10 @@ class moveToStackWidget(QtWidgets.QWidget):
         #     lambda: self.stepLabel.setText("Long-Running Step: 0")
         # )
 
-    def slot_reportProgress(self, pnts : List[tuple[int,int,int]]):
-        logger.info(f'_progressSteps:{self._progressSteps} received {len(pnts)} pnts. pnts[0]:{pnts[0]}')
+    def slot_reportProgress(self, pnts : "List[tuple[int,int,int]]"):
+        """Report progress during the A* search.
+        """
+        #logger.info(f'_progressSteps:{self._progressSteps} received {len(pnts)} pnts. pnts[0]:{pnts[0]}')
         self._progressSteps += 1
 
         # a mask of A* tracing progress
@@ -233,12 +240,33 @@ class moveToStackWidget(QtWidgets.QWidget):
 
         self._searchedMask[yPnts, xPnts] = 255
         # self._imageLabel = _imageLabel  # update self._imageLabel with tracing results and self.update()
-        self._stackWidget._myGraphPlotWidget._myTracingMask.setImage(self._searchedMask, opacity=0.5)
+        # _imagePlotWidget: pymapmanager.interface.ImagePlotWidget
+        self._stackWidget._imagePlotWidget._myTracingMask.setImage(self._searchedMask, opacity=0.5)
 
         # self._stackWidget._myGraphPlotWidget.update()  # update pyqtgraph interface
 
         # maxtime = 20  # ms
         # QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.ProcessEventsFlag.AllEvents, maxtime)  # maxtime in ms
+
+    def slot_workerFinished(self):
+        """
+        Clear progress image
+        Grab the results and set in backend
+        """
+        
+        # open_nodes = self.worker._aStarSearch.open_nodes
+        # self.slot_reportProgress(open_nodes)
+
+        # list of np.ndarray (z,y,x)
+        result = self.worker._aStarSearch.result
+        
+        logger.info(f'len(result):{len(result)}')
+
+        zResult = [point[0] for point in result]
+        yResult = [point[1] for point in result]
+        xResult = [point[2] for point in result]
+
+        self._stackWidget._imagePlotWidget.showTracingResults(xResult, yResult, zResult)
 
 def run():
     import pymapmanager as pmm
@@ -254,12 +282,13 @@ def run():
     # myStack.createBrightestIndexes(channelNum = 2)
 
     # run pyqt interface
-    app = QtWidgets.QApplication(sys.argv)
+    app = pymapmanager.interface.PyMapManagerApp()
 
     bsw = pmm.interface.stackWidget(myStack=myStack)
 
     # useful on startup, to snap to an image
-    bsw._myGraphPlotWidget.slot_setSlice(30)
+    # bsw.slot_setSlice(30)
+    bsw.zoomToPointAnnotation(5, isAlt=True, select=True)
 
     bsw.show()
 
@@ -270,7 +299,17 @@ def run():
     # run the actual tracing (hard coded 2 points to trace between)
     mtsw.runLongTask()
     
-    print('!!! BACK IN __main__')
+    print('!!!!!!!!!!!!!!!!!!!!!!! BACK IN __main__')
+
+    # from matplotlib.pylab import plt
+    # xResult = mtsw.xResult
+    # yResult = mtsw.yResult
+    # zResult = mtsw.zResult
+    # print('xResult:', xResult)
+    # plt.plot(xResult, yResult, '.r')
+    # plt.show()
+
+    # mtsw = None
 
     sys.exit(app.exec_())
 

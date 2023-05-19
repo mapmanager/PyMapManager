@@ -527,6 +527,8 @@ class baseAnnotations():
             logger.error(f'did not understand segmentID:{segmentID} of {type(segmentID)}')
             return
 
+        segmentID = [int(_segmentID) for _segmentID in segmentID]
+
         df = df[df['segmentID'].isin(segmentID)]
 
         # Reduce by Z
@@ -778,8 +780,7 @@ class baseAnnotations():
                     x : int, y : int, z : int,
                     channel : Union[int,None] = None,
                     rowIdx : Union[int,None] = None) -> int:
-        """
-        Add a new annotation at pixel (x,y,z).
+        """Add a new annotation at pixel (x,y,z).
         
         Args:
             x (int): Pixel
@@ -792,13 +793,39 @@ class baseAnnotations():
         Returns:
             (int) Added row (annotation) number.
         """
-        
+
         if rowIdx is None:
             rowIdx = self.numAnnotations
+
+        # doInsert = True
+        # if rowIdx is None:
+        #     # append
+        #     doInsert = False
+        #     rowIdx = self.numAnnotations
+        # else:
+        #     # insert
+        #     pass
+
+        # if doInsert:
+        #     line = pd.DataFrame({
+        #         'cSeconds': time.time(),
+        #         'mSeconds': time.time(),
+        #         'x': x,
+        #         'y': y,
+        #         'z': z,
+        #         'xVoxel': x * self._header['voxelx'],
+        #         'yVoxel': x * self._header['voxely'],
+        #         'zVoxel': x * self._header['voxelz'],
+        #     },
+        #     index=[rowIdx])
+
+        #     # line = pd.DataFrame({"onset": 30.0, "length": 1.3}, index=[3])
+        #     self._df = pd.concat([self._df.iloc[:rowIdx-1], line, self._df.iloc[rowIdx-1:]]).reset_index(drop=True)
 
         #logger.info(f'{x},{y},{z},rowIdx:{rowIdx} numAnnotations:{self.numAnnotations}')
 
         # append a default row, base on self.columns type
+        # else:
         self._df.loc[rowIdx] = self._getDefaultRow()
 
         self._df.loc[rowIdx, 'cSeconds'] = time.time()  # creation time

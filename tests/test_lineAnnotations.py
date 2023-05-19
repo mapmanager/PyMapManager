@@ -1,6 +1,9 @@
 
 import pymapmanager as pymapmanager
 import pymapmanager.annotations
+import pymapmanager.annotations.lineAnnotations
+# import pymapmanager.annotations.linePointTypes
+
 from pymapmanager._logger import logger
 
 def testLineLoad():
@@ -39,9 +42,24 @@ def testLineLength():
     assert length3D[0] == 714.3529067913599
 
 def test_addEmptySegment():
+    # create an empty line annotation
     la = pymapmanager.annotations.lineAnnotations()
+    
+    #
     la.addEmptySegment()
 
+    segmentID = 0
+    x = 1
+    y = 2
+    z = 3
+
+    la.addAnnotation(pymapmanager.annotations.linePointTypes.linePnt,
+                    segmentID, x, y, z)
+
+    print(la._df)
+    
 if __name__ == '__main__':
-    la = testLineLoad()
-    testLineLength(la)
+    # la = testLineLoad()
+    # testLineLength(la)
+
+    test_addEmptySegment()

@@ -1,13 +1,32 @@
-from qtpy import QtGui, QtCore, QtWidgets
+import enum
 
 import numpy as np
 import pyqtgraph as pg
+
+from qtpy import QtGui, QtCore, QtWidgets
 
 import pymapmanager
 import pymapmanager.annotations
 import pymapmanager.interface
 
 from pymapmanager._logger import logger
+
+class stackWidgetState(enum.Enum):
+    """
+    Enum to encapsulate one widget state
+    
+    baseState:
+        The base/default state.
+    movePointState:
+        The user is moving a point (spine for now)
+            Next mouse click will specify new position (z,y,x)
+    connectSpineState:
+        The user is selecting a manual connection point (on the line)
+            Next mouse click (on the line) will specify the connectionIdx
+    """
+    baseState = "stateBase"
+    movePointState = "movePointState"
+    connectSpineState = "connectSpineState"
 
 class ImagePlotWidget(QtWidgets.QWidget):
     """A plot widget (pg.PlotWidget) to plot
@@ -88,6 +107,8 @@ class ImagePlotWidget(QtWidgets.QWidget):
 
         self._blockSlots = False
 
+        self._state = stackWidgetState.baseState
+        
         # Variable to keep track of State, Used for Moving Spine ROI
         self._mouseMovedState = False
 
@@ -814,6 +835,29 @@ class ImagePlotWidget(QtWidgets.QWidget):
 
         self.setLayout(hBoxLayout)
 
+    def showTracingResults(self, x, y, z):
+        """Given a x/y/z tracing results, show it in the viewer.
+        """
+        logger.info(f'making temporary tracing result lineAnnotation with {len(x)} points')
+        # add line plot of lineAnnotations
+        #lineAnnotations = self._myStack.getLineAnnotations()
+        self._tracingLineAnnotations = pymapmanager.annotations.lineAnnotations(path=None)
+        self._tracingLineAnnotations.addEmptySegment()
+        segmentID = 0
+        for idx in range(len(x)):
+            self._tracingLineAnnotations.addToSegment(x[idx], y[idx], z[idx], segmentID)
+        
+        df = self._tracingLineAnnotations.getSegment(segmentID=segmentID)
+        print(df)
+        
+        _displayOptions = self._displayOptionsDict['lineDisplay']
+        self._aLinePlot_tmp = pymapmanager.interface.linePlotWidget(self._tracingLineAnnotations,
+                                                                self._plotWidget,
+                                                                _displayOptions)
+
+        #self._aLinePlot_tmp.signalAnnotationClicked2.connect(self.slot_selectAnnotation2)
+        #self.signalAnnotationSelection2.connect(self._aLinePlot.slot_selectAnnotation2)
+        self.signalUpdateSlice.connect(self._aLinePlot_tmp.slot_setSlice)
 
 class StackSlider(QtWidgets.QSlider):
     """Slider to set the stack image slice.

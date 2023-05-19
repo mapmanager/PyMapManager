@@ -2,7 +2,7 @@
 """
 import os
 import enum
-from typing import List, Union, Optional
+from typing import List, Union, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -270,9 +270,17 @@ class lineAnnotations(baseAnnotations):
         """Get the number of segment IDs.
         """
         parentList = self._df['segmentID'].unique()
-        return len(parentList)
+        
+        # logger.info(f'parentList:{parentList}')
+        # print(parentList[0], type(parentList[0]))
+              
+        # numpy.float64
+        if len(parentList) == 1 and np.isnan(parentList[0]):
+            return 0
+        else:
+            return len(parentList)
 
-    def _segmentStartRow(self, segmentID : int) -> (int, int):
+    def _segmentStartRow(self, segmentID : int) -> Tuple[int, int]:
         """Get the first and last row of a given segment.
         
         Args:
@@ -295,8 +303,16 @@ class lineAnnotations(baseAnnotations):
         """
         
         newRow = super().addAnnotation(x, y, z, rowIdx=rowIdx)
+        
+        # logger.info(f'newRow:{newRow}')
+        # logger.info(f'  roiType.value:{roiType.value}')
+        # logger.info(f'  segmentID:{segmentID}')
+        
         self._df.loc[newRow, 'roiType'] = roiType.value
         self.at[newRow, 'segmentID'] = segmentID
+
+        # logger.info('after addAnnotation')
+        # print(self._df)
 
     def addEmptySegment(self):
         """Add an empty line segment.
@@ -313,6 +329,9 @@ class lineAnnotations(baseAnnotations):
         self._df.loc[newRow, 'roiType'] = linePointTypes.pivotPnt.value
         self.at[newRow, 'segmentID'] = self.numSegments
         
+        logger.info(f'added empty segment')
+        print(self._df)
+
         return newRow
     
     def _not_used_addSegment(self, pointList : List[List[int]]):
@@ -346,7 +365,7 @@ class lineAnnotations(baseAnnotations):
         """
         # find last row of segmentID and insert into df at (row+1)
         startRow, stopRow = self._segmentStartRow(segmentID)
-        print('  addToSegment() startRow:', startRow, 'stopRow:', stopRow)
+        logger.info(f'startRow:{startRow} stopRow:{stopRow}')
         if startRow is None or stopRow is None:
             logger.error(f'did not find segmentID:{segmentID}')
             return
