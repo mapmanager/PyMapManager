@@ -56,7 +56,7 @@ if __name__ == "__main__":
     # segmentID = 0
 
     # lineAnnotations.getRadiusLines([0,1])
-    lineAnnotations.getRadiusLines(None, 3)
+    lineAnnotations.calculateAndStoreRadiusLines(None, 3)
     # lineAnnotations.getRadiusLines([0,1], 3)
 
     # from pymapmanager.utils import getRadiusLines

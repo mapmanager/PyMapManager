@@ -617,6 +617,9 @@ class stackWidget(QtWidgets.QMainWindow):
         self._topToolbar.signalChannelChange.connect(self._imagePlotWidget.slot_setChannel)
         self._topToolbar.signalSlidingZChanged.connect(self._imagePlotWidget.slot_setSlidingZ)
 
+        # Temporary connection to update backend whenever radius is changed in toptoolbar
+        self._topToolbar.signalRadiusChanged.connect(self._imagePlotWidget.slot_updateLineRadius)
+
         self._histogramWidget.signalContrastChange.connect(self._imagePlotWidget.slot_setContrast)
 
         self.signalPointChanged.connect(self._myPointListWidget.slot_editAnnotations)
@@ -800,8 +803,6 @@ class stackWidget(QtWidgets.QMainWindow):
         
         # Selects new Spine in image displayed
         # self._imagePlotWidget._aPointPlot.slot_selectAnnotation2(self._currentSelection)
-
-  
         
     def slot_addSegment(self):
         """Respond to user clicking add segment

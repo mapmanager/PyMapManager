@@ -339,7 +339,7 @@ def computeTangentLine(startPoint: tuple, stopPoint: tuple, extendHead = 1) -> t
 #     # sliceNumber = None
 
 #  Functions for calculation ROI masks
-def calculateRectangleROIcoords(xPlotSpines, yPlotSpines, xPlotLines, yPlotLines):
+def calculateRectangleROIcoords(xPlotSpines, yPlotSpines, xPlotLines, yPlotLines, extendHead = 3, extendTail = 3):
     """
         Args:
             spineCoords:
@@ -361,7 +361,7 @@ def calculateRectangleROIcoords(xPlotSpines, yPlotSpines, xPlotLines, yPlotLines
     # Value to extend the rectangle ROI
     # Currently also extends the tail as well
     extendHead = 3
-    # extendTail= 3
+    extendTail= 3
 
     Xa = xPlotLines
     Xb = xPlotSpines
@@ -382,11 +382,11 @@ def calculateRectangleROIcoords(xPlotSpines, yPlotSpines, xPlotLines, yPlotLines
     # secondCoordX = Xa + Dy
     # secondCoordY = Ya - Dx
 
+    # Used to extend front/ head of rectangle ROI
     angle = np.arctan2(originalDy,originalDx) 
     adjustY = np.sin(angle) * extendHead
     adjustX = adjustY/ (np.tan(angle))
 
-    # Used to extend back of rectangle ROI
     firstCoordX = Xa - Dy - adjustX
     firstCoordY = Ya + Dx - adjustY
     secondCoordX = Xa + Dy - adjustX
@@ -396,6 +396,10 @@ def calculateRectangleROIcoords(xPlotSpines, yPlotSpines, xPlotLines, yPlotLines
     # firstCoordY = Ya + Dx 
     # secondCoordX = Xa + Dy 
     # secondCoordY = Ya - Dx 
+
+    # Used to extend back/ tail of rectangle ROI
+    adjustY = np.sin(angle) * extendTail
+    adjustX = adjustY/ (np.tan(angle))
 
     thirdCoordX = Xb + Dy + adjustX
     fourthCoordX = Xb - Dy + adjustX
@@ -531,7 +535,7 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations, forFinalMask):
 
     coordinateList = np.array(coordinateList)
 
-    print("coordinateList", coordinateList)
+    # print("coordinateList", coordinateList)
 
     medianFilterWidth = 3
     # filteredX = scipy.signal.medfilt(coordinateList[:,0] , medianFilterWidth)
@@ -541,25 +545,27 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations, forFinalMask):
     # print("filteredCoordinateList", filteredCoordinateList)
     # logger.info(f"segmentPolygon coordinateList: {coordinateList}")
 
+    print("coordinate list 0", coordinateList[:,0])
     coordinateList[:,0] = scipy.signal.medfilt(coordinateList[:,0] , medianFilterWidth)
     coordinateList[:,1] = scipy.signal.medfilt(coordinateList[:,1] , medianFilterWidth)
 
-
     # coordinateList = scipy.signal.medfilt2d(coordinateList , medianFilterWidth)
-
     # coordinateList = scipy.signal.medfilt(coordinateList , medianFilterWidth)
 
+    # Append the first coordinate at the end to make a fully closed polygon
+    # Convert to list to use append
     coordinateList = coordinateList.tolist()
     if not forFinalMask:
         xLeft = coordinateList[0][0]
-        print("xLeft", xLeft)
+        # print("xLeft", xLeft)
         yLeft = coordinateList[0][1]
-        print("yLeft", yLeft)
+        # print("yLeft", yLeft)
         coordinateList.append([xLeft, yLeft])
 
-    print("coordinate list in list form", coordinateList)
+    # print("coordinate list in list form", coordinateList)
+    # Convert back to np.array to plot
     coordinateList = np.array(coordinateList)
-    print("filteredCoordinateList in nparray form", coordinateList)
+    # print("filteredCoordinateList in nparray form", coordinateList)
     return coordinateList
 
 def calculateFinalMask(rectanglePoly, linePoly):
@@ -771,6 +777,18 @@ def rotational_sort(list_of_xy_coords, centre_of_rotation_xy_coord, clockwise=Tr
         # Convert to np.array later
         return [list_of_xy_coords[i] for i in indices[::-1]]
 
+def getCloserPoint(spinePoint, leftRadiusPoint, rightRadiusPoint):
+    """
+        Used to find whether the left or right radius point is closer to the spine point.
+        Returns the radius point that is determined to be closer so that it can be displayed in the 
+        connection within annotationPlotWidget
+
+        returns: closest Point in form (x, y)
+    """
+    radiusPoints = [leftRadiusPoint, rightRadiusPoint]
+    return (min(radiusPoints, key=lambda point: math.hypot(spinePoint[1]-point[1], spinePoint[0]-point[0])))
+    
+
 def checkLabel(mask, _xSpine, _ySpine):
     """ Filters out a mask so that extra segments will be removed
     Returns the label of the segment which contains the original spinePoint
@@ -789,15 +807,15 @@ def checkLabel(mask, _xSpine, _ySpine):
     # print(originalSpinePoint)
     for label in np.arange(1, numLabels+1, 1):
         currentCandidate = np.argwhere(labelArray == label)
-        logger.info(f"originalSpinePoint: {originalSpinePoint}")
-        logger.info(f"currentCandidate: {currentCandidate}")
+        # logger.info(f"originalSpinePoint: {originalSpinePoint}")
+        # logger.info(f"currentCandidate: {currentCandidate}")
 
         # Check if the original x,y point in the current candidate
         # np.array check sboth values x and y and is true if one of the values is true
         # Converted to a list to ensure that we check for both values at the same time
         if(originalSpinePoint in currentCandidate.tolist()):
             currentLabel = label
-            logger.info(f"currentLabel: {currentLabel}")
+            # logger.info(f"currentLabel: {currentLabel}")
             # print("current label", currentLabel)
             # break
         # result = np.any(currentCandidate == originalSpinePoint)

@@ -2,8 +2,10 @@
 # Create function to return coordinates for line ROI
 import pymapmanager as pmm
 import matplotlib.pyplot as plt
-from pymapmanager.pmmUtils import calculateRectangleROIcoords
-from pymapmanager.pmmUtils import calculateLineROIcoords
+# from pymapmanager.pmmUtils import calculateRectangleROIcoords
+# from pymapmanager.pmmUtils import calculateLineROIcoords
+from pymapmanager.utils import calculateRectangleROIcoords
+from pymapmanager.utils import calculateLineROIcoords
 # from pymapmanager.pmmUtils import plotOutline
 from pymapmanager.pmmUtils import calculateCandidateMasks
 from pymapmanager.pmmUtils import calculateFinalMask
@@ -45,7 +47,9 @@ for idx, row in enumerate(pointAnnotation):
     # self, channel: int, spineRowIdx: int, zyxLineSegment, img)
     segmentID = pointAnnotation.getValue('segmentID', spineRowIdx)
     xyzSegment = lineAnnotation.get_zyx_list(segmentID)
-    brightestIndex = pointAnnotation._calculateSingleBrightestIndex(myStack, channel, xyzSegment, img)
+    # brightestIndex = pointAnnotation._calculateSingleBrightestIndex(myStack, channel, xyzSegment, img)
+    # calculateSingleBrightestIndex(self, channel: int, spineRowIdx: int, lineAnnotation, img):
+    brightestIndex = pointAnnotation.calculateSingleBrightestIndex(channel, spineRowIdx, lineAnnotation, img)
     # brightestIndex = pointAnnotation._calculateSingleBrightestIndex(myStack, channel, int(spineRowIdx), lineAnnotation, img)
     print(brightestIndex)
     xBrightestLine.append(xLine[brightestIndex])
@@ -75,7 +79,8 @@ plt.plot(xBox, yBox, '.y', linestyle="--")
 
 # TODO: Check segmentID
 # Don't include point when its out of bounds
-totalPoints = calculateLineROIcoords(brightestIndex, 5, lineAnnotation)
+forFinalMask = True
+totalPoints = calculateLineROIcoords(brightestIndex, 5, lineAnnotation, forFinalMask)
 
 # print("totalPoints", totalPoints)
 # print("totalPoints", totalPoints[:,0])

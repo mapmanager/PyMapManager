@@ -132,6 +132,29 @@ class annotationPlotWidget(QtWidgets.QWidget):
         # self._scatter.sigPointsHovered.connect(self._on_mouse_hover)
 
         self._view.addItem(self._scatter)
+
+        # Displaying Radius Lines
+        self._leftRadiusLines = pg.ScatterPlotItem(pen=_pen,
+                            symbol=symbol,
+                            size=size,
+                            color=color,
+                            hoverable=True
+                            )
+
+        self._leftRadiusLines.setZValue(zorder)  # put it on top, may need to change '10'
+
+        self._view.addItem(self._leftRadiusLines)
+
+        self._rightRadiusLines = pg.ScatterPlotItem(pen=_pen,
+                            symbol=symbol,
+                            size=size,
+                            color=color,
+                            hoverable=True
+                            )
+
+        self._rightRadiusLines.setZValue(zorder)  # put it on top, may need to change '10'
+
+        self._view.addItem(self._rightRadiusLines)
     
         # user selection
         width = self._displayOptions['widthUserSelection']
@@ -359,6 +382,7 @@ class annotationPlotWidget(QtWidgets.QWidget):
             #   - ignore sliceNumber
             #   - use (theseSegments, roiType)
             dfPlot = self._dfPlot
+            print("dfPLot is alternate set")
         else:
             # TODO: change to member variable self._dfPlot
             # zPlusMinus = 3
@@ -369,6 +393,8 @@ class annotationPlotWidget(QtWidgets.QWidget):
 
         x = dfPlot['x'].tolist()  # x is pandas.core.series.Series
         y = dfPlot['y'].tolist()
+
+        # print("dfplot this it!!", self._dfPlot)
 
         # TODO: Can get rid of this and just use dfPlot, use dfPlot at index 
         self._currentPlotIndex = dfPlot['index'].tolist()
@@ -382,8 +408,18 @@ class annotationPlotWidget(QtWidgets.QWidget):
             #self._scatter.connect(False)
         
         # connect is from ('all' 'pairs', 'finite')
+        # Show points in the segment
         self._scatter.setData(x,y)
-            
+        
+        if roiTypes == ['linePnt']:
+        # print("checking columns:", self._dfPlot.columns.tolist())
+        # print("testing left", self._dfPlot[~self._dfPlot['xLeft'].isna()])
+        # Shows Radius Line points
+        # self._leftRadiusLines.setData(self._dfPlot[~self._dfPlot['xLeft'].isna()], self._dfPlot[~self._dfPlot['yLeft'].isna()])
+            self._leftRadiusLines.setData(self._dfPlot['xLeft'], self._dfPlot['yLeft'])
+            self._rightRadiusLines.setData(self._dfPlot['xRight'], self._dfPlot['yRight'])
+        # self._leftRadiusLines.setData([np.nan], [np.nan])
+
         # jan 2023, do i need to set the brush every time after setData() ???
         if 0:
             # make a color column based on roiType
@@ -564,34 +600,7 @@ class pointPlotWidget(annotationPlotWidget):
         xyzSpines = []
         brightestIndexes = []
         channel = self._channel
-        # UI is slowed down now. This might be the cause.
-        # sliceImage = self._myStack.getImageSlice(imageSlice= self._currentSlice,
-        #                         channel=channel)
 
-        # print("testing slice image", sliceImage)
-        # for segment in segments:
-        #     # print("segment is:", segment)
-        #     # Get each line segement
-        #     dfLineSegment = self.lineAnnotations.getSegment(segment)
-        #     startSegmentIndex = dfLineSegment['index'].to_numpy()[0]
-        #     lineSegment = dfLineSegment[['x', 'y', 'z']].to_numpy()
-
-        #     # Get the spines from each segment
-        #     dfSegmentSpines = self.pointAnnotations.getSegmentSpines(segment)
-        #     # Iterate through all the spines 
-        #     for idx, spine in dfSegmentSpines.iterrows():
-        #         # print("idx:", idx)
-
-        #         xSpine = spine['x']
-        #         ySpine = spine['y']
-        #         zSpine = spine['z']
-        #         # ch2_img = myStack.getImageSlice(imageSlice=zSpine, channel=2)
-
-        #         xyzSpines.append([xSpine, ySpine, zSpine])
-        #         # TODO: check if backend functions are working, check if image is actually correct
-        #         # Add brightestIndex in annotation as a column
-        #         brightestIndex, candidatePoints, closestIndex = pymapmanager.utils._findBrightestIndex(xSpine, ySpine, zSpine, lineSegment, sliceImage)
-        #         brightestIndexes.append(brightestIndex + startSegmentIndex)
         theseSegments = None
         roiTypes = ['spineROI']
 
@@ -599,34 +608,8 @@ class pointPlotWidget(annotationPlotWidget):
         dfPlotSpines = self._annotations.getSegmentPlot(theseSegments, roiTypes, sliceNumber, zPlusMinus)
         # dfPlotSpines = self._dfPlot 
 
-        # print("dfPlotSpines: ", dfPlotSpines)
-        # print("dfPlotSpines['x']: ", dfPlotSpines['x'])
-        # print("dfPlotSpines: ", dfPlotSpines[14])
-        # print(self.pointAnnotations['brightestIndexes'])
-
-        # xPlotLines = self.lineAnnotations.getValues(['x'], brightestIndexes)
-        # yPlotLines = self.lineAnnotations.getValues(['y'], brightestIndexes)  
-        # xPlotSpines = [xyzOneSpine[0] for xyzOneSpine in xyzSpines]
-        # yPlotSpines = [xyzOneSpine[1] for xyzOneSpine in xyzSpines]
-        # x = [xPlotSpines, xPlotLines]
-        # y = [yPlotSpines, yPlotLines]
-
         xPlotSpines = []
         yPlotSpines = []
-        # for index, xyzOneSpine in enumerate(dfPlotSpines):
-        #     print("xyzOneSpine test:", xyzOneSpine)
-        #     print("xyzOneSpine[0]:", xyzOneSpine[0])
-        #     # sys.exit(1)
-        #     xPlotSpines.append(xyzOneSpine[0])
-
-        #     # xPlotLine = self.lineAnnotations.getValue(['x'], brightestIndex)
-        #     # Use the brightestindex on each spine. Go into the LineAnnotations and for that brightestIndex grab the x y z
-        #     # xPlotSpines.append(xPlotLines[index])
-        #     xPlotSpines.append(np.nan)
-
-        #     yPlotSpines.append(xyzOneSpine[1])
-        #     # yPlotSpines.append(yPlotLines[index])
-        #     yPlotSpines.append(np.nan)
 
         # TODO (cudmore) do not loop, just get each (x, y) as a list
         # for idx, spine in dfSegmentSpines.iterrows()
@@ -634,19 +617,34 @@ class pointPlotWidget(annotationPlotWidget):
             _brightestIndex = xyzOneSpine['brightestIndex']
             #print(_brightestIndex, type(_brightestIndex))
             if not pd.isnull(_brightestIndex):
+                
+                xLeft= self.lineAnnotations.getValue(['xLeft'], xyzOneSpine['brightestIndex'])
+                xRight= self.lineAnnotations.getValue(['xRight'], xyzOneSpine['brightestIndex'])
+                yLeft= self.lineAnnotations.getValue(['yLeft'], xyzOneSpine['brightestIndex'])
+                yRight= self.lineAnnotations.getValue(['yRight'], xyzOneSpine['brightestIndex'])
+
+                leftRadiusPoint = (xLeft, yLeft)
+                rightRadiusPoint = (xRight, yRight)
+                spinePoint = (xyzOneSpine['x'], xyzOneSpine['y'])
+                closestPoint = pymapmanager.utils.getCloserPoint(spinePoint, leftRadiusPoint, rightRadiusPoint)
+                # print("closestPoint", closestPoint)
+                # print("closestPoint[0]", closestPoint[0])
                 xPlotSpines.append(xyzOneSpine['x'])
-                xPlotLine = self.lineAnnotations.getValue(['x'], xyzOneSpine['brightestIndex'])
-                xPlotSpines.append(xPlotLine)
+                # Change xPlotLine to the left/right value. Need to detect which orientation
+                # xPlotLine = self.lineAnnotations.getValue(['x'], xyzOneSpine['brightestIndex'])
+                # xPlotSpines.append(xPlotLine)
+                xPlotSpines.append(closestPoint[0])
                 xPlotSpines.append(np.nan)
 
                 yPlotSpines.append(xyzOneSpine['y'])
-                yPlotLine = self.lineAnnotations.getValue(['y'], xyzOneSpine['brightestIndex'])
-                yPlotSpines.append(yPlotLine)
+                # yPlotLine = self.lineAnnotations.getValue(['y'], xyzOneSpine['brightestIndex'])
+                # yPlotSpines.append(yPlotLine)
+                yPlotSpines.append(closestPoint[1])
                 yPlotSpines.append(np.nan)
 
         # self._spineConnections.setData(x, y)
         # self._spineConnections.setData(xPlotLines, yPlotLines)
-        self._spineConnections.setData(xPlotSpines, yPlotSpines)
+        self._spineConnections.setData(xPlotSpines, yPlotSpines, connect="finite")
         # self._view.update()
       
 class linePlotWidget(annotationPlotWidget):

@@ -59,6 +59,9 @@ class ImagePlotWidget(QtWidgets.QWidget):
     # Connecting
     signalMouseClickConnect = QtCore.Signal(object)
 
+    # Updating radius
+    signalRadiusChanged = QtCore.Signal(object)
+
     def __init__(self, myStack : pymapmanager.stack,
                     contrastDict : dict,
                     colorLutDict : dict,
@@ -727,6 +730,14 @@ class ImagePlotWidget(QtWidgets.QWidget):
         """
         self._aPointPlot.toggleScatterPlot()
         self._aLinePlot.toggleScatterPlot()
+
+    def slot_updateLineRadius(self, radius):
+        """ Called whenever radius is updated
+        """
+        la = self._myStack.getLineAnnotations()
+        segmentID = None
+        la.calculateAndStoreRadiusLines(segmentID = segmentID, radius = radius)
+        self.refreshSlice()
 
     def _buildUI(self):
         hBoxLayout = QtWidgets.QHBoxLayout()
