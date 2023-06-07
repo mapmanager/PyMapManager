@@ -466,14 +466,21 @@ class lineAnnotations(baseAnnotations):
         return dfOneSegment
 
     # def getRadiusLines(self):
-    def calculateAndStoreRadiusLines(self, segmentID : Union[int, List[int]] = None, radius = 1, medianFilterWidth = 5):
-        """
-            Calculates all the xyz coordinates for the Shaft (Spine) ROI for given segment(s)
-            and stores them into the backend as columns within the dataframe
+    def calculateAndStoreRadiusLines(self, segmentID : Union[int, List[int]] = None, radius = 3, medianFilterWidth = 5):
+        """Calculates all the xyz coordinates for the Shaft (Spine) ROI for given segment(s)
+        and stores them into the backend as columns within the dataframe.
 
-        Args:
-            segmentID: a list of ints representing a segment or multiple segments
-            radius = integer by which we scale the size of the left, right points from the line point
+        Parameters
+        ==========
+            segmentID : List[int]
+                A list of ints representing a segment or multiple segments.
+            radius : int
+                Amount to scale the size of the left, right points from the line point
+            medianFilterWidth : int
+                Number of points to median filter x and y (independently)
+                Must be odd
+                If 0, no filter is applied
+                Depreciated, not used
         """
        
         if segmentID is None:

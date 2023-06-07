@@ -408,6 +408,10 @@ class stack():
         numSlices = self._header['zPixels']
         return numSlices
 
+    @property
+    def analysisParams(self) -> AnalysisParams:
+        return self._analysisParams
+
     def loadAnnotations(self) -> None:
         """Load point annotations.
         """

@@ -163,8 +163,10 @@ def importTimepoint(mapName : str = 'rr30a', session : int =0):
     s = pmm.stack(dstPath)
     s.loadImages(channel=2)
     
+    analysisParams = s.analysisParams
+
     # make a new empty point annotations
-    s._annotations = pmm.annotations.pointAnnotations()
+    s._annotations = pmm.annotations.pointAnnotations(analysisParams=analysisParams)
     pa = s.getPointAnnotations()
 
     # assign values in point annotations from igor
@@ -197,7 +199,7 @@ def importTimepoint(mapName : str = 'rr30a', session : int =0):
     print(dfLines.head())
 
     # make a new empty point annotations
-    s._lines = pmm.annotations.lineAnnotations()
+    s._lines = pmm.annotations.lineAnnotations(analysisParams=analysisParams)
     la = s.getLineAnnotations()
 
     # Columns: [x, index, y, z, xVoxel, yVoxel, zVoxel, channel, cSeconds, mSeconds, note, segmentID, roiType, xLeft, yLeft, xRight, yRight]
@@ -228,15 +230,18 @@ def importTimepoint(mapName : str = 'rr30a', session : int =0):
 
     #
     # call johnsons function to get segment radius lines
-    radius = 1
-    medianFilterWidth = 5
-    la.getRadiusLines(segmentID, length=radius, medianFilterWidth=medianFilterWidth)
+    radius = 3
+    # medianFilterWidth = 5
+    la.calculateAndStoreRadiusLines(segmentID, radius=radius)
 
     #
     # calculate xBackground, yBackground, intensity columns
     # for all spines use `setBackgroundMaskOffsets`
     # for one spine use `setSingleSpineOffsetDictValues``
-    pa.setBackGroundMaskOffsets(segmentID=None, lineAnnotation=la, channelNumber=channel, stack=s)
+    # june 7, was this
+    # pa.setBackGroundMaskOffsets(segmentID=None, lineAnnotation=la, channelNumber=channel, stack=s)
+
+    pa.updateAllSpineAnalysis(None, la, channel, s)
 
     # export roi as json
     # exportAllSpineROI
@@ -247,7 +252,7 @@ def importTimepoint(mapName : str = 'rr30a', session : int =0):
 
 def loadWhatWeConverted():
     # load a backend stack
-    path = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
+    path = '../PyMapManager-Data/maps/rr30a/rr30a_s8_ch2.tif'
     myStack = pmm.stack(path=path, loadImageData=True)
     logger.info(f'myStack: {myStack}')
     
@@ -270,7 +275,7 @@ def loadWhatWeConverted():
 
 if __name__ == '__main__':
     mapName = 'rr30a'
-    numSessions = 9
+    numTimepoints = 9
     
     # session 4 is failing
     # importTimepoint(mapName, session=4)
@@ -279,9 +284,9 @@ if __name__ == '__main__':
 
     if 0:
         # only do this once, otherwise spines will be repeated
-        for session in range(numSessions):
+        for timepointIndex in range(numTimepoints):
             # if session > 0:
             #     break
-            importTimepoint(mapName, session)
+            importTimepoint(mapName, timepointIndex)
     
     loadWhatWeConverted()

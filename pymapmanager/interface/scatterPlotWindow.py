@@ -174,8 +174,6 @@ class ScatterPlotWindow(QtWidgets.QWidget):
         print("type self.lines", type(self.lines))
         # print("test", type(test))
 
-
-
         # Make function to get all values of current stat
         columnNameX = self.xPlotWidget.getCurrentStat()
         xStat = pointAnnotations.getValues(colName = columnNameX, rowIdx = None)
@@ -218,9 +216,6 @@ class ScatterPlotWindow(QtWidgets.QWidget):
         """
             replot the function whenever a column stat is changed
         """
-
-
-
         columnNameX = self.xPlotWidget.getCurrentStat()
         xStat = self.pa .getValues(colName = columnNameX, rowIdx = None)
         # print("_paxStat", xStat)
@@ -240,6 +235,15 @@ class ScatterPlotWindow(QtWidgets.QWidget):
         self.lines.set_data(yStat, xStat)
         self.static_canvas.draw()
 
+    def slot_selectAnnotation2(self, selectionEvent : "pymapmanager.annotations.SelectionEvent"):
+        # sometimes when we emit a signal, it wil recursively come back to this slot
+        # if self._blockSlots:
+            # return
+        self._selectAnnotation(selectionEvent)
 
-    def getLayout(self):
+    def _selectAnnotation(self, selectionEvent):
+        # make a visual selection
+        logger.info(f'selectionEvent: {selectionEvent}')
+
+    def _old_getLayout(self):
         return self.finalLayout

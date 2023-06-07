@@ -287,7 +287,8 @@ class stackWidget(QtWidgets.QMainWindow):
         self.statList = pa.getAllColumnNames()
         # print("self.statList",self.statList)
         # print("pa is " , pa)
-        self._scatterPlotWindow : ScatterPlotWindow = ScatterPlotWindow(pointAnnotations = pa)
+        # self._scatterPlotWindow : ScatterPlotWindow = ScatterPlotWindow(pointAnnotations = pa)
+        self._scatterPlotWindow = None
 
         _channel = self._displayOptionsDict['windowState']['defaultChannel']
         self.annotationSelection = stackWidgetState(self, channel=_channel)
@@ -513,8 +514,10 @@ class stackWidget(QtWidgets.QMainWindow):
         updateAnalysis_action.triggered.connect(self.updateSpineAnalysis)
 
         plotScatter_action = QtWidgets.QAction("&Plot Scatter", self)
-        scatterPlotLayout = self._scatterPlotWindow.getLayout()
-        plotScatter_action.triggered.connect(lambda: self.showNewWindow(layout = scatterPlotLayout))
+        plotScatter_action.triggered.connect(self.showScatterPlot)
+
+        # scatterPlotLayout = self._scatterPlotWindow.getLayout()
+        # plotScatter_action.triggered.connect(lambda: self.showNewWindow(layout = scatterPlotLayout))
 
         analysisMenu = mainMenu.addMenu("&Analysis")
 
@@ -576,6 +579,20 @@ class stackWidget(QtWidgets.QMainWindow):
         self._analysisParamsWidget.signalParameterChanged.connect(self.slot_parameterChanged)
         # TODO: make use of signal
         
+    def showScatterPlot(self):
+        if self._scatterPlotWindow is None:
+            pa = self.myStack.getPointAnnotations()
+            self._scatterPlotWindow : ScatterPlotWindow = ScatterPlotWindow(pointAnnotations = pa)
+
+            # add the code to make a bidirectional signal/slot connection
+            # between our children (imagePlotWidgtet and ScatterPlotWidget)
+            self._imagePlotWidget.signalAnnotationSelection2.connect(self._scatterPlotWindow.slot_selectAnnotation2)
+            
+            # make the signal in ScatterPlotWidow
+            # self._scatterPlotWindow.signalAnnotationSelection2.connect(self._imagePlotWidget.slot_selectAnnotation2)
+
+        self._scatterPlotWindow.show()
+
     def showNewWindow(self, layout):
         if self.window is None:
             logger.info('analysis param window opened')

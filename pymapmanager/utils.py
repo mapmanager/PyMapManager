@@ -687,28 +687,33 @@ def calculateLowestIntensityOffset(mask, distance, numPts, originalSpinePoint, i
 
         The offset with lowest intensity
     """
+
+    # TODO: Use calculateBackgroundMask(mask, offset) to get the candidate mask
+
     # struct = 
     # print(mask)
-    labelArray, numLabels = ndimage.label(mask)
+    # labelArray, numLabels = ndimage.label(mask)
     # print("label array:", labelArray)
-    sizes = ndimage.sum(mask, labelArray, range(numLabels + 1))
+    # sizes = ndimage.sum(mask, labelArray, range(numLabels + 1))
     
-    # Take the label that contains the original spine point
-    # Loop through all the labels and pull out the x,y coordinates 
-    # Check if the original x,y points is within those coords (using numpy.argwhere)
-    currentLabel = 0
-    # print(originalSpinePoint)
-    for label in np.arange(1, numLabels+1, 1):
-        currentCandidate =  np.argwhere(labelArray == label)
-        # Check if the original x,y point in the current candidate
-        if(originalSpinePoint in currentCandidate):
-            currentLabel = label
-            break
+    # # Take the label that contains the original spine point
+    # # Loop through all the labels and pull out the x,y coordinates 
+    # # Check if the original x,y points is within those coords (using numpy.argwhere)
+    # currentLabel = 0
+    # # print(originalSpinePoint)
+    # # not really neccessary to use a label arrray?
+    # for label in np.arange(1, numLabels+1, 1):
+    #     currentCandidate =  np.argwhere(labelArray == label)
+    #     # Check if the original x,y point in the current candidate
+    #     if(originalSpinePoint in currentCandidate):
+    #         currentLabel = label
+    #         break
 
     # Note: points are returned in y,x form
-    finalMask = np.argwhere(labelArray == currentLabel)
+    # finalMask = np.argwhere(labelArray == currentLabel)
 
-    logger.info(f'finalMask.shape:{finalMask.shape}')
+    # finalMask = np.argwhere(mask == 1)
+    # logger.info(f'finalMask.shape:{finalMask.shape}')
 
     # TODO: update getOffset to return y,x
     offsetList = getOffset(distance = distance, numPts = numPts)
@@ -719,18 +724,25 @@ def calculateLowestIntensityOffset(mask, distance, numPts, originalSpinePoint, i
     for offset in offsetList:
         # print(offset)
         currentIntensity = 0
-        adjustedMask = finalMask + offset
-        adjustedMaskY = adjustedMask[:,0]
-        adjustedMaskX = adjustedMask[:,1]
 
-        try:
-            pixelIntensityofMask = img[adjustedMaskY,adjustedMaskX]
+        # adjustedMask = finalMask + offset
+        # adjustedMaskY = adjustedMask[:,0]
+        # adjustedMaskX = adjustedMask[:,1]
 
-        except(IndexError) as e:
-            #logger.error(f'Background candidate went out of image bounds')
-            # print("Out of bounds")
+        # try:
+        #     pixelIntensityofMask = img[adjustedMaskY,adjustedMaskX]
+
+        _offsetMask = calculateBackgroundMask(mask, offset)
+        if _offsetMask is None:
             continue
+
+        # except(IndexError) as e:
+        #     #logger.error(f'Background candidate went out of image bounds')
+        #     # print("Out of bounds")
+        #     continue
     
+        pixelIntensityofMask = img[_offsetMask == 1]
+
         totalIntensity = np.sum(pixelIntensityofMask)
         currentIntensity = totalIntensity
         if(currentIntensity < lowestIntensity):
@@ -757,10 +769,13 @@ def calculateBackgroundMask(mask, offset):
 
     logger.info(f"backgroundPointsY:{backgroundPointsY}")
     logger.info(f"backgroundPointsX:{backgroundPointsX}")
-    backgroundMask[backgroundPointsY,backgroundPointsX] = 1
-
-    # Account for out of bounds 
-
+    
+    try:
+        backgroundMask[backgroundPointsY,backgroundPointsX] = 1
+    except (IndexError) as e:
+        # Account for out of bounds 
+        return None
+    
     return backgroundMask
 
 def argsort(seq):
