@@ -383,7 +383,7 @@ class ImagePlotWidget(QtWidgets.QWidget):
             self._mouseConnectState = False
 
         if self._mouseMovedState:
-            logger.info(f'-->> ENTERING MOOVE STATE')
+            logger.info(f'-->> ENTERING MOVE STATE')
             # Either set backend or send signal to set backend?
             self.signalMouseClick.emit(_addAnnotationEvent)
             self._mouseMovedState = False
@@ -545,6 +545,9 @@ class ImagePlotWidget(QtWidgets.QWidget):
 
         # self._upDownSlices = upDownSlices
         self._displayOptionsDict['windowState']['zPlusMinus'] = upDownSlices
+        self._displayOptionsDict['pointDisplay']['zPlusMinus'] = upDownSlices
+        self._displayOptionsDict['lineDisplay']['zPlusMinus'] = upDownSlices
+        # print("self._displayOptionsDict['windowState']['zPlusMinus']", self._displayOptionsDict['windowState']['zPlusMinus'])
 
         self.refreshSlice()
 

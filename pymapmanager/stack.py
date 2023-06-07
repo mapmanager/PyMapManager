@@ -27,6 +27,7 @@ import tifffile
 
 import pymapmanager.annotations.pointAnnotations
 import pymapmanager.annotations.lineAnnotations
+from pymapmanager.analysisParams import AnalysisParams
 
 from pymapmanager._logger import logger
 
@@ -143,9 +144,14 @@ class stack():
 
             self._header['bitDepth'] = 11
 
+        # TODO: in the future have analysis params be passed in so that each stack shares the same params.
+        self._analysisParams = AnalysisParams()
+
         # TODO (cudmore) we should add an option to defer loading until explicitly called
         self.loadAnnotations()
         self.loadLines()
+
+
 
     @property
     def header(self) -> dict:
@@ -399,7 +405,8 @@ class stack():
         """
         try:            
             annotationFilePath = self._enclosingPath + '_pa.txt'
-            self._annotations = pymapmanager.annotations.pointAnnotations(annotationFilePath)
+            # TODO: add detectionParamClass
+            self._annotations = pymapmanager.annotations.pointAnnotations(annotationFilePath, analysisParams = self._analysisParams)
         except (FileNotFoundError) as e:
             self._annotations = None
 

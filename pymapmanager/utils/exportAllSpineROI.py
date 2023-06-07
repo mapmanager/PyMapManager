@@ -21,16 +21,8 @@ def exportAllSpineROI(path):
     pa = stack.getPointAnnotations()
     la = stack.getLineAnnotations()
     channel = 2
-    # spineIdxList = [1, 2, 3, 5, 10, 11, 25]
-    # for spineRowIdx in spineIdxList:
-    #     print(‘spineRowIdx:’, spineRowIdx)
     roiDict = {}
-    # for spineRowIdx in pa.spineIter():
-    #     xyList = pa.getJaggedRoi(spineRowIdx)
-    #     spineRoiDict[spineRowIdx] = {
-    #                 'x': [100, 101, 102, 100],
-    #                 'y': [100, 101, 102, 100],
-    #         }
+
     downValue = 1
     upValue = 1
     
@@ -40,9 +32,6 @@ def exportAllSpineROI(path):
 
         # logger.info(f'spineRowIdx {spineRowIdx}')
         if spineDF['roiType'] == 'spineROI':
-        # print(spineRowIdx._get_value(0, 'index'))
-            # print(spineDF['index'])
-
             # logger.info(f'spineRowIdx {spineRowIdx._get_value(0, 'index')}')
             spinePoly = pa.calculateJaggedPolygon(la, spineDF['index'], channel, img)
 
@@ -66,7 +55,6 @@ def exportAllSpineROI(path):
             xSegmentBackground = xSegmentBackground.tolist()
             ySegmentBackground = segmentPoly[:,1] + bOffsetX
             ySegmentBackground = ySegmentBackground.tolist()
-            
 
             # calculateJaggedPolygon(self, lineAnnotations, _selectedRow, _channel, img)
             # self._spinePolygon.setData(jaggedPolygon[:,1], jaggedPolygon[:,0])
@@ -84,10 +72,6 @@ def exportAllSpineROI(path):
             # print(roiDict)
             # logger.info(f'spineRowIdx {spineRowIdx._get_value(0, 'index')}')
             # break
-
-    # TODO: save jsonStr to file
-    # json_object = json.dumps(roiDict)
-    # print(json_object) 
 
     with open("sample.json", "w") as outfile:
         json.dump(roiDict, outfile)

@@ -175,7 +175,7 @@ def _findBrightestIndex(x, y, z, zyxLine : List[List[float]], image: np.ndarray,
     # return brightestIndex + firstPoint, candidatePoints, closestIndex
     return brightestIndex + firstPoint
 
-def computeTangentLine(startPoint: tuple, stopPoint: tuple, extendHead = 1) -> tuple: 
+def computeTangentLine(startPoint: tuple, stopPoint: tuple, radius = 1) -> tuple: 
     """ Given a start point and stop point return the tangent line between them
 
     Args: 
@@ -194,10 +194,10 @@ def computeTangentLine(startPoint: tuple, stopPoint: tuple, extendHead = 1) -> t
 
     # Msegment = dYsegment/dXsegment
     angle = np.arctan2(dYsegment,dXsegment) 
-    adjustY = np.sin(angle) * extendHead
+    adjustY = np.sin(angle) * radius
     # print("adjustY", adjustY)
     # adjustX = adjustY/ (np.tan(angle))
-    adjustX = extendHead * np.cos(angle)
+    adjustX = radius * np.cos(angle)
 
     return (adjustY, adjustX)
 
@@ -339,7 +339,7 @@ def computeTangentLine(startPoint: tuple, stopPoint: tuple, extendHead = 1) -> t
 #     # sliceNumber = None
 
 #  Functions for calculation ROI masks
-def calculateRectangleROIcoords(xPlotSpines, yPlotSpines, xPlotLines, yPlotLines, extendHead = 3, extendTail = 3):
+def calculateRectangleROIcoords(xPlotSpines, yPlotSpines, xPlotLines, yPlotLines, width = 3, extendHead = 3, extendTail = 3):
     """
         Args:
             spineCoords:
@@ -357,11 +357,11 @@ def calculateRectangleROIcoords(xPlotSpines, yPlotSpines, xPlotLines, yPlotLines
             example: [ ( 1, 2), (3, 4), (5, 6) , (7,8) ]
     """
     # TODO: move this to the parameter list
-    width = 3
+    # width = 3
     # Value to extend the rectangle ROI
     # Currently also extends the tail as well
-    extendHead = 3
-    extendTail= 3
+    # extendHead = 3
+    # extendTail= 3
 
     Xa = xPlotLines
     Xb = xPlotSpines
@@ -409,7 +409,7 @@ def calculateRectangleROIcoords(xPlotSpines, yPlotSpines, xPlotLines, yPlotLines
     return [(firstCoordX, firstCoordY), (secondCoordX, secondCoordY), (thirdCoordX, thirdCoordY), (fourthCoordX, fourthCoordY)]
     # return [(firstCoordY, firstCoordX), (secondCoordY, secondCoordX), (thirdCoordY, thirdCoordX), (fourthCoordY, fourthCoordX)]
 
-def calculateTopTwoRectCoords(xPlotSpines, yPlotSpines, xPlotLines, yPlotLines):
+def calculateTopTwoRectCoords(xPlotSpines, yPlotSpines, xPlotLines, yPlotLines, width = 3, extendHead = 3):
     """
         Args:
             spineCoords:
@@ -427,12 +427,12 @@ def calculateTopTwoRectCoords(xPlotSpines, yPlotSpines, xPlotLines, yPlotLines):
             example: [ ( 1, 2), (3, 4), (5, 6) , (7,8) ]
     """
     # TODO: move this to the parameter list
-    width = 3
+    # width = 3
     # Value to extend the rectangle ROI
     # Currently also extends the tail as well
-    extendHead = 3
+    # extendHead = 3
     # extendTail= 3
-
+    
     Xa = xPlotLines
     Xb = xPlotSpines
     Ya = yPlotLines
@@ -545,7 +545,7 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations, forFinalMask):
     # print("filteredCoordinateList", filteredCoordinateList)
     # logger.info(f"segmentPolygon coordinateList: {coordinateList}")
 
-    print("coordinate list 0", coordinateList[:,0])
+    # print("coordinate list 0", coordinateList[:,0])
     coordinateList[:,0] = scipy.signal.medfilt(coordinateList[:,0] , medianFilterWidth)
     coordinateList[:,1] = scipy.signal.medfilt(coordinateList[:,1] , medianFilterWidth)
 
@@ -735,8 +735,8 @@ def calculateBackgroundMask(mask, offset):
 
     backgroundMask = np.zeros(mask.shape, dtype = np.uint8)
 
-    # logger.info(f"backgroundPointsY:{backgroundPointsY}")
-    # logger.info(f"backgroundPointsX:{backgroundPointsX}")
+    logger.info(f"backgroundPointsY:{backgroundPointsY}")
+    logger.info(f"backgroundPointsX:{backgroundPointsX}")
     backgroundMask[backgroundPointsY,backgroundPointsX] = 1
 
     # Account for out of bounds 

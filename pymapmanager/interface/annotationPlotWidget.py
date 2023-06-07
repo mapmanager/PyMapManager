@@ -388,6 +388,7 @@ class annotationPlotWidget(QtWidgets.QWidget):
             # zPlusMinus = 3
             # print("self._displayOptions", self._displayOptions)
             zPlusMinus = self._displayOptions['zPlusMinus']  
+            # print("zPlusMinus", zPlusMinus)
             dfPlot = self._annotations.getSegmentPlot(theseSegments, roiTypes, sliceNumber, zPlusMinus = zPlusMinus)
             self._dfPlot = dfPlot
 
@@ -541,6 +542,7 @@ class pointPlotWidget(annotationPlotWidget):
 
     def slot_selectAnnotation2(self, selectionEvent : "pymapmanager.annotations.SelectionEvent"):
         super().slot_selectAnnotation2(selectionEvent)
+
         logger.info('pointPlotWidget XXX')
         # logger.info(f'{self._getClassName()}')
         if not selectionEvent.isPointSelection():
@@ -606,6 +608,7 @@ class pointPlotWidget(annotationPlotWidget):
 
         # dfPlotSpines = self._annotations.getSegmentPlot(theseSegments, roiTypes, sliceNumber)
         dfPlotSpines = self._annotations.getSegmentPlot(theseSegments, roiTypes, sliceNumber, zPlusMinus)
+        # print("xxx dfPlotSpines", dfPlotSpines)
         # dfPlotSpines = self._dfPlot 
 
         xPlotSpines = []
@@ -613,6 +616,7 @@ class pointPlotWidget(annotationPlotWidget):
 
         # TODO (cudmore) do not loop, just get each (x, y) as a list
         # for idx, spine in dfSegmentSpines.iterrows()
+        # Change so that it only shows spines in correct z 
         for index, xyzOneSpine in dfPlotSpines.iterrows():
             _brightestIndex = xyzOneSpine['brightestIndex']
             #print(_brightestIndex, type(_brightestIndex))

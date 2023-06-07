@@ -434,14 +434,15 @@ class lineAnnotations(baseAnnotations):
 
         return dfOneSegment
 
-    def getRadiusLines(self, segmentID : Union[int, List[int]] = None, length = 1, medianFilterWidth = 5):
+    # def getRadiusLines(self):
+    def calculateAndStoreRadiusLines(self, segmentID : Union[int, List[int]] = None, radius = 1, medianFilterWidth = 5):
         """
-            Calculates all the xyz coordinates for the Shaft ROI for given segment(s)
-            and places them into the backend as columns within the dataframe
+            Calculates all the xyz coordinates for the Shaft (Spine) ROI for given segment(s)
+            and stores them into the backend as columns within the dataframe
 
         Args:
             segmentID: a list of ints representing a segment or multiple segments
-            length = integer by which we scale the size of the left, right points from the line point
+            radius = integer by which we scale the size of the left, right points from the line point
         """
        
         if segmentID is None:
@@ -483,13 +484,31 @@ class lineAnnotations(baseAnnotations):
             yPlot = currentDF['y']
             zPlot = currentDF['z']
 
-            # xPlotFiltered = scipy.ndimage.median_filter(xPlot, medianFilterWidth)
-            # yPlotFiltered = scipy.ndimage.median_filter(yPlot, medianFilterWidth)
+            # print("xPlot, ", xPlot)
 
-            # get the value of the first index for that segments dataframe
             offset = currentDF['index'].iloc[0]
             # offset = currentDF.get_value()
             print("offset, ", offset)
+
+            # logger.info('Using median_filter for x, y{}')
+            # xPlot = scipy.ndimage.median_filter(xPlot, medianFilterWidth)
+            # yPlot = scipy.ndimage.median_filter(yPlot, medianFilterWidth)
+
+            # print("xPlot[0], ", xPlot[0])
+            # print("xPlot[1], ", xPlot[1])
+            # print("xPlot[2], ", xPlot[2])
+            
+            # Current issue med filt is taking out certain values which doesnt allow us to index
+            # Need to filter while somehow keeping track of index
+            # OR filter after
+            # xPlot = scipy.signal.medfilt(xPlot, medianFilterWidth)
+            # yPlot = scipy.signal.medfilt(yPlot, medianFilterWidth)
+
+            # print("xPlot[0], ", xPlot[0])
+            # print("xPlot[1], ", xPlot[1])
+            # print("xPlot[2], ", xPlot[2])
+            # get the value of the first index for that segments dataframe
+
 
             # Initialize empty lists
             # nan is included to ensure that orthogonal line isnt drawn at the beginning
@@ -517,7 +536,7 @@ class lineAnnotations(baseAnnotations):
                 yNext = yPlot[idx+1 + offset]
 
                 # length = 3
-                adjustY, adjustX = pymapmanager.utils.computeTangentLine((xPrev,yPrev), (xNext,yNext), length)
+                adjustY, adjustX = pymapmanager.utils.computeTangentLine((xPrev,yPrev), (xNext,yNext), radius)
 
                 segmentROIXinitial.append(xCurrent-adjustX)
                 segmentROIYinitial.append(yCurrent-adjustY)
@@ -544,16 +563,27 @@ class lineAnnotations(baseAnnotations):
 
             # Acquire all indexs with the current 'index' segment
             indexes = currentDF['index']
+
+            # xFiltered = scipy.signal.medfilt(orthogonalROIXinitial + orthogonalROIXend, medianFilterWidth)
+            # yFiltered = scipy.signal.medfilt(orthogonalROIYinitial + orthogonalROIYend, medianFilterWidth)
+
+            # orthogonalROIXinitial = xFiltered[0:len(orthogonalROIXinitial)]
+            # orthogonalROIXend = xFiltered[len(orthogonalROIXinitial):len(xFiltered)]
+
+            # orthogonalROIYinitial = yFiltered[0:len(orthogonalROIYinitial)]
+            # orthogonalROIYend = yFiltered[len(orthogonalROIYinitial):len(yFiltered)]
+            
             for i, val in enumerate(indexes):
+            
                 # print(val)
                 # Here val is the actual index within the dataframe
                 # while i is the new index respective to each segment
-                self.setValue("xLeft", val, orthogonalROIXinitial[i])
-                self.setValue("yLeft", val, orthogonalROIYinitial[i])
+                self.setValue("xRight", val, orthogonalROIXinitial[i])
+                self.setValue("yRight", val, orthogonalROIYinitial[i])
                 # self.setValue("zLeft", val, orthogonalROIZinitial[i])
-                
-                self.setValue("xRight", val, orthogonalROIXend[i])
-                self.setValue("yRight", val, orthogonalROIYend[i])
+
+                self.setValue("xLeft", val, orthogonalROIXend[i])
+                self.setValue("yLeft", val, orthogonalROIYend[i])
                 # self.setValue("zRight", val, orthogonalROIZend[i])
 
     def getZYXlist(self, segmentID : Union[int, List[int], None],

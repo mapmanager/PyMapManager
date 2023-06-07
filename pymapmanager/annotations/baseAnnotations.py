@@ -294,7 +294,7 @@ class baseAnnotations():
             theDict[column.getName()] = None
         return theDict
 
-    def __init__(self, path : Union[str, None] = None):
+    def __init__(self, path : Union[str, None] = None, analysisParams = None):
         """Base class for annotations.
 
         MAnager a pandas dataframe, one row per annotation with named columns.
@@ -302,7 +302,7 @@ class baseAnnotations():
         Args:
             path (str | None): Full path to a file (a csv file). If None then wait to create on save.
         """
-        
+        self._analsisParams = analysisParams
         self._path = path
         #Full path to file we load/save. Can be None if we are new and have not saved.
         
@@ -550,6 +550,20 @@ class baseAnnotations():
         """Get annotations as underlying `pandas.DataFrame`.
         """
         return self._df
+    
+    def getAllColumnNames(self):
+        """
+        
+        Returns a list of all column names to be displayed in table interface
+        """
+        statList = []
+
+        for col in self._df:
+            # print(col)
+            statList.append(col)
+
+        return statList
+
 
     def rowColIs(self, rowIdx : int, colStr : str, value) -> bool:
         """Return true if row/col have value.
