@@ -1051,6 +1051,11 @@ class stackWidget(QtWidgets.QMainWindow):
         #     self._imagePlotWidget._aPointPlot.signalAnnotationClicked.emit(idx, isAlt)
 
         _pointAnnotations = self.myStack.getPointAnnotations()
+        
+        if _pointAnnotations.numAnnotations == 0:
+            logger.warning('point annotations is empty')
+            return
+        
         _selectionEvent = pymapmanager.annotations.SelectionEvent(_pointAnnotations,
                                                                     rowIdx=idx,
                                                                     isAlt=isAlt)

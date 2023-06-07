@@ -1,6 +1,7 @@
 """
 """
 import os
+import uuid
 import enum
 from typing import List, Union, Optional, Tuple
 
@@ -15,6 +16,8 @@ import pymapmanager.analysis
 
 from pymapmanager._logger import logger
 
+def _getNewUuid():
+    return "h" + str(uuid.uuid4()).replace("-", "_")
 
 class linePointTypes(enum.Enum):
     """
@@ -49,6 +52,8 @@ class lineAnnotations(baseAnnotations):
 
     def __init__(self, *args,**kwargs):
         super().__init__(*args,**kwargs)
+
+        self._uuid = _getNewUuid()
 
         # add columns specific to lineAnnotaitons
         colItem = ColumnItem(
@@ -130,6 +135,10 @@ class lineAnnotations(baseAnnotations):
         self.buildSegmentDatabase() 
         # creates/updates self._dfSegments : pd.DataFrame
 
+    @property
+    def uuid(self):
+        return self._uuid
+    
     def buildSegmentDatabase(self, segmentID : Union[List[int], int, None] = None):
         """Rebuild summary database of each line segment.
 
@@ -293,7 +302,7 @@ class lineAnnotations(baseAnnotations):
             # segment not found
             return None, None
 
-    def addAnnotation(self, 
+    def _old_addAnnotation(self, 
                     roiType : linePointTypes,
                     segmentID : int,
                     x : int, y : int, z : int,
@@ -314,7 +323,7 @@ class lineAnnotations(baseAnnotations):
         # logger.info('after addAnnotation')
         # print(self._df)
 
-    def addEmptySegment(self):
+    def _old_addEmptySegment(self):
         """Add an empty line segment.
         
         Empty line segments start with just a linePointTypes.pivotPnt
@@ -360,8 +369,10 @@ class lineAnnotations(baseAnnotations):
 
         return newSegmentID
 
-    def addToSegment(self, x, y, z, segmentID):
+    def _old_addToSegment(self, x, y, z, segmentID):
         """Add point(s) to a segment.
+        
+        TODO: Remove this for new lineSegments class, do not need segmentID
         """
         # find last row of segmentID and insert into df at (row+1)
         startRow, stopRow = self._segmentStartRow(segmentID)
@@ -372,14 +383,14 @@ class lineAnnotations(baseAnnotations):
         rowIdx = stopRow+1  # insert before this row
         self.addAnnotation(x,y,z,segmentID,rowIdx=rowIdx)
 
-    def deleteFromSegment(self, points, segmentID):
+    def _old_deleteFromSegment(self, points, segmentID):
         """Delete points from a segment.
         
         TODO: Not implemented.
         """
         pass
 
-    def deleteSegment(self, segmentID : Union[int, List[int]]):
+    def _old_deleteSegment(self, segmentID : Union[int, List[int]]):
         """Delete an entire segment based on segmentID.
         
         Args:
@@ -433,7 +444,8 @@ class lineAnnotations(baseAnnotations):
     def getSegmentList(self) -> List[int]:
         """Get a list of all segment ID.
         """
-        return self.getDataFrame()['segmentID'].to_numpy()
+        # return self.getDataFrame()['segmentID'].to_numpy()
+        return self._df['segmentID'].unique()  # .to_numpy()
 
     def getSegment(self, segmentID : Union[int, List[int]] = None) -> pd.DataFrame:
         """Get all annotations rows for one segment id.

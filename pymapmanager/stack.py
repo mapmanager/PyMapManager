@@ -230,6 +230,13 @@ class stack():
             logger.info(f'Did not find header file {headerPath}')
             return None
 
+    def saveAs(self):
+        annotationFilePath = self._enclosingPath + '_pa.txt'
+        self.getPointAnnotations().saveAs(annotationFilePath)
+        
+        lineFilePath = self._enclosingPath + '_la.txt'
+        self.getLineAnnotations().saveAs(lineFilePath)
+
     def save(self, saveImages : bool = False):
         """Save line and point annotations.
 
@@ -242,6 +249,7 @@ class stack():
         self.getPointAnnotations().save()
 
         if saveImages:
+            # we generally never do this
             pass
 
     def loadImages(self, channel : int = None):

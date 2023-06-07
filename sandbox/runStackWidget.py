@@ -7,6 +7,12 @@ def run():
     
     # load a backend stack
     path = '../PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
+
+    # loading from an incomplete map (missing int analysis for rois)
+    # path = '..//PyMapManager-Data/maps/rr30a/rr30a_s1_ch2.tif'
+    # path = '..//PyMapManager-Data/maps/rr30a/rr30a_s2_ch2.tif'
+    # path = '..//PyMapManager-Data/maps/rr30a/rr30a_s3_ch2.tif'
+    
     myStack = pymapmanager.stack(path=path, loadImageData=True)
     logger.info(f'myStack: {myStack}')
     

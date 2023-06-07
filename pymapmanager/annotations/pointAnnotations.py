@@ -378,7 +378,10 @@ class pointAnnotations(baseAnnotations):
 
         # logger.info(f"spineIntDict:{spineIntDict}")
 
-        self.setIntValue(spineIdx, 'spine', channelNumber, spineIntDict)
+        if spineIntDict is None:
+            logger.error(f'error retrieving int stats for finalSpineROIMask with imgData shape: {imgData.shape}')
+        else:
+            self.setIntValue(spineIdx, 'spine', channelNumber, spineIntDict)
 
 
         # debugSpineIntDict = self.setIntValue(spineIdx, 'spine', channelNumber, spineIntDict)
@@ -422,8 +425,11 @@ class pointAnnotations(baseAnnotations):
         # backgroundRoiAsList += backgroundRoiOffset # for each point in lhs, add the pone point on the rhs
 
         spineBackgroundIntDict = pymapmanager.utils._getIntensityFromMask(backgroundMask, imgData)
-        
-        self.setIntValue(spineIdx, 'spineBackground', channelNumber, spineBackgroundIntDict)
+
+        if spineBackgroundIntDict is None:
+            logger.error(f'error retrieving int stats for backgroundMask with imgData shape: {imgData.shape}')
+        else:
+            self.setIntValue(spineIdx, 'spineBackground', channelNumber, spineBackgroundIntDict)
 
 
     def reconnectToSegment(self, rowIdx : int):
@@ -493,7 +499,7 @@ class pointAnnotations(baseAnnotations):
         dfSpines = dfSpines[dfSpines['segmentID']==segmentID]
         return dfSpines
 
-    def getSegmentControlPnts(self, segmentID : int) -> pd.DataFrame:
+    def _old_getSegmentControlPnts(self, segmentID : int) -> pd.DataFrame:
         """Get all controlPnt connected to one segment.
         """
         dfPoints = self.getDataFrame()
@@ -589,7 +595,7 @@ class pointAnnotations(baseAnnotations):
         segmentID = self.getValue("segmentID", spineRowIdx)
         segmentID = int(segmentID)
         # print("segmentID", segmentID)
-        logger.info(f"segmentID {segmentID} spineRowIDX{spineRowIdx}")
+        logger.info(f"segmentID:{segmentID} spineRowIDX:{spineRowIdx}")
        
         segmentZYX = lineAnnotation.getZYXlist(segmentID, ['linePnt'])
         # print("segmentZYX", segmentZYX)
@@ -656,6 +662,13 @@ class pointAnnotations(baseAnnotations):
                 # val = current index
                 spineZval = pointAnnotation.getValue("z", val)
                 # img = stack.getImageChannel(channel=channel)
+                
+                # logger.info('DEBUG')
+                # logger.info(f'  spineZval:{spineZval}')
+                # logger.info(f'  channel:{channel}')
+                # logger.info(f'  upValue:{upValue}')
+                # logger.info(f'  downValue:{downValue}')
+                
                 img = stack.getMaxProjectSlice(spineZval, channel, upValue, downValue)
                 self.calculateSingleBrightestIndex(channel, val, lineAnnotation, img)
                 # print("stored", idx)
@@ -776,11 +789,14 @@ class pointAnnotations(baseAnnotations):
 
         # Get brightest index from back end
         brightestIndex = int(self.getValue("brightestIndex", spineRowIdx))
-        logger.info(f"[segmentID]{segmentID}")
-        logger.info(f"[spineRowIdx]{spineRowIdx}")
-        logger.info(f"[brightestIndex]{brightestIndex}")
-        # logger.info(f"[segmentZYX]{segmentZYX}")
-        # logger.info(f"segmentZYX[brightestIndex]{segmentZYX[brightestIndex]}")
+
+        _debug = False
+        if _debug:
+            logger.info(f"[segmentID]{segmentID}")
+            logger.info(f"[spineRowIdx]{spineRowIdx}")
+            logger.info(f"[brightestIndex]{brightestIndex}")
+            # logger.info(f"[segmentZYX]{segmentZYX}")
+            # logger.info(f"segmentZYX[brightestIndex]{segmentZYX[brightestIndex]}")
         
         # segmentZYX doesn't account for index of the original dataframe
         # Subtract by the initial index of the segment to get the correct value in the list
@@ -793,8 +809,9 @@ class pointAnnotations(baseAnnotations):
         # self.setValue('yLine', spineRowIdx, yBrightestLine)
         # self.setValue('zLine', spineRowIdx, zBrightestLine)
         
-        logger.info(f"xBrightestLine:{xBrightestLine}")
-        logger.info(f"yBrightestLine:{yBrightestLine}")
+        if _debug:
+            logger.info(f"xBrightestLine:{xBrightestLine}")
+            logger.info(f"yBrightestLine:{yBrightestLine}")
 
         spineRectROI = pymapmanager.utils.calculateRectangleROIcoords(xPlotSpines = x, yPlotSpines = y,
                                                                       xPlotLines = xBrightestLine,
@@ -814,7 +831,11 @@ class pointAnnotations(baseAnnotations):
         # get dict with spine intensity measurements
         spineIntDict = pymapmanager.utils._getIntensityFromMask(finalSpineROIMask, img)
 
-        self.setIntValue(spineRowIdx, 'spine', channelNumber, spineIntDict)
+        if spineIntDict is None:
+            logger.error(f'error retrieving int stats for finalSpineROIMask with img shape: {img.shape}')
+        else:
+            self.setIntValue(spineRowIdx, 'spine', channelNumber, spineIntDict)
+    
         # print("spineIntDict", spineIntDict)
 
         distance = 7
@@ -832,29 +853,39 @@ class pointAnnotations(baseAnnotations):
         backgroundRoiOffset = pymapmanager.utils.calculateLowestIntensityOffset(mask = combinedMasks, distance = distance
                                                                             , numPts = numPts
                                                                             , originalSpinePoint = originalSpinePoint, img=img)  
-        logger.info(f"backgroundRoiOffset:{backgroundRoiOffset}")
+        logger.info(f"segmentID:{segmentID} spineRowIdx:{spineRowIdx} backgroundRoiOffset:{backgroundRoiOffset}")
         self.setValue('xBackgroundOffset', spineRowIdx, backgroundRoiOffset[0])
         self.setValue('yBackgroundOffset', spineRowIdx, backgroundRoiOffset[1])
 
         backgroundMask = pymapmanager.utils.calculateBackgroundMask(finalSpineROIMask, backgroundRoiOffset)
         spineBackgroundIntDict = pymapmanager.utils._getIntensityFromMask(backgroundMask, img)
         
-        self.setIntValue(spineRowIdx, 'spineBackground', channelNumber, spineBackgroundIntDict)
+        if spineBackgroundIntDict is None:
+            logger.error(f'error retrieving int stats for spineBackgroundIntDict with img shape: {img.shape}')
+        else:
+            self.setIntValue(spineRowIdx, 'spineBackground', channelNumber, spineBackgroundIntDict)
 
         # Segment
         segmentIntDict = pymapmanager.utils._getIntensityFromMask(segmentMask, img)
-        self.setIntValue(spineRowIdx, 'segment', channelNumber, segmentIntDict)
+        if segmentIntDict is None:
+            logger.error(f'error retrieving int stats for segmentMask with img shape: {img.shape}')
+        else:
+            self.setIntValue(spineRowIdx, 'segment', channelNumber, segmentIntDict)
 
         segmentBackgroundMask = pymapmanager.utils.calculateBackgroundMask(segmentMask, backgroundRoiOffset)
         segmentBackgroundIntDict = pymapmanager.utils._getIntensityFromMask(segmentBackgroundMask, img)
-        self.setIntValue(spineRowIdx, 'segmentBackground', channelNumber, segmentBackgroundIntDict)
+        if segmentBackgroundIntDict is None:
+            logger.error(f'error retrieving int stats for segmentBackgroundIntDict with img shape: {img.shape}')
+        else:
+            self.setIntValue(spineRowIdx, 'segmentBackground', channelNumber, segmentBackgroundIntDict)
 
     # TODO: remove channel
     # rename to setAllSpineOffsetDictValues
     def setBackGroundMaskOffsets(self, 
                 segmentID : Union[int, List[int], None],
                 lineAnnotation,
-                channelNumber, stack):
+                channelNumber,
+                stack):
         """
             Function that calls setSingleSpineOffsetDictValues for all spines in given segment(s)
         """

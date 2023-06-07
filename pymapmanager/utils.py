@@ -67,15 +67,26 @@ def _getIntensityFromMask(imgMask :np.ndarray, img : np.ndarray) -> dict:
     maskIntensities = img[imgMask==1]
 
     #print(f'  _getRoiIntensities() maskIntensities: {maskIntensities.shape} {maskIntensities.dtype}')
-                
-    theDict = {
-        'Sum': maskIntensities.sum(),
-        'Mean': maskIntensities.mean(),
-        'Std': maskIntensities.std(),
-        'Min': maskIntensities.min(),
-        'Max': maskIntensities.max(),
-    }
 
+    try:
+        _min = maskIntensities.min()
+    except (ValueError) as e:
+        logger.error(f'Value error in min for maskIntensities shape: {maskIntensities.shape}')
+        return
+     
+    # try:
+    if 1:
+        theDict = {
+            'Sum': maskIntensities.sum(),
+            'Mean': maskIntensities.mean(),
+            'Std': maskIntensities.std(),
+            'Min': maskIntensities.min(),
+            'Max': maskIntensities.max(),
+        }
+    # except (ValueError) as e:
+    #     logger.error(f'Value error with image mask shape: {maskIntensities.shape}')
+    #     return
+    
     return theDict
     
 def _getIntensityFromMask2(imgMaskList, img : np.ndarray) -> dict:
@@ -161,6 +172,11 @@ def _findBrightestIndex(x, y, z, zyxLine : List[List[float]], image: np.ndarray,
         # destPoint = np.array([candidatePoint[0], candidatePoint[1]])
         destPoint = np.array([candidatePoint[1], candidatePoint[2]])
 #         print("DestPoint:", destPoint)
+        
+        # logger.info('DEBUG')
+        # logger.info(f'  image: {image.shape}')
+        # logger.info(f'  sourcePoint:{sourcePoint} destPoint:{destPoint} linewidth:{linewidth}')
+
         candidateProfile = skimage.measure.profile_line(image, sourcePoint, destPoint, linewidth)
         oneSum = np.sum(candidateProfile)
         
@@ -501,9 +517,11 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations, forFinalMask):
             #     lineAnnotations.getValue("yLeft", lineIndex+i)])
             xLeft = lineAnnotations.getValue("xLeft", lineIndex+i)
             yLeft = lineAnnotations.getValue("yLeft", lineIndex+i)
-            if not(math.isnan(xLeft) and math.isnan(yLeft)):
+            if xLeft is not None and yLeft is not None and not(math.isnan(xLeft) and math.isnan(yLeft)):
                 coordinateList.append([xLeft, yLeft])
                 # print("xLeft is", xLeft)
+            else:
+                logger.warning(f'lineIndex:{lineIndex} xLeft:{xLeft} yLeft:{yLeft}')
 
     # totalPoints = totalPoints.reverse()
     totalPoints.reverse()
@@ -514,9 +532,11 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations, forFinalMask):
         if(lineIndex+i >= 0 and lineIndex+i <= len(lineAnnotations)):
             xRight = lineAnnotations.getValue("xRight", lineIndex+i)
             yRight = lineAnnotations.getValue("yRight", lineIndex+i)
-            if not(math.isnan(xRight) and math.isnan(yRight)):
+            if xLeft is not None and yLeft is not None and not(math.isnan(xRight) and math.isnan(yRight)):
                 coordinateList.append([xRight, yRight]) 
                 # print("yRight is", yRight)
+            else:
+                logger.warning(f'lineIndex+i:{lineIndex+i} xRight:{xRight} yRight:{yRight}')
 
     
     # totalPoints.reverse()
@@ -531,7 +551,7 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations, forFinalMask):
 
     coordinateList = np.array(coordinateList)
 
-    print("coordinateList", coordinateList)
+    # print("coordinateList", coordinateList)
 
     medianFilterWidth = 3
     # filteredX = scipy.signal.medfilt(coordinateList[:,0] , medianFilterWidth)
@@ -552,14 +572,14 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations, forFinalMask):
     coordinateList = coordinateList.tolist()
     if not forFinalMask:
         xLeft = coordinateList[0][0]
-        print("xLeft", xLeft)
+        # print("xLeft", xLeft)
         yLeft = coordinateList[0][1]
-        print("yLeft", yLeft)
+        # print("yLeft", yLeft)
         coordinateList.append([xLeft, yLeft])
 
-    print("coordinate list in list form", coordinateList)
+    # print("coordinate list in list form", coordinateList)
     coordinateList = np.array(coordinateList)
-    print("filteredCoordinateList in nparray form", coordinateList)
+    # print("filteredCoordinateList in nparray form", coordinateList)
     return coordinateList
 
 def calculateFinalMask(rectanglePoly, linePoly):
@@ -701,8 +721,8 @@ def calculateLowestIntensityOffset(mask, distance, numPts, originalSpinePoint, i
             pixelIntensityofMask = img[adjustedMaskY,adjustedMaskX]
 
         except(IndexError) as e:
-            # logger.error("Out of bounds")
-            print("Out of bounds")
+            #logger.error(f'Background candidate went out of image bounds')
+            # print("Out of bounds")
             continue
     
         totalIntensity = np.sum(pixelIntensityofMask)

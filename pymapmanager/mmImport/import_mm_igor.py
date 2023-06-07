@@ -1,14 +1,16 @@
 """
 Script to import mapmanager-igor into native pymapmanager.
 """
-import os
-from pprint import pprint
+import os, sys
+#from pprint import pprint
 
 import pandas as pd
-import numpy as np
+#import numpy as np
 
-from pymapmanager.annotations.pointAnnotations import pointAnnotations
-from pymapmanager.stack import stack
+# from pymapmanager.annotations.pointAnnotations import pointAnnotations
+# from pymapmanager.stack import stack
+
+import pymapmanager as pmm
 
 from pymapmanager._logger import logger
 
@@ -100,8 +102,11 @@ def _import_lines_mapmanager_igor(path : str):
     """
 
     header = _import_mapmanager_igor_header(path)
+    header = {'voxelx': 0.12, 'voxely': 0.12, 'voxelz': 1.0}
+    print('header:', header)
 
-    dfLoaded = pd.read_csv(path, header=1, index_col=False)
+    headerRows = 7
+    dfLoaded = pd.read_csv(path, header=headerRows, index_col=False)
 
     # swap some columns
     x = dfLoaded['x']  # um/pixel
@@ -110,7 +115,7 @@ def _import_lines_mapmanager_igor(path : str):
     
     xPixel = x / header['voxelx']  # pixel
     yPixel = y / header['voxely']
-    zPixel = z / header['voxelz']
+    #zPixel = z / header['voxelz']
 
     columns = ['x', 'y', 'z', 'xVoxel', 'yVoxel', 'zVoxel',
         'segmentID', 'roiType']
@@ -120,13 +125,13 @@ def _import_lines_mapmanager_igor(path : str):
     # set native dataframe
     df['x'] = xPixel
     df['y'] = yPixel
-    df['z'] = zPixel
+    df['z'] = z
 
     df['xVoxel'] = x
     df['yVoxel'] = y
     df['zVoxel'] = z
 
-    df['segmentID'] = dfLoaded['segmentID'].astype(int)
+    df['segmentID'] = dfLoaded['ID'].astype(int)
     #
     # specific to line annotations
     roiTypeStr = 'linePnt'
@@ -134,5 +139,149 @@ def _import_lines_mapmanager_igor(path : str):
 
     return header, df
 
+def importTimepoint(mapName : str = 'rr30a', session : int =0):
+    # 20230521
+
+    """
+    This will do a fresh import from MapManager Igor export txt files
+    Once we load the stack, we start with empty point annotations
+    Any existing data will be lost
+    """
+
+    # 1)
+    # import igor stackdb
+    igorPath = f'/Users/cudmore/Sites/PyMapManager-Data/public/{mapName}/stackdb/{mapName}_s{session}_db2.txt'
+    #path = '/Users/cudmore/Sites/PyMapManager-Data/public/rr30a/stackdb/rr30a_s0_db2.txt'
+    header, df = _import_points_mapmanager_igor(igorPath)
+
+    #print(header)
+    # print(df)
+
+    # load an empty stack
+    dstPath = f'/Users/cudmore/Sites/PyMapManager-Data/maps/{mapName}/{mapName}_s{session}_ch2.tif'
+    # dstPath = '/Users/cudmore/Sites/PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
+    s = pmm.stack(dstPath)
+    s.loadImages(channel=2)
+    
+    # make a new empty point annotations
+    s._annotations = pmm.annotations.pointAnnotations()
+    pa = s.getPointAnnotations()
+
+    # assign values in point annotations from igor
+    pa._df['x'] = df['x']
+    pa._df['y'] = df['y']
+    pa._df['z'] = df['z']
+
+    pa._df['xVoxel'] = df['xVoxel']
+    pa._df['yVoxel'] = df['yVoxel']
+    pa._df['zVoxel'] = df['zVoxel']
+
+    pa._df['segmentID'] = df['segmentID']
+    pa._df['roiType'] = df['roiType']
+
+    for _row in range(len(pa._df)):
+        pa._setModTime(_row)
+        pa.setValue('index', _row, _row)
+
+    #print('pa._df.head()')
+    #print(pa._df.head())
+
+    # 2)
+    # do the same for lines
+    # import igor stackdb
+    igorLinePath = f'/Users/cudmore/Sites/PyMapManager-Data/public/{mapName}/line/{mapName}_s{session}_l.txt'
+    # igorLinePath = '/Users/cudmore/Sites/PyMapManager-Data/public/rr30a/line/rr30a_s1_l.txt'
+    headerLine, dfLines = _import_lines_mapmanager_igor(igorLinePath)
+    # print('headerLine:', headerLine)
+    print('dfLines')
+    print(dfLines.head())
+
+    # make a new empty point annotations
+    s._lines = pmm.annotations.lineAnnotations()
+    la = s.getLineAnnotations()
+
+    # Columns: [x, index, y, z, xVoxel, yVoxel, zVoxel, channel, cSeconds, mSeconds, note, segmentID, roiType, xLeft, yLeft, xRight, yRight]
+    # assign values in point annotations from igor
+    la._df['x'] = dfLines['x']
+    la._df['y'] = dfLines['y']
+    la._df['z'] = dfLines['z']
+
+    la._df['xVoxel'] = dfLines['xVoxel']
+    la._df['yVoxel'] = dfLines['yVoxel']
+    la._df['zVoxel'] = dfLines['zVoxel']
+
+    la._df['segmentID'] = dfLines['segmentID']
+    la._df['roiType'] = dfLines['roiType']
+
+    for _row in range(len(la._df)):
+        la._setModTime(_row)
+        la.setValue('index', _row, _row)
+
+    print('la._df')
+    print(la._df.head())
+
+    #
+    # call johnsons functions to find brightest path
+    segmentID = None
+    channel = 2
+    pa.calculateBrightestIndexes(s, segmentID, channel)
+
+    #
+    # call johnsons function to get segment radius lines
+    radius = 1
+    medianFilterWidth = 5
+    la.getRadiusLines(segmentID, length=radius, medianFilterWidth=medianFilterWidth)
+
+    #
+    # calculate xBackground, yBackground, intensity columns
+    # for all spines use `setBackgroundMaskOffsets`
+    # for one spine use `setSingleSpineOffsetDictValues``
+    pa.setBackGroundMaskOffsets(segmentID=None, lineAnnotation=la, channelNumber=channel, stack=s)
+
+    # export roi as json
+    # exportAllSpineROI
+
+    # finally, save
+    # s.save()
+    s.saveAs()  # first time save to default folder and file path
+
+def loadWhatWeConverted():
+    # load a backend stack
+    path = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
+    myStack = pmm.stack(path=path, loadImageData=True)
+    logger.info(f'myStack: {myStack}')
+    
+    import pymapmanager.interface
+
+    # creat the main application
+    app = pmm.interface.PyMapManagerApp()
+    
+    # create a stack widget
+    bsw = pmm.interface.stackWidget(myStack=myStack)
+
+    # snap to an image
+    #bsw._imagePlotWidget.slot_setSlice(30)
+    
+    # select a point and zoom
+    bsw.zoomToPointAnnotation(10, isAlt=True, select=True)
+
+    # run the Qt event loop
+    sys.exit(app.exec_())
+
 if __name__ == '__main__':
-    pass
+    mapName = 'rr30a'
+    numSessions = 9
+    
+    # session 4 is failing
+    # importTimepoint(mapName, session=4)
+
+    importTimepoint(mapName, session=8)
+
+    if 0:
+        # only do this once, otherwise spines will be repeated
+        for session in range(numSessions):
+            # if session > 0:
+            #     break
+            importTimepoint(mapName, session)
+    
+    loadWhatWeConverted()

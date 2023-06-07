@@ -114,6 +114,7 @@ class moveToStackWidget(QtWidgets.QWidget):
         self._stack = stack                
         self._stackData = stack.getImageChannel(channel=2)
 
+        '''
         pa = stack.getPointAnnotations()
         df = pa.getSegmentControlPnts(segmentID=0)
         df = df.reset_index()
@@ -141,11 +142,16 @@ class moveToStackWidget(QtWidgets.QWidget):
 
             # to debug, do just 2x point to point tracing
             break
+        '''
 
     
     def runLongTask(self):
         """Run tracing between 2 points.
         """
+        
+        # in v2, start point will be the end of the tracing
+        # _stopPoint will be the new point the user clicks
+        
         logger.info('')
         logger.info(f'  _stackData:{self._stackData.shape}')
         logger.info(f'  _startPnt:{self._startPnt}')

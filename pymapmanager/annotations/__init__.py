@@ -14,3 +14,6 @@ from .pointAnnotations import pointAnnotations
 
 from .lineAnnotations import linePointTypes
 from .lineAnnotations import lineAnnotations
+
+from .lineAnnotations2 import lineAnnotations2
+
