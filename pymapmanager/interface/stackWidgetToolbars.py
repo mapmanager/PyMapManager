@@ -11,6 +11,7 @@ class TopToolBar(QtWidgets.QToolBar):
     """
     signalChannelChange = QtCore.Signal(object)  # int : channel number
     signalSlidingZChanged = QtCore.Signal(object)  # dict : {checked, upDownSlices}
+    signalRadiusChanged = QtCore.Signal(object)  # dict : {checked, upDownSlices}
 
     def __init__(self, myStack :pymapmanager.stack,
                  displayOptionsDict : dict, parent=None):
@@ -209,6 +210,22 @@ class TopToolBar(QtWidgets.QToolBar):
         # self.colorPopup = QtWidgets.QComboBox()
         # self.colorPopup.addItems(colorList)
         # self.addWidget(self.colorPopup)
+
+    def _on_radius_value_changed(self, value):
+        """
+            Value to change the radius of the left/ right points. When changed the points also change.
+        """
+        logger.info(f'Recalculate left/right given new radius {value}')
+        # call function to recaculate ALL left xy, right xy given a new radius
+        # la = self._myStack.getLineAnnotations()
+        # segmentID = None
+        # radius = value
+        # la.calculateAndStoreRadiusLines(segmentID = segmentID, radius = radius)
+
+        # send signal to backend to refresh 
+        # AnnotationPlotWidget that displays the radius line points
+        self.signalRadiusChanged.emit(value)
+        # signalRadiusChanged
 
 #class bStatusToolbar(QtWidgets.QWidget):
 class StatusToolbar(QtWidgets.QToolBar):

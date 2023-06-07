@@ -1,3 +1,5 @@
+# Now it is pymapmanager/utils/UpdateAllSpineAnalysis.py
+
 import os
 import sys
 

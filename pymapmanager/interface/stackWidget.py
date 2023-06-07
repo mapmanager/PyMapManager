@@ -10,7 +10,10 @@ import pyqtgraph as pg
 
 import pymapmanager
 import pymapmanager.annotations
+from pymapmanager.analysisParams import AnalysisParams
+from pymapmanager.interface.scatterPlotWindow import ScatterPlotWindow
 import pymapmanager.interface
+from pymapmanager.interface.analysisParamWidget import AnalysisParamWidget
 
 from pymapmanager._logger import logger
 
@@ -34,6 +37,24 @@ def _mapColor(type:str, lut:str):
             return 'g'
         elif lut == 'Blue':
             return 'Blue'
+
+
+class AnotherWindow(QtWidgets.QWidget):
+    """
+    This "window" is a QWidget. If it has no parent, it
+    will appear as a free-floating window as we want.
+    """
+    # def __init__(self, analysisLayout: QtWidgets.QGridLayout):
+    def __init__(self, windowLayout: None):
+        super().__init__()
+        self.layout = QtWidgets.QVBoxLayout()
+        # self.label = QtWidgets.QLabel("Another Window")
+        # self.layout.addWidget(self.label)
+        self.setLayout(self.layout)
+
+        # analysisWindow = analysisLayout
+        self.layout.addLayout(windowLayout)
+
 
 class stackDisplayOptions():
     """Class to encapsulate all display options.
@@ -259,6 +280,15 @@ class stackWidget(QtWidgets.QMainWindow):
         #self._getDefaultDisplayOptions()
         self._displayOptionsDict : stackDisplayOptions = stackDisplayOptions()
 
+        # self._detectionParamsDict : DetectionParams = DetectionParams()
+        # self._detectionParamsDict.signalParameterChanged.connect(self.slot_parameterChanged)
+
+        pa = self.myStack.getPointAnnotations()
+        self.statList = pa.getAllColumnNames()
+        # print("self.statList",self.statList)
+        # print("pa is " , pa)
+        self._scatterPlotWindow : ScatterPlotWindow = ScatterPlotWindow(pointAnnotations = pa)
+
         _channel = self._displayOptionsDict['windowState']['defaultChannel']
         self.annotationSelection = stackWidgetState(self, channel=_channel)
 
@@ -267,6 +297,12 @@ class stackWidget(QtWidgets.QMainWindow):
 
         self._buildUI()
         self._buildMenus()
+
+        # Used for created analysis parameter window
+        self.window = None  # No external window yet.
+
+        # For scatter plot window
+        self.scatterWindow = None
 
         if show:
             self.show()
@@ -462,6 +498,31 @@ class stackWidget(QtWidgets.QMainWindow):
         # stack menubar
         stackMenu = mainMenu.addMenu('&Stack')
         #stackMenu = QtWidgets.QMenuBar()
+        
+
+        openParameterList_action = QtWidgets.QAction("&Open Parameter List", self)
+        openParameterList_action.triggered.connect(self.showAnalysisParams)
+
+        # button_action.triggered.connect(lambda: print("click"))
+        # analysisLayout = self._detectionParamsDict.buildAnalysisParamUI()
+        # openParameterList_action.triggered.connect(lambda: self.showNewWindow(layout = analysisLayout))
+        # button_action.triggered.connect(lambda: self.showNewWindow(analysisLayout))
+        # button_action.triggered.connect(lambda: self._detectionParamsDict.buildAnalysisParamUI())
+
+        updateAnalysis_action = QtWidgets.QAction("&Manually Update Spine Analysis", self)
+        updateAnalysis_action.triggered.connect(self.updateSpineAnalysis)
+
+        plotScatter_action = QtWidgets.QAction("&Plot Scatter", self)
+        scatterPlotLayout = self._scatterPlotWindow.getLayout()
+        plotScatter_action.triggered.connect(lambda: self.showNewWindow(layout = scatterPlotLayout))
+
+        analysisMenu = mainMenu.addMenu("&Analysis")
+
+        analysisMenu.addAction(updateAnalysis_action)
+
+        analysisMenu.addAction(openParameterList_action)
+
+        analysisMenu.addAction(plotScatter_action)
 
         _panelDict = {
             'Toolbar': '',
@@ -487,8 +548,50 @@ class stackWidget(QtWidgets.QMainWindow):
 
         #stackMenu.addAction(channelOneAction)
 
+        
         return stackMenu
     
+    # def showScatterPlotWindow(self):
+
+    #     pa = self.myStack.getPointAnnotations()
+    #     if self.scatterWindow is None:
+    #         logger.info('scatterWindow window opened')
+    #         analysisLayout = self._scatterPlotWindow.getLayout()
+    #         # print("type", type(analysisLayout))
+    #         self.scatterWindow = AnotherWindow(analysisLayout)
+    #         self.scatterWindow.show()
+    #         # analysisWindow = self._detectionParamsDict.buildAnalysisParamUI()
+
+    #     else:
+    #         self.scatterWindow.close()  # Close window.
+    #         self.scatterWindow = None  # Discard reference.
+    #         logger.info('scatterWindow window closed')    
+    
+    def showAnalysisParams(self):
+        
+        # TODO: Move this to be part of class (self._dpWidget) rather than local variable?
+        tmp_dPWidget: AnalysisParams = AnalysisParams()
+        # Show Detection Widget
+        self._analysisParamsWidget: AnalysisParamWidget = AnalysisParamWidget(tmp_dPWidget)
+        self._analysisParamsWidget.signalParameterChanged.connect(self.slot_parameterChanged)
+        # TODO: make use of signal
+        
+    def showNewWindow(self, layout):
+        if self.window is None:
+            logger.info('analysis param window opened')
+            # analysisLayout = self._detectionParamsDict.buildAnalysisParamUI()
+            # print("type", type(analysisLayout))
+            print("layout", layout)
+            print("type", type(layout))
+            self.window = AnotherWindow(layout)
+            self.window.show()
+            # analysisWindow = self._detectionParamsDict.buildAnalysisParamUI()
+
+        else:
+            self.window.close()  # Close window.
+            self.window = None  # Discard reference.
+            logger.info('analysis param window closed')
+
     def _on_user_close(self):
         logger.info('')
         self.close()
@@ -617,6 +720,9 @@ class stackWidget(QtWidgets.QMainWindow):
         self._topToolbar.signalChannelChange.connect(self._imagePlotWidget.slot_setChannel)
         self._topToolbar.signalSlidingZChanged.connect(self._imagePlotWidget.slot_setSlidingZ)
 
+        # Temporary connection to update backend whenever radius is changed in toptoolbar
+        self._topToolbar.signalRadiusChanged.connect(self._imagePlotWidget.slot_updateLineRadius)
+
         self._histogramWidget.signalContrastChange.connect(self._imagePlotWidget.slot_setContrast)
 
         self.signalPointChanged.connect(self._myPointListWidget.slot_editAnnotations)
@@ -674,6 +780,7 @@ class stackWidget(QtWidgets.QMainWindow):
         self.resize(width, height)
 
         self.setFocus()  # so key-stroke actions work
+
 
     def setPosition(self, left : int, top : int, width : int, height : int):
         """Set the position of the widget on the screen.
@@ -787,7 +894,7 @@ class stackWidget(QtWidgets.QMainWindow):
 
         # Selects new Spine in list
         # self._myPointListWidget.slot_selectAnnotation2(self._currentSelection)
-        self.signalSelectAnnotation2.emit(self._currentSelection)
+        # self.signalSelectAnnotation2.emit(self._currentSelection)
 
         # Deselect current spine point and Show new spine point
         # self._imagePlotWidget._aPointPlot.slot_deletedAnnotation()
@@ -797,11 +904,12 @@ class stackWidget(QtWidgets.QMainWindow):
                 'isSegment': False,
             }
         self.signalDeletedAnnotation.emit(deleteDict)
+
+        # Reselect New Spine in list and image plot widget
+        self.signalSelectAnnotation2.emit(self._currentSelection)
         
         # Selects new Spine in image displayed
         # self._imagePlotWidget._aPointPlot.slot_selectAnnotation2(self._currentSelection)
-
-  
         
     def slot_addSegment(self):
         """Respond to user clicking add segment
@@ -1061,6 +1169,52 @@ class stackWidget(QtWidgets.QMainWindow):
                                                                     isAlt=isAlt)
         logger.info(f'  -->> emit signalSelectAnnotation2')
         self.signalSelectAnnotation2.emit(_selectionEvent)
+
+
+    def updateSpineAnalysis(self):
+        """
+        Used to test if analysis parameters changed
+        """
+        logger.info('updateSpineAnalysis')
+
+        imageChannel = self.annotationSelection.getImageChannel()
+
+        pa = self.myStack.getPointAnnotations()
+        la = self.getStack().getLineAnnotations()        
+
+        stack = self.getStack()
+        segmentID = None
+        self.myStack.getPointAnnotations().updateAllSpineAnalysis(segmentID, la, imageChannel, stack)
+        
+        _selectionEvent = pymapmanager.annotations.SelectionEvent(la,
+                                                            rowIdx=None
+                                                            )
+        # Update all Rows in table
+        self.signalPointChanged.emit(_selectionEvent)
+
+        # Reselects current Spine in list
+        # self._myPointListWidget.slot_selectAnnotation2(self._currentSelection)
+        self.signalSelectAnnotation2.emit(self._currentSelection)
+
+        # Update the table that shows the data 
+
+
+    def slot_parameterChanged(self, parameterDict):
+        """
+        """
+        # Using key in dictionary match it up with key in pointAnnotations and update
+        _pointAnnotations = self.myStack.getPointAnnotations()
+        # Maybe update base annotation instead so that both point and line annotation gets it
+        logger.info(f'parameterDict {parameterDict}')
+
+        for key, newVal in parameterDict.items():
+            _pointAnnotations._analysisParams.setCurrentValue(key, newVal)
+
+        # for key, new_val in _pointAnnotations._analysisParams.getDict().items():
+        #     # print first key
+        #     print(key)
+        #     break
+
 
 if __name__ == '__main__':
     logger.error('Depreciated. please run with "python sandbox/runStackWidget.py"')
