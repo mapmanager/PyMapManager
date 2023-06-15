@@ -427,7 +427,8 @@ class stack():
         """
         try:
             lineFilePath = self._enclosingPath + '_la.txt'
-            self._lines = pymapmanager.annotations.lineAnnotations(lineFilePath)
+            # OLD: self._lines = pymapmanager.annotations.lineAnnotations(lineFilePath)
+            self._lines = pymapmanager.annotations.lineAnnotations(lineFilePath , analysisParams = self._analysisParams)
         except (FileNotFoundError) as e:
             self._lines = None
 

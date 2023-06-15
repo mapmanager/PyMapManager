@@ -513,6 +513,38 @@ class baseAnnotations():
     #     """
     #     return self._columns
     
+    def getSegmentID(self,roiTypes : Union[List[str], None] = None, 
+                        zSlice : Union[int, None] = None,
+                        zPlusMinus : int = 0):
+        """Return the SegmentID(s) that is displayed with a range of slices
+        
+        Args:
+            zSlice: The image slice (z) to limit returned annotations.
+            zPlusMinus: Include annotations with z +/- this value
+
+        Returns:
+            list of int
+        """
+
+        # reduce by roiType
+        if isinstance(roiTypes, str):
+            roiTypes = [roiTypes]
+        if roiTypes is not None:
+            df = self._df[self._df['roiType'].isin(roiTypes)]
+        else:
+            df = self._df
+
+
+        if zSlice is not None:
+            zMin = zSlice - zPlusMinus
+            zMax = zSlice + zPlusMinus
+            df = df[(df['z']>=zMin) & (df['z']<=zMax)]
+
+        segmentIDList = df['segmentID'].unique()
+        segmentIDList = [int(i) for i in segmentIDList]
+        
+        return segmentIDList
+        
     def getSegmentPlot(self, segmentID : Union[int, List[int], None],
                         roiTypes : Union[List[str], None] = None, 
                         zSlice : Union[int, None] = None,
@@ -550,12 +582,14 @@ class baseAnnotations():
 
         df = df[df['segmentID'].isin(segmentID)]
 
+        # print("df before", df)
         # Reduce by Z
         if zSlice is not None:
             zMin = zSlice - zPlusMinus
             zMax = zSlice + zPlusMinus
             df = df[(df['z']>=zMin) & (df['z']<=zMax)]
         
+        # print("df after", df)
         return df
 
     @property
@@ -663,10 +697,18 @@ class baseAnnotations():
             rowIdx = [rowIdx]
 
         df = self._df
-        
+     
         try:
             # TODO (cudmore) can't mix compareColName (reduceRows) and rowIdx
-            ret = df.loc[rowIdx, colName].to_numpy(na_value=np.nan)
+            # ret = df.loc[rowIdx, colName].to_numpy(na_value=np.nan)
+
+            # 6/12 - Johnson changed
+            # na_value=np.nan argument causes error for certain columns such as "indexes"
+            # might not be necessary and removed
+            ret = df.loc[rowIdx, colName].to_numpy()
+
+            # print("ret", ret)
+
             #logger.info(f'ret:{type(ret)} {ret.shape}')
             #if len(colName)==1:
             if ret.shape[1]==1:

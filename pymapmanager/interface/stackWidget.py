@@ -589,25 +589,25 @@ class stackWidget(QtWidgets.QMainWindow):
             self._imagePlotWidget.signalAnnotationSelection2.connect(self._scatterPlotWindow.slot_selectAnnotation2)
             
             # make the signal in ScatterPlotWidow
-            # self._scatterPlotWindow.signalAnnotationSelection2.connect(self._imagePlotWidget.slot_selectAnnotation2)
+            self._scatterPlotWindow.signalAnnotationSelection2.connect(self._imagePlotWidget.slot_selectAnnotation2)
 
         self._scatterPlotWindow.show()
 
-    def showNewWindow(self, layout):
-        if self.window is None:
-            logger.info('analysis param window opened')
-            # analysisLayout = self._detectionParamsDict.buildAnalysisParamUI()
-            # print("type", type(analysisLayout))
-            print("layout", layout)
-            print("type", type(layout))
-            self.window = AnotherWindow(layout)
-            self.window.show()
-            # analysisWindow = self._detectionParamsDict.buildAnalysisParamUI()
+    # def OLD_showNewWindow(self, layout):
+    #     if self.window is None:
+    #         logger.info('analysis param window opened')
+    #         # analysisLayout = self._detectionParamsDict.buildAnalysisParamUI()
+    #         # print("type", type(analysisLayout))
+    #         print("layout", layout)
+    #         print("type", type(layout))
+    #         self.window = AnotherWindow(layout)
+    #         self.window.show()
+    #         # analysisWindow = self._detectionParamsDict.buildAnalysisParamUI()
 
-        else:
-            self.window.close()  # Close window.
-            self.window = None  # Discard reference.
-            logger.info('analysis param window closed')
+    #     else:
+    #         self.window.close()  # Close window.
+    #         self.window = None  # Discard reference.
+    #         logger.info('analysis param window closed')
 
     def _on_user_close(self):
         logger.info('')
@@ -770,6 +770,9 @@ class stackWidget(QtWidgets.QMainWindow):
         # Moving SpineROI by clicking 
         self._imagePlotWidget.signalMouseClick.connect(self.slot_MovingSpineROI)
 
+        # # Updating SpineROI by clicking 
+        # self._imagePlotWidget.signalMouseClickUpdate.connect(self.slot_updateSpineROI)
+
         # Creating new connection for existing Spine ROI
         self._imagePlotWidget.signalMouseClickConnect.connect(self.slot_ConnectSpineROI)
         
@@ -854,6 +857,57 @@ class stackWidget(QtWidgets.QMainWindow):
                                                         la
                                                         )
 
+    # def slot_updateSpineROI(self, addEvent : pymapmanager.annotations.AddAnnotationEvent):
+    #     """ For testing purposes of updating one spine ROI when an analysis parameter is changed
+    #       
+    #     """
+    #     logger.info('updating SpineROI')
+    #     currentAnnotationRow = addEvent.getAddedRow()
+    #     # Get the index of the point
+    #     # Use the new values of the click to override the old values within the backend
+    #     # Recalculate Brightest Index + right/left points
+    #     imageChannel = self.annotationSelection.getImageChannel()
+    #     _selectSegment, _segmentRowDict = self.annotationSelection.getSegmentSelection()
+    #     _selectSegment = _selectSegment[0]
+
+    #     pa = self.myStack.getPointAnnotations()
+    #     la = self.getStack().getLineAnnotations()
+    #     xyzSegment = la.get_zyx_list(_selectSegment)
+    #     _imageSlice = self.annotationSelection.getCurrentSlice()  # could use z
+    #     upSlices = 1
+    #     downSlices = 1
+    #     imgSliceData = self.getStack().getMaxProjectSlice(_imageSlice, imageChannel, 
+    #                                                       upSlices=upSlices, downSlices = downSlices)
+
+    #     roiType = pymapmanager.annotations.pointTypes.spineROI
+    #     newZYXValues = addEvent.getZYXDictForm()
+    #     logger.info(f'moving spine newZYXValues {newZYXValues}')
+    #     # currentAnnotationRow = pa.getAnnotationDict()
+
+    #     self.myStack.getPointAnnotations().updateSpineInt(newZYXValues,
+    #                                                 currentAnnotationRow,
+    #                                                 xyzSegment,
+    #                                                 imageChannel,
+    #                                                 imgSliceData,
+    #                                                 la
+    #                                                 )
+
+    #     # TODO: Make a signal that sends list of spines that just changed
+    #     _selectionEvent = pymapmanager.annotations.SelectionEvent(la,
+    #                                                         rowIdx=currentAnnotationRow
+    #                                                         )
+    #     self.signalPointChanged.emit(_selectionEvent)
+
+    #     # Selects new Spine in list
+    #     deleteDict = {
+    #             'annotationType': pymapmanager.annotations.annotationType.point,
+    #             'annotationIndex': currentAnnotationRow,
+    #             'isSegment': False,
+    #         }
+    #     self.signalDeletedAnnotation.emit(deleteDict)
+
+    #     # Reselect New Spine in list and image plot widget
+    #     self.signalSelectAnnotation2.emit(self._currentSelection)
 
     def slot_MovingSpineROI(self, addEvent : pymapmanager.annotations.AddAnnotationEvent):
         """ Responds to user clicking anywhere on image while we are in "Move" mode for 
@@ -1215,7 +1269,7 @@ class stackWidget(QtWidgets.QMainWindow):
 
         # Update the table that shows the data 
 
-
+    # TODO: change this so that it only updates current value when the save button is pressed
     def slot_parameterChanged(self, parameterDict):
         """
         """

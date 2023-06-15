@@ -371,10 +371,14 @@ class annotationPlotWidget(QtWidgets.QWidget):
         
         self._currentSlice = sliceNumber
 
-        theseSegments = None  # None for all segments
+        # theseSegments = None  # None for all segments
         roiTypes = self._roiTypes
         
         #logger.info(f'plotting roiTypes:{roiTypes} for {type(self)}')
+        zPlusMinus = self._displayOptions['zPlusMinus']  
+        self._segmentIDList = self._annotations.getSegmentID(roiTypes, sliceNumber, zPlusMinus = zPlusMinus)
+        # self._segmentIDList = self._segmentIDList.tolist()
+        # logger.info(f'checking segment ID within df:{self._segmentIDList}{type(self._segmentIDList)}')
 
         # dfPlot is a row reduced version of backend df (all columns preserved)
         if 0 and self._dfPlot is not None:
@@ -384,12 +388,11 @@ class annotationPlotWidget(QtWidgets.QWidget):
             dfPlot = self._dfPlot
             print("dfPLot is alternate set")
         else:
-            # TODO: change to member variable self._dfPlot
-            # zPlusMinus = 3
-            # print("self._displayOptions", self._displayOptions)
-            zPlusMinus = self._displayOptions['zPlusMinus']  
+            # zPlusMinus = self._displayOptions['zPlusMinus']  
             # print("zPlusMinus", zPlusMinus)
-            dfPlot = self._annotations.getSegmentPlot(theseSegments, roiTypes, sliceNumber, zPlusMinus = zPlusMinus)
+            # dfPlot = self._annotations.getSegmentPlot(theseSegments, roiTypes, sliceNumber, zPlusMinus = zPlusMinus)
+            dfPlot = self._annotations.getSegmentPlot(self._segmentIDList, roiTypes, sliceNumber, zPlusMinus = zPlusMinus)
+
             self._dfPlot = dfPlot
 
         x = dfPlot['x'].tolist()  # x is pandas.core.series.Series
@@ -413,13 +416,11 @@ class annotationPlotWidget(QtWidgets.QWidget):
         self._scatter.setData(x,y)
         
         if roiTypes == ['linePnt']:
-        # print("checking columns:", self._dfPlot.columns.tolist())
-        # print("testing left", self._dfPlot[~self._dfPlot['xLeft'].isna()])
-        # Shows Radius Line points
-        # self._leftRadiusLines.setData(self._dfPlot[~self._dfPlot['xLeft'].isna()], self._dfPlot[~self._dfPlot['yLeft'].isna()])
+            # print("checking columns:", self._dfPlot.columns.tolist())
+            # print("testing left", self._dfPlot[~self._dfPlot['xLeft'].isna()])
+            # Shows Radius Line points
             self._leftRadiusLines.setData(self._dfPlot['xLeft'], self._dfPlot['yLeft'])
             self._rightRadiusLines.setData(self._dfPlot['xRight'], self._dfPlot['yRight'])
-        # self._leftRadiusLines.setData([np.nan], [np.nan])
 
         # jan 2023, do i need to set the brush every time after setData() ???
         if 0:
@@ -543,7 +544,7 @@ class pointPlotWidget(annotationPlotWidget):
     def slot_selectAnnotation2(self, selectionEvent : "pymapmanager.annotations.SelectionEvent"):
         super().slot_selectAnnotation2(selectionEvent)
 
-        logger.info('pointPlotWidget XXX')
+        # logger.info('pointPlotWidget XXX')
         # logger.info(f'{self._getClassName()}')
         if not selectionEvent.isPointSelection():
             return
@@ -565,7 +566,7 @@ class pointPlotWidget(annotationPlotWidget):
             roiType = self.pointAnnotations.getValue("roiType", firstSelectedRow)
             xOffset = self.pointAnnotations.getValue("xBackgroundOffset", firstSelectedRow)
             yOffset = self.pointAnnotations.getValue("yBackgroundOffset", firstSelectedRow)
-            logger.info(f'xOffset {xOffset} yOffset {yOffset}')
+            # logger.info(f'xOffset {xOffset} yOffset {yOffset}')
 
             if roiType == "spineROI":
                 
@@ -578,9 +579,9 @@ class pointPlotWidget(annotationPlotWidget):
                 self._spineBackgroundPolygon.setData(jaggedPolygon[:,1] + yOffset, jaggedPolygon[:,0] + xOffset)
                 # self._spineBackgroundPolygon.setData(jaggedPolygon[:,1] + xOffset, jaggedPolygon[:,0] + yOffset)
 
-                radius = 5
+                # radius = 5
                 forFinalMask = False
-                segmentPolygon = self.pointAnnotations.calculateSegmentPolygon(firstSelectedRow, self.lineAnnotations, radius, forFinalMask)
+                segmentPolygon = self.pointAnnotations.calculateSegmentPolygon(firstSelectedRow, self.lineAnnotations, forFinalMask)
 
                 # logger.info(f'segmentPolygon coordinate list {segmentPolygon}')
                 self._segmentPolygon.setData(segmentPolygon[:,0], segmentPolygon[:,1])
@@ -589,64 +590,20 @@ class pointPlotWidget(annotationPlotWidget):
 
     def slot_setSlice(self, sliceNumber : int):
         super().slot_setSlice(sliceNumber=sliceNumber)
-
+        # return
         zPlusMinus = self._displayOptions['zPlusMinus']  
-        # zPlusMinus = 1
         # return 
-
-        # TODO: update new scatter line connection plot code
-        # getCurrentSegment of the slice instead of all segments?
-        segments = self.lineAnnotations.getSegmentList()
-        segmentID = 0
-
-        xyzSpines = []
-        brightestIndexes = []
-        channel = self._channel
-
+        print("point annotations plot widget set slice")
         theseSegments = None
         roiTypes = ['spineROI']
 
         # dfPlotSpines = self._annotations.getSegmentPlot(theseSegments, roiTypes, sliceNumber)
-        dfPlotSpines = self._annotations.getSegmentPlot(theseSegments, roiTypes, sliceNumber, zPlusMinus)
+        dfPlotSpines = self._annotations.getSegmentPlot(self._segmentIDList, roiTypes, sliceNumber, zPlusMinus)
         # print("xxx dfPlotSpines", dfPlotSpines)
         # dfPlotSpines = self._dfPlot 
 
-        xPlotSpines = []
-        yPlotSpines = []
-
-        # TODO (cudmore) do not loop, just get each (x, y) as a list
-        # for idx, spine in dfSegmentSpines.iterrows()
-        # Change so that it only shows spines in correct z 
-        for index, xyzOneSpine in dfPlotSpines.iterrows():
-            _brightestIndex = xyzOneSpine['brightestIndex']
-            #print(_brightestIndex, type(_brightestIndex))
-            if not pd.isnull(_brightestIndex):
-                
-                xLeft= self.lineAnnotations.getValue(['xLeft'], xyzOneSpine['brightestIndex'])
-                xRight= self.lineAnnotations.getValue(['xRight'], xyzOneSpine['brightestIndex'])
-                yLeft= self.lineAnnotations.getValue(['yLeft'], xyzOneSpine['brightestIndex'])
-                yRight= self.lineAnnotations.getValue(['yRight'], xyzOneSpine['brightestIndex'])
-
-                leftRadiusPoint = (xLeft, yLeft)
-                rightRadiusPoint = (xRight, yRight)
-                spinePoint = (xyzOneSpine['x'], xyzOneSpine['y'])
-                closestPoint = pymapmanager.utils.getCloserPoint(spinePoint, leftRadiusPoint, rightRadiusPoint)
-                # print("closestPoint", closestPoint)
-                # print("closestPoint[0]", closestPoint[0])
-                xPlotSpines.append(xyzOneSpine['x'])
-                # Change xPlotLine to the left/right value. Need to detect which orientation
-                # xPlotLine = self.lineAnnotations.getValue(['x'], xyzOneSpine['brightestIndex'])
-                # xPlotSpines.append(xPlotLine)
-                xPlotSpines.append(closestPoint[0])
-                xPlotSpines.append(np.nan)
-
-                yPlotSpines.append(xyzOneSpine['y'])
-                # yPlotLine = self.lineAnnotations.getValue(['y'], xyzOneSpine['brightestIndex'])
-                # yPlotSpines.append(yPlotLine)
-                yPlotSpines.append(closestPoint[1])
-                yPlotSpines.append(np.nan)
-
-        # self._spineConnections.setData(x, y)
+        # xPlotSpines, yPlotSpines = self.lineAnnotations.getSpineLineConnections(dfPlotSpines)
+        xPlotSpines, yPlotSpines = self.lineAnnotations.getSpineLineConnections(dfPlotSpines)
         # self._spineConnections.setData(xPlotLines, yPlotLines)
         self._spineConnections.setData(xPlotSpines, yPlotSpines, connect="finite")
         # self._view.update()
@@ -671,7 +628,7 @@ class linePlotWidget(annotationPlotWidget):
         # self._view.signalUpdateSlice.connect(self.slot_setSlice)
 
     def slot_selectAnnotation2(self, selectionEvent : "pymapmanager.annotations.SelectionEvent"):
-        logger.info('linePlotWidget ... rowidx is segment ID')
+        # logger.info('linePlotWidget ... rowidx is segment ID')
         #logger.info(f'{selectionEvent}')
         #if selectionEvent.type == type(self._annotations):
         if selectionEvent.isLineSelection():
