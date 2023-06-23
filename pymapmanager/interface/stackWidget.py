@@ -573,12 +573,13 @@ class stackWidget(QtWidgets.QMainWindow):
     def showAnalysisParams(self):
         
         # TODO: Move this to be part of class (self._dpWidget) rather than local variable?
-        tmp_dPWidget: AnalysisParams = AnalysisParams()
+        # tmp_dPWidget: AnalysisParams = AnalysisParams()
+        tmp_dPWidget = self.myStack.analysisParams
         # Show Detection Widget
         self._analysisParamsWidget: AnalysisParamWidget = AnalysisParamWidget(tmp_dPWidget)
-        self._analysisParamsWidget.signalParameterChanged.connect(self.slot_parameterChanged)
-        # TODO: make use of signal
-        
+        # self._analysisParamsWidget.signalParameterChanged.connect(self.slot_parameterChanged)
+        self._analysisParamsWidget.signalSaveParameters.connect(self.slot_saveParameters)
+
     def showScatterPlot(self):
         if self._scatterPlotWindow is None:
             pa = self.myStack.getPointAnnotations()
@@ -1270,7 +1271,8 @@ class stackWidget(QtWidgets.QMainWindow):
         # Update the table that shows the data 
 
     # TODO: change this so that it only updates current value when the save button is pressed
-    def slot_parameterChanged(self, parameterDict):
+    # def slot_parameterChanged(self, parameterDict):
+    def slot_saveParameters(self, parameterDict):
         """
         """
         # Using key in dictionary match it up with key in pointAnnotations and update
@@ -1281,6 +1283,9 @@ class stackWidget(QtWidgets.QMainWindow):
         for key, newVal in parameterDict.items():
             _pointAnnotations._analysisParams.setCurrentValue(key, newVal)
 
+        # Update current plot
+        self.signalSelectAnnotation2.emit(self._currentSelection)
+        
         # for key, new_val in _pointAnnotations._analysisParams.getDict().items():
         #     # print first key
         #     print(key)

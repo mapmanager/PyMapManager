@@ -151,8 +151,6 @@ class stack():
         self.loadAnnotations()
         self.loadLines()
 
-
-
     @property
     def header(self) -> dict:
         return self._header

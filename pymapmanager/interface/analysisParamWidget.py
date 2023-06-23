@@ -7,7 +7,8 @@ import pymapmanager
 
 class AnalysisParamWidget(QtWidgets.QWidget):
 
-    signalParameterChanged = QtCore.Signal(dict) # dict
+    # signalParameterChanged = QtCore.Signal(dict) # dict
+    signalSaveParameters = QtCore.Signal(dict) # dict
 
     def __init__(self, analysisParams):
         """
@@ -18,6 +19,7 @@ class AnalysisParamWidget(QtWidgets.QWidget):
         self.widgetDict = {}
         
         self._dict = analysisParams.getDict()
+        self.changedDict = {}
         self._buildGUI()
 
         self.show()
@@ -32,8 +34,11 @@ class AnalysisParamWidget(QtWidgets.QWidget):
 
         # self.setCurrentValue(key = paramName, value = value)
 
-        _dict = {paramName: value}
-        self.signalParameterChanged.emit(_dict)
+        #    _dict = {paramName: value}
+        #     self.signalParameterChanged.emit(_dict)
+
+        self.changedDict[paramName] = value
+        # self._dict = {paramName: value}
 
     def _buildGUI(self):
 
@@ -169,6 +174,13 @@ class AnalysisParamWidget(QtWidgets.QWidget):
         aButton.clicked.connect(partial(self.on_button_click, aName))
         hControlLayout.addWidget(aButton, alignment=QtCore.Qt.AlignLeft)
 
+        applyButtonName = "Apply"
+        applyButton = QtWidgets.QPushButton(applyButtonName)
+        applyButton.clicked.connect(partial(self.on_button_click, applyButtonName))
+        hControlLayout.addWidget(applyButton, alignment=QtCore.Qt.AlignLeft)
+
+        # Moves the buttons closer togethers
+        hControlLayout.addStretch()
         return hControlLayout
     
     def on_button_click(self, buttonName):
@@ -212,7 +224,52 @@ class AnalysisParamWidget(QtWidgets.QWidget):
                     )
 
             # self.replot()
+        elif buttonName == "Apply":
+            # TODO: Change analysis params value in backend once apply is pressed
+            # Other wise keep values the same
+            for key, val in self._dict.items():
+                paramName = key
+                print("paramName", paramName)
+                if paramName in self.changedDict:
+                    aWidget = self.widgetDict[paramName]["widget"]
+                    # print("key", key)
+                    # print("val", val)
+                    # currentValue = self._dict[key]["defaultValue"] 
+                    changedValue = self.changedDict[key]
+                    if isinstance(aWidget, QtWidgets.QSpinBox):
+                        print("we are here!!!")
+                        print("changed value", changedValue)
+                        try:
+                            if changedValue is None or math.isnan(changedValue):
+                                aWidget.setValue(0)
+                            else:
+                                print("SETTING INT VALUE!!!")
+                                aWidget.setValue(changedValue)
+                        except TypeError as e:
+                            logger.error(f"QSpinBox analysisParam:{paramName} ... {e}")
+                    elif isinstance(aWidget, QtWidgets.QDoubleSpinBox):
+                        print("we are here2222!!!")
+                        try:
+                            if changedValue is None or math.isnan(changedValue):
+                                aWidget.setValue(-1e9)
+                            else:
+                                aWidget.setValue(changedValue)
+                        except TypeError as e:
+                            logger.error(
+                                f"QDoubleSpinBox analysisParam:{paramName} ... {e}"
+                            )
+                    elif isinstance(aWidget, QtWidgets.QComboBox):
+                        aWidget.setCurrentText(str(changedValue))
+                    elif isinstance(aWidget, QtWidgets.QLineEdit):
+                        aWidget.setText(str(changedValue))
+                    else:
+                        logger.warning(
+                            f'key "{paramName}" has value "{changedValue}" but widget type "{type(aWidget)}" not understood.'
+                        )
 
+            
+            self.signalSaveParameters.emit(self.changedDict)
+            return
         else:
             logger.warning(f'Button "{buttonName}" not understood.')
 
