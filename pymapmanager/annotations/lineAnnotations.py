@@ -442,11 +442,11 @@ class lineAnnotations(baseAnnotations):
 
         return lengthList2D, lengthList3D
 
-    def getSegmentList(self) -> List[int]:
-        """Get a list of all segment ID.
-        """
-        # return self.getDataFrame()['segmentID'].to_numpy()
-        return self._df['segmentID'].unique()  # .to_numpy()
+    # def getSegmentList(self) -> List[int]:
+    #     """Get a list of all segment ID.
+    #     """
+    #     # return self.getDataFrame()['segmentID'].to_numpy()
+    #     return self._df['segmentID'].unique()  # .to_numpy()
 
     def getSegment(self, segmentID : Union[int, List[int]] = None) -> pd.DataFrame:
         """Get all annotations rows for one segment id.

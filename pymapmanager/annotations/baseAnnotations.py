@@ -773,6 +773,12 @@ class baseAnnotations():
             values = values.flatten() # ensure 1D (for napari)
         return values
 
+    def getSegmentList(self) -> List[int]:
+        """Get a list of all segment ID.
+        """
+        # return self.getDataFrame()['segmentID'].to_numpy()
+        return self._df['segmentID'].unique()  # .to_numpy()
+    
     def _setModTime(self, row):
         """Called everytime a value is modified in the backend
 

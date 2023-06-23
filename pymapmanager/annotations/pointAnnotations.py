@@ -498,6 +498,65 @@ class pointAnnotations(baseAnnotations):
                     comparisons=comparisonTypes.equal,
                     compareValues=roiType.value)
         return xyz
+    
+    def getRoiTypes(self):
+        """Get all unique roi types
+        
+        Args:
+     
+        """
+        
+        # if not isinstance(col, list):
+        #     col = [col]
+        
+        dfPoints = self.getDataFrame()
+        roiTypes = dfPoints.roiType.unique()
+        return roiTypes
+    
+    # def getUniqueSegmentID(self):
+    #     """Get all unique SegmentID
+        
+    #     Args:
+     
+    #     """
+        
+    #     # if not isinstance(col, list):
+    #     #     col = [col]
+        
+    #     dfPoints = self.getDataFrame()
+    #     segmentID = dfPoints.segmentID.unique()
+    #     return segmentID
+    
+    def getfilteredValues(self, colName, roiType, segmentID) -> pd.DataFrame:
+        """ Get all values according to colName, roitype and segmentID
+
+        Args:
+            segmentID: integer or All for entire segment ID list
+            roiType: pointAnnotation roi type
+            colName: one column name within dataframe
+        """
+
+        compareValues = [roiType.value]
+        if not isinstance(colName, list):
+            colName = [colName]
+
+        if segmentID == "All":
+            segmentID = self.getSegmentList()
+            values = self.getRoiType_col(col = colName, roiType = roiType)
+        else:
+            segmentID = int(segmentID)
+            # dfPoints = dfPoints[dfPoints['segmentID'] == segmentID]
+            compareValues.append(segmentID)
+            values = self.getValuesWithCondition(colName,
+                    compareColNames=['roiType', 'segmentID'],
+                    comparisons=[comparisonTypes.equal, comparisonTypes.equal],
+                    compareValues=compareValues)
+    
+        # print("compareValues", compareValues)
+
+
+        return values
+        # return dfPoints
 
     def getSegmentSpines(self, segmentID : int) -> pd.DataFrame:
         """Get all spines connected to one segment.
