@@ -148,8 +148,8 @@ class stack():
         self._analysisParams = AnalysisParams()
 
         # TODO (cudmore) we should add an option to defer loading until explicitly called
-        self.loadAnnotations()
         self.loadLines()
+        self.loadAnnotations()
 
 
 
@@ -418,7 +418,7 @@ class stack():
         try:            
             annotationFilePath = self._enclosingPath + '_pa.txt'
             # TODO: add detectionParamClass
-            self._annotations = pymapmanager.annotations.pointAnnotations(annotationFilePath, analysisParams = self._analysisParams)
+            self._annotations = pymapmanager.annotations.pointAnnotations(self, self._lines, annotationFilePath, analysisParams = self._analysisParams)
         except (FileNotFoundError) as e:
             self._annotations = None
 

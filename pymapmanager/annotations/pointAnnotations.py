@@ -9,14 +9,16 @@ from typing import List, Union
 import pandas as pd
 import numpy as np  # TODO (cudmore) only used for return signature?
 
+import scipy
+from scipy import ndimage
+
 from pymapmanager.annotations import baseAnnotations
 from pymapmanager.annotations import ColumnItem
 from pymapmanager.annotations import comparisonTypes
-from pymapmanager.annotations import fileTypeClass
+# from pymapmanager.annotations import fileTypeClass
 
 import pymapmanager.utils
-import scipy
-from scipy import ndimage
+import mpSpineInt
 
 from pymapmanager._logger import logger
 
@@ -34,12 +36,22 @@ class pointAnnotations(baseAnnotations):
 
     Under the hood, this is a Pandas DataFrame
     one point per row with columns to specify parameters of each point.
+
     """
 
-    def __init__(self, *args,**kwargs):
-        super().__init__(*args,**kwargs)
+    # def __init__(self, path : Union[str, None] = None, analysisParams = None):
+    # def __init__(self, stack, la = None, *args,**kwargs):
+    def __init__(self, stack, la = None, path = None, analysisParams = None):
+        # super().__init__(*args,**kwargs)
+        super().__init__(path, analysisParams)
 
-        self._analysisParams = kwargs['analysisParams']
+        # done in parent
+        # self._analysisParams = kwargs['analysisParams']
+        
+        self._stack = stack
+        self._lineAnnotations = la
+
+        # TODO: put these items in a json file
         colItem = ColumnItem(
             name = 'roiType',
             type = str,
@@ -122,19 +134,62 @@ class pointAnnotations(baseAnnotations):
         )
         self.addColumn(colItem)
 
+        # detection params for rois
+        colItem = ColumnItem(
+            name = 'extendHead',
+            type = 'float',
+            units = '',
+            humanname = 'Extend Tail',
+            description = ''
+        )
+        self.addColumn(colItem)
+
+        colItem = ColumnItem(
+            name = 'extendTail',
+            type = 'float',
+            units = '',
+            humanname = 'Extend Head',
+            description = ''
+        )
+        self.addColumn(colItem)
+
+        colItem = ColumnItem(
+            name = 'width',
+            type = 'float',
+            units = '',
+            humanname = 'ROI Width',
+            description = ''
+        )
+        self.addColumn(colItem)
+
+        colItem = ColumnItem(
+            name = 'radius',
+            type = 'float',
+            units = '',
+            humanname = 'Segment Radius',
+            description = ''
+        )
+        self.addColumn(colItem)
 
         # add a number of columns for ROI intensity analysis
-        self._addIntColumns()
+        numChannels = self._stack.numChannels
+
+        self._addIntColumns(numChannels=numChannels)
 
         # load from csv if it exists
         self.load()
 
-    def _addIntColumns(self):
+    def setLineAnnotations(self, la):
+        self._lineAnnotations = la
+    
+    def setStack(self, stack):
+        self._stack = stack
+
+    def _addIntColumns(self, numChannels=2):
         """Add (10 * num channels) columns to hold roi based intensity analysis.
         """
         roiList = ['spine', 'spineBackground', 'segment', 'segmentBackground']
         statNames = ['Sum', 'Min', 'Max', 'Mean', 'Std']
-        numChannels = 2 # TODO: fix this, get it from backend stack
         for roiStr in roiList:
             for statName in statNames:
                 for channelNumber  in range(numChannels):
@@ -207,9 +262,11 @@ class pointAnnotations(baseAnnotations):
             self.setValue(colNameStr, rowIdx, statValue)
 
     def addAnnotation(self,
+                    x, y, z,
                     roiType : pointTypes,
                     segmentID : Union[int, None] = None,
-                    *args,**kwargs):
+                    ):
+                    # *args,**kwargs):
         """Add an annotation of a particular roiType.
         
         Args:
@@ -222,10 +279,13 @@ class pointAnnotations(baseAnnotations):
             logger.error(f'All spineROI require an int segmentID, got {segmentID}')
             return
 
-        newRow = super().addAnnotation(*args,**kwargs)
+        # newRow = super().addAnnotation(*args,**kwargs)
+        newRow = super().addAnnotation(x, y, z)
 
         self._df.loc[newRow, 'roiType'] = roiType.value
         self._df.loc[newRow, 'segmentID'] = segmentID
+
+        # self.analyzeSpine(newRow)
 
         # called by stackWidget on new spine roi
         # if roiType == pointTypes.spineROI:
@@ -254,6 +314,38 @@ class pointAnnotations(baseAnnotations):
                             brightestIndex = brightestIndex)
         
         # TODO: Update interface and image to display change
+
+    def analyzeSpine_new(self,
+                         rowIdx : int,
+                         imgData,
+                         zyxLine
+                         ) -> int:
+        """Make a new spine at pnt (x,y,z)
+            find brightest index into segment
+            make rois (spine, segment, spine background, segment background)
+            calculate intensity
+        
+            On new, caller needs to set x,y,z,segmentID
+            On move, caller needs to set new (x,y,z)
+            On manual set connection, caller needs to set new brightest index
+
+        Notes
+        =====
+        New version June 23
+        """
+
+        # imgData needs to be pulled from stack
+        # upSlices = 1
+        # downSlices = 1
+        # imgSliceData = self.getStack().getMaxProjectSlice(_imageSlice, imageChannel, 
+        #                                                   upSlices=upSlices, downSlices = downSlices)
+
+        spineDict = self.getRows_v2(rowIdx, asDict=True)
+        analysisDict = mpSpineInt.intAnalysisWorker(spineDict, zyxLine, imgData)
+        
+        # fill in all the values
+        logger.info('intAnalysisWorker returned')
+        print(analysisDict)
 
     def updateSpineInt(self, newZYXValues: None, spineIdx, zyxLineSegment, 
                        channelNumber : int, imgData : np.array, 
@@ -330,6 +422,9 @@ class pointAnnotations(baseAnnotations):
 
         # 2) calculate spine roi (spine rectangle - segment polygon) ... complicated
 
+        # TODO (Cudmore) no need for this, just use
+        # xBrightestLine = la.getValue('x', brightestIndex)
+        # and get rid of zyxLineSegment parameter
         startRow, _  = la._segmentStartRow(segmentID)
         # Adjust my startrow of the segment to get proper index location
         xBrightestLine = zyxLineSegment[brightestIndex-startRow][2]
@@ -439,7 +534,7 @@ class pointAnnotations(baseAnnotations):
 
 
 
-    def reconnectToSegment(self, rowIdx : int):
+    def _old_reconnectToSegment(self, rowIdx : int):
         """Connect a point to brightest path to a line segment.
 
         Only spineROI are connected like this

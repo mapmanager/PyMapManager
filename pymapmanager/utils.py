@@ -508,7 +508,7 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations, forFinalMask):
     # totalPoints = list(range(radius*-2, radius*2+1))
     totalPoints = list(range(-radius, radius+1))
     # totalPoints = len(lineAnnotations)
-    logger.info(f'len(lineAnnotations):{len(lineAnnotations)}')
+    # logger.info(f'len(lineAnnotations):{len(lineAnnotations)}')
     coordinateList = []
     for i in totalPoints:
         # print("i", i)
@@ -767,8 +767,8 @@ def calculateBackgroundMask(mask, offset):
 
     backgroundMask = np.zeros(mask.shape, dtype = np.uint8)
 
-    logger.info(f"backgroundPointsY:{backgroundPointsY}")
-    logger.info(f"backgroundPointsX:{backgroundPointsX}")
+    # logger.info(f"backgroundPointsY:{backgroundPointsY}")
+    # logger.info(f"backgroundPointsX:{backgroundPointsX}")
     
     try:
         backgroundMask[backgroundPointsY,backgroundPointsX] = 1

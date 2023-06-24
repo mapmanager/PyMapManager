@@ -1046,12 +1046,13 @@ if __name__ == '__main__':
         
         import pandas as pd
         
-        savePath = '/Users/cudmore/Desktop/rr30a-spine-run-map.csv'
-        # np.savetxt(savePath, plotdict['y'], delimiter=",")
-        _y = plotdict['y']
-        _header = ['s'+str(y) for y in range(_y.shape[1])]
-        print('_header:', _header)
-        pd.DataFrame(_y).to_csv(savePath, header=_header, index=None)
+        if 0:
+            savePath = '/Users/cudmore/Desktop/rr30a-spine-run-map.csv'
+            # np.savetxt(savePath, plotdict['y'], delimiter=",")
+            _y = plotdict['y']
+            _header = ['s'+str(y) for y in range(_y.shape[1])]
+            print('_header:', _header)
+            pd.DataFrame(_y).to_csv(savePath, header=_header, index=None)
 
         import matplotlib.pyplot as plt
         plt.plot(x, y, 'o')

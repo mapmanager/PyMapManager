@@ -1,5 +1,6 @@
 import time
 from typing import List, Union  # , Callable, Iterator, Optional
+from abc import ABC, abstractmethod
 
 import numpy as np
 import pandas as pd
@@ -11,17 +12,116 @@ from pymapmanager._logger import logger
 import pymapmanager.stack
 import pymapmanager.annotations
 
-# import utils
+class BasePlotWidget(ABC):
+    """Abstract class to derive all annotation plots from.
+    """
 
-"""Widgets to plot annotations in a pg view.
+    signalAnnotationClicked2 = QtCore.Signal(object)  # pymapmanager.annotations.SelectionEvent
+    """Signal emitted when user click on an annotation.
+    """
 
-Annotations are plotted as ScatterItems.
-"""
+    signalMovingAnnotation = QtCore.Signal(object, object)
+    """Signal emitted when use click+drags an annotation    
+    TODO: Nov 9, implement this
+    """
 
+    def __init__(self):
+        super().__init__()
+
+    def slot_selectAnnotation2(self, selectionEvent : "pymapmanager.annotations.SelectionEvent"):
+        if selectionEvent.type == type(self._annotations):
+            rowIdx = selectionEvent.getRows()
+            isAlt = selectionEvent.isAlt
+            self._selectAnnotation(rowIdx, isAlt)
+
+    def slot_setDisplayType(self, roiTypeList : List[pymapmanager.annotations.pointTypes]):
+        """Set the roiTypes to display in the plot.
+        
+        Parameters
+        ==========
+        roiTypeList : List[pymapmanager.annotations.pointTypes]
+            List of roiTypes to display
+        
+        Notes:
+            This resets our state (_dfPlot) and requires a full refresh from the backend.
+        """
+        if not isinstance(roiTypeList, list):
+            roiTypeList = [roiTypeList]
+        
+        logger.info(f'roiTypeList:{roiTypeList}')
+
+        self._roiTypes = []
+        for roiType in roiTypeList:
+             self._roiTypes.append(roiType.value)
+        
+        self._dfPlot = None
+        self._refreshSlice()
+
+    def slot_addedAnnotation(self, addAnnotationEvent : pymapmanager.annotations.AddAnnotationEvent):
+        """Slot called after an annotation was added.
+        """
+
+        # order matters, we need to set slice before selecting new annotation
+
+        # refresh scatter
+        self._refreshSlice()
+
+        # select the new annotaiton
+        newAnnotationRow = addAnnotationEvent.getAddedRow()
+        self._selectAnnotation(newAnnotationRow)
+
+    def slot_deletedAnnotation(self):
+        """Slot called after an annotation was deleted.
+        Also called when moving spine (since original spine is deleted in the process)
+        
+        Update the interface.
+        """
+
+        # cancel selection (yellow)
+        self._selectAnnotation(None)
+
+        # refresh scatter
+        self._refreshSlice()
+
+    def _selectAnnotation(self,
+                          dbIdx : List[int],
+                          isAlt : bool = False):
+        """Select annotations as 'yellow'
+
+        Args:
+            dbIdx: Index(row) of annotation, if None then cancel selection
+            isAlt: If True then snap z
+        """
+        dfSelect = None
+        if dbIdx is not None:
+            if isinstance(dbIdx, int):
+                dbIdx = [dbIdx]
+
+            # loc[] is actual row index (not row label)
+            # TODO (Cudmore) write API function to do this
+            try:
+                dfPrint = self._annotations._df.loc[dbIdx]
+            except (KeyError) as e:
+                logger.error(f'KeyError fetching dbIdx: {dbIdx}')
+                print(self._annotations._df)
+        
+        self.selectAnnotation(dfSelect)
+    
+    @abstractmethod
+    def selectAnnotation(self, df : pd.DataFrame):
+        """
+        Parameters
+        ==========
+        df : pd.DataFrame
+            A dataframe of annotations to select
+        """
+        
 class annotationPlotWidget(QtWidgets.QWidget):
     """Base class to plot annotations in a pg view.
     
     Used to plot point and line annotations.
+
+    Annotations are plotted as ScatterItems.
 
     Abstract class (not useable on its own), instantiated from a derived class (pointPlotWidget and linePlotWidget)
     """
@@ -37,8 +137,7 @@ class annotationPlotWidget(QtWidgets.QWidget):
     """
     
     signalMovingAnnotation = QtCore.Signal(object, object)
-    """Signal emitted when use click+drags an annotation
-    
+    """Signal emitted when use click+drags an annotation    
     TODO: Nov 9, implement this
     """
     
@@ -83,16 +182,14 @@ class annotationPlotWidget(QtWidgets.QWidget):
         # then state changes, fetch from backend again
         # state is, for example, plotting ['spineROI'] versus ['spineROI', 'controlROI']
 
-
-        # Moved to derived classes
-        # self._buildUI()
-
-        #self._view.signalUpdateSlice.connect(self.slot_setSlice)
-
     #def keyPressEvent(self, event : QtGui.QKeyEvent):
     def keyPressEvent(self, event):
-        logger.info('')
-        # NEVER CALLED???
+        """
+        Parameters
+        ==========
+        event : QtGui.QKeyEvent
+        """
+        logger.info('This should never be called')
 
     def _buildUI(self):
         
@@ -355,6 +452,7 @@ class annotationPlotWidget(QtWidgets.QWidget):
 
     def _refreshSlice(self):
         # I don't think that the current slice is being updated, it will always pass in 0?
+        logger.info(f'_currentSlice: {self._currentSlice}')
         self.slot_setSlice(self._currentSlice)
 
     def slot_setSlice(self, sliceNumber : int):
@@ -453,7 +551,6 @@ class annotationPlotWidget(QtWidgets.QWidget):
         newAnnotationRow = addAnnotationEvent.getAddedRow()
         self._selectAnnotation(newAnnotationRow)
 
-    # OLD def slot_deletedAnnotation(self, deleteDict : dict):
     def slot_deletedAnnotation(self):
         """Slot called after an annotation was deleted.
         Also called when moving spine (since original spine is deleted in the process)
@@ -606,17 +703,16 @@ class pointPlotWidget(annotationPlotWidget):
         theseSegments = None
         roiTypes = ['spineROI']
 
-        # dfPlotSpines = self._annotations.getSegmentPlot(theseSegments, roiTypes, sliceNumber)
-        dfPlotSpines = self._annotations.getSegmentPlot(theseSegments, roiTypes, sliceNumber, zPlusMinus)
-        # print("xxx dfPlotSpines", dfPlotSpines)
-        # dfPlotSpines = self._dfPlot 
+        # TODO (cudmore) 20230607 our inherited slot_setSlice calculates this
+        # dfPlotSpines = self._annotations.getSegmentPlot(theseSegments, roiTypes, sliceNumber, zPlusMinus)
+        dfPlotSpines = self._dfPlot 
 
         xPlotSpines = []
         yPlotSpines = []
 
         # TODO (cudmore) do not loop, just get each (x, y) as a list
-        # for idx, spine in dfSegmentSpines.iterrows()
-        # Change so that it only shows spines in correct z 
+        # Only shows spines in correct z 
+        startSec = time.time()
         for index, xyzOneSpine in dfPlotSpines.iterrows():
             _brightestIndex = xyzOneSpine['brightestIndex']
             #print(_brightestIndex, type(_brightestIndex))
@@ -646,6 +742,16 @@ class pointPlotWidget(annotationPlotWidget):
                 yPlotSpines.append(closestPoint[1])
                 yPlotSpines.append(np.nan)
 
+        # TODO (cudmore): this logger.info tells me that slot_setSlice is being called twice for every slice change
+        stopSec = time.time()
+        _className = self.__class__.__name__  # name of class, including inherited
+        logger.info(f'in class {_className} elapsed time for spine line plot for sliceNumber: {sliceNumber} is {round(stopSec-startSec,3)}')
+        
+        # trying to figure out why this is called twice !!!
+        # import traceback
+        # print('=== traceback.print_exc() is ====')
+        # print(traceback.print_exc())
+
         # self._spineConnections.setData(x, y)
         # self._spineConnections.setData(xPlotLines, yPlotLines)
         self._spineConnections.setData(xPlotSpines, yPlotSpines, connect="finite")
@@ -668,7 +774,6 @@ class linePlotWidget(annotationPlotWidget):
         self._buildUI()
 
         self._buildUI()
-        # self._view.signalUpdateSlice.connect(self.slot_setSlice)
 
     def slot_selectAnnotation2(self, selectionEvent : "pymapmanager.annotations.SelectionEvent"):
         logger.info('linePlotWidget ... rowidx is segment ID')
