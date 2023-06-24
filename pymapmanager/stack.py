@@ -151,7 +151,13 @@ class stack():
         self.loadLines()
         self.loadAnnotations()
 
+    def addSpine(self, x, y, z, segmentID):
+        """Add a new spine to segment.
+        """
+        defaultChannel = 2  # pul from options
+        # self.getPointAnnotations().addSpine(
 
+        # )
 
     @property
     def header(self) -> dict:
