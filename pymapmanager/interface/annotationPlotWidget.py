@@ -512,6 +512,12 @@ class annotationPlotWidget(QtWidgets.QWidget):
         # connect is from ('all' 'pairs', 'finite')
         # Show points in the segment
         self._scatter.setData(x,y)
+
+        # Adding index labels for each spine Point
+        # self.label_value = pg.LabelItem('', **{'color': '#FFF','size': '5pt'})
+        # self.label_value.setPos(QtCore.QPointF(x[0], y[0]))
+        # self.label_value.setText(str(self._currentPlotIndex[0]))  
+        # self._view .addItem(self.label_value)     
         
         if roiTypes == ['linePnt']:
             # print("checking columns:", self._dfPlot.columns.tolist())
@@ -591,6 +597,7 @@ class pointPlotWidget(annotationPlotWidget):
         # self._roiTypes = ['spineROI', 'controlPnt']
         self._roiTypes = ['spineROI']
 
+        self.labels = []
         #self._buildUI()
 
         self.lineAnnotations = lineAnnotations
@@ -695,56 +702,25 @@ class pointPlotWidget(annotationPlotWidget):
         roiTypes = ['spineROI']
 
         # dfPlotSpines = self._annotations.getSegmentPlot(theseSegments, roiTypes, sliceNumber)
-        dfPlotSpines = self._annotations.getSegmentPlot(theseSegments, roiTypes, sliceNumber, zPlusMinus)
-        # print("xxx dfPlotSpines", dfPlotSpines)
-        # dfPlotSpines = self._dfPlot 
+        dfPlotSpines = self._annotations.getSegmentPlot(self._segmentIDList, roiTypes, sliceNumber, zPlusMinus)
 
-        xPlotSpines = []
-        yPlotSpines = []
-
-        # TODO (cudmore) do not loop, just get each (x, y) as a list
-        # Only shows spines in correct z 
-        startSec = time.time()
-        for index, xyzOneSpine in dfPlotSpines.iterrows():
-            _brightestIndex = xyzOneSpine['brightestIndex']
-            #print(_brightestIndex, type(_brightestIndex))
-            if not pd.isnull(_brightestIndex):
-                
-                xLeft= self.lineAnnotations.getValue(['xLeft'], xyzOneSpine['brightestIndex'])
-                xRight= self.lineAnnotations.getValue(['xRight'], xyzOneSpine['brightestIndex'])
-                yLeft= self.lineAnnotations.getValue(['yLeft'], xyzOneSpine['brightestIndex'])
-                yRight= self.lineAnnotations.getValue(['yRight'], xyzOneSpine['brightestIndex'])
-
-                leftRadiusPoint = (xLeft, yLeft)
-                rightRadiusPoint = (xRight, yRight)
-                spinePoint = (xyzOneSpine['x'], xyzOneSpine['y'])
-                closestPoint = pymapmanager.utils.getCloserPoint(spinePoint, leftRadiusPoint, rightRadiusPoint)
-                # print("closestPoint", closestPoint)
-                # print("closestPoint[0]", closestPoint[0])
-                xPlotSpines.append(xyzOneSpine['x'])
-                # Change xPlotLine to the left/right value. Need to detect which orientation
-                # xPlotLine = self.lineAnnotations.getValue(['x'], xyzOneSpine['brightestIndex'])
-                # xPlotSpines.append(xPlotLine)
-                xPlotSpines.append(closestPoint[0])
-                xPlotSpines.append(np.nan)
-
-                yPlotSpines.append(xyzOneSpine['y'])
-                # yPlotLine = self.lineAnnotations.getValue(['y'], xyzOneSpine['brightestIndex'])
-                # yPlotSpines.append(yPlotLine)
-                yPlotSpines.append(closestPoint[1])
-                yPlotSpines.append(np.nan)
-
-        # TODO (cudmore): this logger.info tells me that slot_setSlice is being called twice for every slice change
-        stopSec = time.time()
-        _className = self.__class__.__name__  # name of class, including inherited
-        logger.info(f'in class {_className} elapsed time for spine line plot for sliceNumber: {sliceNumber} is {round(stopSec-startSec,3)}')
+        # Reset labels everytime we refresh slice
+        if len(self.labels) > 0:
+            for label in self.labels:
+                self._view.removeItem(label) 
+                self.labels = []
         
-        # trying to figure out why this is called twice !!!
-        # import traceback
-        # print('=== traceback.print_exc() is ====')
-        # print(traceback.print_exc())
 
-        # self._spineConnections.setData(x, y)
+        for index, row in dfPlotSpines.iterrows():
+            if row['roiType'] == "spineROI":
+                label_value = pg.LabelItem('', **{'color': '#FFF','size': '2pt'})
+                label_value.setPos(QtCore.QPointF(row['x']-9, row['y']-9))
+                label_value.setText(str(row['index']))
+                # label_value.setText(str(row['index']), rotateAxis=(1, 0), angle=90)  
+                self._view.addItem(label_value)  
+                self.labels.append(label_value)   
+
+        xPlotSpines, yPlotSpines = self.lineAnnotations.getSpineLineConnections2(dfPlotSpines)
         # self._spineConnections.setData(xPlotLines, yPlotLines)
         self._spineConnections.setData(xPlotSpines, yPlotSpines, connect="finite")
         # self._view.update()

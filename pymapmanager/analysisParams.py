@@ -28,6 +28,18 @@ class AnalysisParams():
 
         # self.show()
 
+    def getParamList(self):
+        """ Retrieve the key names of all parameters in the Dictionary
+        
+        """
+        paramList = []
+        for key in self._dict:
+            # if self._dict[key]["roiType"] == roiType:
+            #     print("key", key)
+            paramList.append(key)
+     
+        return paramList
+    
     def getCurrentValue(self, key):
         return self._dict[key]['currentValue'] 
     
@@ -47,8 +59,10 @@ class AnalysisParams():
         humanName =  "Width of Spine ROI"
         # see = 'Creating a rect roi for a spine'
         type = "int"
+        roiType = "spineROI"
         self._addAnalysisParam(key=key, defaultValue=defaultValue, units=units, 
-                                description=description, humanName=humanName, type=type)
+                                description=description, humanName=humanName, 
+                                type=type, roiType=roiType)
 
         key = "extendHead"
         # currentValue = 3
@@ -58,52 +72,62 @@ class AnalysisParams():
         humanName =  "Front Length of Spine ROI"
         # see = 'Creating a rect roi for a spine'
         type = "int"
+        roiType = "spineROI"
         self._addAnalysisParam(key=key, defaultValue=defaultValue, units=units, 
-                                description=description, humanName=humanName, type=type)
+                                description=description, humanName=humanName, 
+                                type=type, roiType=roiType)
+        
         key = 'extendTail'
         # currentValue = 3
         defaultValue = 3
-        type = "int"
         units = "pixels"
         description = 'Length in pixels by which to extend the spineROI backwards'
         humanName =  "Back Length of Spine ROI"
+        type = "int"
+        roiType = "spineROI"
         # see = 'Creating a rect roi for a spine'
         self._addAnalysisParam(key=key, defaultValue=defaultValue, units=units, 
-                                description=description, humanName=humanName, type=type)
+                                description=description, humanName=humanName, 
+                                type=type, roiType=roiType)
 
         key = 'zPlusMinus'
         # currentValue = 3
         defaultValue = 3
-        type = "int"
         units = "Layers"
         description = 'Used in Sliding-z-projection: for finding the brightest path from spine head to backbone (segment x/y/z)'
         humanName =  "Layers of Z being shown"
+        type = "int"
+        roiType = "spineROI"
         # see = ''
         self._addAnalysisParam(key=key, defaultValue=defaultValue, units=units, 
-                                description=description, humanName=humanName, type=type)
+                                description=description, humanName=humanName, 
+                                type=type, roiType=roiType)
 
         key = 'numPts'
         # currentValue = 5
         defaultValue = 5
-        type = "int"
         units = "pixels"
         description = 'Number of points to search forward/backward when finding brightest index'
         humanName =  "Points used for brightest Index calculation"
+        type = "int"
+        roiType = "spineROI"
         # see = ''
         self._addAnalysisParam(key=key, defaultValue=defaultValue, units=units, 
-                                description=description, humanName=humanName, type=type)
+                                description=description, humanName=humanName, 
+                                type=type, roiType=roiType)
 
         # Line Params
         key = 'radius'
         # currentValue = 5
         defaultValue = 5
-        type = "int"
         units = "pixels"
         description = 'Number of points (forward/backwards from the center brightest index) that is used to calculate the segment ROI'
         humanName =  "Amount to scale the size of the segment ROI"
-        # see = ''
+        type = "int"
+        roiType = "segmentROI"
         self._addAnalysisParam(key=key, defaultValue=defaultValue, units=units, 
-                                description=description, humanName=humanName, type=type)
+                                description=description, humanName=humanName, 
+                                type=type, roiType=roiType)
         
         # key = 'totalPts'
         # # currentValue = 5
@@ -116,14 +140,14 @@ class AnalysisParams():
         # self._addAnalysisParam(key=key, defaultValue=defaultValue, units=units, 
         #                         description=description, humanName=humanName, type=type)
 
-
     def _addAnalysisParam(self, key : str,
                         defaultValue,
                         units : str,
                         description : str,
                         humanName : str,
                         # see : str,
-                        type):
+                        type,
+                        roiType: str):
         """Add a new analysis parameter key.
         
         Args:
@@ -152,7 +176,8 @@ class AnalysisParams():
             'description' : description,
             'humanName' : humanName,
             # 'see': see,
-            'type' : type
+            'type' : type,
+            'roiType': roiType,
         }
         self._dict[key] = _dict
 

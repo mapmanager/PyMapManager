@@ -134,48 +134,15 @@ class pointAnnotations(baseAnnotations):
         )
         self.addColumn(colItem)
 
-        # detection params for rois
-        colItem = ColumnItem(
-            name = 'extendHead',
-            type = 'float',
-            units = '',
-            humanname = 'Extend Tail',
-            description = ''
-        )
-        self.addColumn(colItem)
-
-        colItem = ColumnItem(
-            name = 'extendTail',
-            type = 'float',
-            units = '',
-            humanname = 'Extend Head',
-            description = ''
-        )
-        self.addColumn(colItem)
-
-        colItem = ColumnItem(
-            name = 'width',
-            type = 'float',
-            units = '',
-            humanname = 'ROI Width',
-            description = ''
-        )
-        self.addColumn(colItem)
-
-        colItem = ColumnItem(
-            name = 'radius',
-            type = 'float',
-            units = '',
-            humanname = 'Segment Radius',
-            description = ''
-        )
-        self.addColumn(colItem)
-
         # add a number of columns for ROI intensity analysis
         numChannels = self._stack.numChannels
 
         self._addIntColumns(numChannels=numChannels)
 
+        # add columns for ROI parameters 
+        self.paramList = []
+        self._addParameterColumns()
+   
         # load from csv if it exists
         self.load()
 
@@ -185,7 +152,20 @@ class pointAnnotations(baseAnnotations):
     def setStack(self, stack):
         self._stack = stack
 
-    def _addIntColumns(self, numChannels=2):
+    def _addParameterColumns(self):
+        self.paramList = self._analysisParams.getParamList()
+        for param in self.paramList :
+            colItem = ColumnItem(
+                name = param,
+                type = 'int',  # 'Int64' is pandas way to have an int64 with nan values
+                units = '',
+                humanname = '',
+                description = ''
+            )
+            self.addColumn(colItem)
+        # return
+
+    def _addIntColumns(self):
         """Add (10 * num channels) columns to hold roi based intensity analysis.
         """
         roiList = ['spine', 'spineBackground', 'segment', 'segmentBackground']
@@ -451,10 +431,15 @@ class pointAnnotations(baseAnnotations):
         logger.info(f"yBrightestLine:{yBrightestLine}")
         
         # Analysis Parameters
-        width = self._analysisParams.getCurrentValue("width")
-        extendHead = self._analysisParams.getCurrentValue("extendHead")
-        extendTail = self._analysisParams.getCurrentValue("extendTail")
-        radius = self._analysisParams.getCurrentValue("radius")
+        # width = self._analysisParams.getCurrentValue("width")
+        # extendHead = self._analysisParams.getCurrentValue("extendHead")
+        # extendTail = self._analysisParams.getCurrentValue("extendTail")
+        # radius = self._analysisParams.getCurrentValue("radius")
+
+        width = int(self.getValue('width', spineIdx))
+        extendHead = int(self.getValue('extendHead', spineIdx))
+        extendTail = int(self.getValue('extendTail', spineIdx))
+        radius = int(self.getValue('radius', spineIdx))
 
         logger.info(f"width:{width}")
         logger.info(f"extendHead:{extendHead}")
@@ -733,7 +718,10 @@ class pointAnnotations(baseAnnotations):
 
         startRow, _  = lineAnnotation._segmentStartRow(segmentID)
 
-        numPts = self._analysisParams.getCurrentValue("numPts")
+        # numPts = self._analysisParams.getCurrentValue("numPts")
+        # 6/28: Retrieved from backend rather than dict
+        numPts = int(self.getValue('numPts', spineRowIdx))
+
 
         # print("numPts", numPts)
         # print("type numPts", type(numPts))
@@ -831,10 +819,14 @@ class pointAnnotations(baseAnnotations):
         _ySpine = self.getValue('y', _selectedRow)
 
         # Analysis Parameters
-        width = self._analysisParams.getCurrentValue("width")
-        extendHead = self._analysisParams.getCurrentValue("extendHead")
-        extendTail = self._analysisParams.getCurrentValue("extendTail")
-        radius = self._analysisParams.getCurrentValue("radius")
+        # width = self._analysisParams.getCurrentValue("width")
+        # extendHead = self._analysisParams.getCurrentValue("extendHead")
+        # extendTail = self._analysisParams.getCurrentValue("extendTail")
+        # radius = self._analysisParams.getCurrentValue("radius")
+        width = int(self.getValue('width', _selectedRow))
+        extendHead = int(self.getValue('extendHead', _selectedRow))
+        extendTail = int(self.getValue('extendTail', _selectedRow))
+        radius = int(self.getValue('radius', _selectedRow))
 
         logger.info(f"width:{width}")
         logger.info(f"extendHead:{extendHead}")
@@ -891,7 +883,8 @@ class pointAnnotations(baseAnnotations):
 
         brightestIndex = self.getValue('brightestIndex', spineRowIndex)
         brightestIndex = int(brightestIndex)
-        radius = self._analysisParams.getCurrentValue("radius")
+        # radius = self._analysisParams.getCurrentValue("radius")
+        radius = int(self.getValue('radius', spineRowIndex))
 
         segmentPolygon = pymapmanager.utils.calculateLineROIcoords(brightestIndex, radius, lineAnnotations, forFinalMask)
 
@@ -1114,8 +1107,41 @@ class pointAnnotations(baseAnnotations):
                 # if(val == 83):
             #     return
 
-        
+    def storeParameterValues(self, segmentID, lineAnnotation, imgChannel, stack):
+        """ Used in script to store all analysis param values of all spines
+        """
+        if segmentID is None:
+            # grab all segment IDs into a list
+            segmentID = lineAnnotation.getSegmentList()
+            # print("segmentID", segmentID)
 
+        elif (isinstance(segmentID, int)):
+            newIDlist = []
+            newIDlist.append(segmentID)
+            segmentID = newIDlist
+
+        segmentSpineDFs = []
+
+        # List of all segmentID dataframes 
+        for id in segmentID:
+            segmentSpineDFs.append(self.getSegmentSpines(id))
+
+        for segmentIndex in range(len(segmentID)):
+            # print("index", segmentIndex)
+            currentDF = segmentSpineDFs[segmentIndex]
+            # Looping through all spines connected to one segment
+            for idx, spineRowIdx in enumerate(currentDF["index"]):
+                for parameter in self.paramList:
+                    defaultVal = self._analysisParams.getCurrentValue(parameter)
+                    self.setValue(parameter, spineRowIdx, defaultVal)
+
+    def updateParameterValues(self, spineRowIdx):
+        """ Used to update the parameter values of a single spine
+        """
+        # self.paramList = self._analysisParams.getParamList()
+        for parameter in self.paramList:
+            currentVal = self._analysisParams.getCurrentValue(parameter)
+            self.setValue(parameter, spineRowIdx, currentVal)
 
 if __name__ == '__main__':
     pass
