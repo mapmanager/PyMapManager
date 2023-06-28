@@ -122,12 +122,28 @@ class pointAnnotations(baseAnnotations):
         )
         self.addColumn(colItem)
 
-
         # add a number of columns for ROI intensity analysis
         self._addIntColumns()
 
+        # add columns for ROI parameters 
+        self.paramList = []
+        self._addParameterColumns()
+   
         # load from csv if it exists
         self.load()
+
+    def _addParameterColumns(self):
+        self.paramList = self._analysisParams.getParamList("spineROI")
+        for param in self.paramList :
+            colItem = ColumnItem(
+                name = param,
+                type = 'int',  # 'Int64' is pandas way to have an int64 with nan values
+                units = '',
+                humanname = '',
+                description = ''
+            )
+            self.addColumn(colItem)
+        # return
 
     def _addIntColumns(self):
         """Add (10 * num channels) columns to hold roi based intensity analysis.
@@ -1009,8 +1025,33 @@ class pointAnnotations(baseAnnotations):
                 # if(val == 83):
             #     return
 
-        
+    def storeParameterValues(self, segmentID, lineAnnotation, imgChannel, stack):
+        """ Used in script to store all analysis param values of all spines
+        """
+        if segmentID is None:
+            # grab all segment IDs into a list
+            segmentID = lineAnnotation.getSegmentList()
+            # print("segmentID", segmentID)
 
+        elif (isinstance(segmentID, int)):
+            newIDlist = []
+            newIDlist.append(segmentID)
+            segmentID = newIDlist
+
+        segmentSpineDFs = []
+
+        # List of all segmentID dataframes 
+        for id in segmentID:
+            segmentSpineDFs.append(self.getSegmentSpines(id))
+
+        for segmentIndex in range(len(segmentID)):
+            # print("index", segmentIndex)
+            currentDF = segmentSpineDFs[segmentIndex]
+            # Looping through all spines connected to one segment
+            for idx, spineRowIdx in enumerate(currentDF["index"]):
+                for parameter in self.paramList:
+                    defaultVal = self._analysisParams.getCurrentValue(parameter)
+                    self.setValue(parameter, spineRowIdx, defaultVal)
 
 if __name__ == '__main__':
     pass
