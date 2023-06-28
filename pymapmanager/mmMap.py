@@ -259,7 +259,7 @@ class mmMap():
         self._stacks = [] #  A list of mmStack
         for i in range(0, self.numSessions):
             stackPath = self.getStackPath(i)
-            stack = pymapmanager.stack(stackPath)
+            stack = pymapmanager.stack(stackPath, loadImageData=False)
             # if doFile:
             #     stack = mmStack(name=self._getStackName(i), numChannels=self.numChannels, \
             #                     map=self, mapSession=i)
@@ -1017,7 +1017,51 @@ def _old_ingest():
     #plotDict = m.getMapDynamics(plotDict)
     #print plotDict['dynamics']
 
-if __name__ == '__main__':
+def tstShowMap():
+    import pymapmanager.interface
+
+    # load map
+    path = '/Users/cudmore/Sites/PyMapManager-Data/maps/rr30a/rr30a.txt'
+    _map = pymapmanager.mmMap(path)
+    # myStack = _map.stacks[1]
+    # print(myStack)
+    # myStack.loadImages(1)
+    # myStack.loadImages(2)
+
+    # creat the main application
+    app = pymapmanager.interface.PyMapManagerApp()
+    
+    l = 10
+    t = 10
+    w = 100
+    h = 100
+
+    for idx, oneStack in enumerate(_map):
+        if idx == 4:
+            break
+    
+        oneStack.loadImages(1)
+        oneStack.loadImages(2)
+
+        bsw = pymapmanager.interface.stackWidget(myStack=oneStack)
+
+        bsw.toggleView(False, "Toolbar")
+        bsw.toggleView(False, "Point Table")
+        bsw.toggleView(False, "Line Table")
+        bsw.toggleView(False, "Status Bar")
+
+        # select a point and zoom
+        bsw.zoomToPointAnnotation(10, isAlt=True, select=True)
+
+        bsw.setPosition(l, t, w, h)
+
+        l += 60
+        t += 60
+
+    # run the Qt event loop
+    sys.exit(app.exec_())
+
+def run():
     # import pymapmanager as pmm
     #path = '/Users/cudmore/Sites/PyMapManager-Data/public/rr30a/rr30a.txt'
     # 20230523
@@ -1026,9 +1070,17 @@ if __name__ == '__main__':
 
     # print(_map.table)
 
-    print(_map.runMap.shape)
-    print(_map.runMap[0:10])
-    print(_map.runMap[-10:-1])
+    # print(_map.runMap.shape)
+    # print(_map.runMap[0:10])
+    # print(_map.runMap[-10:-1])
+
+    # oneStack is a mapmanager.stack
+    for oneStack in _map:
+        print(oneStack)
+
+    tstShowMap()
+    
+    sys.exit(1)
 
     if 1:
         plotdict = newplotdict()
@@ -1057,3 +1109,6 @@ if __name__ == '__main__':
         import matplotlib.pyplot as plt
         plt.plot(x, y, 'o')
         plt.show()
+    
+if __name__ == '__main__':
+    run()

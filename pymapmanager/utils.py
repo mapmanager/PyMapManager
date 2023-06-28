@@ -822,7 +822,34 @@ def getCloserPoint(spinePoint, leftRadiusPoint, rightRadiusPoint):
     """
     radiusPoints = [leftRadiusPoint, rightRadiusPoint]
     return (min(radiusPoints, key=lambda point: math.hypot(spinePoint[1]-point[1], spinePoint[0]-point[0])))
-    
+
+def getCloserPoint2(spinePoint, leftRadiusPoint, rightRadiusPoint):
+    """
+        Used to find whether the left or right radius point is closer to the spine point.
+        Returns the radius point that is determined to be closer so that it can be displayed in the 
+        connection within annotationPlotWidget
+
+        returns: closest Point in form (x, y)
+    """
+    radiusPoints = [leftRadiusPoint, rightRadiusPoint]
+    # print()
+    dist = float('inf') # np.inf
+    closestIdx = None
+    # print("zyxLine", zyxLine)
+    for idx, point in enumerate(radiusPoints):
+        # print("x y z",x,y,z)
+        dx = abs(spinePoint[1]-point[1])
+        dy = abs(spinePoint[0]-point[0])
+        # print("point[0]:", point[0],point[1],point[2])
+        # print("dx dy dz:", dx, dy, dz)
+        _dist = math.sqrt( dx**2 + dy**2)
+        if _dist < dist:
+            dist = _dist
+            closestPoint = point
+
+    return closestPoint
+    # return (min(radiusPoints, key=lambda point: math.hypot(spinePoint[1]-point[1], spinePoint[0]-point[0])))
+
 
 def checkLabel(mask, _xSpine, _ySpine):
     """ Filters out a mask so that extra segments will be removed

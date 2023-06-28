@@ -78,6 +78,9 @@ class ImagePlotWidget(QtWidgets.QWidget):
     # Connecting
     signalMouseClickConnect = QtCore.Signal(object)
 
+    # Test Update
+    signalMouseClickUpdate = QtCore.Signal(object)
+
     # Updating radius
     signalRadiusChanged = QtCore.Signal(object)
 
@@ -206,6 +209,11 @@ class ImagePlotWidget(QtWidgets.QWidget):
         manualConnectAction = _menu.addAction(f'Manually Connect {point_roiType}')
         manualConnectAction.setEnabled(isSpineSelection and isOneRowSelection)
 
+
+        # For testing purposes: testing analysis params
+        # testSingleSpineAction = _menu.addAction(f'test update {point_roiType}')
+        # testSingleSpineAction.setEnabled(isPointSelection and isOneRowSelection)
+
         _menu.addSeparator()
         
         # allowed to delete any point annotation
@@ -229,6 +237,13 @@ class ImagePlotWidget(QtWidgets.QWidget):
 
             # Detect on mouse click but ensure that it is part of the line
             self._mouseConnectState = True 
+        
+        # elif action == testSingleSpineAction:
+        #     logger.info('TODO: manualConnect')
+
+            # Detect on mouse click but ensure that it is part of the line
+            # self._spineUpdateState = True 
+            # Send signal to update spine
 
         elif action == deleteAction:
             logger.info('deleting the selected annotation')

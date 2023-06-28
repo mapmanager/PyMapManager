@@ -54,7 +54,7 @@ class AnalysisParams():
         # currentValue = 3
         defaultValue = 3
         units = "pixels"
-        description = "Lengths in pixels by which to extend the spineROI forward"
+        description = "Length in pixels by which to extend the spineROI forward"
         humanName =  "Front Length of Spine ROI"
         # see = 'Creating a rect roi for a spine'
         type = "int"
@@ -65,7 +65,7 @@ class AnalysisParams():
         defaultValue = 3
         type = "int"
         units = "pixels"
-        description = 'Lengths in pixels by which to extend the spineROI backwards'
+        description = 'Length in pixels by which to extend the spineROI backwards'
         humanName =  "Back Length of Spine ROI"
         # see = 'Creating a rect roi for a spine'
         self._addAnalysisParam(key=key, defaultValue=defaultValue, units=units, 
@@ -86,7 +86,7 @@ class AnalysisParams():
         # currentValue = 5
         defaultValue = 5
         type = "int"
-        units = "Points"
+        units = "pixels"
         description = 'Number of points to search forward/backward when finding brightest index'
         humanName =  "Points used for brightest Index calculation"
         # see = ''
@@ -94,6 +94,28 @@ class AnalysisParams():
                                 description=description, humanName=humanName, type=type)
 
         # Line Params
+        key = 'radius'
+        # currentValue = 5
+        defaultValue = 5
+        type = "int"
+        units = "pixels"
+        description = 'Number of points (forward/backwards from the center brightest index) that is used to calculate the segment ROI'
+        humanName =  "Amount to scale the size of the segment ROI"
+        # see = ''
+        self._addAnalysisParam(key=key, defaultValue=defaultValue, units=units, 
+                                description=description, humanName=humanName, type=type)
+        
+        # key = 'totalPts'
+        # # currentValue = 5
+        # defaultValue = 5
+        # type = "int"
+        # units = "pixels"
+        # description = 'Total Number of points to search forward/backward when displaying line/segment ROI'
+        # humanName =  "Amount of points displayed in segment ROI"
+        # # see = ''
+        # self._addAnalysisParam(key=key, defaultValue=defaultValue, units=units, 
+        #                         description=description, humanName=humanName, type=type)
+
 
     def _addAnalysisParam(self, key : str,
                         defaultValue,

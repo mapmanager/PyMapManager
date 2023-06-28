@@ -17,3 +17,4 @@ from .lineAnnotations import lineAnnotations
 
 from .lineAnnotations2 import lineAnnotations2
 
+from .mpSpineInt import intAnalysisWorker

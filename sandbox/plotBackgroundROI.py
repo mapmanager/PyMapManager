@@ -83,7 +83,8 @@ def saveBackgroundROIs(myStack):
     imageChannel = 2
     # imageSlice = 31
 
-    pa.setBackGroundMaskOffsets(None, la, imageChannel, myStack)
+    # pa.setBackGroundMaskOffsets(None, la, imageChannel, myStack)
+    pa.OLD_setBackGroundMaskOffsets(None, la, imageChannel, myStack)
     pa.save(forceSave = True)
 
 def run():

@@ -150,15 +150,12 @@ class stack():
         # TODO (cudmore) we should add an option to defer loading until explicitly called
         self.loadLines()
         self.loadAnnotations()
+        #self.loadLines()
 
-    def addSpine(self, x, y, z, segmentID):
-        """Add a new spine to segment.
-        """
-        defaultChannel = 2  # pul from options
-        # self.getPointAnnotations().addSpine(
 
-        # )
-
+    def getFileName(self):
+        return os.path.split(self._tifPath)[1]
+    
     @property
     def header(self) -> dict:
         return self._header
@@ -433,7 +430,8 @@ class stack():
         """
         try:
             lineFilePath = self._enclosingPath + '_la.txt'
-            self._lines = pymapmanager.annotations.lineAnnotations(lineFilePath)
+            # OLD: self._lines = pymapmanager.annotations.lineAnnotations(lineFilePath)
+            self._lines = pymapmanager.annotations.lineAnnotations(lineFilePath , analysisParams = self._analysisParams)
         except (FileNotFoundError) as e:
             self._lines = None
 

@@ -1,5 +1,7 @@
 import sys
 
+import pymapmanager.mmMap
+
 import pymapmanager.interface
 from pymapmanager._logger import logger
 
@@ -11,11 +13,12 @@ def run():
     # loading from an incomplete map (missing int analysis for rois)
     # path = '..//PyMapManager-Data/maps/rr30a/rr30a_s1_ch2.tif'
     # path = '..//PyMapManager-Data/maps/rr30a/rr30a_s2_ch2.tif'
-    # path = '..//PyMapManager-Data/maps/rr30a/rr30a_s3_ch2.tif'
+    #path = '..//PyMapManager-Data/maps/rr30a/rr30a_s3_ch2.tif'
     
+    # load one stack
     myStack = pymapmanager.stack(path=path, loadImageData=True)
     logger.info(f'myStack: {myStack}')
-    
+            
     # creat the main application
     app = pymapmanager.interface.PyMapManagerApp()
     
