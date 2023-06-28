@@ -414,6 +414,12 @@ class annotationPlotWidget(QtWidgets.QWidget):
         # connect is from ('all' 'pairs', 'finite')
         # Show points in the segment
         self._scatter.setData(x,y)
+
+        # Adding index labels for each spine Point
+        # self.label_value = pg.LabelItem('', **{'color': '#FFF','size': '5pt'})
+        # self.label_value.setPos(QtCore.QPointF(x[0], y[0]))
+        # self.label_value.setText(str(self._currentPlotIndex[0]))  
+        # self._view .addItem(self.label_value)     
         
         if roiTypes == ['linePnt']:
             # print("checking columns:", self._dfPlot.columns.tolist())
@@ -494,6 +500,7 @@ class pointPlotWidget(annotationPlotWidget):
         # self._roiTypes = ['spineROI', 'controlPnt']
         self._roiTypes = ['spineROI']
 
+        self.labels = []
         #self._buildUI()
 
         self.lineAnnotations = lineAnnotations
@@ -599,11 +606,24 @@ class pointPlotWidget(annotationPlotWidget):
 
         # dfPlotSpines = self._annotations.getSegmentPlot(theseSegments, roiTypes, sliceNumber)
         dfPlotSpines = self._annotations.getSegmentPlot(self._segmentIDList, roiTypes, sliceNumber, zPlusMinus)
-        # print("xxx dfPlotSpines", dfPlotSpines)
-        # dfPlotSpines = self._dfPlot 
 
-        # xPlotSpines, yPlotSpines = self.lineAnnotations.getSpineLineConnections(dfPlotSpines)
-        xPlotSpines, yPlotSpines = self.lineAnnotations.getSpineLineConnections(dfPlotSpines)
+        # Reset labels everytime we refresh slice
+        if len(self.labels) > 0:
+            for label in self.labels:
+                self._view.removeItem(label) 
+                self.labels = []
+        
+
+        for index, row in dfPlotSpines.iterrows():
+            if row['roiType'] == "spineROI":
+                label_value = pg.LabelItem('', **{'color': '#FFF','size': '2pt'})
+                label_value.setPos(QtCore.QPointF(row['x']-9, row['y']-9))
+                label_value.setText(str(row['index']))
+                # label_value.setText(str(row['index']), rotateAxis=(1, 0), angle=90)  
+                self._view.addItem(label_value)  
+                self.labels.append(label_value)   
+
+        xPlotSpines, yPlotSpines = self.lineAnnotations.getSpineLineConnections2(dfPlotSpines)
         # self._spineConnections.setData(xPlotLines, yPlotLines)
         self._spineConnections.setData(xPlotSpines, yPlotSpines, connect="finite")
         # self._view.update()
