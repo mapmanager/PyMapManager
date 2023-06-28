@@ -78,6 +78,9 @@ class ImagePlotWidget(QtWidgets.QWidget):
     # Connecting
     signalMouseClickConnect = QtCore.Signal(object)
 
+    # Reanalyze
+    signalReanalyzeSpine = QtCore.Signal(object)
+
     # Test Update
     signalMouseClickUpdate = QtCore.Signal(object)
 
@@ -209,6 +212,9 @@ class ImagePlotWidget(QtWidgets.QWidget):
         manualConnectAction = _menu.addAction(f'Manually Connect {point_roiType}')
         manualConnectAction.setEnabled(isSpineSelection and isOneRowSelection)
 
+        # only allowed to reanalyze spine
+        reanalyzeAction = _menu.addAction(f'Reanalyze {point_roiType}')
+        reanalyzeAction.setEnabled(isSpineSelection and isOneRowSelection)
 
         # For testing purposes: testing analysis params
         # testSingleSpineAction = _menu.addAction(f'test update {point_roiType}')
@@ -238,6 +244,16 @@ class ImagePlotWidget(QtWidgets.QWidget):
             # Detect on mouse click but ensure that it is part of the line
             self._mouseConnectState = True 
         
+        elif action == reanalyzeAction:
+
+            currentSelection = self._stackWidgetParent.getCurrentSelection()
+            _selectedRows = currentSelection.getRows()
+            addedRowIdx =_selectedRows[0]
+    
+            _selectionEvent = pymapmanager.annotations.SelectionEvent(pymapmanager.annotations.lineAnnotations, 
+                                                                    rowIdx = addedRowIdx)
+            self.signalReanalyzeSpine.emit(_selectionEvent)
+
         # elif action == testSingleSpineAction:
         #     logger.info('TODO: manualConnect')
 

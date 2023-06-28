@@ -133,7 +133,7 @@ class pointAnnotations(baseAnnotations):
         self.load()
 
     def _addParameterColumns(self):
-        self.paramList = self._analysisParams.getParamList("spineROI")
+        self.paramList = self._analysisParams.getParamList()
         for param in self.paramList :
             colItem = ColumnItem(
                 name = param,
@@ -362,10 +362,15 @@ class pointAnnotations(baseAnnotations):
         logger.info(f"yBrightestLine:{yBrightestLine}")
         
         # Analysis Parameters
-        width = self._analysisParams.getCurrentValue("width")
-        extendHead = self._analysisParams.getCurrentValue("extendHead")
-        extendTail = self._analysisParams.getCurrentValue("extendTail")
-        radius = self._analysisParams.getCurrentValue("radius")
+        # width = self._analysisParams.getCurrentValue("width")
+        # extendHead = self._analysisParams.getCurrentValue("extendHead")
+        # extendTail = self._analysisParams.getCurrentValue("extendTail")
+        # radius = self._analysisParams.getCurrentValue("radius")
+
+        width = int(self.getValue('width', spineIdx))
+        extendHead = int(self.getValue('extendHead', spineIdx))
+        extendTail = int(self.getValue('extendTail', spineIdx))
+        radius = int(self.getValue('radius', spineIdx))
 
         logger.info(f"width:{width}")
         logger.info(f"extendHead:{extendHead}")
@@ -644,7 +649,10 @@ class pointAnnotations(baseAnnotations):
 
         startRow, _  = lineAnnotation._segmentStartRow(segmentID)
 
-        numPts = self._analysisParams.getCurrentValue("numPts")
+        # numPts = self._analysisParams.getCurrentValue("numPts")
+        # 6/28: Retrieved from backend rather than dict
+        numPts = int(self.getValue('numPts', spineRowIdx))
+
 
         # print("numPts", numPts)
         # print("type numPts", type(numPts))
@@ -742,10 +750,14 @@ class pointAnnotations(baseAnnotations):
         _ySpine = self.getValue('y', _selectedRow)
 
         # Analysis Parameters
-        width = self._analysisParams.getCurrentValue("width")
-        extendHead = self._analysisParams.getCurrentValue("extendHead")
-        extendTail = self._analysisParams.getCurrentValue("extendTail")
-        radius = self._analysisParams.getCurrentValue("radius")
+        # width = self._analysisParams.getCurrentValue("width")
+        # extendHead = self._analysisParams.getCurrentValue("extendHead")
+        # extendTail = self._analysisParams.getCurrentValue("extendTail")
+        # radius = self._analysisParams.getCurrentValue("radius")
+        width = int(self.getValue('width', _selectedRow))
+        extendHead = int(self.getValue('extendHead', _selectedRow))
+        extendTail = int(self.getValue('extendTail', _selectedRow))
+        radius = int(self.getValue('radius', _selectedRow))
 
         logger.info(f"width:{width}")
         logger.info(f"extendHead:{extendHead}")
@@ -802,7 +814,8 @@ class pointAnnotations(baseAnnotations):
 
         brightestIndex = self.getValue('brightestIndex', spineRowIndex)
         brightestIndex = int(brightestIndex)
-        radius = self._analysisParams.getCurrentValue("radius")
+        # radius = self._analysisParams.getCurrentValue("radius")
+        radius = int(self.getValue('radius', spineRowIndex))
 
         segmentPolygon = pymapmanager.utils.calculateLineROIcoords(brightestIndex, radius, lineAnnotations, forFinalMask)
 
@@ -1052,6 +1065,14 @@ class pointAnnotations(baseAnnotations):
                 for parameter in self.paramList:
                     defaultVal = self._analysisParams.getCurrentValue(parameter)
                     self.setValue(parameter, spineRowIdx, defaultVal)
+
+    def updateParameterValues(self, spineRowIdx):
+        """ Used to update the parameter values of a single spine
+        """
+        # self.paramList = self._analysisParams.getParamList()
+        for parameter in self.paramList:
+            currentVal = self._analysisParams.getCurrentValue(parameter)
+            self.setValue(parameter, spineRowIdx, currentVal)
 
 if __name__ == '__main__':
     pass

@@ -776,6 +776,9 @@ class stackWidget(QtWidgets.QMainWindow):
 
         # Creating new connection for existing Spine ROI
         self._imagePlotWidget.signalMouseClickConnect.connect(self.slot_ConnectSpineROI)
+
+        # 6/28 - signal to update analysis parameter values in backend on selected spine
+        self._imagePlotWidget.signalReanalyzeSpine.connect(self.slot_reanalyzeSpine)
         
         # emitted when we actually add an annotation to the backend
         self.signalAddedAnnotation.connect(self._imagePlotWidget._aPointPlot.slot_addedAnnotation)
@@ -809,6 +812,25 @@ class stackWidget(QtWidgets.QMainWindow):
         self.move(left,top)
         self.resize(width, height)
     
+
+    def slot_reanalyzeSpine(self, event : pymapmanager.annotations.SelectionEvent):
+        # logger.info(f'moving spine Index {event.getAddedRow()}')
+        logger.info(f'updating spine Index {event.getRows()[0]}')
+        spineRowIdx = event.getRows()[0]
+        self.myStack.getPointAnnotations().updateParameterValues(spineRowIdx)
+
+        # TODO: reflect changes within table and plot interface
+
+        la = self.getStack().getLineAnnotations()        
+        _selectionEvent = pymapmanager.annotations.SelectionEvent(la,
+                                                            rowIdx=None
+                                                            )
+        # Update all Rows in table
+        self.signalPointChanged.emit(_selectionEvent)
+
+        self.signalSelectAnnotation2.emit(self._currentSelection)
+
+        return
 
     def slot_ConnectSpineROI(self, selectionEvent : pymapmanager.annotations.SelectionEvent):
         """ Responds to user clicking on a line point while we are in "connect" mode for one 

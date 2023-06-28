@@ -28,14 +28,16 @@ class AnalysisParams():
 
         # self.show()
 
-    def getParamList(self, roiType):
-
+    def getParamList(self):
+        """ Retrieve the key names of all parameters in the Dictionary
+        
+        """
         paramList = []
         for key in self._dict:
-            if self._dict[key]["roiType"] == roiType:
-                print("key", key)
-                paramList.append(key)
-        # return self._dict[key][roiType]
+            # if self._dict[key]["roiType"] == roiType:
+            #     print("key", key)
+            paramList.append(key)
+     
         return paramList
     
     def getCurrentValue(self, key):
