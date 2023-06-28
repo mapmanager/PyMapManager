@@ -46,7 +46,9 @@ class pointAnnotations(baseAnnotations):
         super().__init__(path, analysisParams)
 
         # done in parent
-        # self._analysisParams = kwargs['analysisParams']
+        # june 28, this is done in the parent???
+        #self._analysisParams = kwargs['analysisParams']
+        self._analysisParams = analysisParams
         
         self._stack = stack
         self._lineAnnotations = la
@@ -165,7 +167,7 @@ class pointAnnotations(baseAnnotations):
             self.addColumn(colItem)
         # return
 
-    def _addIntColumns(self):
+    def _addIntColumns(self, numChannels=2):
         """Add (10 * num channels) columns to hold roi based intensity analysis.
         """
         roiList = ['spine', 'spineBackground', 'segment', 'segmentBackground']

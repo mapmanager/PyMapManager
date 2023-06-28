@@ -18,7 +18,7 @@ def run():
     # load one stack
     myStack = pymapmanager.stack(path=path, loadImageData=True)
     logger.info(f'myStack: {myStack}')
-            
+
     # creat the main application
     app = pymapmanager.interface.PyMapManagerApp()
     
