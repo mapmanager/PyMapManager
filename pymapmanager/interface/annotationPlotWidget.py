@@ -641,6 +641,9 @@ class pointPlotWidget(annotationPlotWidget):
         self._segmentBackgroundPolygon.setZValue(zorder) 
         self._view.addItem(self._segmentBackgroundPolygon)
 
+        # make all spine labels
+        self._bMakeLabels()
+
     def slot_deletedAnnotation(self):
         super().slot_deletedAnnotation()
         # logger.info(f'slot_deletedAnnotation')
@@ -724,7 +727,23 @@ class pointPlotWidget(annotationPlotWidget):
         # self._spineConnections.setData(xPlotLines, yPlotLines)
         self._spineConnections.setData(xPlotSpines, yPlotSpines, connect="finite")
         # self._view.update()
-      
+
+    def _bMakeLabels(self):
+        """
+        """
+        df = self._annotations.getDataFrame()
+        for index, row in df.iterrows():
+            if row['roiType'] != pymapmanager.annotations.pointTypes.spineROI.value:
+                continue
+
+            label_value = pg.LabelItem('', **{'color': '#FFF','size': '2pt'})
+            label_value.setPos(QtCore.QPointF(row['x']-9, row['y']-9))
+            label_value.setText(str(row['index']))
+            # label_value.setText(str(row['index']), rotateAxis=(1, 0), angle=90)  
+            self._view.addItem(label_value)  
+            self.labels.append(label_value)   
+
+
 class linePlotWidget(annotationPlotWidget):
     def __init__(self, annotations : pymapmanager.annotations.lineAnnotations,
                         pgView,  # pymapmanager.interface.myPyQtGraphPlotWidget
