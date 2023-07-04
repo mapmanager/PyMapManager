@@ -723,7 +723,7 @@ class pointPlotWidget(annotationPlotWidget):
                 self._view.addItem(label_value)  
                 self.labels.append(label_value)   
 
-        xPlotSpines, yPlotSpines = self.lineAnnotations.getSpineLineConnections2(dfPlotSpines)
+        xPlotSpines, yPlotSpines = self.lineAnnotations.getSpineLineConnections(dfPlotSpines)
         # self._spineConnections.setData(xPlotLines, yPlotLines)
         self._spineConnections.setData(xPlotSpines, yPlotSpines, connect="finite")
         # self._view.update()
