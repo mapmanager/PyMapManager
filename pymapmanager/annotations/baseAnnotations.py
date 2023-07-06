@@ -200,7 +200,7 @@ class ColumnItem():
         return self._dict['name']
 
     def getType(self) -> type:
-        """Get the name of the column.
+        """Get the type of the column.
         """
         return self._dict['type']
 
@@ -802,7 +802,12 @@ class baseAnnotations():
             logger.warning(f'did not find "{colName}" in columns')
             return
         try:
+            # logger.warning(f'value {value}')
+            # logger.warning(f'colName {colName}')
             self._df.at[row, colName] = value
+            # logger.warning(f'type of self._df.at[row, colName]  {type(self._df.at[row, colName])}')
+            # logger.warning(f'self._df.at[row, colName]  {self._df.at[row, colName] }')
+
         except(IndexError) as e:
             logger.error(f'did not set value for col "{colName}" at row {row}')
 
@@ -833,7 +838,7 @@ class baseAnnotations():
         for colIdx, columnItem in enumerate(self.columns):
             theType = columnItem.getType()
             theTypeStr = str(theType)
-            #logger.info(f'theType "{theType}" is type() {type(theType)}')
+            # logger.info(f'theType "{theType}" is type() {type(theType)}')
             if theType == 'Int64':
                 # 'Int64' is pandas way to have an int64 with nan values
                 # TODO (cudmore) switch this to pd.Int64Dtype
@@ -850,6 +855,8 @@ class baseAnnotations():
             elif theTypeStr == "<class 'int'>":
                 # int always needs a values, caller is required to fill in
                 pass
+            # elif theTypeStr == "<class 'list'>":
+            #     pass
             else:
                 className = self.__class__.__name__  # name of class, including inherited
                 logger.warning(f'{className} did not understand {columnItem.getName()} with type "{theType}"')
@@ -1081,6 +1088,10 @@ class baseAnnotations():
         if not 'index' in dfLoaded.columns:
             dfLoaded['index'] = [idx for idx in range(len(dfLoaded))]
 
+        # print("dfLoaded before:", dfLoaded)
+        # dfLoaded.columns = dfLoaded.columns.str.strip('"')
+        # print("dfLoaded after:", dfLoaded)
+
         loadedColumns = dfLoaded.columns
 
         # actually assign expected columns from loaded
@@ -1143,8 +1154,13 @@ class baseAnnotations():
         with open(self.filePath, 'w') as file:
             file.write(headerStr)
 
+        # Increase line size to account for extra columns
+        # np.set_printoptions(linewidth=100000)
         with open(self.filePath, 'a') as file:
-            self._df.to_csv(file, header=True, index=False, lineterminator = '\r')
+            # self._df.to_csv(file, header=True, index=False, lineterminator = '\r')
+            # import csv
+            self._df.to_csv(file, header=True, index=False)
+
         
     def _getHeaderStr(self):
         """Get header as string.

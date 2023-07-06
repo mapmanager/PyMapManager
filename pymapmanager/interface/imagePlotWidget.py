@@ -880,7 +880,8 @@ class ImagePlotWidget(QtWidgets.QWidget):
 
         _numSlices = self._myStack.numSlices
         self._stackSlider = StackSlider(_numSlices)
-        self._stackSlider.signalUpdateSlice.connect(self._setSlice)
+        # self._stackSlider.signalUpdateSlice.connect(self._setSlice)
+        self._stackSlider.signalUpdateSlice.connect(self.slot_setSlice)
         self.signalUpdateSlice.connect(self._stackSlider.slot_setSlice)
 
         hBoxLayout.addWidget(self._stackSlider)

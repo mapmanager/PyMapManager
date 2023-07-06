@@ -675,8 +675,14 @@ class pointPlotWidget(annotationPlotWidget):
             if roiType == "spineROI":
                 
                 # firstSelectedRow = spine row index
-                jaggedPolygon = self.pointAnnotations.calculateJaggedPolygon(self.lineAnnotations, firstSelectedRow, self._channel, self.img)
-                # logger.info(f'jaggedPolygon coordinate list {jaggedPolygon}')
+                # jaggedPolygon = self.pointAnnotations.calculateJaggedPolygon(self.lineAnnotations, firstSelectedRow, self._channel, self.img)
+                jaggedPolygon = self.pointAnnotations.getValue("roiCoords", firstSelectedRow)
+
+                # TODO: Move this to load in base annotations
+                jaggedPolygon = eval(jaggedPolygon)
+                logger.info(f'within list {jaggedPolygon} list type {type(jaggedPolygon)}')
+                jaggedPolygon = np.array(jaggedPolygon)
+
                 self._spinePolygon.setData(jaggedPolygon[:,1], jaggedPolygon[:,0])
 
                 # Add code to plot the backgroundROI
@@ -692,11 +698,16 @@ class pointPlotWidget(annotationPlotWidget):
                 # self._view.update()
                 self._segmentBackgroundPolygon.setData(segmentPolygon[:,0] + yOffset, segmentPolygon[:,1] + xOffset)
 
+    # TODO: Figure out where this is being called twice
     def slot_setSlice(self, sliceNumber : int):
+
+        sender = self.sender()
+        print("sender is:", sender)
+
         super().slot_setSlice(sliceNumber=sliceNumber)
         # return
         zPlusMinus = self._displayOptions['zPlusMinus']  
-        # return 
+        # return         
         print("point annotations plot widget set slice")
         theseSegments = None
         roiTypes = ['spineROI']
@@ -709,17 +720,22 @@ class pointPlotWidget(annotationPlotWidget):
             for label in self.labels:
                 self._view.removeItem(label) 
                 self.labels = []
-        
 
         for index, row in dfPlotSpines.iterrows():
             if row['roiType'] == "spineROI":
                 label_value = pg.LabelItem('', **{'color': '#FFF','size': '2pt'})
-                label_value.setPos(QtCore.QPointF(row['x']-9, row['y']-9))
+                if row['connectionSide'] == "Left":
+                    label_value.setPos(QtCore.QPointF(row['x']-3, row['y']-3))
+                elif row['connectionSide'] == "Right":
+                    label_value.setPos(QtCore.QPointF(row['x']-9, row['y']-9))
+                    # label_value.setPos(QtCore.QPointF(row['x']+9, row['y']+9))
+      
                 label_value.setText(str(row['index']))
                 # label_value.setText(str(row['index']), rotateAxis=(1, 0), angle=90)  
                 self._view.addItem(label_value)  
                 self.labels.append(label_value)   
 
+        # xPlotSpines, yPlotSpines = self.lineAnnotations.getSpineLineConnections(dfPlotSpines)
         xPlotSpines, yPlotSpines = self.lineAnnotations.getSpineLineConnections2(dfPlotSpines)
         # self._spineConnections.setData(xPlotLines, yPlotLines)
         self._spineConnections.setData(xPlotSpines, yPlotSpines, connect="finite")

@@ -850,6 +850,31 @@ def getCloserPoint2(spinePoint, leftRadiusPoint, rightRadiusPoint):
     return closestPoint
     # return (min(radiusPoints, key=lambda point: math.hypot(spinePoint[1]-point[1], spinePoint[0]-point[0])))
 
+def getCloserPointSide(spinePoint, leftRadiusPoint, rightRadiusPoint):
+    """
+        Used to find whether the left or right radius point is closer to the spine point.
+        Returns the string "left" or "right" to store into backend
+
+    """
+    radiusPoints = [leftRadiusPoint, rightRadiusPoint]
+    # print()
+    dist = float('inf') # np.inf
+    closestIdx = None
+
+    for idx, point in enumerate(radiusPoints):
+
+        dx = abs(spinePoint[1]-point[1])
+        dy = abs(spinePoint[0]-point[0])
+        _dist = math.sqrt( dx**2 + dy**2)
+        if _dist < dist:
+            dist = _dist
+            closestPoint = point
+
+    if(closestPoint == leftRadiusPoint):
+        return "Left"
+    else:
+        return "Right"
+    # return closestPoint
 
 def checkLabel(mask, _xSpine, _ySpine):
     """ Filters out a mask so that extra segments will be removed
