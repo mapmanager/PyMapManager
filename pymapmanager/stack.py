@@ -70,7 +70,8 @@ class stack():
     imageColIdx = 2
 
     def __init__(self, path : str,
-                loadImageData : bool = True):
+                loadImageData : bool = True,
+                mmMap : "pymapmanager.mmMap" = None):
         """Create a stack from .tif file.
         
         Args:
@@ -87,6 +88,8 @@ class stack():
             logger.error(f'Did not find tifPath: {path}')
             # TODO (cudmore) is there a 'FileNotFound' exception built in?
             raise OSError(errno.ENOENT, os.strerror(errno.ENOENT), path)
+
+        self._mmMap = mmMap
 
         self._tifPath = path
         """Full path to .tif we were created with"""
@@ -153,8 +156,14 @@ class stack():
         #self.loadLines()
 
 
+    def getMap(self):
+        return self._mmMap
+    
     def getFileName(self):
         return os.path.split(self._tifPath)[1]
+    
+    def getTifPath(self):
+        return self._tifPath
     
     @property
     def header(self) -> dict:

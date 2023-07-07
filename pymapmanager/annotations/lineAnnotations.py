@@ -659,7 +659,6 @@ class lineAnnotations(baseAnnotations):
         xPlotSpines = []
         yPlotSpines = []
 
-       
         dfPlotSpines = dfPlotSpines[dfPlotSpines[['brightestIndex']].notnull().all(1)]
         # Filter so we only have 3 columns, x,y and brightestindex
         dfPlotSpines = dfPlotSpines[['x', 'y', 'brightestIndex']]
@@ -690,12 +689,13 @@ class lineAnnotations(baseAnnotations):
             rightRadiusPoint = (xRight, yRight)
             spinePoint = (_xSpine, _ySpine)
             closestPoint = pymapmanager.utils.getCloserPoint2(spinePoint, leftRadiusPoint, rightRadiusPoint)
-            # print("closestPoint", closestPoint)
-            # print("closestPoint[0]", closestPoint[0])
             xPlotSpines.append(_xSpine)
             # Change xPlotLine to the left/right value. Need to detect which orientation
             # xPlotLine = self.lineAnnotations.getValue(['x'], xyzOneSpine['brightestIndex'])
             # xPlotSpines.append(xPlotLine)
+            if closestPoint is None:  # abb
+                continue
+            
             xPlotSpines.append(closestPoint[0])
             xPlotSpines.append(np.nan)
 

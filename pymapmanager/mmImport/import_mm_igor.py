@@ -262,7 +262,7 @@ def loadWhatWeConverted():
     app = pmm.interface.PyMapManagerApp()
     
     # create a stack widget
-    bsw = pmm.interface.stackWidget(myStack=myStack)
+    bsw = pmm.interface.stackWidget(stack=myStack)
 
     # snap to an image
     #bsw._imagePlotWidget.slot_setSlice(30)

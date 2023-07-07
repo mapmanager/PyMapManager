@@ -144,7 +144,8 @@ class annotationPlotWidget(QtWidgets.QWidget):
     def __init__(self, annotations : pymapmanager.annotations.baseAnnotations,
                         pgView,
                         displayOptions : dict,
-                        parent = None):
+                        parent = None,
+                        stack : "pymapmanager.stack" = None):
         """
         Args:
             annotations:
@@ -158,6 +159,7 @@ class annotationPlotWidget(QtWidgets.QWidget):
         self._annotations = annotations  # define in derived
         self._view = pgView
         self._displayOptions = displayOptions
+        self._stack = stack
 
         #self._selectedAnnotation = None
         # The current selection
@@ -360,7 +362,8 @@ class annotationPlotWidget(QtWidgets.QWidget):
 
             _selectionEvent = pymapmanager.annotations.SelectionEvent(self._annotations,
                                                                       rowIdx=dbIdx,
-                                                                      isAlt=isAlt)
+                                                                      isAlt=isAlt,
+                                                                      stack=self._stack)
             
             logger.info(f'  -->> emit signalAnnotationClicked2 {_selectionEvent}')
             self.signalAnnotationClicked2.emit(_selectionEvent)
@@ -579,7 +582,8 @@ class pointPlotWidget(annotationPlotWidget):
                         lineAnnotations: pymapmanager.annotations.lineAnnotations,
                         # myImage : pg.ImageItem,
                         stack : pymapmanager.stack,
-                        parent = None):
+                        parent = None,
+                        ):
         """
         Args:
             displayOptions : dictionary to specify the style for the points
@@ -588,7 +592,7 @@ class pointPlotWidget(annotationPlotWidget):
             pgView:
         """
         
-        super().__init__(pointAnnotations, pgView, displayOptions, parent)
+        super().__init__(pointAnnotations, pgView, displayOptions, parent, stack=stack)
         
         self._displayOptionsLines = displayOptionsLines
 
@@ -643,6 +647,8 @@ class pointPlotWidget(annotationPlotWidget):
 
         # make all spine labels
         self._bMakeLabels()
+        # make all spine lines
+        self._bMakeSpineLines()
 
     def slot_deletedAnnotation(self):
         super().slot_deletedAnnotation()
@@ -680,81 +686,150 @@ class pointPlotWidget(annotationPlotWidget):
                 # firstSelectedRow = spine row index
                 jaggedPolygon = self.pointAnnotations.calculateJaggedPolygon(self.lineAnnotations, firstSelectedRow, self._channel, self.img)
                 # logger.info(f'jaggedPolygon coordinate list {jaggedPolygon}')
-                self._spinePolygon.setData(jaggedPolygon[:,1], jaggedPolygon[:,0])
+                if jaggedPolygon is not None:
+                    self._spinePolygon.setData(jaggedPolygon[:,1], jaggedPolygon[:,0])
 
-                # Add code to plot the backgroundROI
-                self._spineBackgroundPolygon.setData(jaggedPolygon[:,1] + yOffset, jaggedPolygon[:,0] + xOffset)
-                # self._spineBackgroundPolygon.setData(jaggedPolygon[:,1] + xOffset, jaggedPolygon[:,0] + yOffset)
+                    # Add code to plot the backgroundROI
+                    self._spineBackgroundPolygon.setData(jaggedPolygon[:,1] + yOffset, jaggedPolygon[:,0] + xOffset)
+                    # self._spineBackgroundPolygon.setData(jaggedPolygon[:,1] + xOffset, jaggedPolygon[:,0] + yOffset)
 
                 # radius = 5
                 forFinalMask = False
                 segmentPolygon = self.pointAnnotations.calculateSegmentPolygon(firstSelectedRow, self.lineAnnotations, forFinalMask)
 
-                # logger.info(f'segmentPolygon coordinate list {segmentPolygon}')
-                self._segmentPolygon.setData(segmentPolygon[:,0], segmentPolygon[:,1])
-                # self._view.update()
-                self._segmentBackgroundPolygon.setData(segmentPolygon[:,0] + yOffset, segmentPolygon[:,1] + xOffset)
+                if segmentPolygon is not None:
+                    # logger.info(f'segmentPolygon coordinate list {segmentPolygon}')
+                    self._segmentPolygon.setData(segmentPolygon[:,0], segmentPolygon[:,1])
+                    # self._view.update()
+                    self._segmentBackgroundPolygon.setData(segmentPolygon[:,0] + yOffset, segmentPolygon[:,1] + xOffset)
 
     def slot_setSlice(self, sliceNumber : int):
-        super().slot_setSlice(sliceNumber=sliceNumber)
-        # return
-        zPlusMinus = self._displayOptions['zPlusMinus']  
-        # return 
-        print("point annotations plot widget set slice")
-        theseSegments = None
-        roiTypes = ['spineROI']
-
-        # dfPlotSpines = self._annotations.getSegmentPlot(theseSegments, roiTypes, sliceNumber)
-        dfPlotSpines = self._annotations.getSegmentPlot(self._segmentIDList, roiTypes, sliceNumber, zPlusMinus)
-
-        # Reset labels everytime we refresh slice
-        if len(self.labels) > 0:
-            for label in self.labels:
-                self._view.removeItem(label) 
-                self.labels = []
+        startSec = time.time()
         
+        super().slot_setSlice(sliceNumber=sliceNumber)
 
-        for index, row in dfPlotSpines.iterrows():
-            if row['roiType'] == "spineROI":
-                label_value = pg.LabelItem('', **{'color': '#FFF','size': '2pt'})
-                label_value.setPos(QtCore.QPointF(row['x']-9, row['y']-9))
-                label_value.setText(str(row['index']))
-                # label_value.setText(str(row['index']), rotateAxis=(1, 0), angle=90)  
-                self._view.addItem(label_value)  
-                self.labels.append(label_value)   
+        doBob = True  # 5x faster from >100ms to <5ms
 
-        xPlotSpines, yPlotSpines = self.lineAnnotations.getSpineLineConnections(dfPlotSpines)
-        # self._spineConnections.setData(xPlotLines, yPlotLines)
-        self._spineConnections.setData(xPlotSpines, yPlotSpines, connect="finite")
-        # self._view.update()
+        if doBob:
+            _rows = self._dfPlot['index'].to_list()
+            _spineLineIndex = []
+            for labelIndex, label in enumerate(self._labels):
+                if labelIndex in _rows:
+                    label.show()
+                else:
+                    label.hide()
 
+            #_rows = self._dfPlot['index'].to_list()  # TODO: only do this once
+            for row in _rows:
+                realRow = row * 3
+                _spineLineIndex.append(realRow)
+                _spineLineIndex.append(realRow+1)
+                _spineLineIndex.append(realRow+2)
+
+            _xData = self._xSpineLines[_spineLineIndex]
+            _yData = self._ySpineLines[_spineLineIndex]
+            self._spineConnections.setData(_xData, _yData, connect="finite")
+
+        else:
+            if len(self.labels) > 0:
+                for label in self.labels:
+                    self._view.removeItem(label) 
+                    self.labels = []
+        
+            for index, row in self._dfPlot.iterrows():
+                if row['roiType'] == "spineROI":
+                    label_value = pg.LabelItem('', **{'color': '#FFF','size': '2pt'})
+                    label_value.setPos(QtCore.QPointF(row['x']-9, row['y']-9))
+                    label_value.setText(str(row['index']))
+                    # label_value.setText(str(row['index']), rotateAxis=(1, 0), angle=90)  
+                    self._view.addItem(label_value)  
+                    self.labels.append(label_value)   
+
+            # lines are taking ~100ms per set slice
+            xPlotSpines, yPlotSpines = self.lineAnnotations.getSpineLineConnections(self._dfPlot)
+            # self._spineConnections.setData(xPlotLines, yPlotLines)
+            self._spineConnections.setData(xPlotSpines, yPlotSpines, connect="finite")
+
+        stopSec = time.time()
+        #logger.info(f'took {round(stopSec-startSec,3)} seconds')
+
+    def _bMakeSpineLines(self):
+        df = self._annotations.getDataFrame()
+
+        n = len(df)
+        self._xSpineLines = np.ndarray(n*3)
+        self._ySpineLines = np.ndarray(n*3)
+
+        for index, row in df.iterrows():
+            realIndex = index * 3
+            _brightestIndex = row['brightestIndex']
+            if np.isnan(_brightestIndex):
+                # x
+                self._xSpineLines[index] = np.nan
+                self._xSpineLines[index+1] = np.nan
+                self._xSpineLines[index+2] = np.nan
+                # y
+                self._ySpineLines[index] = np.nan
+                self._ySpineLines[index+1] = np.nan
+                self._ySpineLines[index+2] = np.nan
+                continue
+
+            xSpine = row['x']
+            ySpine = row['y']
+            
+            xLeft= self.lineAnnotations.getValue(['xLeft'], _brightestIndex)
+            xRight= self.lineAnnotations.getValue(['xRight'], _brightestIndex)
+            yLeft= self.lineAnnotations.getValue(['yLeft'], _brightestIndex)
+            yRight= self.lineAnnotations.getValue(['yRight'], _brightestIndex)
+
+            leftRadiusPoint = (xLeft, yLeft)
+            rightRadiusPoint = (xRight, yRight)
+            spinePoint = (xSpine, ySpine)
+            closestPoint = pymapmanager.utils.getCloserPoint2(spinePoint, leftRadiusPoint, rightRadiusPoint)
+            
+            self._xSpineLines[realIndex] = xSpine
+            self._xSpineLines[realIndex+1] = closestPoint[0]
+            self._xSpineLines[realIndex+2] = np.nan
+
+            self._ySpineLines[realIndex] = ySpine
+            self._ySpineLines[realIndex+1] = closestPoint[1]
+            self._ySpineLines[realIndex+2] = np.nan
+        
     def _bMakeLabels(self):
         """
         """
+        start = time.time()
+        
         df = self._annotations.getDataFrame()
+        
+        self._labels = []
         for index, row in df.iterrows():
-            if row['roiType'] != pymapmanager.annotations.pointTypes.spineROI.value:
-                continue
+            # if row['roiType'] != pymapmanager.annotations.pointTypes.spineROI.value:
+            #     continue
 
             label_value = pg.LabelItem('', **{'color': '#FFF','size': '2pt'})
             label_value.setPos(QtCore.QPointF(row['x']-9, row['y']-9))
             label_value.setText(str(row['index']))
+            label_value.hide()
             # label_value.setText(str(row['index']), rotateAxis=(1, 0), angle=90)  
             self._view.addItem(label_value)  
-            self.labels.append(label_value)   
+            self._labels.append(label_value)   
 
+        stop = time.time()
+        #logger.info(f'took {round(stop-start,3)} seconds')  # 0.304
 
 class linePlotWidget(annotationPlotWidget):
     def __init__(self, annotations : pymapmanager.annotations.lineAnnotations,
                         pgView,  # pymapmanager.interface.myPyQtGraphPlotWidget
                         displayOptions : dict,
-                        parent = None):
+                        parent = None,
+                        stack = None):
         """
         Args:
             annotations:
             pgView:
         """
-        super().__init__(annotations, pgView, displayOptions, parent)
+        super().__init__(annotations, pgView, displayOptions, parent, stack=stack)
 
         # define the roi types we will display, see: slot_setDisplayTypes()
         self._roiTypes = ['linePnt']

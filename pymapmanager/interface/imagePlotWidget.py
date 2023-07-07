@@ -49,6 +49,10 @@ class ImagePlotWidget(QtWidgets.QWidget):
     """Signal emitted when mouse is moved.
     """
 
+    signalMouseEvent = QtCore.Signal(object)
+    """To allow linking windows.
+    """
+
     signalAnnotationSelection2 = QtCore.Signal(object)  # pymapmanager.annotations.SelectionEvent
     #signalCancelSelection = QtCore.Signal(object, object)
     signalCancelSelection2 = QtCore.Signal(object)  # pymapmanager.annotations.SelectEvent
@@ -87,7 +91,8 @@ class ImagePlotWidget(QtWidgets.QWidget):
     # Updating radius
     signalRadiusChanged = QtCore.Signal(object)
 
-    def __init__(self, myStack : pymapmanager.stack,
+    def __init__(self,
+                    myStack : pymapmanager.stack,
                     contrastDict : dict,
                     colorLutDict : dict,
                     displayOptionsDict : dict,
@@ -102,7 +107,7 @@ class ImagePlotWidget(QtWidgets.QWidget):
 
         self._stackWidgetParent = stackWidgetParent
         # added to get the current selection
-
+        
         self._currentSlice = 0
         
         _channel = self._displayOptionsDict['windowState']['defaultChannel']
@@ -134,7 +139,7 @@ class ImagePlotWidget(QtWidgets.QWidget):
 
         self.refreshSlice()
 
-    def wheelEvent(self, event):
+    def wheelEvent_monkey_patch(self, event):
         """Respond to mouse wheel and set new slice.
 
         Override PyQt wheel event.
@@ -519,7 +524,7 @@ class ImagePlotWidget(QtWidgets.QWidget):
         padding = 0.0
         self._plotWidget.setRange(imageBoundingRect, padding=padding)
  
-    def _zoomToPoint(self, x, y, zoomFieldOfView=300):
+    def _zoomToPoint(self, x, y, zoomFieldOfView=100):
         """Zoom to point (x,y) with a width/height of widthHeight.
         
         Args:
@@ -527,6 +532,7 @@ class ImagePlotWidget(QtWidgets.QWidget):
             y:
             zoomFieldOfView: Width/height of zoom
         """
+        logger.warning(f'we need to pass a display option for zoomFieldOfView: {zoomFieldOfView}')
         halfZoom = zoomFieldOfView / 2
         l = x - halfZoom
         t = y - halfZoom
@@ -540,10 +546,10 @@ class ImagePlotWidget(QtWidgets.QWidget):
         padding = 0.0
         self._plotWidget.setRange(_zoomRect, padding=padding)
        
-    def slot_setSlice(self, sliceNumber):
+    def slot_setSlice(self, sliceNumber, doEmit=True):
         if self._blockSlots:
             return
-        self._setSlice(sliceNumber)
+        self._setSlice(sliceNumber, doEmit=doEmit)
 
     def slot_selectAnnotation2(self, selectionEvent : pymapmanager.annotations.SelectionEvent):
         if self._blockSlots:
@@ -564,9 +570,9 @@ class ImagePlotWidget(QtWidgets.QWidget):
                 x = selectionEvent.annotationObject.getValue('x', rowIdx)
                 y = selectionEvent.annotationObject.getValue('y', rowIdx)
                 z = selectionEvent.annotationObject.getValue('z', rowIdx)
-                logger.info(f' calling _zoomToPoint with x:{x} and y:{y}')
+                #logger.info(f' calling _zoomToPoint with x:{x} and y:{y}')
                 self._zoomToPoint(x, y)
-                logger.info(f' calling _setSlice with z:{z}')
+                #logger.info(f' calling _setSlice with z:{z}')
                 self._setSlice(z)
 
         self._blockSlots = False
@@ -690,7 +696,7 @@ class ImagePlotWidget(QtWidgets.QWidget):
     def refreshSlice(self):
         self._setSlice(self._currentSlice)
     
-    def _setSlice(self, sliceNumber : int):
+    def _setSlice(self, sliceNumber : int, doEmit = True):
         """
         
         Args:
@@ -770,9 +776,10 @@ class ImagePlotWidget(QtWidgets.QWidget):
         # emit
         #logger.info(f'  -->> emit signalUpdateSlice() _currentSlice:{self._currentSlice}')
 
-        self._blockSlots = True
-        self.signalUpdateSlice.emit(self._currentSlice)
-        self._blockSlots = False
+        if doEmit:
+            self._blockSlots = True
+            self.signalUpdateSlice.emit(self._currentSlice)
+            self._blockSlots = False
 
     def toggleImageView(self):
         """Show/hide image.
@@ -794,16 +801,41 @@ class ImagePlotWidget(QtWidgets.QWidget):
         la.calculateAndStoreRadiusLines(segmentID = segmentID, radius = radius)
         self.refreshSlice()
 
+    def _old_tmpSlot(self, obj):
+        logger.info(obj)
+
+    def _old_monkeyPatchMouseMove(self, event, emit=True):
+        # PyQt5.QtGui.QMouseEvent
+        logger.info(event)
+        self._plotWidget._orig_mouseMoveEvent(event)
+        
+        if emit:
+            self.signalMouseEvent.emit(event)
+
     def _buildUI(self):
         hBoxLayout = QtWidgets.QHBoxLayout()
 
         # we are now a QWidget
         self._plotWidget = pg.PlotWidget()  # pyqtgraph.widgets.PlotWidget.PlotWidget
         # monkey patch wheel event
-        logger.warning(f'remember, we are monkey patching plotWidget wheel event')
-        logger.info(f'  self._plotWidget:{self._plotWidget}')
+        logger.warning(f'remember, we are monkey patching imagePlotWidget wheel event')
+        # logger.info(f'  self._plotWidget:{self._plotWidget}')
         self._plotWidget.orig_wheelEvent = self._plotWidget.wheelEvent
-        self._plotWidget.wheelEvent = self.wheelEvent
+        self._plotWidget.wheelEvent = self.wheelEvent_monkey_patch
+
+        # 20230706 trying to get signal on mouse drag so we can link stack widgets
+        # print(self._plotWidget.sigTransformChanged)
+        # sys.exit(1)
+        #if 1:
+            # nope
+            # self._plotWidget.sigTransformChanged.connect(self.tmpSlot)
+            # self._plotWidget._orig_mouseMoveEvent = self._plotWidget.mouseMoveEvent
+            # self._plotWidget.mouseMoveEvent = self.monkeyPatchMouseMove
+
+            # nope
+            # pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene
+            # print('self._plotWidget.scene():', type(self._plotWidget.scene()))
+            # print(self._plotWidget.scene().mouseDragEvent)
 
         hBoxLayout.addWidget(self._plotWidget)
 
@@ -848,7 +880,8 @@ class ImagePlotWidget(QtWidgets.QWidget):
                                                                 _displayOptions,
                                                                 _displayOptionsLine,
                                                                 lineAnnotations,
-                                                                self._myStack)
+                                                                stack=self._myStack,
+                                                                )
         self._aPointPlot.signalAnnotationClicked2.connect(self.slot_selectAnnotation2)
         self.signalAnnotationSelection2.connect(self._aPointPlot.slot_selectAnnotation2)
         self.signalUpdateSlice.connect(self._aPointPlot.slot_setSlice)
@@ -859,7 +892,8 @@ class ImagePlotWidget(QtWidgets.QWidget):
         _displayOptions = self._displayOptionsDict['lineDisplay']
         self._aLinePlot = pymapmanager.interface.linePlotWidget(lineAnnotations,
                                                                 self._plotWidget,
-                                                                _displayOptions)
+                                                                _displayOptions,
+                                                                stack=self._myStack)
 
         self._aLinePlot.signalAnnotationClicked2.connect(self.slot_selectAnnotation2)
         self.signalAnnotationSelection2.connect(self._aLinePlot.slot_selectAnnotation2)
@@ -880,7 +914,8 @@ class ImagePlotWidget(QtWidgets.QWidget):
 
         _numSlices = self._myStack.numSlices
         self._stackSlider = StackSlider(_numSlices)
-        self._stackSlider.signalUpdateSlice.connect(self._setSlice)
+        # self._stackSlider.signalUpdateSlice.connect(self._setSlice)
+        self._stackSlider.signalUpdateSlice.connect(self.slot_setSlice)
         self.signalUpdateSlice.connect(self._stackSlider.slot_setSlice)
 
         hBoxLayout.addWidget(self._stackSlider)

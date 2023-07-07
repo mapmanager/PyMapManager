@@ -1,6 +1,5 @@
 """
 """
-#import os
 import enum
 import math
 from pprint import pprint
@@ -825,11 +824,15 @@ class pointAnnotations(baseAnnotations):
         # extendHead = self._analysisParams.getCurrentValue("extendHead")
         # extendTail = self._analysisParams.getCurrentValue("extendTail")
         # radius = self._analysisParams.getCurrentValue("radius")
-        width = int(self.getValue('width', _selectedRow))
-        extendHead = int(self.getValue('extendHead', _selectedRow))
-        extendTail = int(self.getValue('extendTail', _selectedRow))
-        radius = int(self.getValue('radius', _selectedRow))
-
+        try:
+            width = int(self.getValue('width', _selectedRow))
+            extendHead = int(self.getValue('extendHead', _selectedRow))
+            extendTail = int(self.getValue('extendTail', _selectedRow))
+            radius = int(self.getValue('radius', _selectedRow))
+        except (ValueError) as e:
+            logger.warning(e)
+            return
+        
         logger.info(f"width:{width}")
         logger.info(f"extendHead:{extendHead}")
         logger.info(f"extendTail:{extendTail}")
@@ -885,13 +888,17 @@ class pointAnnotations(baseAnnotations):
 
         brightestIndex = self.getValue('brightestIndex', spineRowIndex)
         brightestIndex = int(brightestIndex)
-        # radius = self._analysisParams.getCurrentValue("radius")
-        radius = int(self.getValue('radius', spineRowIndex))
-
+        
+        try:
+            # radius = self._analysisParams.getCurrentValue("radius")
+            radius = int(self.getValue('radius', spineRowIndex))
+        except (ValueError) as e:
+            logger.error(e)
+            return
+        
         segmentPolygon = pymapmanager.utils.calculateLineROIcoords(brightestIndex, radius, lineAnnotations, forFinalMask)
 
         return segmentPolygon
-
 
     def OLD_setSingleSpineOffsetDictValues(self, spineRowIdx: int, lineAnnotation, channelNumber, myStack):
         """

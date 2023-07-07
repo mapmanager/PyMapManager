@@ -9,8 +9,12 @@ from pymapmanager._logger import logger
 class HistogramWidget(QtWidgets.QWidget):
     signalContrastChange = QtCore.Signal(object) # (contrast dict)
 
-    def __init__(self, myStack, contrastDict : dict,
-                    sliceNumber:int=0, channel:int=1, parent=None):
+    def __init__(self,
+                 myStack,
+                 contrastDict : dict,
+                 sliceNumber:int=0,
+                 channel:int=1,
+                 parent=None):
         """Histogram widget to show image intensities.
         """
         # as toolbar
@@ -51,7 +55,7 @@ class HistogramWidget(QtWidgets.QWidget):
     def slot_setChannel(self, channel : int):
         """Show/hide channel buttons.
         """
-        logger.info(f'bHistogramWidget channel:{channel}')
+        # logger.info(f'bHistogramWidget channel:{channel}')
         self._channel = channel
         
         if channel in [1,2,3]:
@@ -66,24 +70,6 @@ class HistogramWidget(QtWidgets.QWidget):
                 histWidget.show()
         else:
             logger.error(f'Did not understand channel: {channel}')
-
-        # for histWidget in self.histWidgetList:
-        #     histWidget.slot_setChannel(channel)
-
-        '''
-        # update spinbox and slider with channels current contrast
-        minContrast = self._contrastDict[channel]['minContrast']
-        maxContrast = self._contrastDict[channel]['maxContrast']
-
-        self.minSpinBox.setValue(minContrast)
-        self.minContrastSlider.setValue(minContrast)
-
-        self.maxSpinBox.setValue(maxContrast)
-        self.maxContrastSlider.setValue(maxContrast)
-
-        # refresh
-        self._setSlice(self._sliceNumber)
-        '''
 
     def slot_setSlice(self, sliceNumber):
         self._setSlice(sliceNumber)

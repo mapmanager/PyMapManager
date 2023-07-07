@@ -3,12 +3,13 @@ from __future__ import print_function
 import sys
 import os, io, time, math
 from errno import ENOENT
-import pandas as pandas
+import pandas as pd
 import numpy as np
 
 import scipy.misc
 
 import pymapmanager
+from pymapmanager._logger import logger
 
 # from pymapmanager.mmUtil import newplotdict
 # from pymapmanager.mmStack import mmStack
@@ -127,6 +128,19 @@ class mmMap():
         stackPath = os.path.join(_folder, stackName)
         return stackPath
     
+    def getStackTimepoint(self, thisStack : pymapmanager.stack) -> int:
+        """Given a stack, find the timepoint.
+        """ 
+        for idx, stack in enumerate(self.stacks):
+            if stack == thisStack:
+                return idx
+        return None
+    
+    def getMapName(self):
+        _folder, _name = os.path.split(self.filePath)
+        _name, _ext = os.path.splitext(_name)
+        return _name
+    
     def __init__(self, filePath=None, urlmap=None):
         startTime = time.time()
 
@@ -189,14 +203,14 @@ class mmMap():
             self.filePath = filePath #  Path to file used to open map."""
             self._folder = os.path.dirname(filePath) + '/'
             self.name = os.path.basename(filePath).strip('.txt')
-            self.table = pandas.read_table(filePath, index_col=0)
+            self.table = pd.read_table(filePath, index_col=0)
         elif urlmap is not None:
             doFile = False
             # try loading from url
             self.name = urlmap
             self.server = mmio()
             tmp = self.server.getfile('header', self.name)
-            self.table = pandas.read_table(io.StringIO(tmp.decode('utf-8')), index_col=0)
+            self.table = pd.read_table(io.StringIO(tmp.decode('utf-8')), index_col=0)
 
         ###############################################################################
         # objMap (3d)
@@ -259,7 +273,7 @@ class mmMap():
         self._stacks = [] #  A list of mmStack
         for i in range(0, self.numSessions):
             stackPath = self.getStackPath(i)
-            stack = pymapmanager.stack(stackPath, loadImageData=False)
+            stack = pymapmanager.stack(stackPath, loadImageData=False, mmMap=self)
             # if doFile:
             #     stack = mmStack(name=self._getStackName(i), numChannels=self.numChannels, \
             #                     map=self, mapSession=i)
@@ -302,8 +316,7 @@ class mmMap():
 
     @property
     def stacks(self):
-        """
-        List of :class:`pymapmanager.mmStack` in the map.
+        """List of :class:`pymapmanager.mmStack` in the map.
         """
         return self._stacks
 
@@ -343,9 +356,11 @@ class mmMap():
         return theRet
 
     def __str__(self):
+        
         objCount = 0
         for stack in self.stacks:
-            objCount += stack.numObj
+            objCount += len(stack.getPointAnnotations())
+        
         '''
         theRet = {}
         theRet['info'] = ('map:' + self.name
@@ -366,6 +381,12 @@ class mmMap():
             yield self.stacks[i]
             i += 1
 
+    def getDataFrame(self):
+        df = pd.DataFrame()
+        df['Idx'] = range(self.numSessions)
+        df['File'] = [self._getStackName(tp) for tp in range(self.numSessions)]
+        return df
+    
     def mapInfo(self):
         """
         Get information on the map
@@ -467,8 +488,14 @@ class mmMap():
         return self.table.loc[name].iloc[sessionNumber] # .loc specifies row, .iloc specifies a column
 
     def _getStackName(self, sessIdx):
-        # get the name of the stack at session sessIdx, this is contained in the map header
+        """Get the name of the stack at session sessIdx.
+        """
+
         ret = self.getValue('hsStack', sessIdx)
+    
+        logger.info('')
+        print('  ret:', type(ret), ret)
+
         if ret.endswith('_ch1') or ret.endswith('_ch2'):
             ret = ret[:-4]
         return ret
@@ -798,8 +825,7 @@ class mmMap():
         return pd
 
     def getMapValues2(self, stat, roiType=['spineROI'], segmentID=[], plotBad=False, plotIntBad=False):
-        """
-        Get values of a stack annotation across all stacks in the map.
+        """Get values of a stack annotation across all stacks in the map.
 
         Args:
             stat (str): The stack annotation to get (corresponds to a column in mmStack.stackdb)
@@ -1021,7 +1047,7 @@ def tstShowMap():
     import pymapmanager.interface
 
     # load map
-    path = '/Users/cudmore/Sites/PyMapManager-Data/maps/rr30a/rr30a.txt'
+    path = '../PyMapManager-Data/maps/rr30a/rr30a.txt'
     _map = pymapmanager.mmMap(path)
     # myStack = _map.stacks[1]
     # print(myStack)
@@ -1043,7 +1069,7 @@ def tstShowMap():
         oneStack.loadImages(1)
         oneStack.loadImages(2)
 
-        bsw = pymapmanager.interface.stackWidget(myStack=oneStack)
+        bsw = pymapmanager.interface.stackWidget(stack=oneStack)
 
         bsw.toggleView(False, "Toolbar")
         bsw.toggleView(False, "Point Table")

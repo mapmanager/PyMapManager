@@ -320,3 +320,6 @@ class pandasModel(QtCore.QAbstractTableModel):
 
     def myGetData(self):
         return self._data
+    
+    def myGetRowDict(self, row : int):
+        return self._data.loc[row]

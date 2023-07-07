@@ -77,7 +77,7 @@ class SelectionEvent():
                  isAlt : bool = False,
                  isShift : bool = False,
                  lineIdx : List[int] = None,
-                 ):
+                 stack : "pymapmanager.stack" = None):
         
         if isinstance(rowIdx, int):
             rowIdx = [rowIdx]
@@ -88,7 +88,8 @@ class SelectionEvent():
             'isEsc': isEsc,
             'isAlt': isAlt,
             'isShift': isShift,
-            'lineIdx': lineIdx
+            'lineIdx': lineIdx,
+            'stack': stack,
         }
 
     def __str__(self):
@@ -112,7 +113,6 @@ class SelectionEvent():
         # rather than  <class 'pymapmanager.annotations.lineAnnotations.lineAnnotations'>
         return self.type == pymapmanager.annotations.lineAnnotations
     
-
     def linePointSelected(self):
         """
         isLineSelection is throwing error
@@ -155,6 +155,9 @@ class SelectionEvent():
         _values = self.annotationObject.getValues(colStr, self.getRows())
         return _values
     
+    def getStack(self):
+        return self._selDict['stack']
+
     @property
     def isEsc(self):
         return self._selDict['isEsc']

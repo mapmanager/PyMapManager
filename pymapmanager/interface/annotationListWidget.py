@@ -74,7 +74,7 @@ class annotationListWidget(QtWidgets.QWidget):
         """
         super().__init__(parent)
 
-        logger.info(f'{title} {type(annotations)}')
+        # logger.info(f'{title} {type(annotations)}')
 
         self._stackWidget = theStackWidget
         self._annotations : pymapmanager.annotations.baseAnnotations = annotations
