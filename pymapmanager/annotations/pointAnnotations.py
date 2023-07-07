@@ -156,10 +156,19 @@ class pointAnnotations(baseAnnotations):
         self._addParameterColumns()
 
         colItem = ColumnItem(
-            name = 'roiCoords',
+            name = 'spineROICoords',
             type = object, 
             units = '',
-            humanname = 'roiCoords',
+            humanname = 'spineROICoords',
+            description = ''
+        )
+        self.addColumn(colItem)
+
+        colItem = ColumnItem(
+            name = 'segmentROICoords',
+            type = object, 
+            units = '',
+            humanname = 'segmentROICoords',
             description = ''
         )
         self.addColumn(colItem)
@@ -1229,10 +1238,37 @@ class pointAnnotations(baseAnnotations):
         finalSetOfCoords.append(topTwoRectCoords[1])
         # finalSetOfCoords = np.array(finalSetOfCoords)
         # finalSetOfCoords = np.array(finalSetOfCoords, dtype=object)
-        self.setValue("roiCoords", _selectedRow, finalSetOfCoords)
+        # print("finalSetOfCoords", finalSetOfCoords)
+        # print("type", type(finalSetOfCoords))
+        # self.setValue("spineROICoords", _selectedRow, finalSetOfCoords)
+        # finalSetOfCoords = finalSetOfCoords.tolist()
+        finalSetOfCoords = str(finalSetOfCoords)
+        # print("finalSetOfCoords", finalSetOfCoords) 
+        # print("type", type(finalSetOfCoords))
+        self.setValue("spineROICoords", _selectedRow, finalSetOfCoords)
 
+    def storeSegmentPolygon(self, spineRowIndex, lineAnnotations, forFinalMask):
+        """ 
+        Used to calculated the segmentPolygon when given a spine row index
+
+        """
+
+        brightestIndex = self.getValue('brightestIndex', spineRowIndex)
+        brightestIndex = int(brightestIndex)
+        radius = int(self.getValue('radius', spineRowIndex))
+
+        segmentPolygonCoords = pymapmanager.utils.calculateLineROIcoords(brightestIndex, radius, lineAnnotations, forFinalMask)
+        segmentPolygonCoords = str(segmentPolygonCoords.tolist())
+        # # segmentPolygonCoords = np.array(segmentPolygonCoords, dtype=object)
+        # segmentPolygonCoords = segmentPolygonCoords.tolist()
+        # print("segmentPolygonCoords", segmentPolygonCoords)
+        # print("type", type(segmentPolygonCoords))
+
+        self.setValue("segmentROICoords", spineRowIndex, segmentPolygonCoords)
+        # TODO: make spine roi coords all one type beforehand
+        
     def storeROICoords(self, segmentID, lineAnnotation):
-        """ Used in script to store all analysis param values of all spines
+        """ Used in script to store all roi coords (spine and segment) that is needed to plot in annotation plot widget
         """
         if segmentID is None:
             # grab all segment IDs into a list
@@ -1257,6 +1293,7 @@ class pointAnnotations(baseAnnotations):
             for idx, spineRowIdx in enumerate(currentDF["index"]):
                 if (self.getValue("roiType", spineRowIdx) == "spineROI"):
                     self.storeJaggedPolygon(lineAnnotation, spineRowIdx)
+                    self.storeSegmentPolygon(spineRowIdx, lineAnnotation, forFinalMask = False)
 
 
 if __name__ == '__main__':
