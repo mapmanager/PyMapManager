@@ -708,65 +708,88 @@ class lineAnnotations(baseAnnotations):
         return xPlotSpines, yPlotSpines
 
 
-    def listComprehensionSpineLineConnection(self, dfPlotSpines):
-        dfPlotSpines = dfPlotSpines[dfPlotSpines[['brightestIndex']].notnull().all(1)]
-       
-        # dfPlotSpines.apply(lambda row:)
+    def getSpineLineConnections2(self, dfPlotSpines):
+        """Points to display connection between Spine and Line in annotationPlotWidget
+        This version uses the backend, by retrieving left and right points. Thus saving computation time.
+        
+        Args:
+            dfPlotSpine = Pandas dataframe of all spines that is being displayed in the plot widget
+        """
+        
+        xPlotSpines = []
+        yPlotSpines = []
+ 
+        # dfPlotSpines = dfPlotSpines[dfPlotSpines[['brightestIndex']].notnull().all(1)]
+        # dfPlotSpines = dfPlotSpines[['x', 'y', 'connectionSide', 'brightestIndex']]
 
-        # dfPlotSpines.loc[]
-        # xPlotSpines, yPlotSpines = dfPlotSpines.apply(self.singleSpineLineConnection(xyzOneSpine) for xyzOneSpine in dfPlotSpines)
-        dfPlotSpines2 = dfPlotSpines.apply(lambda row: self.singleSpineLineConnection(row), axis=1)
+        _currentPlotIndex = dfPlotSpines['index'].tolist()
+        # print("_currentPlotIndex", _currentPlotIndex)
+        _xSpine = dfPlotSpines['x'].tolist()
+        _ySpine = dfPlotSpines['y'].tolist()
+        _connectionSide = dfPlotSpines['connectionSide'].tolist()
+        _brightestIndex = dfPlotSpines['brightestIndex'].tolist()
+
+        for i, val in enumerate(_currentPlotIndex):
+
+            _xSpineVal = _xSpine[i]
+            _ySpineVal =  _ySpine[i]
+            _connectionSideVal = _connectionSide[i] 
+            _brightestIndexVal = _brightestIndex[i] 
+
+            if _brightestIndex is None:
+                return
+  
+            if (_connectionSideVal == "Right"):
+                xLine = self.getValue(['xRight'], _brightestIndexVal)
+                yLine = self.getValue(['yRight'], _brightestIndexVal)
+            elif (_connectionSideVal == "Left"):
+                xLine = self.getValue(['xLeft'], _brightestIndexVal)
+                yLine = self.getValue(['yLeft'], _brightestIndexVal)
+            else:
+                logger.error(f'Did not understand connection side value{_connectionSideVal}')
+                # logger.info(f'Error when getting side connection')
+                                         
+            xPlotSpines.append(_xSpineVal)
+            xPlotSpines.append(xLine)
+            xPlotSpines.append(np.nan)
+
+            yPlotSpines.append(_ySpineVal)
+            yPlotSpines.append(yLine)
+            yPlotSpines.append(np.nan)
+
+        return xPlotSpines, yPlotSpines
 
 
-        print("testing dfPlotSpines", dfPlotSpines)
-        # print("dfPlotSpines2", dfPlotSpines2.iloc[0], "type is: ", type(dfPlotSpines2.iloc[0]))
-        # return  xPlotSpines, yPlotSpines 
-
-    def singleSpineLineConnection(self, xyzOneSpine):
+    def getSingleSpineLineConnection(self, brightestIndex, spineX, spineY):
         """
             Args:
                 xyzOneSpine: the spine row data frame
 
             Returns the X, Y values for one spine line connection
         """
-        # print("xyzOneSpine: ", xyzOneSpine)
-        xPlotSpines = []
-        yPlotSpines = []
-        
-        # dfPlotSpines.apply(lambda row:)
-
-        # _brightestIndex = xyzOneSpine['brightestIndex']
-        #print(_brightestIndex, type(_brightestIndex))
-        brightestIndex = self.getValue(['brightestIndex'], xyzOneSpine['brightestIndex'])
+        # brightestIndex = self.getValue(['brightestIndex'], brightestIndex)
 
         if brightestIndex is None:
             return
         
-        xLeft= self.getValue(['xLeft'], xyzOneSpine['brightestIndex'])
-        xRight= self.getValue(['xRight'], xyzOneSpine['brightestIndex'])
-        yLeft= self.getValue(['yLeft'], xyzOneSpine['brightestIndex'])
-        yRight= self.getValue(['yRight'], xyzOneSpine['brightestIndex'])
+        xLeft= self.getValue(['xLeft'], brightestIndex)
+        xRight= self.getValue(['xRight'], brightestIndex)
+        yLeft= self.getValue(['yLeft'], brightestIndex)
+        yRight= self.getValue(['yRight'], brightestIndex)
 
         leftRadiusPoint = (xLeft, yLeft)
         rightRadiusPoint = (xRight, yRight)
-        spinePoint = (xyzOneSpine['x'], xyzOneSpine['y'])
-        closestPoint = pymapmanager.utils.getCloserPoint2(spinePoint, leftRadiusPoint, rightRadiusPoint)
-        # print("closestPoint", closestPoint)
-        # print("closestPoint[0]", closestPoint[0])
-        xPlotSpines.append(xyzOneSpine['x'])
-        # Change xPlotLine to the left/right value. Need to detect which orientation
-        # xPlotLine = self.lineAnnotations.getValue(['x'], xyzOneSpine['brightestIndex'])
-        # xPlotSpines.append(xPlotLine)
-        xPlotSpines.append(closestPoint[0])
-        xPlotSpines.append(np.nan)
+        spinePoint = (spineX, spineY)
+        closestPointSide = pymapmanager.utils.getCloserPointSide(spinePoint, leftRadiusPoint, rightRadiusPoint)
 
-        yPlotSpines.append(xyzOneSpine['y'])
-        # yPlotLine = self.lineAnnotations.getValue(['y'], xyzOneSpine['brightestIndex'])
-        # yPlotSpines.append(yPlotLine)
-        yPlotSpines.append(closestPoint[1])
-        yPlotSpines.append(np.nan)
+        # xPlotSpines.append(xyzOneSpine['x'])
+        # xPlotSpines.append(closestPoint[0])
+        # xPlotSpines.append(np.nan)
 
-        return xPlotSpines, yPlotSpines
+        # yPlotSpines.append(xyzOneSpine['y'])
+        # yPlotSpines.append(closestPoint[1])
+        # yPlotSpines.append(np.nan)
+        return closestPointSide
  
 if __name__ == '__main__':
     pass

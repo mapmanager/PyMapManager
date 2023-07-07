@@ -135,6 +135,16 @@ class pointAnnotations(baseAnnotations):
         )
         self.addColumn(colItem)
 
+        # Indicate if spine to line connection is left or right side.
+        colItem = ColumnItem(
+            name = 'connectionSide',
+            type = str, 
+            units = '',
+            humanname = 'connectionSide',
+            description = ''
+        )
+        self.addColumn(colItem)
+
         # add a number of columns for ROI intensity analysis
         numChannels = self._stack.numChannels
 
@@ -143,7 +153,25 @@ class pointAnnotations(baseAnnotations):
         # add columns for ROI parameters 
         self.paramList = []
         self._addParameterColumns()
-   
+
+        colItem = ColumnItem(
+            name = 'spineROICoords',
+            type = object, 
+            units = '',
+            humanname = 'spineROICoords',
+            description = ''
+        )
+        self.addColumn(colItem)
+
+        colItem = ColumnItem(
+            name = 'segmentROICoords',
+            type = object, 
+            units = '',
+            humanname = 'segmentROICoords',
+            description = ''
+        )
+        self.addColumn(colItem)
+
         # load from csv if it exists
         self.load()
 
@@ -410,6 +438,16 @@ class pointAnnotations(baseAnnotations):
 
         # 1.1) set the backend value
         self.setValue('brightestIndex', spineIdx, brightestIndex)
+
+        # New Step: 6/29/23 
+        # Add connection side to indicate which side to connect spine to line
+        closestPointSide = la.getSingleSpineLineConnection(brightestIndex, _x, _y)
+        if (closestPointSide == "Left"):
+            self.setValue('connectionSide', spineIdx, "Left")
+        elif (closestPointSide == "Right"):
+            self.setValue('connectionSide', spineIdx, "Right")
+        else:
+            logger.info(f"Error when setting connection side:{closestPointSide}")
 
         # 2) calculate spine roi (spine rectangle - segment polygon) ... complicated
 
@@ -1151,6 +1189,119 @@ class pointAnnotations(baseAnnotations):
         for parameter in self.paramList:
             currentVal = self._analysisParams.getCurrentValue(parameter)
             self.setValue(parameter, spineRowIdx, currentVal)
+
+    def storeJaggedPolygon(self, lineAnnotations, _selectedRow):
+        """ Save coordinates of polygon connecting spine to line within AnnotationPlotWidget.py.
+        This will be used to plot whenever we click a new spine on the interface
+        """
+        segmentID = self.getValue('segmentID', _selectedRow)
+        # zyxList = lineAnnotations.get_zyx_list(segmentID)
+        brightestIndex = self.getValue('brightestIndex', _selectedRow)
+        brightestIndex = int(brightestIndex)
+
+        logger.info(f"_selectedRow: {_selectedRow} segmentID: {segmentID} brightestIndex: {brightestIndex}")
+
+        segmentDF = lineAnnotations.getSegmentPlot(None, ['linePnt'])
+        xLine = segmentDF["x"].tolist()
+        yLine = segmentDF["y"].tolist()
+        xBrightestLine = []
+        yBrightestLine = []
+        xBrightestLine.append(xLine[brightestIndex])
+        yBrightestLine.append(yLine[brightestIndex])
+
+        _xSpine = self.getValue('x', _selectedRow)
+        _ySpine = self.getValue('y', _selectedRow)
+
+        width = int(self.getValue('width', _selectedRow))
+        extendHead = int(self.getValue('extendHead', _selectedRow))
+        extendTail = int(self.getValue('extendTail', _selectedRow))
+        radius = int(self.getValue('radius', _selectedRow))
+
+        logger.info(f"width:{width}")
+        logger.info(f"extendHead:{extendHead}")
+        logger.info(f"extendTail:{extendTail}")
+
+        spinePolyCoords = pymapmanager.utils.calculateRectangleROIcoords(xBrightestLine[0], yBrightestLine[0], _xSpine, _ySpine
+                                                                         , width, extendHead, extendTail)
+        forFinalMask = True
+        linePolyCoords = pymapmanager.utils.calculateLineROIcoords(brightestIndex, radius, lineAnnotations, forFinalMask)
+        finalMaskPoly = pymapmanager.utils.calculateFinalMask(spinePolyCoords,linePolyCoords)
+
+        struct = scipy.ndimage.generate_binary_structure(2, 2)
+        dialatedMask = scipy.ndimage.binary_dilation(finalMaskPoly, structure = struct, iterations = 1)
+
+        labelArray, numLabels = ndimage.label(dialatedMask)
+        currentLabel = pymapmanager.utils.checkLabel(dialatedMask, _xSpine, _ySpine)
+
+        coordsOfMask = np.argwhere(labelArray == currentLabel)
+        # Check for left/ right points within mask
+        segmentROIpointsWithinMask = pymapmanager.utils.getSegmentROIPoints(coordsOfMask, linePolyCoords)
+        topTwoRectCoords = pymapmanager.utils.calculateTopTwoRectCoords(xBrightestLine[0], yBrightestLine[0], _xSpine, _ySpine, 
+                                                                        width, extendHead)
+        finalSetOfCoords = segmentROIpointsWithinMask.tolist()
+
+        finalSetOfCoords.insert(0,topTwoRectCoords[1])
+        finalSetOfCoords.append(topTwoRectCoords[0])
+        finalSetOfCoords.append(topTwoRectCoords[1])
+        # finalSetOfCoords = np.array(finalSetOfCoords)
+        # finalSetOfCoords = np.array(finalSetOfCoords, dtype=object)
+        # print("finalSetOfCoords", finalSetOfCoords)
+        # print("type", type(finalSetOfCoords))
+        # self.setValue("spineROICoords", _selectedRow, finalSetOfCoords)
+        # finalSetOfCoords = finalSetOfCoords.tolist()
+        finalSetOfCoords = str(finalSetOfCoords)
+        # print("finalSetOfCoords", finalSetOfCoords) 
+        # print("type", type(finalSetOfCoords))
+        self.setValue("spineROICoords", _selectedRow, finalSetOfCoords)
+
+    def storeSegmentPolygon(self, spineRowIndex, lineAnnotations, forFinalMask):
+        """ 
+        Used to calculated the segmentPolygon when given a spine row index
+
+        """
+
+        brightestIndex = self.getValue('brightestIndex', spineRowIndex)
+        brightestIndex = int(brightestIndex)
+        radius = int(self.getValue('radius', spineRowIndex))
+
+        segmentPolygonCoords = pymapmanager.utils.calculateLineROIcoords(brightestIndex, radius, lineAnnotations, forFinalMask)
+        segmentPolygonCoords = str(segmentPolygonCoords.tolist())
+        # # segmentPolygonCoords = np.array(segmentPolygonCoords, dtype=object)
+        # segmentPolygonCoords = segmentPolygonCoords.tolist()
+        # print("segmentPolygonCoords", segmentPolygonCoords)
+        # print("type", type(segmentPolygonCoords))
+
+        self.setValue("segmentROICoords", spineRowIndex, segmentPolygonCoords)
+        # TODO: make spine roi coords all one type beforehand
+        
+    def storeROICoords(self, segmentID, lineAnnotation):
+        """ Used in script to store all roi coords (spine and segment) that is needed to plot in annotation plot widget
+        """
+        if segmentID is None:
+            # grab all segment IDs into a list
+            segmentID = lineAnnotation.getSegmentList()
+            # print("segmentID", segmentID)
+
+        elif (isinstance(segmentID, int)):
+            newIDlist = []
+            newIDlist.append(segmentID)
+            segmentID = newIDlist
+
+        segmentSpineDFs = []
+
+        # List of all segmentID dataframes 
+        for id in segmentID:
+            segmentSpineDFs.append(self.getSegmentSpines(id))
+
+        for segmentIndex in range(len(segmentID)):
+            # print("index", segmentIndex)
+            currentDF = segmentSpineDFs[segmentIndex]
+            # Looping through all spines connected to one segment
+            for idx, spineRowIdx in enumerate(currentDF["index"]):
+                if (self.getValue("roiType", spineRowIdx) == "spineROI"):
+                    self.storeJaggedPolygon(lineAnnotation, spineRowIdx)
+                    self.storeSegmentPolygon(spineRowIdx, lineAnnotation, forFinalMask = False)
+
 
 if __name__ == '__main__':
     pass

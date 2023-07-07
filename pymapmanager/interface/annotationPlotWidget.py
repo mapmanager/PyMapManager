@@ -684,9 +684,15 @@ class pointPlotWidget(annotationPlotWidget):
             if roiType == "spineROI":
                 
                 # firstSelectedRow = spine row index
-                jaggedPolygon = self.pointAnnotations.calculateJaggedPolygon(self.lineAnnotations, firstSelectedRow, self._channel, self.img)
-                # logger.info(f'jaggedPolygon coordinate list {jaggedPolygon}')
+                # jaggedPolygon = self.pointAnnotations.calculateJaggedPolygon(self.lineAnnotations, firstSelectedRow, self._channel, self.img)
+                jaggedPolygon = self.pointAnnotations.getValue("spineROICoords", firstSelectedRow)
+
                 if jaggedPolygon is not None:
+                    # TODO: Move this to load in base annotations
+                    jaggedPolygon = eval(jaggedPolygon)
+                    # logger.info(f'within list {jaggedPolygon} list type {type(jaggedPolygon)}')
+                    jaggedPolygon = np.array(jaggedPolygon)
+
                     self._spinePolygon.setData(jaggedPolygon[:,1], jaggedPolygon[:,0])
 
                     # Add code to plot the backgroundROI
@@ -695,7 +701,12 @@ class pointPlotWidget(annotationPlotWidget):
 
                 # radius = 5
                 forFinalMask = False
-                segmentPolygon = self.pointAnnotations.calculateSegmentPolygon(firstSelectedRow, self.lineAnnotations, forFinalMask)
+                # segmentPolygon = self.pointAnnotations.calculateSegmentPolygon(firstSelectedRow, self.lineAnnotations, forFinalMask)
+                segmentPolygon = self.pointAnnotations.getValue("segmentROICoords", firstSelectedRow)
+                # logger.info(f'within segmentPolygon {segmentPolygon} list type {type(segmentPolygon)}')
+                segmentPolygon = eval(segmentPolygon) 
+         
+                segmentPolygon = np.array(segmentPolygon)
 
                 if segmentPolygon is not None:
                     # logger.info(f'segmentPolygon coordinate list {segmentPolygon}')
@@ -703,6 +714,7 @@ class pointPlotWidget(annotationPlotWidget):
                     # self._view.update()
                     self._segmentBackgroundPolygon.setData(segmentPolygon[:,0] + yOffset, segmentPolygon[:,1] + xOffset)
 
+    # TODO: Figure out where this is being called twice
     def slot_setSlice(self, sliceNumber : int):
         startSec = time.time()
         

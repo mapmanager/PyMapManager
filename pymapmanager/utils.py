@@ -478,7 +478,8 @@ def calculateTopTwoRectCoords(xPlotSpines, yPlotSpines, xPlotLines, yPlotLines, 
     # thirdCoordY = Yb - Dx + adjustY
     # fourthCoordY = Yb + Dx + adjustY
 
-    return [(firstCoordY, firstCoordX), (secondCoordY, secondCoordX)]
+    # return [(firstCoordY, firstCoordX), (secondCoordY, secondCoordX)]
+    return [[firstCoordY, firstCoordX], [secondCoordY, secondCoordX]]
 
 
 def calculateLineROIcoords(lineIndex, radius, lineAnnotations, forFinalMask):
@@ -504,15 +505,12 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations, forFinalMask):
     # Check for the segmentID for the lineIdex
     # Get list of points just within that SegmentID
 
-    # totalPoints = radius * 2 + 1
-    # totalPoints = list(range(radius*-2, radius*2+1))
     totalPoints = list(range(-radius, radius+1))
-    # totalPoints = len(lineAnnotations)
+
     # logger.info(f'len(lineAnnotations):{len(lineAnnotations)}')
     coordinateList = []
     for i in totalPoints:
         # print("i", i)
-        # print("lineIndex", lineIndex)
         # print(len(lineAnnotations))
         # Account for beginning and end of LineAnnotations indexing
         # TODO: checking within in the segment 
@@ -542,30 +540,16 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations, forFinalMask):
             else:
                 logger.warning(f'lineIndex+i:{lineIndex+i} xRight:{xRight} yRight:{yRight}')
 
-    
-    # totalPoints.reverse()
-    # # print("totalPoints[0]", totalPoints[0])
-    # # Append the first coordinate at the end to make a fully closed polygon
-    # # Since we reversed the original list it would be at the end
-    # if not forFinalMask:
-    #     xLeft = lineAnnotations.getValue("xLeft", lineIndex+totalPoints[0])
-    #     yLeft = lineAnnotations.getValue("yLeft", lineIndex+totalPoints[0])
-    #     if not(math.isnan(xLeft) and math.isnan(yLeft)):
-    #         coordinateList.append([xLeft, yLeft])
-
+    # Testing Median Filter
+    # Currently only works for post processing but not pre processing
     coordinateList = np.array(coordinateList)
-
     # print("coordinateList", coordinateList)
 
     medianFilterWidth = 3
     # filteredX = scipy.signal.medfilt(coordinateList[:,0] , medianFilterWidth)
     # filteredY= scipy.signal.medfilt(coordinateList[:,1] , medianFilterWidth)
-    
     # filteredCoordinateList = [filteredX filteredY]
-    # print("filteredCoordinateList", filteredCoordinateList)
-    # logger.info(f"segmentPolygon coordinateList: {coordinateList}")
 
-    # print("coordinate list 0", coordinateList[:,0])
     coordinateList[:,0] = scipy.signal.medfilt(coordinateList[:,0] , medianFilterWidth)
     coordinateList[:,1] = scipy.signal.medfilt(coordinateList[:,1] , medianFilterWidth)
 
@@ -574,17 +558,19 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations, forFinalMask):
 
     # Append the first coordinate at the end to make a fully closed polygon
     # Convert to list to use append
-    coordinateList = coordinateList.tolist()
+
     if not forFinalMask:
+        coordinateList = coordinateList.tolist()
         xLeft = coordinateList[0][0]
         # print("xLeft", xLeft)
         yLeft = coordinateList[0][1]
         # print("yLeft", yLeft)
         coordinateList.append([xLeft, yLeft])
+        coordinateList = np.array(coordinateList)
 
     # print("coordinate list in list form", coordinateList)
     # Convert back to np.array to plot
-    coordinateList = np.array(coordinateList)
+
     # print("filteredCoordinateList in nparray form", coordinateList)
     return coordinateList
 
@@ -844,6 +830,33 @@ def getCloserPoint2(spinePoint, leftRadiusPoint, rightRadiusPoint):
             closestPoint = point
 
     return closestPoint
+    # return (min(radiusPoints, key=lambda point: math.hypot(spinePoint[1]-point[1], spinePoint[0]-point[0])))
+
+def getCloserPointSide(spinePoint, leftRadiusPoint, rightRadiusPoint):
+    """
+        Used to find whether the left or right radius point is closer to the spine point.
+        Returns the string "left" or "right" to store into backend
+
+    """
+    radiusPoints = [leftRadiusPoint, rightRadiusPoint]
+    # print()
+    dist = float('inf') # np.inf
+    closestIdx = None
+
+    for idx, point in enumerate(radiusPoints):
+
+        dx = abs(spinePoint[1]-point[1])
+        dy = abs(spinePoint[0]-point[0])
+        _dist = math.sqrt( dx**2 + dy**2)
+        if _dist < dist:
+            dist = _dist
+            closestPoint = point
+
+    if(closestPoint == leftRadiusPoint):
+        return "Left"
+    else:
+        return "Right"
+    # return closestPoint
 
 def checkLabel(mask, _xSpine, _ySpine):
     """ Filters out a mask so that extra segments will be removed
