@@ -494,7 +494,7 @@ class lineAnnotations(baseAnnotations):
             newIDlist.append(segmentID)
             segmentID = newIDlist
 
-        print("segmentID: ", segmentID)
+        print("  segmentID: ", segmentID)
         segmentDFs = []
 
         # List of all segmentID dataframes 
@@ -516,19 +516,15 @@ class lineAnnotations(baseAnnotations):
         # Looping through each segment individually
         # Nested for loop
         for index in range(len(segmentID)):
-            print("segmentID index", index)
+            # logger.info(f'segmentID index: {index}')
             currentDF = segmentDFs[index]
-            # print("currentDF", currentDF)
             xPlot = currentDF['x']
-            # print("xPlot, ", xPlot)
             yPlot = currentDF['y']
             zPlot = currentDF['z']
 
-            # print("xPlot, ", xPlot)
-
             offset = currentDF['index'].iloc[0]
             # offset = currentDF.get_value()
-            print("offset, ", offset)
+            print("  offset, ", offset)
 
             # logger.info('Using median_filter for x, y{}')
             # xPlot = scipy.ndimage.median_filter(xPlot, medianFilterWidth)
@@ -615,7 +611,31 @@ class lineAnnotations(baseAnnotations):
             
             for i, val in enumerate(indexes):
             
-                # print(val)
+                # abb, blank out the first and last, this allows us to plot as line
+                # realistically, we can't compute first/last tangent for a segment
+                # if i==0 or i==len(indexes-1):
+                #     logger.info(f'setting start/stop pnt of segment to nan')
+                #     print('  segmentID is:', index)
+                #     print('  index into df is:', val)
+                    
+                #     self.setValue("xRight", val, float('nan'))
+                #     self.setValue("yRight", val, float('nan'))
+                #     # self.setValue("zLeft", val, orthogonalROIZinitial[i])
+
+                #     self.setValue("xLeft", val, float('nan'))
+                #     self.setValue("yLeft", val, float('nan'))
+                #     continue
+
+                # abb
+                # if np.isnan(orthogonalROIXinitial[i]):
+                #     logger.error(f'    orthogonalROIXinitial {i} is nan')
+                # if np.isnan(orthogonalROIYinitial[i]):
+                #     logger.error(f'    orthogonalROIYinitial {i} is nan')
+                # if np.isnan(orthogonalROIXend[i]):
+                #     logger.error(f'    orthogonalROIXend {i} is nan')
+                # if np.isnan(orthogonalROIYend[i]):
+                #     logger.error(f'    orthogonalROIYend {i} is nan')
+
                 # Here val is the actual index within the dataframe
                 # while i is the new index respective to each segment
                 self.setValue("xRight", val, orthogonalROIXinitial[i])
@@ -769,6 +789,8 @@ class lineAnnotations(baseAnnotations):
         """
         # brightestIndex = self.getValue(['brightestIndex'], brightestIndex)
 
+        # logger.info(f'      brightestIndex:{brightestIndex}')
+        
         if brightestIndex is None:
             return
         

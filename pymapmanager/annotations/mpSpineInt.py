@@ -58,7 +58,6 @@ def intAnalysisWorker(spineDict, zyxLine, imgData):
     # segmentID = pa.getValue('z', segmentID)
     # brightestIndex = pa.getValue('brightestIndex', spineIdx)
 
-    spineIdx
     spineIdx = spineDict['spineIdx']
     xSpine = spineDict['x']
     ySpine = spineDict['y']

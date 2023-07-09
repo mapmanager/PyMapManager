@@ -262,9 +262,9 @@ class stackWidget(QtWidgets.QMainWindow):
         # interface.pointPlotWidget
         theDict['pointDisplay'] = {}
         theDict['pointDisplay']['width'] = 2
-        theDict['pointDisplay']['color'] = 'r'
+        theDict['pointDisplay']['color'] = 'b'
         theDict['pointDisplay']['symbol'] = 'o'
-        theDict['pointDisplay']['size'] = 8
+        theDict['pointDisplay']['size'] = 10
         theDict['pointDisplay']['zorder'] = 4  # higher number will visually be on top
         # user selection
         theDict['pointDisplay']['widthUserSelection'] = 2
@@ -277,7 +277,7 @@ class stackWidget(QtWidgets.QMainWindow):
         # Add stuff to control connected line plot
         theDict['spineLineDisplay'] = {}
         theDict['spineLineDisplay']['width'] = 3
-        theDict['spineLineDisplay']['color'] = 'r'
+        theDict['spineLineDisplay']['color'] = 'b'
         theDict['spineLineDisplay']['symbol'] = 'o'
         theDict['spineLineDisplay']['size'] = 5
         theDict['spineLineDisplay']['zorder'] = 7  # higher number will visually be on top
@@ -1121,8 +1121,8 @@ class stackWidget(QtWidgets.QMainWindow):
         self._imagePlotWidget._aPointPlot.slot_setDisplayType(roiTypeEnumList)
 
     def slot_selectAnnotation2(self, selectionEvent : pymapmanager.annotations.SelectionEvent):
-        logger.info('')
-        #logger.info(selectionEvent)
+        
+        # logger.info(selectionEvent)
         
         rows = selectionEvent.getRows()
         

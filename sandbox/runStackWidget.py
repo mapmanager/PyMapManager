@@ -16,17 +16,18 @@ def run():
     #path = '..//PyMapManager-Data/maps/rr30a/rr30a_s3_ch2.tif'
     
     # load one stack
-    # myStack = pymapmanager.stack(path=path, loadImageData=True)
-    # logger.info(f'myStack: {myStack}')
+    stack = pymapmanager.stack(path=path, loadImageData=True)
+    logger.info(f'myStack: {stack}')
 
     # creat the main application
     app = pymapmanager.interface.PyMapManagerApp()
     
     # create a stack widget
-    # bsw = pymapmanager.interface.stackWidget(myStack=myStack)
+    bsw = pymapmanager.interface.stackWidget(stack=stack)
+    bsw.show()
     
-    posRect = [100, 200, 800, 500]
-    bsw = app.openStack(path=path, posRect=posRect)
+    # posRect = [100, 200, 800, 500]
+    # bsw = app.openStack(path=path, posRect=posRect)
 
     # snap to an image
     #bsw._imagePlotWidget.slot_setSlice(30)

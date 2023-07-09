@@ -54,7 +54,7 @@ class mmMapTable(QtWidgets.QWidget):
         # TODO: this is not respecting sort order
         rowDict = self._myTableView.getSelectedRowDict()
         session = rowDict['Idx']
-        logger.info(f'rowDict: {rowDict}')
+        # logger.info(f'rowDict: {rowDict}')
 
         _menu = QtWidgets.QMenu(self)
 
@@ -81,6 +81,12 @@ class mmMapTable(QtWidgets.QWidget):
         self._mapNameLabel = QtWidgets.QLabel()
         hLayout.addWidget(self._mapNameLabel)
 
+        linkCheckbox = QtWidgets.QCheckBox()
+        hLayout.addWidget(linkCheckbox)
+
+        closeAllButton = QtWidgets.QPushButton('Close All')
+        hLayout.addWidget(closeAllButton)
+        
         vLayout = QtWidgets.QVBoxLayout()
         vLayout.addLayout(hLayout)
 
@@ -101,12 +107,13 @@ class mmMapTable(QtWidgets.QWidget):
         self.setLayout(vLayout)
 
     def _on_table_selection(self, rowList : List[int], isAlt : bool = False):
-        logger.info(f'rowList:{rowList} isAlt:{isAlt}')
+        # logger.info(f'rowList:{rowList} isAlt:{isAlt}')
+        pass
 
     def _on_table_double_click(self, row : int, isAlt : bool = False):
         if isinstance(row, list):
             row = row[0]
-        logger.info(f'row:{row} isAlt:{isAlt}')
+        logger.info(f'-->> signalOpenStack.emit row:{row} isAlt:{isAlt}')
         self.signalOpenStack.emit(self._mmMap, row)
 
     def _setModel(self):

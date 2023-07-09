@@ -487,15 +487,10 @@ class mmMap():
         """
         return self.table.loc[name].iloc[sessionNumber] # .loc specifies row, .iloc specifies a column
 
-    def _getStackName(self, sessIdx):
-        """Get the name of the stack at session sessIdx.
+    def _getStackName(self, session : int) -> str:
+        """Get the name of the stack at session.
         """
-
-        ret = self.getValue('hsStack', sessIdx)
-    
-        logger.info('')
-        print('  ret:', type(ret), ret)
-
+        ret = self.getValue('hsStack', session)
         if ret.endswith('_ch1') or ret.endswith('_ch2'):
             ret = ret[:-4]
         return ret
@@ -840,7 +835,7 @@ class mmMap():
 
         #if roiType not in ROI_TYPES:
         #    errStr = 'error: mmMap.getMapValues2() stat "' + roiType + '" is not in ' + ','.join(ROI_TYPES)
-        #    raise ValueError(errStr)
+        #    raise h(errStr)
 
         plotDict = newplotdict()
         plotDict['roitype'] = roiType

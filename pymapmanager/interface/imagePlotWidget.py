@@ -300,10 +300,18 @@ class ImagePlotWidget(QtWidgets.QWidget):
             #self.signalCancelSelection.emit(None, False)  # (selIdx, isAlt)
 
             # two signals, one for each of our plots (point, line)
-            _pointSelectionEvent = pymapmanager.annotations.SelectionEvent(self._aPointPlot._annotations)
+            # _pointSelectionEvent = pymapmanager.annotations.SelectionEvent(self._aPointPlot._annotations)
+            _pointSelectionEvent = pymapmanager.annotations.SelectionEvent(self._aPointPlot._annotations,
+                                                                      rowIdx=[],
+                                                                      isAlt=False,
+                                                                      stack=self._myStack)
             self.signalCancelSelection2.emit(_pointSelectionEvent)
 
-            _segmentSelectionEvent = pymapmanager.annotations.SelectionEvent(self._aLinePlot._annotations)
+            # _segmentSelectionEvent = pymapmanager.annotations.SelectionEvent(self._aLinePlot._annotations)
+            _segmentSelectionEvent = pymapmanager.annotations.SelectionEvent(self._aLinePlot._annotations,
+                                                                      rowIdx=[],
+                                                                      isAlt=False,
+                                                                      stack=self._myStack)
             self.signalCancelSelection2.emit(_segmentSelectionEvent)
 
         elif event.key() in [QtCore.Qt.Key_Delete, QtCore.Qt.Key_Backspace]:
@@ -414,33 +422,37 @@ class ImagePlotWidget(QtWidgets.QWidget):
         x = int(imagePos.x())
         y = int(imagePos.y())
         z = self._currentSlice
-        # get the current selection from the parent stack widget
+        
+        # get the current selection from the parent stack widget (can be none)
         currentSelection = self._stackWidgetParent.getCurrentSelection()
         _selectedRows = currentSelection.getRows()
-        addedRowIdx =_selectedRows[0]
+        if _selectedRows is not None:
+            addedRowIdx =_selectedRows[0]
+        else:
+            addedRowIdx = None
 
         _addAnnotationEvent = pymapmanager.annotations.AddAnnotationEvent(z, y, x)
         _addAnnotationEvent.setAddedRow(addedRowIdx)
-        logger.info(f'-->> signalMouseClick.emit {_addAnnotationEvent}')
-        
+                
         # _addAnnotationEvent.setAddedRow(addedRowIdx)
 
         # logger.info(f'-->> selectionEvent.type {_selectionEvent.type}')
         # logger.info(f'-->> check type.emit {pymapmanager.annotations.lineAnnotations}')
             
-        if self._mouseConnectState:
+        if self._mouseConnectState and addedRowIdx is not None:
             tempLinePointIndex = 150
             _selectionEvent = pymapmanager.annotations.SelectionEvent(pymapmanager.annotations.lineAnnotations, 
                                                                       rowIdx = addedRowIdx,
                                                                       lineIdx = tempLinePointIndex)
-            logger.info(f'-->> signalMouseClickConnect.emit {_selectionEvent}')
+            logger.info(f'-->> signalMouseClickConnect.emit _selectionEvent: {_selectionEvent}')
             
             logger.info(f'-->> ENTERING CONNECT STATE')
             self.signalMouseClickConnect.emit(_selectionEvent)
             self._mouseConnectState = False
 
-        if self._mouseMovedState:
+        if self._mouseMovedState and addedRowIdx is not None:
             logger.info(f'-->> ENTERING MOVE STATE')
+            logger.info(f'-->> signalMouseClick.emit {_addAnnotationEvent}')
             # Either set backend or send signal to set backend?
             self.signalMouseClick.emit(_addAnnotationEvent)
             self._mouseMovedState = False

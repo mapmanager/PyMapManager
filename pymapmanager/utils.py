@@ -841,10 +841,16 @@ def getCloserPointSide(spinePoint, leftRadiusPoint, rightRadiusPoint):
     radiusPoints = [leftRadiusPoint, rightRadiusPoint]
     # print()
     dist = float('inf') # np.inf
-    closestIdx = None
+    # closestIdx = None
 
+    # radiusPoints is ocasionally all nan
+    # it is calculated in la.calculateAndStoreRadiusLines()
+    # logger.info(f'radiusPoints:{radiusPoints}')
+    # logger.info(f'spinePoint:{spinePoint}')
+
+    closestPoint = None
     for idx, point in enumerate(radiusPoints):
-
+        
         dx = abs(spinePoint[1]-point[1])
         dy = abs(spinePoint[0]-point[0])
         _dist = math.sqrt( dx**2 + dy**2)

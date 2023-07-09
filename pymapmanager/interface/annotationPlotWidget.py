@@ -204,47 +204,84 @@ class annotationPlotWidget(QtWidgets.QWidget):
         size = self._displayOptions['size']
         zorder = self._displayOptions['zorder']
         
-        _pen = pg.mkPen(width=width, color=color)
-        _pen = None
+        logger.info('plotting with defaults')
+        logger.info(f'  color: {color}')
+        logger.info(f'  width: {width}')
+        
+        # _pen = pg.mkPen(width=width, color=color)
+        # _pen = None
 
         # feb 2023, switching from ScatterPlotItem to PlotDataItem (for 'connect' argument
+        # v1
         # self._scatter = pg.PlotDataItem(pen=_pen,
-        #                     symbolPen=None, # feb 2023
+        #                     # symbolPen=None, # feb 2023
         #                     symbol=symbol,
         #                     size=size,
         #                     color = color,
         #                     connect='all')
-        self._scatter = pg.ScatterPlotItem(pen=_pen,
-                            symbol=symbol,
-                            size=size,
-                            color=color,
-                            hoverable=True
-                            )
+        # v2
+        # self._scatter = pg.ScatterPlotItem(pen=_pen,
+                            # symbol=symbol,
+                            # size=size,
+                            # color=color,
+                            # hoverable=True
+                            # )
+        # v3
+        # logger.info('MAKING _scatter')
+        self._scatter = self._view.plot([],[],
+                                        pen=None, # None to not draw lines
+                                        symbol = symbol,
+                                        # symbolColor  = 'red',
+                                        symbolPen=None,
+                                        fillOutline=False,
+                                        markeredgewidth=0.0,
+                                        symbolBrush = color,
+                                        )
+        # ,pen=pg.mkPen(width=width, color=color), symbol=symbol)
 
+        zorder = 100
         self._scatter.setZValue(zorder)  # put it on top, may need to change '10'
         
         # when using ScatterPlotItem
-        self._scatter.sigClicked.connect(self._on_mouse_click) 
-        self._scatter.sigHovered.connect(self._on_mouse_hover) 
+        # self._scatter.sigClicked.connect(self._on_mouse_click) 
+        # self._scatter.sigHovered.connect(self._on_mouse_hover) 
+        
         # when using PlotDataItem
-        # self._scatter.sigPointsClicked.connect(self._on_mouse_click) 
-        # self._scatter.sigPointsHovered.connect(self._on_mouse_hover)
+        self._scatter.sigPointsClicked.connect(self._on_mouse_click) 
+        self._scatter.sigPointsHovered.connect(self._on_mouse_hover)
 
-        self._view.addItem(self._scatter)
+        # do not need to ad .plot to _view (already added)
+        logger.info(f'adding _scatter to view: {self.__class__.__name__}')
+        #self._view.addItem(self._scatter)
 
         # Displaying Radius Lines
-        self._leftRadiusLines = pg.ScatterPlotItem(pen=_pen,
-                            symbol=symbol,
-                            size=size,
-                            color=color,
-                            hoverable=True
-                            )
+        penWidth = 6
+        _pen = pg.mkPen(width=penWidth, color=color)
+        # self._leftRadiusLines = pg.ScatterPlotItem(
+        #                     #pen=_pen,  # None to not draw lines
+        #                     symbol=symbol,
+        #                     size=size,
+        #                     color=color,
+        #                     hoverable=True
+        #                     )
 
+        self._leftRadiusLines = self._view.plot([],[],
+                                        pen=_pen, # None to not draw lines
+                                        symbol = None,
+                                        # symbolColor  = 'red',
+                                        symbolPen=None,
+                                        fillOutline=False,
+                                        markeredgewidth=0.0,
+                                        #symbolBrush = color,
+                                        #connect='finite',
+                                        )
+ 
         self._leftRadiusLines.setZValue(zorder)  # put it on top, may need to change '10'
 
-        self._view.addItem(self._leftRadiusLines)
+        # logger.info(f'adding _leftRadiusLines to view: {self.__class__.__name__}')
+        # self._view.addItem(self._leftRadiusLines)
 
-        self._rightRadiusLines = pg.ScatterPlotItem(pen=_pen,
+        self._rightRadiusLines = pg.ScatterPlotItem(pen=None,  # None to not draw lines
                             symbol=symbol,
                             size=size,
                             color=color,
@@ -253,6 +290,7 @@ class annotationPlotWidget(QtWidgets.QWidget):
 
         self._rightRadiusLines.setZValue(zorder)  # put it on top, may need to change '10'
 
+        logger.info(f'adding _rightRadiusLines to view: {self.__class__.__name__}')
         self._view.addItem(self._rightRadiusLines)
     
         # user selection
@@ -266,6 +304,7 @@ class annotationPlotWidget(QtWidgets.QWidget):
         self._scatterUserSelection = pg.ScatterPlotItem(pen=pg.mkPen(width=width,
                                             color=color), symbol=symbol, size=size)
         self._scatterUserSelection.setZValue(zorder)  # put it on top, may need to change '10'
+        logger.info(f'adding _scatterUserSelection to view: {self.__class__.__name__}')
         self._view.addItem(self._scatterUserSelection)
 
         # Scatter for connection of lines (segments) and spines 
@@ -514,7 +553,14 @@ class annotationPlotWidget(QtWidgets.QWidget):
         
         # connect is from ('all' 'pairs', 'finite')
         # Show points in the segment
-        self._scatter.setData(x,y)
+        
+        # self._scatter.setData(x, y)
+        self._scatter.setData(x, y,
+                            #   symbolBrush=None,
+                            #   markeredgewidth=0.0,
+                            #   fillstyle='full',
+                              #connect="finite",
+                              )
 
         # Adding index labels for each spine Point
         # self.label_value = pg.LabelItem('', **{'color': '#FFF','size': '5pt'})
@@ -526,18 +572,17 @@ class annotationPlotWidget(QtWidgets.QWidget):
             # print("checking columns:", self._dfPlot.columns.tolist())
             # print("testing left", self._dfPlot[~self._dfPlot['xLeft'].isna()])
             # Shows Radius Line points
-            self._leftRadiusLines.setData(self._dfPlot['xLeft'], self._dfPlot['yLeft'])
-            self._rightRadiusLines.setData(self._dfPlot['xRight'], self._dfPlot['yRight'])
+            try:
+                self._leftRadiusLines.setData(self._dfPlot['xLeft'].to_numpy(),
+                                              self._dfPlot['yLeft'].to_numpy(),
+                                                connect='finite',
+                                              )
+            except (KeyError) as e:
+                logger.error('while plotting left radius')
+                print('exception is:', e)
+                print(self._dfPlot['xLeft'])
 
-        # jan 2023, do i need to set the brush every time after setData() ???
-        if 0:
-            # make a color column based on roiType
-            # TODO: change black to use color from dictionary
-            # dfPlot['color'] = '#0000FF'
-            dfPlot['color'] = 'b'
-            #dfPlot['color'][dfPlot['roiType'] == 'controlPnt'] = '#FF0000'
-            _colorList = dfPlot['color'].tolist()
-            self._scatter.setBrush(_colorList)
+            self._rightRadiusLines.setData(self._dfPlot['xRight'], self._dfPlot['yRight'])
 
         # 20230206 removed while implementing tracing thread
         # as far as I understand, setData() calls this
@@ -621,10 +666,11 @@ class pointPlotWidget(annotationPlotWidget):
         width = self._displayOptionsLines['width']
         color = self._displayOptionsLines['color']
         symbol = self._displayOptionsLines['symbol']
-        size = self._displayOptionsLines['size']
+        # size = self._displayOptionsLines['size']
         zorder = self._displayOptionsLines['zorder']
         # self._spineConnections = pg.ScatterPlotItem(pen=pg.mkPen(width=width,
         #                                     color=color), symbol=symbol, size=size)
+        symbol = None
         self._spineConnections = self._view.plot([],[],pen=pg.mkPen(width=width, color=color), symbol=symbol)
         self._spineConnections.setZValue(zorder-4) 
         self._view.addItem(self._spineConnections)
@@ -770,7 +816,9 @@ class pointPlotWidget(annotationPlotWidget):
 
         n = len(df)
         self._xSpineLines = np.ndarray(n*3)
+        self._xSpineLines[:] = np.nan
         self._ySpineLines = np.ndarray(n*3)
+        self._ySpineLines[:] = np.nan
 
         for index, row in df.iterrows():
             realIndex = index * 3
@@ -799,6 +847,10 @@ class pointPlotWidget(annotationPlotWidget):
             spinePoint = (xSpine, ySpine)
             closestPoint = pymapmanager.utils.getCloserPoint2(spinePoint, leftRadiusPoint, rightRadiusPoint)
             
+            if closestPoint is None:
+                logger.error(f'got nan closestPoint for row {row}')
+                continue
+
             self._xSpineLines[realIndex] = xSpine
             self._xSpineLines[realIndex+1] = closestPoint[0]
             self._xSpineLines[realIndex+2] = np.nan

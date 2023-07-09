@@ -101,14 +101,14 @@ class myTableView(QtWidgets.QTableView):
         # if we filtered/reduced, we need to use column 'index'
         # df.loc[df['column_name'] == some_value]
 
-        logger.info(f'model rowIdx:{rowIdx} corresponds to visual row:{visualRow}')
+        # logger.info(f'model rowIdx:{rowIdx} corresponds to visual row:{visualRow}')
         super().selectRow(visualRow)
 
     def mySelectRows(self, rows : Set[int]):
         """Make a new row selection from viewer.
         """
 
-        logger.info(f'rows:{rows}')
+        # logger.info(f'rows:{rows}')
 
         # to stop event recursion
         self.blockUpdate = True
@@ -201,7 +201,7 @@ class myTableView(QtWidgets.QTableView):
             return
         
         row = self.proxy.mapToSource(item).row()
-        logger.info(f'row:{row} isAlt:{isAlt}')
+        logger.info(f'-->> signalSelectionChanged.emit row:{row} isAlt:{isAlt}')
 
         selectedRowList = [row]
         self.signalSelectionChanged.emit(selectedRowList, isAlt)
@@ -225,16 +225,17 @@ class myTableView(QtWidgets.QTableView):
     #         logger.info(f'  isAlt2:{isAlt2}')
 
     def on_double_clicked(self, item):
-        logger.info(f'{item}')
+        # logger.info(f'{item}')
 
         modifiers = QtWidgets.QApplication.keyboardModifiers()
         #isShift = modifiers == QtCore.Qt.ShiftModifier
         isAlt = modifiers == QtCore.Qt.AltModifier
         
         row = self.proxy.mapToSource(item).row()
-        logger.info(f'row:{row} isAlt:{isAlt}')
+        # logger.info(f'row:{row} isAlt:{isAlt}')
 
         selectedRowList = [row]
+        logger.info(f'-->> signalDoubleClick.emit selectedRowList:{selectedRowList} isAlt:{isAlt}')
         self.signalDoubleClick.emit(selectedRowList, isAlt)
 
     def on_selectionChanged(self, selected, deselected):
@@ -275,7 +276,7 @@ class myTableView(QtWidgets.QTableView):
         # reduce to list of unique values
         selectedIndexes = list(set(selectedIndexes))  # to get unique values
         
-        logger.info(f'selectedIndexes:{selectedIndexes} isAlt:{isAlt}')
+        logger.info(f'-->> signalSelectionChanged.emit selectedIndexes:{selectedIndexes} isAlt:{isAlt}')
         
         self.signalSelectionChanged.emit(selectedIndexes, isAlt)
 

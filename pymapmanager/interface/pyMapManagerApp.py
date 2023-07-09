@@ -225,10 +225,6 @@ class PyMapManagerApp(QtWidgets.QApplication):
         For spineRoi (if alt) then select and zoom a spine run for all open windows!.
         """
 
-        logger.info('')
-        # print(selectionEvent)
-        # print('_blockSlots:', self._blockSlots)
-
         if self._blockSlots:
             return
         
@@ -238,8 +234,8 @@ class PyMapManagerApp(QtWidgets.QApplication):
         if mmMap is None:
             logger.warning('did not find a map parent for stack')
             logger.warning(f'  stack is {stack}')
-
             return
+        
         isAlt = selectionEvent.isAlt
         if not isAlt:
             return
@@ -248,6 +244,8 @@ class PyMapManagerApp(QtWidgets.QApplication):
         if len(spineIndex) == 0:
             return
         
+        logger.info('')
+
         spineIndex = spineIndex[0]
         spineIndex = float(spineIndex)
 
