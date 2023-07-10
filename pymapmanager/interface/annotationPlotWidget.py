@@ -248,7 +248,7 @@ class annotationPlotWidget(QtWidgets.QWidget):
         
         # when using PlotDataItem
         self._scatter.sigPointsClicked.connect(self._on_mouse_click) 
-        self._scatter.sigPointsHovered.connect(self._on_mouse_hover)
+        # self._scatter.sigPointsHovered.connect(self._on_mouse_hover)
 
         # do not need to ad .plot to _view (already added)
         logger.info(f'adding _scatter to view: {self.__class__.__name__}')

@@ -570,6 +570,7 @@ class stackWidget(QtWidgets.QMainWindow):
 
         # histogram widget goes into a dock
         self._histogramWidget = pymapmanager.interface.HistogramWidget(self.myStack, self._contrastDict, parent=self)
+        
         #vBoxLayout.addWidget(_histogramWidget)
 
         _showContrast = self._displayOptionsDict['windowState']['showContrast']

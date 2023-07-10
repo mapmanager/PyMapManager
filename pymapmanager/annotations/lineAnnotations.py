@@ -466,6 +466,65 @@ class lineAnnotations(baseAnnotations):
 
         return dfOneSegment
 
+    def _makeRadiusLines(self, segmentID : int,
+                                radius : float,
+                                medianFilter : int
+                        ):
+        """Make left/right radius lines for one segment ID.
+        """
+        startRow, stopRow = self._segmentStartRow(segmentID)
+
+        logger.info(f'segmentID:{segmentID} startRow:{startRow} stopRow:{stopRow}')
+
+        for row in range(startRow, stopRow+1):
+                if row==startRow or row==stopRow:
+                    orthogonalROIXinitial = float('nan')
+                    orthogonalROIYinitial = float('nan')
+
+                    orthogonalROIXend = float('nan')
+                    orthogonalROIYend = float('nan')
+
+                else:
+
+                    xCurr = self.getValue('x', row)
+                    yCurr = self.getValue('y', row)
+
+                    xPrev = self.getValue('x', row-1)
+                    yPrev = self.getValue('y', row-1)
+
+                    xNext = self.getValue('x', row+1)
+                    yNext = self.getValue('y', row+1)
+
+                    yDel, xDel = pymapmanager.utils.computeTangentLine((xPrev,yPrev), (xNext,yNext), radius)
+
+                    orthogonalROIXinitial = xCurr - yDel
+                    orthogonalROIYinitial = yCurr + xDel
+
+                    orthogonalROIXend = xCurr + yDel
+                    orthogonalROIYend = yCurr - xDel
+
+                # assign to backend
+                self.setValue("xRight", row, orthogonalROIXinitial)
+                self.setValue("yRight", row, orthogonalROIYinitial)
+
+                self.setValue("xLeft", row, orthogonalROIXend)
+                self.setValue("yLeft", row, orthogonalROIYend)
+
+    def makeRadiusLines(self,
+                segmentID : Union[int, List[int]] = None,
+                radius = 3,
+                medianFilter = 5):
+        """Make left/right radius lines for a number of segments.segmentID.
+        """
+        if segmentID is None:
+            # grab all segment IDs into a list
+            segmentID = self.getSegmentList()
+        elif (isinstance(segmentID, int)):
+            segmentID = [segmentID]
+
+        for segment in segmentID:
+            self._makeRadiusLines(segment, radius=radius, medianFilter=medianFilter)
+
     # def getRadiusLines(self):
     def calculateAndStoreRadiusLines(self, segmentID : Union[int, List[int]] = None, radius = 3, medianFilterWidth = 5):
         """Calculates all the xyz coordinates for the Shaft (Spine) ROI for given segment(s)
@@ -625,16 +684,6 @@ class lineAnnotations(baseAnnotations):
                 #     self.setValue("xLeft", val, float('nan'))
                 #     self.setValue("yLeft", val, float('nan'))
                 #     continue
-
-                # abb
-                # if np.isnan(orthogonalROIXinitial[i]):
-                #     logger.error(f'    orthogonalROIXinitial {i} is nan')
-                # if np.isnan(orthogonalROIYinitial[i]):
-                #     logger.error(f'    orthogonalROIYinitial {i} is nan')
-                # if np.isnan(orthogonalROIXend[i]):
-                #     logger.error(f'    orthogonalROIXend {i} is nan')
-                # if np.isnan(orthogonalROIYend[i]):
-                #     logger.error(f'    orthogonalROIYend {i} is nan')
 
                 # Here val is the actual index within the dataframe
                 # while i is the new index respective to each segment

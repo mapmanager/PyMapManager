@@ -3,7 +3,7 @@ import sys
 import pymapmanager.interface
 
 def run():
-    path = '/Users/cudmore/Sites/PyMapManager-Data/maps/rr30a/rr30a.txt'
+    path = '../PyMapManager-Data/maps/rr30a/rr30a.txt'
 
     app = pymapmanager.interface.PyMapManagerApp()
     _map = app.loadMap(path)

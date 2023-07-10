@@ -6,7 +6,9 @@ TODO:
         See: utils/updateAllSpineAnalysis.py
 """
 
-import os, sys
+import os
+import sys
+import time
 
 import pandas as pd
 
@@ -139,17 +141,16 @@ def _import_lines_mapmanager_igor(path : str):
     return header, df
 
 def importTimepoint(mapName : str = 'rr30a', session : int = 0):
-    # 20230521
-
-    """
-    This will do a fresh import from MapManager Igor export txt files
+    """This will do a fresh import from MapManager Igor export txt files
     Once we load the stack, we start with empty point annotations
     Any existing data will be lost
+
+    # 20230521
     """
 
     # 1)
     # import igor stackdb
-    igorPath = f'/Users/cudmore/Sites/PyMapManager-Data/public/{mapName}/stackdb/{mapName}_s{session}_db2.txt'
+    igorPath = f'../PyMapManager-Data/public/{mapName}/stackdb/{mapName}_s{session}_db2.txt'
     #path = '/Users/cudmore/Sites/PyMapManager-Data/public/rr30a/stackdb/rr30a_s0_db2.txt'
     header, df = _import_points_mapmanager_igor(igorPath)
 
@@ -157,7 +158,7 @@ def importTimepoint(mapName : str = 'rr30a', session : int = 0):
     # print(df)
 
     # load an empty stack
-    dstPath = f'/Users/cudmore/Sites/PyMapManager-Data/maps/{mapName}/{mapName}_s{session}_ch2.tif'
+    dstPath = f'../PyMapManager-Data/maps/{mapName}/{mapName}_s{session}_ch2.tif'
     # dstPath = '/Users/cudmore/Sites/PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
     s = pmm.stack(dstPath)
     s.loadImages(channel=1)
@@ -195,12 +196,12 @@ def importTimepoint(mapName : str = 'rr30a', session : int = 0):
     # 2)
     # do the same for lines
     # import igor stackdb
-    igorLinePath = f'/Users/cudmore/Sites/PyMapManager-Data/public/{mapName}/line/{mapName}_s{session}_l.txt'
+    igorLinePath = f'../PyMapManager-Data/public/{mapName}/line/{mapName}_s{session}_l.txt'
     # igorLinePath = '/Users/cudmore/Sites/PyMapManager-Data/public/rr30a/line/rr30a_s1_l.txt'
     headerLine, dfLines = _import_lines_mapmanager_igor(igorLinePath)
     # print('headerLine:', headerLine)
-    print('dfLines')
-    print(dfLines.head())
+    # print('dfLines')
+    # print(dfLines.head())
 
     # make a new empty point annotations
     s._lines = pmm.annotations.lineAnnotations(analysisParams=analysisParams)
@@ -239,7 +240,12 @@ def importTimepoint(mapName : str = 'rr30a', session : int = 0):
     # (3) call johnsons function to get segment radius lines
     radius = 3
     # medianFilterWidth = 5
-    la.calculateAndStoreRadiusLines(segmentID, radius=radius)
+    startSec = time.time()
+    #la.calculateAndStoreRadiusLines(segmentID, radius=radius)  # johnson code
+    la.makeRadiusLines(segmentID, radius=radius)  # cudmore code
+    stopSec = time.time()
+    print('radius lines took', round(stopSec-startSec,3), 'seconds')
+    # calculateAndStoreRadiusLines radius lines took 0.692 seconds
 
     #
     # calculate xBackground, yBackground, intensity columns
@@ -247,7 +253,7 @@ def importTimepoint(mapName : str = 'rr30a', session : int = 0):
     # for one spine use `setSingleSpineOffsetDictValues``
     # june 7, was this
     # pa.setBackGroundMaskOffsets(segmentID=None, lineAnnotation=la, channelNumber=channel, stack=s)
-
+    
     # (4)
     pa.updateAllSpineAnalysis(None, la, channel, s)
 
