@@ -725,7 +725,8 @@ class pointPlotWidget(annotationPlotWidget):
             for label in self.labels:
                 self._view.removeItem(label) 
                 self.labels = []
-
+                
+        # Labeling Spines
         for index, row in dfPlotSpines.iterrows():
             if row['roiType'] == "spineROI":
                 label_value = pg.LabelItem('', **{'color': '#FFF','size': '2pt'})
