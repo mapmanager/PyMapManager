@@ -534,7 +534,7 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations, forFinalMask):
         if(lineIndex+i >= 0 and lineIndex+i <= len(lineAnnotations)):
             xRight = lineAnnotations.getValue("xRight", lineIndex+i)
             yRight = lineAnnotations.getValue("yRight", lineIndex+i)
-            if xLeft is not None and yLeft is not None and not(math.isnan(xRight) and math.isnan(yRight)):
+            if xRight is not None and yRight is not None and not(math.isnan(xRight) and math.isnan(yRight)):
                 coordinateList.append([xRight, yRight]) 
                 # print("yRight is", yRight)
             else:
@@ -571,7 +571,7 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations, forFinalMask):
     # print("coordinate list in list form", coordinateList)
     # Convert back to np.array to plot
 
-    # print("filteredCoordinateList in nparray form", coordinateList)
+    print("filteredCoordinateList in nparray form", coordinateList)
     return coordinateList
 
 def calculateFinalMask(rectanglePoly, linePoly):
@@ -958,7 +958,7 @@ def getSegmentROIPoints(coordsOfMask, linePolyCoords):
             # else:
                 # print("not in list", index, roundedCoords)
 
-    # print("filteredCoordList", filteredCoordList)
+    print("filteredCoordList", filteredCoordList)
     return np.array(filteredCoordList)
 
     

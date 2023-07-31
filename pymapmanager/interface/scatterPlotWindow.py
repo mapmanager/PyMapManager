@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import RectangleSelector  # To click+drag rectangular selection
 import matplotlib.markers as mmarkers 
 import numpy as np
+import seaborn as sns
+from random import randint
 
 class Highlighter(object):
     def __init__(self, parentPlot, ax, x, y, xyStatIndex):
@@ -20,9 +22,10 @@ class Highlighter(object):
         # self.x = None  # these are set in setData
         # self.y = None
 
-        self.markerSize = 5
+        self.markerSize = 6
         # self._highlight = ax.scatter([], [], s=markerSize, color="yellow", zorder=10)
 
+        # This is being deleted when we clear canvas
         (self._highlight, ) = self.ax.plot(
             [], [], "o", markersize=self.markerSize, color="yellow", zorder=10
         )
@@ -35,14 +38,10 @@ class Highlighter(object):
             interactive=False,
         )
 
-        # self.xStatIndex = xStatIndex
-        # self.yStatIndex = yStatIndex
-
+        # List that contains the actual indexes within dataframe for each x, y
         self.xyStatIndex = xyStatIndex
-        # Initialize original values of given statlists
-        # self.x = y
-        # self.y = x
 
+        # Initialize original values of given statlists
         self.x = x
         self.y = y
         # print("self.x: ", self.x)
@@ -68,6 +67,12 @@ class Highlighter(object):
     #     (self._highlight, ) = self.ax.plot(
     #         [], [], "o", markersize=self.markerSize, color="yellow", zorder=10
     #     )
+
+    def update_axScatter(self, newAXScatter):
+        self.ax = newAXScatter
+        (self._highlight, ) = self.ax.plot(
+            [], [], "o", markersize=self.markerSize, color="yellow", zorder=10
+        )
 
     def set_xy(self, newX, newY, newIndex):
         self.x = newX
@@ -355,7 +360,22 @@ class ScatterPlotWindow(QtWidgets.QWidget):
         self.xData = []
         self.yData = []
 
+        self.storedRowIdx = []
+
+        self.color = []
+        self.color2 = plt.get_cmap('viridis')
+        print("color2", self.color2)
+        # n = 40
+        # for i in range(n):
+        #     self.color.append('#%06X' % randint(0, 0xFFFFFF))
+
         self._markerSize = 20
+
+        # Can Store dataframe here so that we can grab from it within this class
+        # This would require us to update this dataframe too everytime we make a change to it elsewhere
+        self._df = self.pa.getDataFrame()
+
+        self.plotHistograms = True
 
         self._buildGUI()
         # self._buildMainLayout()
@@ -378,12 +398,18 @@ class ScatterPlotWindow(QtWidgets.QWidget):
         # controls and both stat lists
         vLayout = QtWidgets.QVBoxLayout()
 
-
         hLayoutHeader = QtWidgets.QHBoxLayout()
         self.invertYCheckbox = QtWidgets.QCheckBox('Invert Y')
         self.invertYCheckbox.setChecked(True)
         self.invertYCheckbox.stateChanged.connect(self._on_invertY_checkbox)
         hLayoutHeader.addWidget(self.invertYCheckbox)
+
+        # Histogram Checkbox
+        self.histogramCheckbox = QtWidgets.QCheckBox("Histograms")
+        self.histogramCheckbox.setChecked(self.plotHistograms)
+        self.histogramCheckbox.stateChanged.connect(
+            self._on_change_Histogram)
+        hLayoutHeader.addWidget(self.histogramCheckbox)
 
         self.roiTypeComboBox = QtWidgets.QComboBox()
         allRoiTypes = self.pa.getRoiTypes()
@@ -414,8 +440,9 @@ class ScatterPlotWindow(QtWidgets.QWidget):
         # bitDepthComboBox.currentIndexChanged.connect(self.bitDepth_Callback)
         hLayoutHeader.addWidget(self.segmentComboBox)
 
-
+        # Adding horizontal header of options to entire vertical stack
         vLayout.addLayout(hLayoutHeader)
+
         # controls
         columnsWidget = QtWidgets.QWidget()
 
@@ -458,42 +485,79 @@ class ScatterPlotWindow(QtWidgets.QWidget):
         #         1, 1, left=0.1, right=0.9, bottom=0.1, top=0.9, wspace=0.05, hspace=0.05
         #     )
 
-        # Setting up Axis of plot
-        self.axScatter = self.static_canvas.figure.add_subplot()
+        # Adding Subplot to canvas
+        # self.axScatter = self.static_canvas.figure.add_subplot()
+             #  Testing Histogram Begin
 
-        # Setting up points of the plot
-        (self.scatterPoints, ) = self.axScatter.plot(
-            [], [], "o", markersize=5, color="blue", zorder=10
+        # TODO: currently testing
+        # self.myHighlighter = Highlighter(self, self.axScatter, yStat, xStat)
+
+        # Issue: Currently we are passing in ax graph that is being cleared
+        self.gs = self.fig.add_gridspec(
+                2,
+                2,
+                width_ratios=(7, 2),
+                height_ratios=(2, 7),
+                left=0.1,
+                right=0.9,
+                bottom=0.1,
+                top=0.9,
+                wspace=0.05,
+                hspace=0.05,
+            )
+        
+        self.axScatter = self.static_canvas.figure.add_subplot(self.gs[1, 0])
+
+        # x/y hist
+        self.axHistX = self.static_canvas.figure.add_subplot(
+            self.gs[0, 0], sharex=self.axScatter
         )
+        self.axHistY = self.static_canvas.figure.add_subplot(
+            self.gs[1, 1], sharey=self.axScatter
+        )
+        #
+        self.axHistX.spines["right"].set_visible(False)
+        self.axHistX.spines["top"].set_visible(False)
+        self.axHistY.spines["right"].set_visible(False)
+        self.axHistY.spines["top"].set_visible(False)
+        #  Testing Histogram END
+
+
+        # 7/25/ Commented out for testing
+        # self.axScatter = self.static_canvas.figure.subplots()
+        # print("fix ax", self.axScatter)
+        # self.axScatter = self.static_canvas.subplots()
+
+        # Seaborn Wrapper
+        # sns.set_theme()
+
+        # Setting up points of the sub plot
+        # (self.scatterPoints, ) = self.axScatter.plot(
+        #     [], [], "o", markersize=5, color="blue", zorder=10
+        # )
+        # self.scatterPoints = self.axScatter.scatter(
+        #     [], []
+        # )
+
+
+        # Testing legends
+        # legend1 = self.axScatter.legend(*self.scatterPoints.legend_elements(),
+        #             loc="upper right", title="Segments")
+        # self.axScatter.add_artist(legend1)
+        # self.axScatter.legend(allSegmentIDs, loc = "upper right", title = "Segment ID")
+
         # print("type self.scatterPoints", type(self.scatterPoints))
         # print("test", type(test))
 
-        # Make function to get all values of current stat
-        # TODO: Change it so we get column value and their indexes
         columnNameX = self.xPlotWidget.getCurrentStat()
-        ### xStatIndex = self.pa.getValues(colName = "index", rowIdx = None)
-
-        # roiType = pymapmanager.annotations.pointTypes.spineROI
         roiType = pymapmanager.annotations.pointTypes[self.dict["roiType"]]
-        # print(roiType)
-        # xStat = self.pa.getRoiType_col(col = columnNameX, roiType = roiType)
-        # print("before _paxStat", xStat)
-        # xStat = self.pa.getValues(colName = columnNameX, rowIdx = None)
         xStat = self.pa.getfilteredValues(columnNameX, roiType, self.dict["segmentID"])
-        # print("after _paxStat", xStat)
-
+        # print("xStat", xStat)
         columnNameY = self.yPlotWidget.getCurrentStat()
-        ### yStatIndex = self.pa.getValues(colName = "index", rowIdx = None)
-        # yStat = self.pa.getRoiType_col(col = columnNameY, roiType = roiType)
-        # yStat = self.pa.getValues(colName = columnNameY, rowIdx = None)
         yStat = self.pa.getfilteredValues(columnNameY, roiType, self.dict["segmentID"])
         xyStatIndex = self.pa.getfilteredValues("index", roiType, self.dict["segmentID"])
-        # print("after _payStat", yStat)
 
-        # xStat = self.pa.getValues(colName = columnNameX, rowIdx = None)
-        # yStat = self.pa.getValues(colName = columnNameY, rowIdx = None)
-        # xyStatIndex = self.pa.getValues(colName = "index", rowIdx = None)
-
+        # Testing getting values from dataframe so that we can wrap in seaborn
 
         self.axScatter.set_xlabel(columnNameX)
         self.axScatter.set_ylabel(columnNameY)
@@ -507,19 +571,64 @@ class ScatterPlotWindow(QtWidgets.QWidget):
         self.axScatter.set_ylim([yMin, yMax])
 
         # self.scatterPoints.set_data(yStat, xStat)
-        self.scatterPoints.set_data(xStat, yStat)
-        # if self.dict["invertY"]:
+        # sns.set_theme(style='darkgrid', rc={'figure.dpi': 147},              
+        #       font_scale=0.7)
+
+        # zyx = self.getValuesWithCondition(['z', 'y', 'x', 'index', 'segmentID'],
+        #         compareColNames='segmentID',
+        #         comparisons=comparisonTypes.equal,
+        #         compareValues=oneSegmentID)
+        
+        # self._df = self.pa.getfilteredDF(colName = [columnNameX, columnNameY], roiType = roiType)
+        self._df = self.pa.getfilteredDF(colName = [columnNameX, columnNameY, "index", "segmentID"], roiType = roiType)
+        # print("first time df", self._df)
+
+        # Need to filter dataframe ahead of time
+        # temp = sns.scatterplot(x=columnNameX, y=columnNameY, data=self._df, ax=self.axScatter, hue="segmentID")
+        # sns.scatterplot(x=columnNameX, y=columnNameY, data=self._df, ax=self.axScatter)
+        # print("temp", type(temp))
+        # print("temp2", type(self.scatterPoints))
+        #### temp = <class 'matplotlib.axes._subplots.AxesSubplot'>
+        #### temp2 = <class 'matplotlib.lines.Line2D'>
+
+        # OPTION 1: Plot the segments as different plots but in the same graph
+        # Reference: https://matplotlib.org/stable/gallery/text_labels_and_annotations/figlegend_demo.html#sphx-glr-gallery-text-labels-and-annotations-figlegend-demo-py
+        
+        # Create color list for each point depending on their segmentID
+
+        xDFStat = self._df[columnNameX].tolist()
+        yDFStat = self._df[columnNameY].tolist()
+        indexDF = self._df["index"]
+        idList = self._df["segmentID"].tolist()
+        
+        # colorList = []
+        # for i, id in enumerate(idList):
+        #     colorList.append(self.color[int(id)])
+
+        # cmap = mpl.colormaps['viridis']
+        # cmap = mpl.colors.ListedColormap('viridis')
+        # print("cmap", cmap[0])
+            
+        # print("xDFStat", xDFStat)
+
+        self.scatterPoints = self.axScatter.scatter(xDFStat, yDFStat, s = 12, c = idList, cmap = plt.get_cmap("cool"))
+
+        # Added to test histogram
+        self.scatter_hist(xDFStat, yDFStat, self.axHistX, self.axHistY)
+
+        # plt.scatter(xDFStat, yDFStat, c = idList, cmap = plt.get_cmap("viridis"))
+        # plt.show()
+        # self.scatterPoints.set_data(xDFStat, yDFStat, colorList)
+
+        # self.scatterPoints.set_data(xStat, yStat)
         self.axScatter.invert_yaxis()
         self.static_canvas.draw()
 
         # Set up highlighter scatter plot 
         # self.myHighlighter = Highlighter(self, self.axScatter, [], [])
         # self.myHighlighter = Highlighter(self, self.axScatter, xStat, yStat)
-
-        # TODO: currently testing
-        # self.myHighlighter = Highlighter(self, self.axScatter, yStat, xStat)
+        
         self.myHighlighter = Highlighter(self, self.axScatter, xStat, yStat, xyStatIndex)
-
 
         plotWidget = QtWidgets.QWidget()
         vLayoutPlot = QtWidgets.QVBoxLayout()
@@ -532,31 +641,119 @@ class ScatterPlotWindow(QtWidgets.QWidget):
         self.finalLayout = hLayout
 
         return self.finalLayout
+    
+    # Borrowed from Sanpy
+    def scatter_hist(self, x, y, ax_histx, ax_histy):
+        """
+        plot a scatter with x/y histograms in margin
+
+        Args:
+            x (date):
+            y (data):
+            ax_histx (axes) Histogram Axes
+            ax_histy (axes) Histogram Axes
+        """
+
+        xBins = "auto"
+        yBins = "auto"
+
+        xTmp = np.array(x)  # y[~np.isnan(y)]
+        xTmp = xTmp[~np.isnan(xTmp)]
+        xTmpBins = np.histogram_bin_edges(xTmp, "auto")
+        xNumBins = len(xTmpBins)
+        if xNumBins * 2 < len(x):
+            xNumBins *= 2
+        xBins = xNumBins
+
+        yTmp = np.array(y)  # y[~np.isnan(y)]
+        yTmp = yTmp[~np.isnan(yTmp)]
+        yTmpBins = np.histogram_bin_edges(yTmp, "auto")
+        yNumBins = len(yTmpBins)
+        if yNumBins * 2 < len(y):
+            yNumBins *= 2
+        yBins = yNumBins
+
+        # x
+        if ax_histx is not None:
+            ax_histx.clear()
+            nHistX, binsHistX, patchesHistX = ax_histx.hist(
+                x, bins=xBins, facecolor="silver", edgecolor="gray"
+            )
+            ax_histx.tick_params(axis="x", labelbottom=False)  # no labels
+            ax_histx.grid(False)
+
+        if ax_histy is not None:
+            ax_histy.clear()
+            nHistY, binsHistY, patchesHistY = ax_histy.hist(
+                y,
+                bins=yBins,
+                orientation="horizontal",
+                facecolor="silver",
+                edgecolor="gray",
+            )
+            ax_histy.tick_params(axis="y", labelleft=False)
+            ax_histy.grid(False)
 
     def slot_xyStat(self, id, statName):
 
         self.dict[id] = statName
         self.rePlot()
 
-    def rePlot(self):
+    def rePlot(self, updateHighlighter = True):
         """
             replot the function whenever a column stat is changed
         """
         
-        # print("self.dict[segmentID]", self.dict["segmentID"])
+        # # print("self.dict[segmentID]", self.dict["segmentID"])
+        # roiType = pymapmanager.annotations.pointTypes[self.dict["roiType"]]
+        # columnNameX = self.dict["X Stat"]
+        # # xStat = self.pa.getValues(colName = columnNameX, rowIdx = None)
+        # # xStat = self.pa.getRoiType_col(col = columnNameX, roiType = roiType)
+        # xStat = self.pa.getfilteredValues(columnNameX, roiType, self.dict["segmentID"])
+        # # print("_paxStat", xStat)
+        # columnNameY = self.dict["Y Stat"]
+        # # yStat = self.pa.getValues(colName = columnNameY, rowIdx = None)
+        # # yStat = self.pa.getRoiType_col(col = columnNameY, roiType = roiType)
+        # yStat = self.pa.getfilteredValues(columnNameY, roiType, self.dict["segmentID"])
+        # xyStatIndex = self.pa.getfilteredValues("index", roiType, self.dict["segmentID"])
+        
+        # Reset entire plot if histogram condition is changed
+        self._switchScatter()
+
+        # Reset Scatter Plot
+        self.axScatter.clear()
+        # self.axScatter.remove()
+
         roiType = pymapmanager.annotations.pointTypes[self.dict["roiType"]]
         columnNameX = self.dict["X Stat"]
-        # xStat = self.pa.getValues(colName = columnNameX, rowIdx = None)
-        # xStat = self.pa.getRoiType_col(col = columnNameX, roiType = roiType)
-        xStat = self.pa.getfilteredValues(columnNameX, roiType, self.dict["segmentID"])
-        # print("_paxStat", xStat)
-
         columnNameY = self.dict["Y Stat"]
-        # yStat = self.pa.getValues(colName = columnNameY, rowIdx = None)
-        # yStat = self.pa.getRoiType_col(col = columnNameY, roiType = roiType)
-        yStat = self.pa.getfilteredValues(columnNameY, roiType, self.dict["segmentID"])
+        self._df = self.pa.getfilteredDF(colName = [columnNameX, columnNameY, "index", "segmentID"], roiType = roiType)
+        # print("pre self._df", self._df)
+        
+   
+        # print("type of segmentID", type(segmentID))
+        try:
+            # Get and convert one segment
+            segmentID = float(self.dict["segmentID"])
+            self._df = self._df.loc[self._df['segmentID'] == segmentID]
+        except:
+            # get "All" segments
+            segmentID = self.dict["segmentID"]
+            # print("segmentID", segmentID)
+            # self._df = self._df
+            # logger.info("segmentID is", segmentID)
 
-        xyStatIndex = self.pa.getfilteredValues("index", roiType, self.dict["segmentID"])
+       
+        # print("self._df", self._df)
+        # print("columnNameX", columnNameX)
+        # print("self._df[columnNameX]", self._df[columnNameX])
+
+        # TODO: this implementation has a current bug. 
+        # If both columns (x and y) have the same name it will interpret it as a df
+        xStat = self._df[columnNameX].tolist()
+        yStat = self._df[columnNameY].tolist()
+        xyStatIndex = self._df["index"].tolist()
+        idList = self._df["segmentID"].tolist()
 
         xMin = np.nanmin(xStat)
         xMax = np.nanmax(xStat)
@@ -572,13 +769,99 @@ class ScatterPlotWindow(QtWidgets.QWidget):
             self.axScatter.invert_yaxis()
 
         # self.scatterPoints.set_data(yStat, xStat)
-        self.scatterPoints.set_data(xStat, yStat)
 
+        # 7/17 commented out 
+        # self.scatterPoints.set_data(xStat, yStat)
+
+        # Plot New Plot    
+        self.myHighlighter.update_axScatter(self.axScatter) 
+        self.scatterPoints = self.axScatter.scatter(xStat, yStat, s = 12, c = idList, cmap = plt.get_cmap("cool"))
+        self.axScatter.grid(False)
+
+   
         # Update the highlighter data
+        # print("xStat", xStat)
+        # print("yStat", yStat)
+        # print("xyStatIndex", xyStatIndex)  
+
+        xStat = np.array(xStat)
+        yStat = np.array(yStat)
+        xyStatIndex =  np.array(xyStatIndex)
+
+        # print("xStat", xStat)
+        # print("yStat", yStat)
         self.myHighlighter.set_xy(xStat, yStat, xyStatIndex)
+
+        # Update previously highlighted points
+        # TODO: dont show if roi type changes
+        # TODO: don't show anything if a different segment is shown
+        if updateHighlighter:
+            xHStat = self.pa.getValues(colName = columnNameX, rowIdx = self.storedRowIdx)
+            yHStat = self.pa.getValues(colName = columnNameY, rowIdx = self.storedRowIdx)
+            print("self.storedRowIdx", self.storedRowIdx)
+            print("xHStat", xHStat)
+            print("yHStat", yHStat)
+
+            self.myHighlighter._setData(xHStat, yHStat)
         # self.myHighlighter.update_highlightPlot(self.axScatter)
-     
+
+        # Reset histogram
+        if self.plotHistograms:
+            self.scatter_hist(xStat, yStat, self.axHistX, self.axHistY)
+        # else:
+
+
         self.static_canvas.draw()
+
+    def _switchScatter(self):
+        """Switch between single scatter plot and scatter + marginal histograms"""
+
+        if self.plotHistograms:
+            # gridspec for scatter + hist
+            self.gs = self.fig.add_gridspec(
+                2,
+                2,
+                width_ratios=(7, 2),
+                height_ratios=(2, 7),
+                left=0.1,
+                right=0.9,
+                bottom=0.1,
+                top=0.9,
+                wspace=0.05,
+                hspace=0.05,
+            )
+        else:
+            self.gs = self.fig.add_gridspec(
+                1, 1, left=0.1, right=0.9, bottom=0.1, top=0.9, wspace=0.05, hspace=0.05
+            )
+
+        self.static_canvas.figure.clear()
+        if self.plotHistograms:
+            self.axScatter = self.static_canvas.figure.add_subplot(self.gs[1, 0])
+
+            # x/y hist
+            self.axHistX = self.static_canvas.figure.add_subplot(
+                self.gs[0, 0], sharex=self.axScatter
+            )
+            self.axHistY = self.static_canvas.figure.add_subplot(
+                self.gs[1, 1], sharey=self.axScatter
+            )
+            #
+            self.axHistX.spines["right"].set_visible(False)
+            self.axHistX.spines["top"].set_visible(False)
+            self.axHistY.spines["right"].set_visible(False)
+            self.axHistY.spines["top"].set_visible(False)
+
+            # self.axHistX.tick_params(axis="x", labelbottom=False) # no labels
+            # self.axHistX.tick_params(axis="y", labelleft=False) # no labels
+        else:
+            self.axScatter = self.static_canvas.figure.add_subplot(self.gs[0, 0])
+            self.axHistX = None
+            self.axHistY = None
+
+        # Reset Highlighter
+        self.myHighlighter = Highlighter(self, self.axScatter, [], [], [])
+
 
     def slot_selectAnnotation2(self, selectionEvent : "pymapmanager.annotations.SelectionEvent"):
         # sometimes when we emit a signal, it wil recursively come back to this slot
@@ -605,11 +888,17 @@ class ScatterPlotWindow(QtWidgets.QWidget):
             columnNameY = self.yPlotWidget.getCurrentStat()
             yStat = self.pa.getValues(colName = columnNameY, rowIdx = selectionEvent.getRows())
 
+            logger.info(f'xStat {xStat}')
+            logger.info(f'yStat {yStat}')
+
             # roiType = pymapmanager.annotations.pointTypes[self.dict["roiType"]]
             # xStat = self.pa.getfilteredValues(columnNameX, roiType, self.dict["segmentID"])
             # yStat = self.pa.getfilteredValues(columnNameY, roiType, self.dict["segmentID"])
             # xyStatIndex = self.pa.getfilteredValues(columnNameY = "index", roiType, self.dict["segmentID"])
             self.myHighlighter._setData(xStat, yStat)
+
+            # Store selected rows
+            self.storedRowIdx = selectionEvent.getRows()
 
             # logger.info(f'selectionEvent my highter set')
             # logger.info(f'selectionEvent my highter rowIdx: {selectionEvent.getRows()}')
@@ -630,10 +919,21 @@ class ScatterPlotWindow(QtWidgets.QWidget):
 
     def _on_new_roitype(self, roiType : str):
         self.dict["roiType"] = roiType
-        self.rePlot()
+        updateHighlighter = False
+        self.rePlot(updateHighlighter)
 
     def _on_new_segmentID(self, segmentID):
+
         self.dict["segmentID"] = segmentID
+
+        # updateHighlighter = True
+        # Do not update highlighter plot since plot is changing
+        updateHighlighter = False
+
+        self.rePlot(updateHighlighter)
+
+    def _on_change_Histogram(self):
+        self.plotHistograms = not self.plotHistograms
         self.rePlot()
 
     def _old_getLayout(self):

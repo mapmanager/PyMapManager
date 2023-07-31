@@ -675,13 +675,13 @@ class pointPlotWidget(annotationPlotWidget):
             if roiType == "spineROI":
                 
                 # firstSelectedRow = spine row index
-                # jaggedPolygon = self.pointAnnotations.calculateJaggedPolygon(self.lineAnnotations, firstSelectedRow, self._channel, self.img)
-                jaggedPolygon = self.pointAnnotations.getValue("spineROICoords", firstSelectedRow)
+                jaggedPolygon = self.pointAnnotations.calculateJaggedPolygon(self.lineAnnotations, firstSelectedRow, self._channel, self.img)
+                # jaggedPolygon = self.pointAnnotations.getValue("spineROICoords", firstSelectedRow)
 
-                # TODO: Move this to load in base annotations
-                jaggedPolygon = eval(jaggedPolygon)
-                # logger.info(f'within list {jaggedPolygon} list type {type(jaggedPolygon)}')
-                jaggedPolygon = np.array(jaggedPolygon)
+                # # TODO: Move this to load in base annotations
+                # jaggedPolygon = eval(jaggedPolygon)
+                # # logger.info(f'within list {jaggedPolygon} list type {type(jaggedPolygon)}')
+                # jaggedPolygon = np.array(jaggedPolygon)
 
                 self._spinePolygon.setData(jaggedPolygon[:,1], jaggedPolygon[:,0])
 

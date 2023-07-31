@@ -684,10 +684,38 @@ class pointAnnotations(baseAnnotations):
     
         # print("compareValues", compareValues)
 
-
         return values
         # return dfPoints
 
+    def getfilteredDF(self, colName, roiType) -> pd.DataFrame:
+        """ Get filtered DF for scatterPlotWindow
+        DF is filtered by one roiType and one colName
+
+        Args:
+            colName: one column name within dataframe
+            roiType: pointAnnotation roi type
+
+        """
+
+        compareValues = [roiType.value]
+        if not isinstance(colName, list):
+            colName = [colName]
+
+        # Filtering by roitype: spineROI
+        # And by column names that we need to plot
+        # df = self.getValuesWithCondition(colName,
+        #         compareColNames=['roiType'],
+        #         comparisons=[comparisonTypes.equal],
+        #         compareValues=compareValues)
+        
+        df = self.getDFWithCondition(colName,
+                compareColNames=['roiType'],
+                comparisons=[comparisonTypes.equal],
+                compareValues=compareValues)
+
+        # df = self.getDataFrame()
+        return df
+    
     def getSegmentSpines(self, segmentID : int) -> pd.DataFrame:
         """Get all spines connected to one segment.
         """
