@@ -676,8 +676,8 @@ class pointPlotWidget(annotationPlotWidget):
                 
                 # firstSelectedRow = spine row index
                 jaggedPolygon = self.pointAnnotations.calculateJaggedPolygon(self.lineAnnotations, firstSelectedRow, self._channel, self.img)
+                
                 # jaggedPolygon = self.pointAnnotations.getValue("spineROICoords", firstSelectedRow)
-
                 # # TODO: Move this to load in base annotations
                 # jaggedPolygon = eval(jaggedPolygon)
                 # # logger.info(f'within list {jaggedPolygon} list type {type(jaggedPolygon)}')
@@ -691,12 +691,11 @@ class pointPlotWidget(annotationPlotWidget):
 
                 # radius = 5
                 forFinalMask = False
-                # segmentPolygon = self.pointAnnotations.calculateSegmentPolygon(firstSelectedRow, self.lineAnnotations, forFinalMask)
-                segmentPolygon = self.pointAnnotations.getValue("segmentROICoords", firstSelectedRow)
-                # logger.info(f'within segmentPolygon {segmentPolygon} list type {type(segmentPolygon)}')
-                segmentPolygon = eval(segmentPolygon) 
-         
-                segmentPolygon = np.array(segmentPolygon)
+                segmentPolygon = self.pointAnnotations.calculateSegmentPolygon(firstSelectedRow, self.lineAnnotations, forFinalMask)
+                # Removed - No longer storing polygon in backend
+                # segmentPolygon = self.pointAnnotations.getValue("segmentROICoords", firstSelectedRow)
+                # segmentPolygon = eval(segmentPolygon) 
+                # segmentPolygon = np.array(segmentPolygon)
 
                 # logger.info(f'segmentPolygon coordinate list {segmentPolygon}')
                 self._segmentPolygon.setData(segmentPolygon[:,0], segmentPolygon[:,1])

@@ -571,7 +571,7 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations, forFinalMask):
     # print("coordinate list in list form", coordinateList)
     # Convert back to np.array to plot
 
-    print("filteredCoordinateList in nparray form", coordinateList)
+    # print("filteredCoordinateList in nparray form", coordinateList)
     return coordinateList
 
 def calculateFinalMask(rectanglePoly, linePoly):
@@ -958,7 +958,7 @@ def getSegmentROIPoints(coordsOfMask, linePolyCoords):
             # else:
                 # print("not in list", index, roundedCoords)
 
-    print("filteredCoordList", filteredCoordList)
+    # print("filteredCoordList", filteredCoordList)
     return np.array(filteredCoordList)
 
     

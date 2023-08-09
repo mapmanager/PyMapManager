@@ -1,8 +1,12 @@
 import pymapmanager as pmm
 
+# No longer using this file as we are not storing ROI anymore
+# We only calculate ROI one at a time so it is not necessary to store ROI
+
 # StoreParameterValues
 # UpdateAllspineAnalysis
 # StoreROI
+
 def storeROI(myStack, imageChannel):
     """
         Calculates and Stores all the intensity values for all spines
