@@ -263,6 +263,27 @@ class Columns():
             if not columnName in _columnNames:
                 return False
         return True
+    
+    def getColumnItem(self, columnName: str):
+        """ Return column item that corresponds to the inputted columnName
+        
+        """
+        # _columnItems = self._colList
+        # for columnN in _columnNames:
+        for _columnItem in self._colList:
+            if _columnItem.getName() == columnName:
+                return _columnItem
+            
+        
+    def getColumnItemType(self, columnName: str):
+        """ Return column type that corresponds to the inputted columnName
+        
+        """
+        # _columnItems = self._colList
+        # for columnN in _columnNames:
+        for _columnItem in self._colList:
+            if _columnItem.getName() == columnName:
+                return _columnItem.getType()
 
     def __iter__(self):
         """As iterator, returns ColumnItem.

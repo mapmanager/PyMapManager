@@ -12,6 +12,7 @@ import pymapmanager
 import pymapmanager.annotations
 from pymapmanager.analysisParams import AnalysisParams
 from pymapmanager.interface.scatterPlotWindow import ScatterPlotWindow
+from pymapmanager.interface.selectionInfoWidget import SelectionInfoWidget
 import pymapmanager.interface
 from pymapmanager.interface.analysisParamWidget import AnalysisParamWidget
 
@@ -39,21 +40,21 @@ def _mapColor(type:str, lut:str):
             return 'Blue'
 
 
-class AnotherWindow(QtWidgets.QWidget):
-    """
-    This "window" is a QWidget. If it has no parent, it
-    will appear as a free-floating window as we want.
-    """
-    # def __init__(self, analysisLayout: QtWidgets.QGridLayout):
-    def __init__(self, windowLayout: None):
-        super().__init__()
-        self.layout = QtWidgets.QVBoxLayout()
-        # self.label = QtWidgets.QLabel("Another Window")
-        # self.layout.addWidget(self.label)
-        self.setLayout(self.layout)
+# class AnotherWindow(QtWidgets.QWidget):
+#     """
+#     This "window" is a QWidget. If it has no parent, it
+#     will appear as a free-floating window as we want.
+#     """
+#     # def __init__(self, analysisLayout: QtWidgets.QGridLayout):
+#     def __init__(self, windowLayout: None):
+#         super().__init__()
+#         self.layout = QtWidgets.QVBoxLayout()
+#         # self.label = QtWidgets.QLabel("Another Window")
+#         # self.layout.addWidget(self.label)
+#         self.setLayout(self.layout)
 
-        # analysisWindow = analysisLayout
-        self.layout.addLayout(windowLayout)
+#         # analysisWindow = analysisLayout
+#         self.layout.addLayout(windowLayout)
 
 
 class stackDisplayOptions():
@@ -290,6 +291,8 @@ class stackWidget(QtWidgets.QMainWindow):
         # self._scatterPlotWindow : ScatterPlotWindow = ScatterPlotWindow(pointAnnotations = pa)
         self._scatterPlotWindow = None
 
+        self._selectionInfoWidget = None
+
         _channel = self._displayOptionsDict['windowState']['defaultChannel']
         self.annotationSelection = stackWidgetState(self, channel=_channel)
 
@@ -448,6 +451,7 @@ class stackWidget(QtWidgets.QMainWindow):
         """Toggle named view widgets on/off.
         """
         #logger.info(f'state:{state} name:{name}')
+        # TODO: move name to become a member variable, add all widgets into a list and loop through
         if name == 'Toolbar':
             self._topToolbar.setVisible(state)
         elif name == 'Image':
@@ -468,7 +472,13 @@ class stackWidget(QtWidgets.QMainWindow):
                 self._histogramWidget.slot_setChannel(_channel)
                 _slice = self.annotationSelection.getCurrentSlice()
                 self._histogramWidget.slot_setSlice(_slice)
-
+        
+        elif name =='Selection Info':
+            # self._statusToolbar.setVisible(state)
+            logger.info(f"state is {state}")
+            # self.showSelectionInfo(state)
+            self.selectionInfoDock.setVisible(state)
+            # self._selectionInfoWidget.setVisible(state)
         else:
             logger.warning(f'Did not understand name: "{name}"')
 
@@ -516,6 +526,9 @@ class stackWidget(QtWidgets.QMainWindow):
         plotScatter_action = QtWidgets.QAction("&Plot Scatter", self)
         plotScatter_action.triggered.connect(self.showScatterPlot)
 
+        # selectionInfoWidget_action = QtWidgets.QAction("&Selection Info", self)
+        # selectionInfoWidget_action.triggered.connect(self.showSelectionInfo)
+
         # scatterPlotLayout = self._scatterPlotWindow.getLayout()
         # plotScatter_action.triggered.connect(lambda: self.showNewWindow(layout = scatterPlotLayout))
 
@@ -527,6 +540,8 @@ class stackWidget(QtWidgets.QMainWindow):
 
         analysisMenu.addAction(plotScatter_action)
 
+        # analysisMenu.addAction(selectionInfoWidget_action)
+
         _panelDict = {
             'Toolbar': '',
             'Image': 'I',
@@ -535,6 +550,7 @@ class stackWidget(QtWidgets.QMainWindow):
             'Line Table': 'L',
             'Status Bar': '',
             'Contrast': 'C',
+            'Selection Info': ''
         }
         for _name,_shortcut in _panelDict.items():
             aAction = QtWidgets.QAction(_name, self)
@@ -542,6 +558,8 @@ class stackWidget(QtWidgets.QMainWindow):
             _visible = True
             if _name == 'Contrast':
                 _visible = _showContrast = self._displayOptionsDict['windowState']['showContrast']
+            # if _name == 'Selection Info':
+            #     _visible = False
             aAction.setChecked(_visible)
             if _shortcut:
                 aAction.setShortcut(_shortcut)
@@ -594,6 +612,25 @@ class stackWidget(QtWidgets.QMainWindow):
 
         self._scatterPlotWindow.show()
 
+    # def showSelectionInfo(self, state):
+    #     # Add boolean to show and hide (called visible)
+    #     if self._selectionInfoWidget is None:
+        
+    #         pa = self.myStack.getPointAnnotations()
+    #         self._selectionInfoWidget : SelectionInfoWidget = SelectionInfoWidget(pointAnnotations = pa)
+
+    #         # add the code to make a bidirectional signal/slot connection
+    #         # between our children (imagePlotWidgtet and ScatterPlotWidget)
+    #         self._imagePlotWidget.signalAnnotationSelection2.connect(self._selectionInfoWidget.slot_selectAnnotation2)
+            
+    #         # make the signal in ScatterPlotWidow
+    #         # self._selectionInfoWindow.signalAnnotationSelection2.connect(self._imagePlotWidget.slot_selectAnnotation2)
+    #     else:
+    #         self._selectionInfoWidget.setVisible(state)
+
+    #     self._selectionInfoWidget.show()
+
+       
     # def OLD_showNewWindow(self, layout):
     #     if self.window is None:
     #         logger.info('analysis param window opened')
@@ -708,6 +745,19 @@ class stackWidget(QtWidgets.QMainWindow):
         #self.lineListDock.dockLocationChanged.connect(partial(self.slot_dockLocationChanged, self.pluginDock1))
         self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.lineListDock)
 
+
+        # 8/10 - Adding selection info widget
+        # self._selectionInfoWidget : SelectionInfoWidget = SelectionInfoWidget(pointAnnotations = self.myStack.getPointAnnotations())
+        self._selectionInfoWidget = \
+                            SelectionInfoWidget(pointAnnotations = self.myStack.getPointAnnotations())
+        self.selectionInfoDock = QtWidgets.QDockWidget('Selection Info',self)
+        self.selectionInfoDock.setWidget(self._selectionInfoWidget)
+        self.selectionInfoDock.setFloating(False)
+        self.selectionInfoDock.setFeatures(QtWidgets.QDockWidget.NoDockWidgetFeatures)
+        #self.lineListDock.dockLocationChanged.connect(partial(self.slot_dockLocationChanged, self.pluginDock1))
+        self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.selectionInfoDock)
+
+
         # status toolbar (bottom)
         self._statusToolbar = pymapmanager.interface.StatusToolbar(self.myStack, parent=self)
         self.signalSetStatus.connect(self._statusToolbar.slot_setStatus)
@@ -750,8 +800,12 @@ class stackWidget(QtWidgets.QMainWindow):
         self._myPointListWidget.signalRowSelection2.connect(self.slot_selectAnnotation2)
         self._myLineListWidget.signalRowSelection2.connect(self.slot_selectAnnotation2)
 
+        # Why does this have two of the same lines?
         self._imagePlotWidget.signalAnnotationSelection2.connect(self.slot_selectAnnotation2)
         self._imagePlotWidget.signalAnnotationSelection2.connect(self.slot_selectAnnotation2)
+
+        # 8/10 - added for selectioninfo widget
+        self.signalSelectAnnotation2.connect(self._selectionInfoWidget.slot_selectAnnotation2)
 
         self.signalSelectAnnotation2.connect(self._myPointListWidget.slot_selectAnnotation2)
         self.signalSelectAnnotation2.connect(self._myLineListWidget.slot_selectAnnotation2)

@@ -48,10 +48,10 @@ class Highlighter(object):
         # print("self.y: ", self.y)
 
         self.mouseDownEvent = None
-        self.keyIsDown = None
+        # self.keyIsDown = None
 
-        self.ax.figure.canvas.mpl_connect("key_press_event", self._keyPressEvent)
-        self.ax.figure.canvas.mpl_connect("key_release_event", self._keyReleaseEvent)
+        # self.ax.figure.canvas.mpl_connect("key_press_event", self._keyPressEvent)
+        # self.ax.figure.canvas.mpl_connect("key_release_event", self._keyReleaseEvent)
 
         self.keepOnMotion = self.ax.figure.canvas.mpl_connect(
             "motion_notify_event", self.on_mouse_move
@@ -119,13 +119,17 @@ class Highlighter(object):
         # else:
         #     self.mask = np.zeros(self.x.shape, dtype=bool)
 
-    def _keyPressEvent(self, event):
-        # logger.info(event)
-        self.keyIsDown = event.key
+    def keyPressEvent(self, event):
+        logger.info(event)
+        # self.keyIsDown = event.key
 
-    def _keyReleaseEvent(self, event):
-        # logger.info(event)
-        self.keyIsDown = None
+    # def _keyPressEvent(self, event):
+    #     # logger.info(event)
+    #     self.keyIsDown = event.key
+
+    # def _keyReleaseEvent(self, event):
+    #     # logger.info(event)
+    #     self.keyIsDown = None
 
     def _setData(self, xStat, yStat):
         """" Set the data that is highlighted in yellow 
@@ -345,6 +349,9 @@ class ScatterPlotWindow(QtWidgets.QWidget):
 
         self._blockSlots : bool = False
         
+        # Allow user to increase/decrease size of symbol
+        # Create member function to reset state
+        # Add self.plotHistograms
         self.dict = {"X Stat" : "x", 
                      "Y Stat" : "y",
                      "invertY": True, 
@@ -362,14 +369,16 @@ class ScatterPlotWindow(QtWidgets.QWidget):
 
         self.storedRowIdx = []
 
-        self.color = []
-        self.color2 = plt.get_cmap('viridis')
-        print("color2", self.color2)
+        # add to dictionary
+        self.color = plt.get_cmap("cool")
+        # self.color2 = plt.get_cmap('viridis')
+        # print("color2", self.color2)
         # n = 40
         # for i in range(n):
         #     self.color.append('#%06X' % randint(0, 0xFFFFFF))
 
-        self._markerSize = 20
+        # TODO: add to scatterplot
+        self._markerSize = 12
 
         # Can Store dataframe here so that we can grab from it within this class
         # This would require us to update this dataframe too everytime we make a change to it elsewhere
@@ -611,7 +620,7 @@ class ScatterPlotWindow(QtWidgets.QWidget):
             
         # print("xDFStat", xDFStat)
 
-        self.scatterPoints = self.axScatter.scatter(xDFStat, yDFStat, s = 12, c = idList, cmap = plt.get_cmap("cool"))
+        self.scatterPoints = self.axScatter.scatter(xDFStat, yDFStat, s = self._markerSize, c = idList, cmap = self.color)
 
         # Added to test histogram
         self.scatter_hist(xDFStat, yDFStat, self.axHistX, self.axHistY)
@@ -690,6 +699,8 @@ class ScatterPlotWindow(QtWidgets.QWidget):
                 orientation="horizontal",
                 facecolor="silver",
                 edgecolor="gray",
+                cumulative = True,
+                density = True
             )
             ax_histy.tick_params(axis="y", labelleft=False)
             ax_histy.grid(False)
@@ -870,14 +881,14 @@ class ScatterPlotWindow(QtWidgets.QWidget):
 
         # return
 
-        logger.info(f'slot_selectAnnotation2: {selectionEvent}')
+        # logger.info(f'slot_selectAnnotation2: {selectionEvent}')
         self._selectAnnotation(selectionEvent)
 
 
     def _selectAnnotation(self, selectionEvent):
         # make a visual selection
         self._blockSlots = True
-        logger.info(f'selectionEvent: {selectionEvent}')
+        # logger.info(f'selectionEvent: {selectionEvent}')
 
         if selectionEvent.getRows() == None:
             self.myHighlighter._setData([], [])
@@ -888,8 +899,8 @@ class ScatterPlotWindow(QtWidgets.QWidget):
             columnNameY = self.yPlotWidget.getCurrentStat()
             yStat = self.pa.getValues(colName = columnNameY, rowIdx = selectionEvent.getRows())
 
-            logger.info(f'xStat {xStat}')
-            logger.info(f'yStat {yStat}')
+            # logger.info(f'xStat {xStat}')
+            # logger.info(f'yStat {yStat}')
 
             # roiType = pymapmanager.annotations.pointTypes[self.dict["roiType"]]
             # xStat = self.pa.getfilteredValues(columnNameX, roiType, self.dict["segmentID"])
@@ -938,5 +949,7 @@ class ScatterPlotWindow(QtWidgets.QWidget):
 
     def _old_getLayout(self):
         return self.finalLayout
+    
+    # TODO: Add slot when we edit, derived from base class
 
 

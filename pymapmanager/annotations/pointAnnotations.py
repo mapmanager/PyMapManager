@@ -176,6 +176,18 @@ class pointAnnotations(baseAnnotations):
         # load from csv if it exists
         self.load()
 
+    def getColumnType(self, columnName):
+        """ Return the type of a given column name
+        """
+
+        # We have a list of columns
+        # self._columns
+        # Determine columnItem from that list
+        colType = self.columns.getColumnItemType(columnName)
+
+        # Then get type
+        return colType
+
     def setLineAnnotations(self, la):
         self._lineAnnotations = la
     
@@ -891,6 +903,7 @@ class pointAnnotations(baseAnnotations):
         # extendHead = self._analysisParams.getCurrentValue("extendHead")
         # extendTail = self._analysisParams.getCurrentValue("extendTail")
         # radius = self._analysisParams.getCurrentValue("radius")
+        
         width = int(self.getValue('width', _selectedRow))
         extendHead = int(self.getValue('extendHead', _selectedRow))
         extendTail = int(self.getValue('extendTail', _selectedRow))
