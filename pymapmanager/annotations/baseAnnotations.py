@@ -271,6 +271,27 @@ class Columns():
             if not columnName in _columnNames:
                 return False
         return True
+    
+    def getColumnItem(self, columnName: str):
+        """ Return column item that corresponds to the inputted columnName
+        
+        """
+        # _columnItems = self._colList
+        # for columnN in _columnNames:
+        for _columnItem in self._colList:
+            if _columnItem.getName() == columnName:
+                return _columnItem
+            
+        
+    def getColumnItemType(self, columnName: str):
+        """ Return column type that corresponds to the inputted columnName
+        
+        """
+        # _columnItems = self._colList
+        # for columnN in _columnNames:
+        for _columnItem in self._colList:
+            if _columnItem.getName() == columnName:
+                return _columnItem.getType()
 
     def __iter__(self):
         """As iterator, returns ColumnItem.
@@ -618,6 +639,12 @@ class baseAnnotations():
         """
         return self._df
     
+    # def getFilteredDataFrame(self, column) -> pd.DataFrame:
+    #     """Get annotations as underlying `pandas.DataFrame`.
+    #     """
+
+    #     return self._df
+    
     def getAllColumnNames(self):
         """Returns a list of all column names to be displayed in table interface
         """
@@ -774,6 +801,50 @@ class baseAnnotations():
             values = values.flatten() # ensure 1D (for napari)
         return values
 
+    def getDFWithCondition(self,
+                    colName : Union[str, List[str]],
+                    compareColNames : Union[str, List[str]],
+                    comparisons : Union[comparisonTypes, List[comparisonTypes]],
+                    #compareValues = Union[float, List[float]],
+                    compareValues,
+                    ) -> Union[np.ndarray, None]:
+        """Get values from column(s) that match another column(s) value.
+
+        Args:
+            colName (str | List(str)): Column(s) to get values from
+            compareColNames (str | List(str)): Columns to compare to
+            comparisons (comparisonTypes | List(comparisonTypes)): Type of comparisons
+            compareValues (???): We don't know the type. Could be (float, int, bool) or other?
+        """
+
+        if not isinstance(compareColNames, list):
+            compareColNames = [compareColNames]
+        if not isinstance(comparisons, list):
+            comparisons = [comparisons]
+        if not isinstance(compareValues, list):
+            compareValues = [compareValues]
+
+        # TODO: check that lists are same length (compareColName, comparisons, compareValues)
+        _lists = [compareColNames, comparisons, compareValues]
+        if not all(len(_lists[0]) == len(l) for l in _lists[1:]):
+            logger.error(f'all parameters need to be the same length')
+            return None
+
+        #df = self._old_reduceRows(compareColName, comparisons, compareValues)
+        
+        # iteratively reduce df
+        df = self._df
+        for idx, compareColName in enumerate(compareColNames):
+            comparison = comparisons[idx]
+            compareValue = compareValues[idx]
+            #print('compareColName:', compareColName, 'comparison:', comparison, 'compareValue:', compareValue)
+            if comparison == comparisonTypes.equal:
+                df = df[ df[compareColName]==compareValue]
+            # TODO (cudmore) add other comparisonTypes, can we use (==, <=, !=, etc) for all possible types?
+
+        df = df.loc[:,colName]
+        return df
+    
     def getSegmentList(self) -> List[int]:
         """Get a list of all segment ID.
         """

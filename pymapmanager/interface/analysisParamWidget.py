@@ -184,7 +184,14 @@ class AnalysisParamWidget(QtWidgets.QWidget):
         return hControlLayout
     
     def on_button_click(self, buttonName):
+        """
+        Buttons:
+            Set Default - Reset all current values to the original Default Values
+            Apply - Confirms changes and saves the changed values in the backend
+                  - Only applys to that one particular spine
 
+        
+        """
         if buttonName == "Set Defaults":
 
             # for index, val in enumerate(self.widgetDict): 

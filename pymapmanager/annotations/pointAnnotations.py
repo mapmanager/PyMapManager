@@ -178,6 +178,18 @@ class pointAnnotations(baseAnnotations):
         # load from csv if it exists
         self.load()
 
+    def getColumnType(self, columnName):
+        """ Return the type of a given column name
+        """
+
+        # We have a list of columns
+        # self._columns
+        # Determine columnItem from that list
+        colType = self.columns.getColumnItemType(columnName)
+
+        # Then get type
+        return colType
+
     def setLineAnnotations(self, la):
         self._lineAnnotations = la
     
@@ -725,10 +737,38 @@ class pointAnnotations(baseAnnotations):
     
         # print("compareValues", compareValues)
 
-
         return values
         # return dfPoints
 
+    def getfilteredDF(self, colName, roiType) -> pd.DataFrame:
+        """ Get filtered DF for scatterPlotWindow
+        DF is filtered by one roiType and one colName
+
+        Args:
+            colName: one column name within dataframe
+            roiType: pointAnnotation roi type
+
+        """
+
+        compareValues = [roiType.value]
+        if not isinstance(colName, list):
+            colName = [colName]
+
+        # Filtering by roitype: spineROI
+        # And by column names that we need to plot
+        # df = self.getValuesWithCondition(colName,
+        #         compareColNames=['roiType'],
+        #         comparisons=[comparisonTypes.equal],
+        #         compareValues=compareValues)
+        
+        df = self.getDFWithCondition(colName,
+                compareColNames=['roiType'],
+                comparisons=[comparisonTypes.equal],
+                compareValues=compareValues)
+
+        # df = self.getDataFrame()
+        return df
+    
     def getSegmentSpines(self, segmentID : int) -> pd.DataFrame:
         """Get all spines connected to one segment.
         """
@@ -1304,34 +1344,35 @@ class pointAnnotations(baseAnnotations):
 
         self.setValue("segmentROICoords", spineRowIndex, segmentPolygonCoords)
         # TODO: make spine roi coords all one type beforehand
-        
-    def storeROICoords(self, segmentID, lineAnnotation):
-        """ Used in script to store all roi coords (spine and segment) that is needed to plot in annotation plot widget
-        """
-        if segmentID is None:
-            # grab all segment IDs into a list
-            segmentID = lineAnnotation.getSegmentList()
-            # print("segmentID", segmentID)
 
-        elif (isinstance(segmentID, int)):
-            newIDlist = []
-            newIDlist.append(segmentID)
-            segmentID = newIDlist
+    # DEFUNCT - no longer store ROI since calculations are not time consuming
+    # def storeROICoords(self, segmentID, lineAnnotation):
+    #     """ Used in script to store all roi coords (spine and segment) that is needed to plot in annotation plot widget
+    #     """
+    #     if segmentID is None:
+    #         # grab all segment IDs into a list
+    #         segmentID = lineAnnotation.getSegmentList()
+    #         # print("segmentID", segmentID)
 
-        segmentSpineDFs = []
+    #     elif (isinstance(segmentID, int)):
+    #         newIDlist = []
+    #         newIDlist.append(segmentID)
+    #         segmentID = newIDlist
 
-        # List of all segmentID dataframes 
-        for id in segmentID:
-            segmentSpineDFs.append(self.getSegmentSpines(id))
+    #     segmentSpineDFs = []
 
-        for segmentIndex in range(len(segmentID)):
-            # print("index", segmentIndex)
-            currentDF = segmentSpineDFs[segmentIndex]
-            # Looping through all spines connected to one segment
-            for idx, spineRowIdx in enumerate(currentDF["index"]):
-                if (self.getValue("roiType", spineRowIdx) == "spineROI"):
-                    self.storeJaggedPolygon(lineAnnotation, spineRowIdx)
-                    self.storeSegmentPolygon(spineRowIdx, lineAnnotation, forFinalMask = False)
+    #     # List of all segmentID dataframes 
+    #     for id in segmentID:
+    #         segmentSpineDFs.append(self.getSegmentSpines(id))
+
+    #     for segmentIndex in range(len(segmentID)):
+    #         # print("index", segmentIndex)
+    #         currentDF = segmentSpineDFs[segmentIndex]
+    #         # Looping through all spines connected to one segment
+    #         for idx, spineRowIdx in enumerate(currentDF["index"]):
+    #             if (self.getValue("roiType", spineRowIdx) == "spineROI"):
+    #                 self.storeJaggedPolygon(lineAnnotation, spineRowIdx)
+    #                 self.storeSegmentPolygon(spineRowIdx, lineAnnotation, forFinalMask = False)
 
 
 if __name__ == '__main__':

@@ -812,12 +812,11 @@ class pointPlotWidget(annotationPlotWidget):
 
                 # radius = 5
                 forFinalMask = False
-                # segmentPolygon = self.pointAnnotations.calculateSegmentPolygon(firstSelectedRow, self.lineAnnotations, forFinalMask)
-                segmentPolygon = self.pointAnnotations.getValue("segmentROICoords", firstSelectedRow)
-                # logger.info(f'within segmentPolygon {segmentPolygon} list type {type(segmentPolygon)}')
-                segmentPolygon = eval(segmentPolygon) 
-         
-                segmentPolygon = np.array(segmentPolygon)
+                segmentPolygon = self.pointAnnotations.calculateSegmentPolygon(firstSelectedRow, self.lineAnnotations, forFinalMask)
+                # Removed - No longer storing polygon in backend
+                # segmentPolygon = self.pointAnnotations.getValue("segmentROICoords", firstSelectedRow)
+                # segmentPolygon = eval(segmentPolygon) 
+                # segmentPolygon = np.array(segmentPolygon)
 
                 if segmentPolygon is not None:
                     # logger.info(f'segmentPolygon coordinate list {segmentPolygon}')

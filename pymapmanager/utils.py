@@ -536,7 +536,7 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations, forFinalMask):
         if(lineIndex+i >= 0 and lineIndex+i <= len(lineAnnotations)):
             xRight = lineAnnotations.getValue("xRight", lineIndex+i)
             yRight = lineAnnotations.getValue("yRight", lineIndex+i)
-            if xLeft is not None and yLeft is not None and not(math.isnan(xRight) and math.isnan(yRight)):
+            if xRight is not None and yRight is not None and not(math.isnan(xRight) and math.isnan(yRight)):
                 coordinateList.append([xRight, yRight]) 
                 # print("yRight is", yRight)
             else:

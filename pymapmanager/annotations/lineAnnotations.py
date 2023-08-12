@@ -718,63 +718,62 @@ class lineAnnotations(baseAnnotations):
 
         return segmentZYX
     
-    def getSpineLineConnections(self, dfPlotSpines):
-        """Points to display connection between Spine and Line in annotationPlotWidget
+    # def getSpineLineConnections(self, dfPlotSpines):
+    #     """Points to display connection between Spine and Line in annotationPlotWidget
         
-        Args:
-            dfPlotSpine = Pandas dataframe of all spines that is being displayed in the plot widget
-        """
+    #     Args:
+    #         dfPlotSpine = Pandas dataframe of all spines that is being displayed in the plot widget
+    #     """
 
-        xPlotSpines = []
-        yPlotSpines = []
+    #     xPlotSpines = []
+    #     yPlotSpines = []
 
-        dfPlotSpines = dfPlotSpines[dfPlotSpines[['brightestIndex']].notnull().all(1)]
-        # Filter so we only have 3 columns, x,y and brightestindex
-        dfPlotSpines = dfPlotSpines[['x', 'y', 'brightestIndex']]
-        # print("dfPlotSpines", dfPlotSpines)
-        # for index, xyzOneSpine in dfPlotSpines.itertuples():
-        # for xyzOneSpine in dfPlotSpines.itertuples():
-        for xyzOneSpine in zip(dfPlotSpines['x'], dfPlotSpines['y'], dfPlotSpines['brightestIndex']):
+    #     dfPlotSpines = dfPlotSpines[dfPlotSpines[['brightestIndex']].notnull().all(1)]
+    #     # Filter so we only have 3 columns, x,y and brightestindex
+    #     dfPlotSpines = dfPlotSpines[['x', 'y', 'brightestIndex']]
+    #     # print("dfPlotSpines", dfPlotSpines)
+    #     # for index, xyzOneSpine in dfPlotSpines.itertuples():
+    #     # for xyzOneSpine in dfPlotSpines.itertuples():
+    #     for xyzOneSpine in zip(dfPlotSpines['x'], dfPlotSpines['y'], dfPlotSpines['brightestIndex']):
 
-            # print("xyzOneSpine", xyzOneSpine)
-            # index = 0, x = 1, y = 2, brightestIndex = 3
-            # print("xyzOneSpine", xyzOneSpine[2])
-            # print("xyzOneSpine type", type(xyzOneSpine))
-            _xSpine =  xyzOneSpine[0] 
-            _ySpine =  xyzOneSpine[1] 
-            _brightestIndex = xyzOneSpine[2] 
-            # _brightestIndex = xyzOneSpine['brightestIndex']
-            #print(_brightestIndex, type(_brightestIndex))
-            # Do this filtering before loop?
-            if _brightestIndex is None:
-                return
-            # print("xyzOneSpine", xyzOneSpine)
-            xLeft= self.getValue(['xLeft'], _brightestIndex)
-            xRight= self.getValue(['xRight'], _brightestIndex)
-            yLeft= self.getValue(['yLeft'], _brightestIndex)
-            yRight= self.getValue(['yRight'], _brightestIndex)
+    #         # print("xyzOneSpine", xyzOneSpine)
+    #         # index = 0, x = 1, y = 2, brightestIndex = 3
+    #         # print("xyzOneSpine", xyzOneSpine[2])
+    #         # print("xyzOneSpine type", type(xyzOneSpine))
+    #         _xSpine =  xyzOneSpine[0] 
+    #         _ySpine =  xyzOneSpine[1] 
+    #         _brightestIndex = xyzOneSpine[2] 
+    #         # _brightestIndex = xyzOneSpine['brightestIndex']
+    #         #print(_brightestIndex, type(_brightestIndex))
+    #         # Do this filtering before loop?
+    #         if _brightestIndex is None:
+    #             return
+    #         # print("xyzOneSpine", xyzOneSpine)
+    #         xLeft= self.getValue(['xLeft'], _brightestIndex)
+    #         xRight= self.getValue(['xRight'], _brightestIndex)
+    #         yLeft= self.getValue(['yLeft'], _brightestIndex)
+    #         yRight= self.getValue(['yRight'], _brightestIndex)
 
-            leftRadiusPoint = (xLeft, yLeft)
-            rightRadiusPoint = (xRight, yRight)
-            spinePoint = (_xSpine, _ySpine)
-            closestPoint = pymapmanager.utils.getCloserPoint2(spinePoint, leftRadiusPoint, rightRadiusPoint)
-            xPlotSpines.append(_xSpine)
-            # Change xPlotLine to the left/right value. Need to detect which orientation
-            # xPlotLine = self.lineAnnotations.getValue(['x'], xyzOneSpine['brightestIndex'])
-            # xPlotSpines.append(xPlotLine)
-            if closestPoint is None:  # abb
-                continue
-            
-            xPlotSpines.append(closestPoint[0])
-            xPlotSpines.append(np.nan)
+    #         leftRadiusPoint = (xLeft, yLeft)
+    #         rightRadiusPoint = (xRight, yRight)
+    #         spinePoint = (_xSpine, _ySpine)
+    #         closestPoint = pymapmanager.utils.getCloserPoint2(spinePoint, leftRadiusPoint, rightRadiusPoint)
+    #         # print("closestPoint", closestPoint)
+    #         # print("closestPoint[0]", closestPoint[0])
+    #         xPlotSpines.append(_xSpine)
+    #         # Change xPlotLine to the left/right value. Need to detect which orientation
+    #         # xPlotLine = self.lineAnnotations.getValue(['x'], xyzOneSpine['brightestIndex'])
+    #         # xPlotSpines.append(xPlotLine)
+    #         xPlotSpines.append(closestPoint[0])
+    #         xPlotSpines.append(np.nan)
 
-            yPlotSpines.append(_ySpine)
-            # yPlotLine = self.lineAnnotations.getValue(['y'], xyzOneSpine['brightestIndex'])
-            # yPlotSpines.append(yPlotLine)
-            yPlotSpines.append(closestPoint[1])
-            yPlotSpines.append(np.nan)
+    #         yPlotSpines.append(_ySpine)
+    #         # yPlotLine = self.lineAnnotations.getValue(['y'], xyzOneSpine['brightestIndex'])
+    #         # yPlotSpines.append(yPlotLine)
+    #         yPlotSpines.append(closestPoint[1])
+    #         yPlotSpines.append(np.nan)
 
-        return xPlotSpines, yPlotSpines
+    #     return xPlotSpines, yPlotSpines
 
 
     def getSpineLineConnections2(self, dfPlotSpines):
@@ -828,39 +827,36 @@ class lineAnnotations(baseAnnotations):
 
         return xPlotSpines, yPlotSpines
 
+    # def getSingleSpineLineConnection(self, brightestIndex, spineX, spineY):
+    #     """
+    #         Args:
+    #             xyzOneSpine: the spine row data frame
 
-    def getSingleSpineLineConnection(self, brightestIndex, spineX, spineY):
-        """
-            Args:
-                xyzOneSpine: the spine row data frame
+    #         Returns the X, Y values for one spine line connection
+    #     """
+    #     # brightestIndex = self.getValue(['brightestIndex'], brightestIndex)
 
-            Returns the X, Y values for one spine line connection
-        """
-        # brightestIndex = self.getValue(['brightestIndex'], brightestIndex)
-
-        # logger.info(f'      brightestIndex:{brightestIndex}')
+    #     if brightestIndex is None:
+    #         return
         
-        if brightestIndex is None:
-            return
-        
-        xLeft= self.getValue(['xLeft'], brightestIndex)
-        xRight= self.getValue(['xRight'], brightestIndex)
-        yLeft= self.getValue(['yLeft'], brightestIndex)
-        yRight= self.getValue(['yRight'], brightestIndex)
+    #     xLeft= self.getValue(['xLeft'], brightestIndex)
+    #     xRight= self.getValue(['xRight'], brightestIndex)
+    #     yLeft= self.getValue(['yLeft'], brightestIndex)
+    #     yRight= self.getValue(['yRight'], brightestIndex)
 
-        leftRadiusPoint = (xLeft, yLeft)
-        rightRadiusPoint = (xRight, yRight)
-        spinePoint = (spineX, spineY)
-        closestPointSide = pymapmanager.utils.getCloserPointSide(spinePoint, leftRadiusPoint, rightRadiusPoint)
+    #     leftRadiusPoint = (xLeft, yLeft)
+    #     rightRadiusPoint = (xRight, yRight)
+    #     spinePoint = (spineX, spineY)
+    #     closestPointSide = pymapmanager.utils.getCloserPointSide(spinePoint, leftRadiusPoint, rightRadiusPoint)
 
-        # xPlotSpines.append(xyzOneSpine['x'])
-        # xPlotSpines.append(closestPoint[0])
-        # xPlotSpines.append(np.nan)
+    #     # xPlotSpines.append(xyzOneSpine['x'])
+    #     # xPlotSpines.append(closestPoint[0])
+    #     # xPlotSpines.append(np.nan)
 
-        # yPlotSpines.append(xyzOneSpine['y'])
-        # yPlotSpines.append(closestPoint[1])
-        # yPlotSpines.append(np.nan)
-        return closestPointSide
+    #     # yPlotSpines.append(xyzOneSpine['y'])
+    #     # yPlotSpines.append(closestPoint[1])
+    #     # yPlotSpines.append(np.nan)
+    #     return closestPointSide
  
 if __name__ == '__main__':
     pass
