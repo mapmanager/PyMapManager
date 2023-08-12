@@ -11,6 +11,10 @@ from typing import List, Union, Tuple  # , Callable, Iterator, Optional
 from multiprocessing import Pool
 
 import numpy as np
+import pandas as pd
+
+import scipy
+from scipy import ndimage
 
 import pymapmanager as pmm
 from pymapmanager.utils import calculateRectangleROIcoords, calculateLineROIcoords, calculateFinalMask
@@ -38,50 +42,71 @@ def _old_intAnalysisWorker(spineIdx,
         (spine, segment, background spine, background segment)
     """
 
-def intAnalysisWorker(spineDict, zyxLine, imgData):
-    # zyxLine is from la.getZYXlist(segmentID, ['linePnt'])
+def intAnalysisWorker(spineDict, zyxLine, imgData, la):
+    """Performa all intensity analysis for one spine.
+    
+        - if no brightestIndex then calculate brightestIndex
+        - spine and segment rois
+    
+    Parameters
+    ----------
+    spineDict : dict
+        Dictionary with all current values for a spine
+    zyxLine : List[List[z,y,x]]
+        List of [z,y,x] points in one segmentID
+        Get this from la.getZYXlist(segmentID, ['linePnt'])
+    imgData : np.ndarray
+        Image data for intensity analysis.
+        Usually a small maximal intensity z-projection centered on the z plane of the spine.
 
-    # analysis parameters
-    # width = pa._analysisParams.getCurrentValue("width")
-    # extendHead = pa._analysisParams.getCurrentValue("extendHead")
-    # extendTail = pa._analysisParams.getCurrentValue("extendTail")
-    # numPtsForBrightest = pa._analysisParams.getCurrentValue("numPts")  # pnts to search for brightest index
+    Notes
+    -----
+    TODO: depreciate using la : pmm.annotations.lineAnnotations
+        Need to rewite calculateLineROIcoords() to not use lineAnnotations
+
+    """
 
     width = spineDict['width']
     extendHead = spineDict['extendHead']
     extendTail = spineDict['extendTail']
+    # numPtsForBrightest = pa._analysisParams.getCurrentValue("numPts")  # pnts to search for brightest index
     numPtsForBrightest = spineDict['numPtsForBrightest']
+    
+    radius = int(spineDict['radius'])
 
-    # xSpine = pa.getValue('x', spineIdx)
-    # ySpine = pa.getValue('y', spineIdx)
-    # zSpine = pa.getValue('z', spineIdx)
-    # segmentID = pa.getValue('z', segmentID)
-    # brightestIndex = pa.getValue('brightestIndex', spineIdx)
-
-    spineIdx = spineDict['spineIdx']
+    spineIdx = spineDict['index']
     xSpine = spineDict['x']
     ySpine = spineDict['y']
     zSpine = spineDict['y']
     segmentID = spineDict['segmentID']
+    
+    # brightest index is w.r.t all segments, we are working on one segmentID
     brightestIndex = spineDict['brightestIndex']  # can be nan
 
+    startRow, _  = la._segmentStartRow(segmentID)
+    
     # if brightestIndex does not exist, then calculate it
     if np.isnan(brightestIndex):
-        #segmentZYX = la.getZYXlist(segmentID, ['linePnt'])
-        # startRow, _  = la._segmentStartRow(segmentID)
         brightestIndex = pmm.utils._findBrightestIndex(xSpine, ySpine, zSpine,
                                                        zyxLine,
                                                        imgData,
                                                        numPnts = numPtsForBrightest)
-        #brightestIndex += startRow
+        brightestIndex += startRow
+
+    closestPointSide = la.getSingleSpineLineConnection(brightestIndex, xSpine, ySpine)
 
     # segment coordinates of spines brightest index
-    # xBrightestLine = la.getValue('x', brightestIndex)
-    # yBrightestLine = la.getValue('y', brightestIndex)
-    xBrightestLine = zyxLine[2][brightestIndex]
-    yBrightestLine = zyxLine[1][brightestIndex]
+    # zyxLine is for one segment
+    segmentBrightestIndex = int(brightestIndex) - startRow
+    
+    try:
+        xBrightestLine = zyxLine[segmentBrightestIndex][2]
+        yBrightestLine = zyxLine[segmentBrightestIndex][1]
+    except (IndexError) as e:
+        logger.error(f'segmentID:{segmentID} spineIdx:{spineIdx} segmentBrightestIndex:{segmentBrightestIndex}')
+        logger.error(f'   len zyxLine: {len(zyxLine)}')
 
-    # large rectangle around a spine and its connection to segment
+    # temporary large rectangle around a spine and its connection to segment
     spineRectROI = calculateRectangleROIcoords(
         xPlotSpines = xSpine, yPlotSpines = ySpine,
         xPlotLines = xBrightestLine,
@@ -90,8 +115,8 @@ def intAnalysisWorker(spineDict, zyxLine, imgData):
         extendHead = extendHead,
         extendTail = extendTail)
 
-    # 
-    radius = 5
+    # TODO: see pointAnnotations.storeJaggedPolygon() which does additional mutations
+    #   we need to return this in dict and then store in storeInBackend
     forFinalMask = True
     lineSegmentROI = calculateLineROIcoords(
         lineIndex = brightestIndex,
@@ -99,46 +124,79 @@ def intAnalysisWorker(spineDict, zyxLine, imgData):
         lineAnnotations = la,
         forFinalMask = forFinalMask)
 
-    # the rectangular spine ROI minus the segment ROI
-    finalSpineROIMask = calculateFinalMask(
-        rectanglePoly = spineRectROI, 
-        linePoly = lineSegmentROI)
+    spineIntDict = None
+    spineBackgroundIntDict = None
+    segmentIntDict = None
+    segmentBackgroundIntDict = None
 
-    spineIntDict = _getIntensityFromMask(finalSpineROIMask, imgData)
+    if len(lineSegmentROI) == 0:
+        logger.error(f'spineIdx:{spineIdx} got empty lineSegmentROI:{lineSegmentROI}')
+    else:
+        # the rectangular spine ROI minus the segment ROI
+        # TODO: see pointAnnotations.storeJaggedPolygon() which does additional mutations
+        #   we need to return this in dict and then store in storeInBackend
+        finalSpineROIMask = calculateFinalMask(
+            rectanglePoly = spineRectROI, 
+            linePoly = lineSegmentROI)
 
-    # move combined spine/segment roi around and find lowest intensity position
-    # mask, distance, numPts, originalSpinePoint, img
-    distance = 7
-    numPts = 7
-    originalSpinePoint = [int(ySpine), int(xSpine)]
+        # begin taken from def jagged
+        struct = scipy.ndimage.generate_binary_structure(2, 2)
+        dialatedMask = scipy.ndimage.binary_dilation(finalSpineROIMask, structure = struct, iterations = 1)
 
-    # Pass in full combined mask to calculate offset
-    segmentMask = convertCoordsToMask(lineSegmentROI)
-    spineMask = convertCoordsToMask(spineRectROI)
-    # When finding lowest intensity we use the combined spine/segment mask
-    combinedMasks = segmentMask + spineMask
-    combinedMasks[combinedMasks == 2] = 1
+        labelArray, numLabels = ndimage.label(dialatedMask)
+        currentLabel = pmm.utils.checkLabel(dialatedMask, xSpine, ySpine)
 
-    backgroundRoiOffset = calculateLowestIntensityOffset(
-        mask = combinedMasks,
-        distance = distance,
-        numPts = numPts,
-        originalSpinePoint = originalSpinePoint,
-        img=imgData)  
+        coordsOfMask = np.argwhere(labelArray == currentLabel)
+        # Check for left/ right points within mask
+        segmentROIpointsWithinMask = pmm.utils.getSegmentROIPoints(coordsOfMask, lineSegmentROI)
+        topTwoRectCoords = pmm.utils.calculateTopTwoRectCoords(xBrightestLine, yBrightestLine,
+                                                                        xSpine, ySpine, 
+                                                                        width, extendHead)
+        finalSpineROI = segmentROIpointsWithinMask.tolist()
 
-    backgroundMask = calculateBackgroundMask(finalSpineROIMask, backgroundRoiOffset)
+        finalSpineROI.insert(0,topTwoRectCoords[1])
+        finalSpineROI.append(topTwoRectCoords[0])
+        finalSpineROI.append(topTwoRectCoords[1])
+        # end taken from jagged
 
-    spineBackgroundIntDict = _getIntensityFromMask(backgroundMask, imgData)
+        spineIntDict = _getIntensityFromMask(finalSpineROIMask, imgData)
 
-    segmentIntDict = _getIntensityFromMask(segmentMask, imgData)
+        # move combined spine/segment roi around and find lowest intensity position
+        # mask, distance, numPts, originalSpinePoint, img
+        # TODO: We need to pass distance and numPnts as a parameter
+        distance = 7
+        numPts = 7
+        originalSpinePoint = [int(ySpine), int(xSpine)]
 
-    segmentBackgroundMask = calculateBackgroundMask(segmentMask, backgroundRoiOffset)
+        # Pass in full combined mask to calculate offset
+        segmentMask = convertCoordsToMask(lineSegmentROI)
+        spineMask = convertCoordsToMask(spineRectROI)
+        # When finding lowest intensity we use the combined spine/segment mask
+        combinedMasks = segmentMask + spineMask
+        combinedMasks[combinedMasks == 2] = 1
 
-    segmentBackgroundIntDict = _getIntensityFromMask(segmentBackgroundMask, imgData)
+        backgroundRoiOffset = calculateLowestIntensityOffset(
+            mask = combinedMasks,
+            distance = distance,
+            numPts = numPts,
+            originalSpinePoint = originalSpinePoint,
+            img=imgData)  
+
+        backgroundMask = calculateBackgroundMask(finalSpineROIMask, backgroundRoiOffset)
+
+        spineBackgroundIntDict = _getIntensityFromMask(backgroundMask, imgData)
+
+        segmentIntDict = _getIntensityFromMask(segmentMask, imgData)
+
+        segmentBackgroundMask = calculateBackgroundMask(segmentMask, backgroundRoiOffset)
+
+        segmentBackgroundIntDict = _getIntensityFromMask(segmentBackgroundMask, imgData)
 
     retDict = {
         'spineIdx': spineIdx,
         'brightestIndex': brightestIndex,  # may or may not have calculated
+        'closestPointSide': closestPointSide,
+        'spineRoiPoly': finalSpineROI,
         'sInt': spineIntDict,
         'sbInt': spineBackgroundIntDict,
         'segInt': segmentIntDict,
@@ -147,7 +205,7 @@ def intAnalysisWorker(spineDict, zyxLine, imgData):
 
     return retDict
 
-def intAnalysis_sequential(stack, segmentID : int, imgChannel : int):
+def intAnalysis_sequential(stack : "pmm.stack", segmentID : int, imgChannel : int = 2):
 
     pa = stack.getPointAnnotations()
     la = stack.getLineAnnotations()
@@ -160,37 +218,54 @@ def intAnalysis_sequential(stack, segmentID : int, imgChannel : int):
     numSpines = len(dfSpines)
     logger.info(f'numSpines: {numSpines}')
 
-    if 1:
-        for spineIdx, spineRow in dfSpines.iterrows():
-            
-            # get a max z project for each spine
-            # Pool() is tricky with memory, my understanding is we can not pass
-            # the full 3D image to each worker (takes up to much menory)
-            _imageSlice = pa.getValue("z", spineIdx)
-            imgData = stack.getMaxProjectSlice(_imageSlice,
-                                               imgChannel, 
-                                                upSlices=upSlices,
-                                                downSlices = downSlices)
+    zyxLine = la.getZYXlist(segmentID, ['linePnt'])
 
-            # if we pass large amounts of memory to the worker it gets slow
-            # debugMemory = stack  # takes forever
-            # debugMemory = stack.getImageChannel(imgChannel)  # much slower
-            debugMemory = None  # fast
+    results = []  # List[dict]
 
-            intAnalysisWorker(spineIdx,
-                            pa,
-                            la,
+    spineCount = 0
+    for spineIdx, spineRow in dfSpines.iterrows():
+        
+        # if spineCount == 2:
+        #     break
+
+        # get a max z project for each spine
+        # Pool() is tricky with memory, my understanding is we can not pass
+        # the full 3D image to each worker (takes up to much menory)
+        z = spineRow['z']
+        imgData = stack.getMaxProjectSlice(z,
+                                            imgChannel, 
+                                            upSlices=upSlices,
+                                            downSlices = downSlices)
+
+        # if we pass large amounts of memory to the worker it gets slow
+        # debugMemory = stack  # takes forever
+        # debugMemory = stack.getImageChannel(imgChannel)  # much slower
+        # debugMemory = None  # fast
+
+        # todo: get this from analysis options
+        spineRow['numPtsForBrightest'] = 5
+
+        # replace panda <NA> with np.nan so we can do boolean
+        spineRow = spineRow.fillna(np.nan)
+
+        # for k,v in spineRow.items():
+        #     print('   ', k, v)
+
+        result = intAnalysisWorker(spineRow,
+                            zyxLine,
                             imgData,
-                            imgChannel,
-                            debugMemory,
+                            la,
                             )
 
-def intAnalysis_pool(stack : "pymapmanager.stack", segmentID : int):
+        results.append(result)
+        spineCount += 1
+
+    return results
+
+def intAnalysis_pool(stack : "pmm.stack", segmentID : int, imgChannel : int = 2):
     """Run intAnalysisWorker() on a number of spines.
     """
 
-    imgChannel = 2
-
     pa = stack.getPointAnnotations()
     la = stack.getLineAnnotations()
 
@@ -201,6 +276,8 @@ def intAnalysis_pool(stack : "pymapmanager.stack", segmentID : int):
 
     numSpines = len(dfSpines)
     logger.info(f'numSpines: {numSpines}')
+
+    zyxLine = la.getZYXlist(segmentID, ['linePnt'])
 
     result_objs = []
     with Pool(processes=os.cpu_count() - 1) as pool:
@@ -216,17 +293,22 @@ def intAnalysis_pool(stack : "pymapmanager.stack", segmentID : int):
                                                 upSlices=upSlices,
                                                 downSlices = downSlices)
 
+
+            
             # if we pass large amounts of memory to the worker it gets slow
             # debugMemory = stack  # takes forever
             # debugMemory = stack.getImageChannel(imgChannel)  # much slower
-            debugMemory = None  # fast
+            # debugMemory = None  # fast             
+            
+            # todo: get this from analysis options
+            spineRow['numPtsForBrightest'] = 5
 
-            workerParams = (spineIdx,
-                            pa,
-                            la,
+            spineRow = spineRow.fillna(np.nan)
+
+            workerParams = (spineRow,
+                            zyxLine,
                             imgData,
-                            imgChannel,
-                            debugMemory,
+                            la,
                             )
             
             # result : multiprocessing.pool.ApplyResult
@@ -238,29 +320,89 @@ def intAnalysis_pool(stack : "pymapmanager.stack", segmentID : int):
         results = [result.get() for result in result_objs]
 
         # fetch the results (fast as everything is done)
-        for k, result in enumerate(results):
-            # results is a tuple
-            resultDict = result
+        # for k, result in enumerate(results):
+        #     # results is a tuple
+        #     resultDict = result
         
-        print(results[0])
+        # print(results[0])
 
     # put all results into backend
+    return results
 
-if __name__ == '__main__':
-    path = '../PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
+def _plotOneResult(result : dict, stack : "pmm.stack"):
+    """Plot image and spine roi for one intAnalysisWorker result.
+    """
+    from matplotlib.pylab import plt
+
+    spineIdx = result['spineIdx']
+    z = stack.getPointAnnotations().getValue('z', spineIdx)
+    imgData = stack.getMaxProjectSlice(z,
+                                        channel=2, 
+                                        upSlices=2,
+                                        downSlices = 2)
+
+    spineRoiPoly = result['spineRoiPoly']
+    logger.info(f'spineRoiPoly: {spineRoiPoly}')
+
+    xPlot = [xy[1] for xy in spineRoiPoly]
+    yPlot = [xy[0] for xy in spineRoiPoly]
+
+    plt.plot(xPlot, yPlot, 'o-')
+    
+    plt.imshow(imgData)
+    
+    plt.show()
+
+def storeInBackEnd(s : "pmm.stack", pa : "pmm.annotations.pointAnnotations", results : List[dict]):
+    """Given a list of results from intAnalysisWorker, store all data in the backend.
+    
+    Parameters
+    ----------
+    pa : pmm:annotations:pointAnnotations
+        Point annotation to store values in
+    results : List[dict]
+        List of results, one spine per item, from intAnalysisWorker
+    """
+
+    for resultIdx, result in enumerate(results):
+        logger.info(f'Storing results in backend')
+        for k,v in result.items():
+            print(k, v)
+
+        if resultIdx == 10:
+            _plotOneResult(result, s)
+            break
+
+def run():
+    path = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
     s = pmm.stack(path)
+    
+    pa = s.getPointAnnotations()
 
     startSec = time.time()
-    
-    segmentID = 0
+
     channel = 2
+    # segmentList = [0, 1, 2, 3, 4]
+    segmentList = [0]
 
-    # elapsed sec is 4.212
-    intAnalysis_pool(s, segmentID)
+    totalNum = 0
 
-    # elapsed sec is 17.968
-    # intAnalysis_sequential(s, segmentID, channel)
+    for segmentID in segmentList:
+        print('=== segmentID:', segmentID)
+        
+        # elapsed sec is linux 5.4
+        results  = intAnalysis_pool(s, segmentID, channel)
+
+        # elapsed sec is linux 13.4
+        #results = intAnalysis_sequential(s, segmentID, channel)
+
+        totalNum += len(results)
+
+        storeInBackEnd(s, pa, results)
 
     stopSec = time.time()
     elapsedSec = round(stopSec-startSec,3)
-    logger.info(f'elapsed sec is {elapsedSec}')
+    logger.info(f'analyzed {totalNum} spines in {elapsedSec} s')
+
+if __name__ == '__main__':
+    run()

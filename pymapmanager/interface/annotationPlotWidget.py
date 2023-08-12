@@ -14,6 +14,8 @@ import pymapmanager.annotations
 
 class BasePlotWidget(ABC):
     """Abstract class to derive all annotation plots from.
+    
+    This is experimental an not used.
     """
 
     signalAnnotationClicked2 = QtCore.Signal(object)  # pymapmanager.annotations.SelectionEvent
@@ -70,7 +72,7 @@ class BasePlotWidget(ABC):
         newAnnotationRow = addAnnotationEvent.getAddedRow()
         self._selectAnnotation(newAnnotationRow)
 
-    def slot_deletedAnnotation(self):
+    def slot_deletedAnnotation(self, delDict : dict):
         """Slot called after an annotation was deleted.
         Also called when moving spine (since original spine is deleted in the process)
         
@@ -251,7 +253,7 @@ class annotationPlotWidget(QtWidgets.QWidget):
         # self._scatter.sigPointsHovered.connect(self._on_mouse_hover)
 
         # do not need to ad .plot to _view (already added)
-        logger.info(f'adding _scatter to view: {self.__class__.__name__}')
+        # logger.info(f'adding _scatter to view: {self.__class__.__name__}')
         #self._view.addItem(self._scatter)
 
         # Displaying Radius Lines
@@ -606,7 +608,7 @@ class annotationPlotWidget(QtWidgets.QWidget):
         newAnnotationRow = addAnnotationEvent.getAddedRow()
         self._selectAnnotation(newAnnotationRow)
 
-    def slot_deletedAnnotation(self):
+    def slot_deletedAnnotation(self, dDict : dict):
         """Slot called after an annotation was deleted.
         Also called when moving spine (since original spine is deleted in the process)
         
@@ -666,39 +668,101 @@ class pointPlotWidget(annotationPlotWidget):
         width = self._displayOptionsLines['width']
         color = self._displayOptionsLines['color']
         symbol = self._displayOptionsLines['symbol']
-        # size = self._displayOptionsLines['size']
+        size = self._displayOptionsLines['size']
         zorder = self._displayOptionsLines['zorder']
-        # self._spineConnections = pg.ScatterPlotItem(pen=pg.mkPen(width=width,
-        #                                     color=color), symbol=symbol, size=size)
+        logger.info(f'width:{width}')
+        logger.info(f'color:{color}')
+        
         symbol = None
-        self._spineConnections = self._view.plot([],[],pen=pg.mkPen(width=width, color=color), symbol=symbol)
-        self._spineConnections.setZValue(zorder-4) 
-        self._view.addItem(self._spineConnections)
+        
+        # line between spine head and connection point
+        # self._spineConnections = pg.ScatterPlotItem(pen=pg.mkPen(width=10,
+        #                                     color='g'), symbol='o', size=10)
+        # line1 = plt.plot(x, y, pen ='g', symbol ='x', symbolPen ='g', symbolBrush = 0.2, name ='green')
+        self._spineConnections = self._view.plot([],[], pen=pg.mkPen(width=width, color=color), symbol=symbol, connect='all')
+        self._spineConnections.setZValue(zorder) 
+        # self._view.addItem(self._spineConnections)
 
-        self._spinePolygon = self._view.plot([],[],pen=pg.mkPen(width=width, color=color), symbol=symbol)
+        self._spinePolygon = self._view.plot([],[], pen=pg.mkPen(width=width, color=color), symbol=symbol)
         self._spinePolygon.setZValue(zorder) 
-        self._view.addItem(self._spinePolygon)
+        #self._view.addItem(self._spinePolygon)
 
-        self._spineBackgroundPolygon = self._view.plot([],[],pen=pg.mkPen(width=width, color=color), symbol=symbol)
+        self._spineBackgroundPolygon = self._view.plot([],[], pen=pg.mkPen(width=width, color=color), symbol=symbol)
         self._spineBackgroundPolygon.setZValue(zorder) 
-        self._view.addItem(self._spineBackgroundPolygon)
+        # self._view.addItem(self._spineBackgroundPolygon)
 
-        self._segmentPolygon = self._view.plot([],[],pen=pg.mkPen(width=width, color= pg.mkColor(255,255,255), symbol=symbol))
+        self._segmentPolygon = self._view.plot([],[], pen=pg.mkPen(width=width, color= pg.mkColor(255,255,255), symbol=symbol))
         self._segmentPolygon.setZValue(zorder) 
-        self._view.addItem(self._segmentPolygon)
+        # self._view.addItem(self._segmentPolygon)
 
-        self._segmentBackgroundPolygon = self._view.plot([],[],pen=pg.mkPen(width=width, color=pg.mkColor(255,255,255)), symbol=symbol)
+        self._segmentBackgroundPolygon = self._view.plot([],[], pen=pg.mkPen(width=width, color=pg.mkColor(255,255,255)), symbol=symbol)
         self._segmentBackgroundPolygon.setZValue(zorder) 
-        self._view.addItem(self._segmentBackgroundPolygon)
+        # self._view.addItem(self._segmentBackgroundPolygon)
 
         # make all spine labels
         self._bMakeLabels()
         # make all spine lines
         self._bMakeSpineLines()
 
-    def slot_deletedAnnotation(self):
-        super().slot_deletedAnnotation()
-        # logger.info(f'slot_deletedAnnotation')
+    def slot_addedAnnotation(self, addAnnotationEvent : pymapmanager.annotations.AddAnnotationEvent):
+        super().slot_addedAnnotation(addAnnotationEvent)
+
+        # TODO: add a label
+
+        # TODO: add a spine line
+
+    def slot_deletedAnnotation(self, delDict : dict):
+        """Delete an annotation by removing its label and spine line.
+        
+        Notes
+        -----
+        As we are using int indices, only allow poping one label, will not work for multiple.
+        After pop, the next index is not valied!
+        """
+        super().slot_deletedAnnotation(delDict)
+        
+        # logger.info(f'pointPlotWidget slot_deletedAnnotation {delDict}')
+        
+        annotationIndexList = delDict['annotationIndex']
+        
+        if len(annotationIndexList) == 1:
+            oneIndex = annotationIndexList[0]
+            
+            # remove the deleted annotation from our label list
+            popped_item = self._labels.pop(oneIndex)  # remove from list
+            self._view.removeItem(popped_item)  # remove from pyqtgraph view
+
+            # decriment all labels after (and including) oneIndex
+            for i in range(oneIndex,len(self._labels)):
+                self._labels[i].setText(str(i))
+
+            # delete spine line (TODO: we need a set slice for this to refresh)
+            realIdx = oneIndex * 2
+            # x
+            self._xSpineLines = np.delete(self._xSpineLines, realIdx)
+            self._xSpineLines = np.delete(self._xSpineLines, realIdx)
+            # y
+            self._ySpineLines = np.delete(self._ySpineLines, realIdx)
+            self._ySpineLines = np.delete(self._ySpineLines, realIdx)
+            # connect
+            self._spineLinesConnect = np.delete(self._spineLinesConnect, realIdx)
+            self._spineLinesConnect = np.delete(self._spineLinesConnect, realIdx)
+
+            #TODO: we need a set slice to set the data of the spine lines
+
+        else:
+            logger.error(f'Does not correctly remove labels/lines when more than one annotation, got {len(annotationIndexList)} annotations')
+
+        # TODO: probably not necc. as we should (in theory) receive a slot_selectAnnotation with [] annotations to select
+        self._cancelSpineRoiSelection()
+
+    def _cancelSpineRoiSelection(self):
+        """Cancel spine ROI selection.
+        """
+        self._spinePolygon.setData([], [])
+        self._segmentPolygon.setData([], [])
+        self._spineBackgroundPolygon.setData([], [])
+        self._segmentBackgroundPolygon.setData([], [])
 
     def slot_selectAnnotation2(self, selectionEvent : "pymapmanager.annotations.SelectionEvent"):
         super().slot_selectAnnotation2(selectionEvent)
@@ -714,8 +778,9 @@ class pointPlotWidget(annotationPlotWidget):
         # zyxList = self.lineAnnotations.get_zyx_list(segmentID)
         # brightestIndex = self.pointAnnotations._calculateSingleBrightestIndex(self._channel, int(_selectedRows), zyxList, self.img)
 
-        if(_selectedRows is None):
-            self._spinePolygon.setData([], [])
+        # if(_selectedRows is None):
+        if (len(_selectedRows) == 0):
+            self._cancelSpineRoiSelection()
 
         elif(len(_selectedRows) == 1):
             
@@ -766,72 +831,75 @@ class pointPlotWidget(annotationPlotWidget):
         
         super().slot_setSlice(sliceNumber=sliceNumber)
 
-        doBob = True  # 5x faster from >100ms to <5ms
+        # doBob = True  # 20x faster from >100ms to <5ms
 
-        if doBob:
-            _rows = self._dfPlot['index'].to_list()
-            _spineLineIndex = []
-            for labelIndex, label in enumerate(self._labels):
-                if labelIndex in _rows:
-                    label.show()
-                else:
-                    label.hide()
-
-            #_rows = self._dfPlot['index'].to_list()  # TODO: only do this once
-            for row in _rows:
-                realRow = row * 3
-                _spineLineIndex.append(realRow)
-                _spineLineIndex.append(realRow+1)
-                _spineLineIndex.append(realRow+2)
-
-            _xData = self._xSpineLines[_spineLineIndex]
-            _yData = self._ySpineLines[_spineLineIndex]
-            self._spineConnections.setData(_xData, _yData, connect="finite")
-
-        else:
-            if len(self.labels) > 0:
-                for label in self.labels:
-                    self._view.removeItem(label) 
-                    self.labels = []
+        # if doBob:
+        _rows = self._dfPlot['index'].to_list()
         
-            for index, row in self._dfPlot.iterrows():
-                if row['roiType'] == "spineROI":
-                    label_value = pg.LabelItem('', **{'color': '#FFF','size': '2pt'})
-                    label_value.setPos(QtCore.QPointF(row['x']-9, row['y']-9))
-                    label_value.setText(str(row['index']))
-                    # label_value.setText(str(row['index']), rotateAxis=(1, 0), angle=90)  
-                    self._view.addItem(label_value)  
-                    self.labels.append(label_value)   
+        # show and hide labels based on sliceNumber
+        for labelIndex, label in enumerate(self._labels):
+            if labelIndex in _rows:
+                label.show()
+            else:
+                label.hide()
 
-            # lines are taking ~100ms per set slice
-            xPlotSpines, yPlotSpines = self.lineAnnotations.getSpineLineConnections(self._dfPlot)
-            # self._spineConnections.setData(xPlotLines, yPlotLines)
-            self._spineConnections.setData(xPlotSpines, yPlotSpines, connect="finite")
+        # mask and unmask spine lines based on sliceNumber
+        _spineLineIndex = []
+        for row in _rows:
+            realRow = row * 2
+            _spineLineIndex.append(realRow)
+            _spineLineIndex.append(realRow+1)
+            # _spineLineIndex.append(realRow+2)
+
+        _xData = self._xSpineLines[_spineLineIndex]
+        _yData = self._ySpineLines[_spineLineIndex]
+        _connect = self._spineLinesConnect[_spineLineIndex]
+
+        self._spineConnections.setData(_xData, _yData, connect=_connect)
+
+        # else:
+        #     if len(self.labels) > 0:
+        #         for label in self.labels:
+        #             self._view.removeItem(label) 
+        #             self.labels = []
+        
+        #     for index, row in self._dfPlot.iterrows():
+        #         if row['roiType'] == "spineROI":
+        #             label_value = pg.LabelItem('', **{'color': '#FFF','size': '2pt'})
+        #             label_value.setPos(QtCore.QPointF(row['x']-9, row['y']-9))
+        #             label_value.setText(str(row['index']))
+        #             # label_value.setText(str(row['index']), rotateAxis=(1, 0), angle=90)  
+        #             self._view.addItem(label_value)  
+        #             self.labels.append(label_value)   
+
+            # # lines are taking ~100ms per set slice
+            # xPlotSpines, yPlotSpines = self.lineAnnotations.getSpineLineConnections(self._dfPlot)
+            # # self._spineConnections.setData(xPlotLines, yPlotLines)
+            # self._spineConnections.setData(xPlotSpines, yPlotSpines, connect="finite")
 
         stopSec = time.time()
         #logger.info(f'took {round(stopSec-startSec,3)} seconds')
 
     def _bMakeSpineLines(self):
+        """Make a spine line for each spine in df.
+        
+        connect: Values of 1 indicate that the respective point will be connected to the next
+        """
         df = self._annotations.getDataFrame()
 
         n = len(df)
-        self._xSpineLines = np.ndarray(n*3)
+        self._xSpineLines = np.ndarray(n*2)
         self._xSpineLines[:] = np.nan
-        self._ySpineLines = np.ndarray(n*3)
+        self._ySpineLines = np.ndarray(n*2)
         self._ySpineLines[:] = np.nan
 
+        self._spineLinesConnect = np.ndarray(n*2)
+        self._spineLinesConnect[0] = 0
+
         for index, row in df.iterrows():
-            realIndex = index * 3
+            realIndex = index * 2
             _brightestIndex = row['brightestIndex']
             if np.isnan(_brightestIndex):
-                # x
-                self._xSpineLines[index] = np.nan
-                self._xSpineLines[index+1] = np.nan
-                self._xSpineLines[index+2] = np.nan
-                # y
-                self._ySpineLines[index] = np.nan
-                self._ySpineLines[index+1] = np.nan
-                self._ySpineLines[index+2] = np.nan
                 continue
 
             xSpine = row['x']
@@ -848,19 +916,29 @@ class pointPlotWidget(annotationPlotWidget):
             closestPoint = pymapmanager.utils.getCloserPoint2(spinePoint, leftRadiusPoint, rightRadiusPoint)
             
             if closestPoint is None:
-                logger.error(f'got nan closestPoint for row {row}')
+                logger.error(f'got None closestPoint for row {row}')
                 continue
 
             self._xSpineLines[realIndex] = xSpine
             self._xSpineLines[realIndex+1] = closestPoint[0]
-            self._xSpineLines[realIndex+2] = np.nan
+            # self._xSpineLines[realIndex+2] = 1  #float('nan')
 
             self._ySpineLines[realIndex] = ySpine
             self._ySpineLines[realIndex+1] = closestPoint[1]
-            self._ySpineLines[realIndex+2] = np.nan
+            # self._ySpineLines[realIndex+2] = 1  #float('nan')
         
+            self._spineLinesConnect[realIndex] = 1
+            self._spineLinesConnect[realIndex+1] = 0
+            # self._spineLinesConnect[realIndex+2] = 0
+
     def _bMakeLabels(self):
-        """
+        """Make a label for each point annotations.
+
+        Need to update this list on slot_deletedAnnotation, slot_AddedAnnotation
+        
+        TODO:
+            - Add user interface option to set font size, hard coded at 6pt.
+            - Use +/- offsets based on spine side in (left, right)
         """
         start = time.time()
         
@@ -871,13 +949,13 @@ class pointPlotWidget(annotationPlotWidget):
             # if row['roiType'] != pymapmanager.annotations.pointTypes.spineROI.value:
             #     continue
 
-            label_value = pg.LabelItem('', **{'color': '#FFF','size': '2pt'})
+            label_value = pg.LabelItem('', **{'color': '#FFF','size': '6pt'})
             label_value.setPos(QtCore.QPointF(row['x']-9, row['y']-9))
             label_value.setText(str(row['index']))
             label_value.hide()
             # label_value.setText(str(row['index']), rotateAxis=(1, 0), angle=90)  
             self._view.addItem(label_value)  
-            self._labels.append(label_value)   
+            self._labels.append(label_value)  # our own list
 
         stop = time.time()
         #logger.info(f'took {round(stop-start,3)} seconds')  # 0.304

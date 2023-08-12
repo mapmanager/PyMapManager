@@ -253,9 +253,12 @@ class annotationListWidget(QtWidgets.QWidget):
         #self.signalRowSelection.emit(rowList, isAlt)
 
         # version 2
+        _stack = self._stackWidget.getStack()
+
         _selectionEvent = pymapmanager.annotations.SelectionEvent(self._annotations,
                                                                   rowIdx=rowList,
-                                                                  isAlt=isAlt)
+                                                                  isAlt=isAlt,
+                                                                  stack=_stack)
 
         logger.info(f'  -->> emit signalRowSelection2 {_selectionEvent}')
 

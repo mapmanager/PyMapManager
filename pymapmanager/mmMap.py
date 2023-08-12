@@ -681,7 +681,7 @@ class mmMap():
                 # 20220103
                 oneSegment = pd['segmentid']
                 if isinstance(oneSegment, list):
-                    print('abb 20220103 in mmMap.getMapValue3() fix this cludge from list to int')
+                    logger.warning('abb 20220103 in mmMap.getMapValue3() fix this cludge from list to int')
                     if len(oneSegment) > 0:
                         oneSegment = oneSegment[0]
                     else:
@@ -729,8 +729,9 @@ class mmMap():
             #print(final_df)
 
             # 20230523
-            _days = self.getValue('days', j)
-            final_df['days'] = _days
+            _days = self.getValue('days', j)  # _days is a str
+            print('runMap_idx:', runMap_idx)
+            final_df.loc[runMap_idx, 'days'] = _days
 
             finalIndexList = final_df.index.tolist()
 

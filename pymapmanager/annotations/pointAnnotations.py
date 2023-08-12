@@ -16,6 +16,8 @@ from pymapmanager.annotations import ColumnItem
 from pymapmanager.annotations import comparisonTypes
 # from pymapmanager.annotations import fileTypeClass
 
+# from pymapmanager import AnalysisParams  # gives circular import
+
 import pymapmanager.utils
 import pymapmanager.annotations.mpSpineInt
 
@@ -40,14 +42,15 @@ class pointAnnotations(baseAnnotations):
 
     # def __init__(self, path : Union[str, None] = None, analysisParams = None):
     # def __init__(self, stack, la = None, *args,**kwargs):
-    def __init__(self, stack, la = None, path = None, analysisParams = None):
+    def __init__(self, stack, la = None, path = None,
+                    analysisParams : "AnalysisParams"= None):
         # super().__init__(*args,**kwargs)
         super().__init__(path, analysisParams)
 
         # done in parent
         # june 28, this is done in the parent???
         #self._analysisParams = kwargs['analysisParams']
-        self._analysisParams = analysisParams
+        self._analysisParams : "AnalysisParams" = analysisParams
         
         self._stack = stack
         self._lineAnnotations = la
@@ -272,13 +275,49 @@ class pointAnnotations(baseAnnotations):
 
     def addSpine(self, x, y, z,
                  segmentID,
-                 dfSegment):
+                stack : "pymapmanager.stack"
+                ):
+        
         newRow = super().addAnnotation(x, y, z)
 
+        logger.info(f'making new spine: newRow:{newRow} x:{x}, y:{y}, z:{z}, segmentID:{segmentID}')
+
+        #la : "pymapmanager.annotations.lineAnnotations",
+        la = stack.getLineAnnotations()
+
+        imageChannel = 2
+        
         self._df.loc[newRow, 'roiType'] = pointTypes.spineROI
         self._df.loc[newRow, 'segmentID'] = segmentID
 
-        # calculate brightest index, rois, and intensity
+        # spine annotations have a lot of default columns
+        paramKeyList = self._analysisParams.getParamList()
+        for paramKey in paramKeyList:
+            self._df.loc[newRow, paramKey] = self._analysisParams.getCurrentValue(paramKey)
+
+        # TODO
+        # # calculate brightest index, rois, and intensity
+
+        xyzSegment = la.get_zyx_list(segmentID)
+                    
+        # grab the raw image data the user is viewing
+        #imgData = self.getStack().getImageChannel(imageChannel)
+        _imageSlice = z
+        imgSliceData = stack.getImageSlice(_imageSlice, imageChannel)
+        # TODO: change this to getMaxImageSlice
+        newZYXValues = None
+        # this does lots:
+        #   (i) connect spine to brightest index on segment
+        #   (ii) calculate all spine intensity for a channel
+        self.updateSpineInt(newZYXValues,
+                                                    newRow,
+                                                    xyzSegment,
+                                                    imageChannel,
+                                                    imgSliceData,
+                                                    la
+                                                    )
+                                                    
+        return newRow
 
     def addAnnotation(self,
                     x, y, z,
@@ -400,6 +439,7 @@ class pointAnnotations(baseAnnotations):
         # logger.info('This is setting lots of columns in our backend with all intensity measurements')
         # logger.info(f'  imgData.shape {imgData.shape}')
 
+        #TODO: before calling updateSpineInt() just set new z/y/x, no need for logic
         # logger.info(f"spineIdx:{spineIdx}")
         if(newZYXValues is None):
             _z = self.getValue('z', spineIdx)
@@ -420,6 +460,7 @@ class pointAnnotations(baseAnnotations):
         segmentID = self.getValue('segmentID', spineIdx)
         chStr = str(channelNumber)
         
+        #TODO: before calling updateSpineInt() just set brightestIdx to np.nan and calc here if it is np.nan
         # 1) find brightest path to line segment
         #brightestIndex = self.reconnectToSegment(spineIdx, xyzLineSegment, imgData)
         if (brightestIndex is None):
@@ -565,6 +606,10 @@ class pointAnnotations(baseAnnotations):
         segmentBackgroundIntDict = pymapmanager.utils._getIntensityFromMask(segmentBackgroundMask, imgData)
         if segmentBackgroundIntDict is not None:
             self.setIntValue(spineIdx, 'segmentBackground', channelNumber, segmentBackgroundIntDict)
+
+        # abb 20230810
+        self.storeJaggedPolygon(la, spineIdx)
+        self.storeSegmentPolygon(spineIdx, la, forFinalMask = False)
 
     def _old_reconnectToSegment(self, rowIdx : int):
         """Connect a point to brightest path to a line segment.

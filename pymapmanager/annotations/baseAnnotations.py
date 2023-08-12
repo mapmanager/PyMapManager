@@ -19,6 +19,7 @@ import pymapmanager.annotations
 
 from pymapmanager._logger import logger
 
+# class EditAnnotationEvent():
 class AddAnnotationEvent():
     """Added annotations are proposed as just (z,y,x) points
     
@@ -28,7 +29,12 @@ class AddAnnotationEvent():
         pymapamanger.annotations.pointAnnotation.pointTypes
         pymapamanger.annotations.lineAnnotations.linePointTypes
     """
-    def __init__(self, z : float, y : float, x : float, pointType = None):
+    def __init__(self,
+                    # add, delete, change
+                    z : float,
+                    y : float,
+                    x : float,
+                    pointType = None):
         self._dict = {
             'x': x,
             'y': y,
@@ -290,7 +296,11 @@ class annotationType(enum.Enum):
     segment = 'segment'
 
 class baseAnnotations():
-    def getAnnotationDict(self):
+    def _old_getAnnotationDict(self, rowIdx : int):
+        """Get one row as a dict.
+        
+        Depreciated, just use annotations as an iter !
+        """
         theDict = {}
         for column in self._columns:
             theDict[column.getName()] = None
@@ -609,9 +619,7 @@ class baseAnnotations():
         return self._df
     
     def getAllColumnNames(self):
-        """
-        
-        Returns a list of all column names to be displayed in table interface
+        """Returns a list of all column names to be displayed in table interface
         """
         statList = []
 

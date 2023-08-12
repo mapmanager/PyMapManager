@@ -76,7 +76,8 @@ class PyMapManagerApp(QtWidgets.QApplication):
         return None
     
     def openStackRun(self, mmMap : pmm.mmMap,
-                     timepoint, plusMinus,
+                     timepoint,
+                     plusMinus,
                      spineRun : List[int] = None):
         """Open a run of stack widgets.
         """
@@ -117,60 +118,24 @@ class PyMapManagerApp(QtWidgets.QApplication):
 
         self.linkOpenPlots(link=True)
 
-    def openStack2(self, mmMap : pymapmanager.mmMap, session : int):
+    def openStack2(self, mmMap : pymapmanager.mmMap, session : int) -> "pmm.interface.stackWidget":
+        """Open a stackWidget for map session.
+        """
         logger.info(f'session:{session} mmMap: {mmMap}')
         _map = self._findMap2(mmMap)
         if _map is not None:
             stack = _map.stacks[session]
-            self.openStack(stack=stack)
+            bsw = self.openStack(stack=stack)
+            return bsw
         else:
             logger.warning(f'did not find map session {session}')
-            logger.warning(f'  for session: {mmMap}')
-
-
-    def linkOpenPlot_slice(self, slice):
-        if self._blockSlots:
-            return
-        self._blockSlots = True
-        for idx, widget in enumerate(self._stackWidgetList):
-            widget._imagePlotWidget.slot_setSlice(slice)
-        self._blockSlots = False
-
-    def linkOpenPlots(self, link=True):
-        """Link all open plots so they drag together.
-        """
-        prevPlotWidget = None
-        for idx, widget in enumerate(self._stackWidgetList):
-            if link and prevPlotWidget is not None:
-                widget._imagePlotWidget._plotWidget.setYLink(prevPlotWidget)
-                widget._imagePlotWidget._plotWidget.setXLink(prevPlotWidget)
-            elif not link:
-                widget._imagePlotWidget._plotWidget.setYLink(None)
-                widget._imagePlotWidget._plotWidget.setXLink(None)
-            prevPlotWidget = widget._imagePlotWidget._plotWidget
-
-            # this works but we get recursion
-            if link:
-                widget._imagePlotWidget.signalUpdateSlice.connect(self.linkOpenPlot_slice)
-            else:
-                widget._imagePlotWidget.signalUpdateSlice.disconnect()
-
-    def slot_MouseMoveEvent(self, event):
-        return
-        logger.info(f'button: {event.button()}')
-        for widget in self._stackWidgetList:
-            pass
-            # logger.info('  calling monkeyPatchMouseMove')
-            # widget._imagePlotWidget.monkeyPatchMouseMove(event, emit=False)
-            
-            # HOLY CRAP, THIS WORKS !!!!!!!!!!
-            #widget._imagePlotWidget._plotWidget.setYLink(self._stackWidgetList[0]._imagePlotWidget._plotWidget)
+            logger.warning(f'  for map: {mmMap}')
 
     def openStack(self,
                   path = None,
                   stack : pymapmanager.stack = None,
                   posRect : List[int] = None,
-                  ):
+                  ) -> "pmm.interface.stackWidget":
         """Open a stack widget given the tif path.
         
         Parameters
@@ -218,6 +183,44 @@ class PyMapManagerApp(QtWidgets.QApplication):
         bsw.activateWindow()
 
         return bsw
+
+    def linkOpenPlot_slice(self, slice):
+        if self._blockSlots:
+            return
+        self._blockSlots = True
+        for idx, widget in enumerate(self._stackWidgetList):
+            widget._imagePlotWidget.slot_setSlice(slice)
+        self._blockSlots = False
+
+    def linkOpenPlots(self, link=True):
+        """Link all open plots so they drag together.
+        """
+        prevPlotWidget = None
+        for idx, widget in enumerate(self._stackWidgetList):
+            if link and prevPlotWidget is not None:
+                widget._imagePlotWidget._plotWidget.setYLink(prevPlotWidget)
+                widget._imagePlotWidget._plotWidget.setXLink(prevPlotWidget)
+            elif not link:
+                widget._imagePlotWidget._plotWidget.setYLink(None)
+                widget._imagePlotWidget._plotWidget.setXLink(None)
+            prevPlotWidget = widget._imagePlotWidget._plotWidget
+
+            # this works but we get recursion
+            if link:
+                widget._imagePlotWidget.signalUpdateSlice.connect(self.linkOpenPlot_slice)
+            else:
+                widget._imagePlotWidget.signalUpdateSlice.disconnect()
+
+    def slot_MouseMoveEvent(self, event):
+        return
+        logger.info(f'button: {event.button()}')
+        for widget in self._stackWidgetList:
+            pass
+            # logger.info('  calling monkeyPatchMouseMove')
+            # widget._imagePlotWidget.monkeyPatchMouseMove(event, emit=False)
+            
+            # HOLY CRAP, THIS WORKS !!!!!!!!!!
+            #widget._imagePlotWidget._plotWidget.setYLink(self._stackWidgetList[0]._imagePlotWidget._plotWidget)
 
     def slot_selectAnnotation(self, selectionEvent, plusMinus=2):
         """Respond to annotation selections.
@@ -321,7 +324,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
     
 def tstSpineRun():
     
-    path = '/Users/cudmore/Sites/PyMapManager-Data/maps/rr30a/rr30a.txt'
+    path = '../PyMapManager-Data/maps/rr30a/rr30a.txt'
 
     app = pymapmanager.interface.PyMapManagerApp()
     _map = app.loadMap(path)
@@ -334,9 +337,25 @@ def tstSpineRun():
         stack = _map.stacks[tp]
         pa = stack.getPointAnnotations()
         selPnt = [43]
-        selectionEvent = pymapmanager.annotations.SelectionEvent(pa, selPnt, isAlt=True, stack=stack)
+        isAlt = True
+        selectionEvent = pymapmanager.annotations.SelectionEvent(pa, selPnt, isAlt=isAlt, stack=stack)
 
-        app.slot_selectAnnotation(selectionEvent)
+        app.slot_selectAnnotation(selectionEvent, plusMinus=1)
+
+    if 1:
+        # open one stack for given timepoint
+        timepoint = 2
+        bsw = app.openStack2(_map, timepoint)
+
+        spineIdx = 142
+        isAlt = False
+        bsw.zoomToPointAnnotation(spineIdx, isAlt=isAlt, select=True)
+        
+        # slot_setSlice() does nothing
+        # stack = bsw.getStack()
+        # pa = stack.getPointAnnotations()
+        # z = pa.getValue('z', spineIdx)
+        # bsw.slot_setSlice(20)
 
     sys.exit(app.exec_())
 

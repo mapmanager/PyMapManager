@@ -118,7 +118,11 @@ def _getIntensityFromMask2(imgMaskList, img : np.ndarray) -> dict:
 
     return theDict
 
-def _findBrightestIndex(x, y, z, zyxLine : List[List[float]], image: np.ndarray, numPnts: int = 5, linewidth: int = 1) -> int:
+def _findBrightestIndex(x, y, z,
+                        zyxLine : List[List[float]],
+                        image: np.ndarray,
+                        numPnts: int = 5,
+                        linewidth: int = 1) -> int:
     """Find the brightest path in an image volume
         From one point (x,y,z) to the given candidates line (xyzLine).
         
@@ -523,12 +527,10 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations, forFinalMask):
                 coordinateList.append([xLeft, yLeft])
                 # print("xLeft is", xLeft)
             else:
-                logger.warning(f'lineIndex:{lineIndex} xLeft:{xLeft} yLeft:{yLeft}')
+                logger.warning(f'lineIndex:{lineIndex} i:{i} xLeft:{xLeft} yLeft:{yLeft}')
 
-    # totalPoints = totalPoints.reverse()
-    totalPoints.reverse()
-    # print(totalPoints)
     # Reverse the order to record points on the "right side" starting from the end
+    totalPoints.reverse()
     for i in totalPoints:
         # Account for beginning and end of LineAnnotations indexing
         if(lineIndex+i >= 0 and lineIndex+i <= len(lineAnnotations)):
@@ -550,8 +552,10 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations, forFinalMask):
     # filteredY= scipy.signal.medfilt(coordinateList[:,1] , medianFilterWidth)
     # filteredCoordinateList = [filteredX filteredY]
 
-    coordinateList[:,0] = scipy.signal.medfilt(coordinateList[:,0] , medianFilterWidth)
-    coordinateList[:,1] = scipy.signal.medfilt(coordinateList[:,1] , medianFilterWidth)
+    # aug 8
+    # IndexError: too many indices for array: array is 1-dimensional, but 2 were indexed
+    # coordinateList[:,0] = scipy.signal.medfilt(coordinateList[:,0] , medianFilterWidth)
+    # coordinateList[:,1] = scipy.signal.medfilt(coordinateList[:,1] , medianFilterWidth)
 
     # coordinateList = scipy.signal.medfilt2d(coordinateList , medianFilterWidth)
     # coordinateList = scipy.signal.medfilt(coordinateList , medianFilterWidth)
@@ -591,6 +595,10 @@ def calculateFinalMask(rectanglePoly, linePoly):
 
     points = np.vstack((y,x)).T
 
+    # getting error
+    # ValueError: 'vertices' must be 2D with shape (M, 2). Your input has shape (0,).
+    #print('linePoly:', linePoly, type(linePoly))
+    
     segmentPath = Path(linePoly)
     segmentMask = segmentPath.contains_points(points, radius=0)
     segmentMask = segmentMask.reshape((ny,nx))

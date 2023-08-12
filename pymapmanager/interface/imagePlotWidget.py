@@ -389,9 +389,8 @@ class ImagePlotWidget(QtWidgets.QWidget):
         self.signalDeletingAnnotation.emit(deleteDict)
 
 
-    #def _onMouseClick_scene(self, event : pg.GraphicsScene.mouseEvents.MouseClickEvent):
     def _onMouseClick_scene(self, event):
-        """If we get shift+click, make new annotation item.
+        """If we get shift+click, make new annotation.
         
         Just emit the coordinates and have the parent stack window decide
         on the point type given its state
@@ -404,8 +403,9 @@ class ImagePlotWidget(QtWidgets.QWidget):
         Note:
             This seems to get called AFTER _on_mouse_click in our annotation plots?
 
-        Args:
-            event: pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent
+        Parameters
+        ----------
+        event: pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent
         """
         # logger.info(f'event:{type(event)}')
 
@@ -441,6 +441,7 @@ class ImagePlotWidget(QtWidgets.QWidget):
             
         if self._mouseConnectState and addedRowIdx is not None:
             tempLinePointIndex = 150
+            logger.error(f'we are debugging with hard coded tempLinePointIndex:{tempLinePointIndex}')
             _selectionEvent = pymapmanager.annotations.SelectionEvent(pymapmanager.annotations.lineAnnotations, 
                                                                       rowIdx = addedRowIdx,
                                                                       lineIdx = tempLinePointIndex)
