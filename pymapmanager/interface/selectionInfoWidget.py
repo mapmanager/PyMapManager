@@ -12,10 +12,12 @@ import pymapmanager.interface
 
 from pymapmanager._logger import logger
 from pymapmanager.annotations import pointAnnotations
+# from pymapmanager.interface import PmmWidget
+from pymapmanager.interface.pmmWidget import PmmWidget
 import math
 from functools import partial
 
-class SelectionInfoWidget(QtWidgets.QWidget):
+class SelectionInfoWidget(PmmWidget):
     """A widget that displays the information of the Spine point that is selection.
     Some information can be altered by the user.
     """
@@ -23,17 +25,20 @@ class SelectionInfoWidget(QtWidgets.QWidget):
     # Need to receive selection event signal
 
     # Signal to send to update other widgets
-    signalAnnotationSelection2 = QtCore.Signal(object)  # pymapmanager.annotations.SelectionEvent
+    # signalAnnotationSelection2 = QtCore.Signal(object)  # pymapmanager.annotations.SelectionEvent
+
+    signalUpdateNote = QtCore.Signal(object)  # pymapmanager.annotations.SelectionEvent
 
     def __init__(self, pointAnnotations):
+    # def __init__(self, parent = None):
         """
         """
 
-        # super().__init__(None)
         super().__init__(None)
+        # super().__init__(parent, )
 
         self.pa = pointAnnotations
-        self._blockSlots : bool = False
+        # self._blockSlots : bool = False
 
         # Holds the columns values that is displayed
         # Need to actually get the value from baseAnnotation so that we can get type
@@ -127,11 +132,14 @@ class SelectionInfoWidget(QtWidgets.QWidget):
                 if itemName == "note":
                     aWidget = QtWidgets.QLineEdit(currentValue)
                     aWidget.setAlignment(QtCore.Qt.AlignLeft)
+
+                    aWidget.textChanged.connect(self.updateNote)
                     # aWidget.setReadOnly(False) 
                 else:
                     # aWidget.setReadOnly(True)
                     aWidget = QtWidgets.QLabel()
                     aWidget.setAlignment(QtCore.Qt.AlignLeft)
+                   
                 # aWidget.editingFinished.connect(
                 #     partial(self.on_text_edit, aWidget, itemName)
                 # )
@@ -176,7 +184,6 @@ class SelectionInfoWidget(QtWidgets.QWidget):
             #         logger.error(f"QSpinBox analysisParam:{itemName} ... {e}")
             if isinstance(itemWidget, QtWidgets.QLabel):
                 logger.info(f"widget is a qlabel")
-
                 logger.info(f"backendVal[index]: {backendVal[index]}")
                 logger.info(f"type of backendVal[index]: {type(backendVal[index])}")
                 valType = type(backendVal[index])
@@ -196,21 +203,39 @@ class SelectionInfoWidget(QtWidgets.QWidget):
     
     # Slot that receives signal from other widgets (Stack/ AnotationPlotWidget)
     def slot_selectAnnotation2(self, selectionEvent : "pymapmanager.annotations.SelectionEvent"):
+        super().slot_selectAnnotation2(selectionEvent)
         # sometimes when we emit a signal, it wil recursively come back to this slot
-        if self._blockSlots:
-            return
+        # if self._blockSlots:
+        #     return
 
-        logger.info(f'selectInfoWidget Slot received {selectionEvent}')
-        self._selectAnnotation(selectionEvent)
+        # logger.info(f'selectInfoWidget Slot received {selectionEvent}')
+        # self.selectAnnotation(selectionEvent)
+        self.selectAnnotation()
 
-    def _selectAnnotation(self, selectionEvent):
+    def selectAnnotation(self):
         # make a visual selection
-        self._blockSlots = True
-        logger.info(f'selectInfoWidget Slot received 2: {selectionEvent}')
+        # self._blockSlots = True
+        # logger.info(f'selectInfoWidget Slot received 2: {selectionEvent}')
 
-        # if selectionEvent.getRows() == None:
-            # self.myHighlighter._setData([], [])
-        # else:
+        # self._updateUI(selectionEvent.getRows()[0])
+        # self._blockSlots = False
+        super().selectAnnotation()
+
+    def selectAction(self):
+        selectionEvent = super().selectAction()
         self._updateUI(selectionEvent.getRows()[0])
-        self._blockSlots = False
+         
     
+    def slot_addedAnnotation(self):
+        """ Slot that is called when adding a new annotation
+        """
+        # super().slot_addedAnnotation()
+
+    # TODO: create a function that updates backend when certain columns such as "Notes" is updated
+    # Perhaps change this to update column so that it can be used for future columns that need to be updated
+    def updateNote(self, currentVal):
+        """ Sends signal to stackWidget to update Note column in backend 
+        """
+
+        # Get current value of note and the selection RowIdx and emit it 
+        self.signalUpdateNote.emit()

@@ -15,12 +15,13 @@ class PmmWidget(QtWidgets.QWidget):
 
     signalAnnotationSelection2 = QtCore.Signal(object)  # pymapmanager.annotations.SelectionEvent
 
-    def __init__(self):
+    def __init__(self, parent = None):
         """ Base class for pymapmanager widgets
 
         Widgets share methods for slot and signals
 
         """
+        super().__init__(parent)
         self._blockSlots = False
 
         self._currentSelection = None
@@ -33,7 +34,8 @@ class PmmWidget(QtWidgets.QWidget):
         return self._currentSelection 
     
     def slot_selectAnnotation2(self, selectionEvent : "pymapmanager.annotations.SelectionEvent"):
-        """ Slot that is called when an annotation is selected
+        """ 
+            Slot that is called when an annotation is selected
         """
         self._currentSelection = selectionEvent
         
@@ -44,38 +46,54 @@ class PmmWidget(QtWidgets.QWidget):
         self.selectAnnotation()
 
     def selectAnnotation(self):
-        selectionEvent = self.getCurrentSelection()
+        """
+            Intermediary step that blocks slots just in case there is a circular call
+            This will call the specific action that the child class defines
+        """
         # make a visual selection
         self._blockSlots = True
         # logger.info(f'selectInfoWidget Slot received 2: {selectionEvent}')
 
         # Fill in: Complete desired action
-
+        self.selectAction()
         self._blockSlots = False
     
-
+    def selectAction(self):
+        """
+            Function where inherited class specifies the action that they do once a new point is selected
+            
+            Returns:
+                SelectionEvent that is used by the the child class to update its widget
+        """
+        selectionEvent = self.getCurrentSelection()
+        return selectionEvent
+    
+        # Do desired action within child class.
+        # Using the selectionEvent
+        
+        
     # Combine all these into one slot
     # Calls separate function depending on added, deleted, or updated
-    def slot_editedAnnotation(self, editAnnotationEvent):
-        """ Slot that is called when adding a new annotation
-        """
-        self.currentEditAnnotationEvent = editAnnotationEvent
-        # Retrieve the type from editAnnotationEvent
-        # Do corresponding method call
+    # def slot_editedAnnotation(self, editAnnotationEvent):
+    #     """ Slot that is called when adding a new annotation
+    #     """
+    #     self.currentEditAnnotationEvent = editAnnotationEvent
+    #     # Retrieve the type from editAnnotationEvent
+    #     # Do corresponding method call
          
-    def add_annotation(self):
-        """ 
-        """
-        # Start by refreshing plot, but this is slow
-        # Later on manually add
+    # def add_annotation(self):
+    #     """ 
+    #     """
+    #     # Start by refreshing plot, but this is slow
+    #     # Later on manually add
 
-    def delete_annotation(self):
-        """ 
-        """
+    # def delete_annotation(self):
+    #     """ 
+    #     """
     
-    def update_annotation(self):
-        """ 
-        """
+    # def update_annotation(self):
+    #     """ 
+    #     """
 
 
     # def slot_addedAnnotation():

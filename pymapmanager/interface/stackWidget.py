@@ -750,6 +750,8 @@ class stackWidget(QtWidgets.QMainWindow):
         # self._selectionInfoWidget : SelectionInfoWidget = SelectionInfoWidget(pointAnnotations = self.myStack.getPointAnnotations())
         self._selectionInfoWidget = \
                             SelectionInfoWidget(pointAnnotations = self.myStack.getPointAnnotations())
+        # self._selectionInfoWidget = SelectionInfoWidget()
+        # self._selectionInfoWidget = pymapmanager.interface.SelectionInfoWidget()
         self.selectionInfoDock = QtWidgets.QDockWidget('Selection Info',self)
         self.selectionInfoDock.setWidget(self._selectionInfoWidget)
         self.selectionInfoDock.setFloating(False)
@@ -1353,6 +1355,13 @@ class stackWidget(QtWidgets.QMainWindow):
     # def slot_parameterChanged(self, parameterDict):
     def slot_saveParameters(self, parameterDict):
         """
+            Saves new Analysis parameter values. This is not applied to a spine unless the user press the "reanalyze" Button.
+
+            Args:
+                parameterDict: Dictionary of parameter where values have been changed within the analysisParamWidget
+            
+            Returns:
+
         """
         # Using key in dictionary match it up with key in pointAnnotations and update
         _pointAnnotations = self.myStack.getPointAnnotations()
