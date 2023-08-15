@@ -49,9 +49,13 @@ class ImagePlotWidget(QtWidgets.QWidget):
     """Signal emitted when mouse is moved.
     """
 
+    signalMouseEvent = QtCore.Signal(object)
+    """To allow linking windows.
+    """
+
     signalAnnotationSelection2 = QtCore.Signal(object)  # pymapmanager.annotations.SelectionEvent
     #signalCancelSelection = QtCore.Signal(object, object)
-    signalCancelSelection2 = QtCore.Signal(object)  # pymapmanager.annotations.SelectEvent
+    #signalCancelSelection2 = QtCore.Signal(object)  # pymapmanager.annotations.SelectEvent
     """Signal emitted on keyboard 'esc' to cancel all selections
     
     Args:
@@ -87,7 +91,8 @@ class ImagePlotWidget(QtWidgets.QWidget):
     # Updating radius
     signalRadiusChanged = QtCore.Signal(object)
 
-    def __init__(self, myStack : pymapmanager.stack,
+    def __init__(self,
+                    myStack : pymapmanager.stack,
                     contrastDict : dict,
                     colorLutDict : dict,
                     displayOptionsDict : dict,
@@ -102,7 +107,7 @@ class ImagePlotWidget(QtWidgets.QWidget):
 
         self._stackWidgetParent = stackWidgetParent
         # added to get the current selection
-
+        
         self._currentSlice = 0
         
         _channel = self._displayOptionsDict['windowState']['defaultChannel']
@@ -134,7 +139,7 @@ class ImagePlotWidget(QtWidgets.QWidget):
 
         self.refreshSlice()
 
-    def wheelEvent(self, event):
+    def wheelEvent_monkey_patch(self, event):
         """Respond to mouse wheel and set new slice.
 
         Override PyQt wheel event.
@@ -295,11 +300,19 @@ class ImagePlotWidget(QtWidgets.QWidget):
             #self.signalCancelSelection.emit(None, False)  # (selIdx, isAlt)
 
             # two signals, one for each of our plots (point, line)
-            _pointSelectionEvent = pymapmanager.annotations.SelectionEvent(self._aPointPlot._annotations)
-            self.signalCancelSelection2.emit(_pointSelectionEvent)
+            # _pointSelectionEvent = pymapmanager.annotations.SelectionEvent(self._aPointPlot._annotations)
+            _pointSelectionEvent = pymapmanager.annotations.SelectionEvent(self._aPointPlot._annotations,
+                                                                      rowIdx=[],
+                                                                      isAlt=False,
+                                                                      stack=self._myStack)
+            self.signalAnnotationSelection2.emit(_pointSelectionEvent)
 
-            _segmentSelectionEvent = pymapmanager.annotations.SelectionEvent(self._aLinePlot._annotations)
-            self.signalCancelSelection2.emit(_segmentSelectionEvent)
+            # _segmentSelectionEvent = pymapmanager.annotations.SelectionEvent(self._aLinePlot._annotations)
+            # _segmentSelectionEvent = pymapmanager.annotations.SelectionEvent(self._aLinePlot._annotations,
+            #                                                           rowIdx=[],
+            #                                                           isAlt=False,
+            #                                                           stack=self._myStack)
+            # self.signalAnnotationSelection2.emit(_segmentSelectionEvent)
 
         elif event.key() in [QtCore.Qt.Key_Delete, QtCore.Qt.Key_Backspace]:
             # if we have a point selection. delete it from backend
@@ -343,9 +356,7 @@ class ImagePlotWidget(QtWidgets.QWidget):
             For now this will only delete selected point annotations in point plot.
             It does not delete segments.
         """
-        
-        logger.info('')
-        
+                
         # for _aLinePlot we will have to types of selected annotation:
         #   1) point in line
         #   2) segmentID
@@ -361,6 +372,8 @@ class ImagePlotWidget(QtWidgets.QWidget):
         # if there is a selection and it is an annotation point (not a line)
         _currentSelection = self._stackWidgetParent.getCurrentSelection()
         
+        logger.info(_currentSelection)
+
         if not _currentSelection.isPointSelection():
             return
         _rows = _currentSelection.getRows()
@@ -376,9 +389,8 @@ class ImagePlotWidget(QtWidgets.QWidget):
         self.signalDeletingAnnotation.emit(deleteDict)
 
 
-    #def _onMouseClick_scene(self, event : pg.GraphicsScene.mouseEvents.MouseClickEvent):
     def _onMouseClick_scene(self, event):
-        """If we get shift+click, make new annotation item.
+        """If we get shift+click, make new annotation.
         
         Just emit the coordinates and have the parent stack window decide
         on the point type given its state
@@ -391,8 +403,9 @@ class ImagePlotWidget(QtWidgets.QWidget):
         Note:
             This seems to get called AFTER _on_mouse_click in our annotation plots?
 
-        Args:
-            event: pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent
+        Parameters
+        ----------
+        event: pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent
         """
         # logger.info(f'event:{type(event)}')
 
@@ -409,33 +422,39 @@ class ImagePlotWidget(QtWidgets.QWidget):
         x = int(imagePos.x())
         y = int(imagePos.y())
         z = self._currentSlice
-        # get the current selection from the parent stack widget
+        
+        # get the current selection from the parent stack widget (can be none)
         currentSelection = self._stackWidgetParent.getCurrentSelection()
         _selectedRows = currentSelection.getRows()
-        addedRowIdx =_selectedRows[0]
+        # if _selectedRows is not None:
+        if len(_selectedRows) > 0:
+            addedRowIdx =_selectedRows[0]
+        else:
+            addedRowIdx = None
 
         _addAnnotationEvent = pymapmanager.annotations.AddAnnotationEvent(z, y, x)
         _addAnnotationEvent.setAddedRow(addedRowIdx)
-        logger.info(f'-->> signalMouseClick.emit {_addAnnotationEvent}')
-        
+                
         # _addAnnotationEvent.setAddedRow(addedRowIdx)
 
         # logger.info(f'-->> selectionEvent.type {_selectionEvent.type}')
         # logger.info(f'-->> check type.emit {pymapmanager.annotations.lineAnnotations}')
             
-        if self._mouseConnectState:
+        if self._mouseConnectState and addedRowIdx is not None:
             tempLinePointIndex = 150
+            logger.error(f'we are debugging with hard coded tempLinePointIndex:{tempLinePointIndex}')
             _selectionEvent = pymapmanager.annotations.SelectionEvent(pymapmanager.annotations.lineAnnotations, 
                                                                       rowIdx = addedRowIdx,
                                                                       lineIdx = tempLinePointIndex)
-            logger.info(f'-->> signalMouseClickConnect.emit {_selectionEvent}')
+            logger.info(f'-->> signalMouseClickConnect.emit _selectionEvent: {_selectionEvent}')
             
             logger.info(f'-->> ENTERING CONNECT STATE')
             self.signalMouseClickConnect.emit(_selectionEvent)
             self._mouseConnectState = False
 
-        if self._mouseMovedState:
+        if self._mouseMovedState and addedRowIdx is not None:
             logger.info(f'-->> ENTERING MOVE STATE')
+            logger.info(f'-->> signalMouseClick.emit {_addAnnotationEvent}')
             # Either set backend or send signal to set backend?
             self.signalMouseClick.emit(_addAnnotationEvent)
             self._mouseMovedState = False
@@ -477,7 +496,8 @@ class ImagePlotWidget(QtWidgets.QWidget):
             #     'y': y,
             #     'z': z,
             # }
-            _addAnnotationEvent = pymapmanager.annotations.AddAnnotationEvent(z, y, x)
+            pointType = pymapmanager.annotations.pointTypes.spineROI
+            _addAnnotationEvent = pymapmanager.annotations.AddAnnotationEvent(z, y, x, pointType)
             logger.info(f'-->> signalAddingAnnotation.emit {_addAnnotationEvent}')
             self.signalAddingAnnotation.emit(_addAnnotationEvent)
 
@@ -519,7 +539,7 @@ class ImagePlotWidget(QtWidgets.QWidget):
         padding = 0.0
         self._plotWidget.setRange(imageBoundingRect, padding=padding)
  
-    def _zoomToPoint(self, x, y, zoomFieldOfView=300):
+    def _zoomToPoint(self, x, y, zoomFieldOfView=100):
         """Zoom to point (x,y) with a width/height of widthHeight.
         
         Args:
@@ -527,6 +547,7 @@ class ImagePlotWidget(QtWidgets.QWidget):
             y:
             zoomFieldOfView: Width/height of zoom
         """
+        logger.warning(f'we need to pass a display option for zoomFieldOfView: {zoomFieldOfView}')
         halfZoom = zoomFieldOfView / 2
         l = x - halfZoom
         t = y - halfZoom
@@ -540,10 +561,10 @@ class ImagePlotWidget(QtWidgets.QWidget):
         padding = 0.0
         self._plotWidget.setRange(_zoomRect, padding=padding)
        
-    def slot_setSlice(self, sliceNumber):
+    def slot_setSlice(self, sliceNumber, doEmit=True):
         if self._blockSlots:
             return
-        self._setSlice(sliceNumber)
+        self._setSlice(sliceNumber, doEmit=doEmit)
 
     def slot_selectAnnotation2(self, selectionEvent : pymapmanager.annotations.SelectionEvent):
         if self._blockSlots:
@@ -560,16 +581,26 @@ class ImagePlotWidget(QtWidgets.QWidget):
             if selectionEvent.isPointSelection():
                 #print('!!! SET SLICE AND ZOOM')
                 rowIdx = selectionEvent.getRows()
-                rowIdx = rowIdx[0]
-                x = selectionEvent.annotationObject.getValue('x', rowIdx)
-                y = selectionEvent.annotationObject.getValue('y', rowIdx)
-                z = selectionEvent.annotationObject.getValue('z', rowIdx)
-                logger.info(f' calling _zoomToPoint with x:{x} and y:{y}')
-                self._zoomToPoint(x, y)
-                logger.info(f' calling _setSlice with z:{z}')
-                self._setSlice(z)
+                if len(rowIdx) > 0:
+                    rowIdx = rowIdx[0]
+                    x = selectionEvent.annotationObject.getValue('x', rowIdx)
+                    y = selectionEvent.annotationObject.getValue('y', rowIdx)
+                    z = selectionEvent.annotationObject.getValue('z', rowIdx)
+                    #logger.info(f' calling _zoomToPoint with x:{x} and y:{y}')
+                    self._zoomToPoint(x, y)
+                    #logger.info(f' calling _setSlice with z:{z}')
+                    self._setSlice(z)
 
         self._blockSlots = False
+
+    def slot_deletedAnnotation(self, delDict : dict):
+        """On delete, cancel spine selection.
+        """
+        _pointSelectionEvent = pymapmanager.annotations.SelectionEvent(self._aPointPlot._annotations,
+                                                                    rowIdx=[],
+                                                                    isAlt=False,
+                                                                    stack=self._myStack)
+        self.signalAnnotationSelection2.emit(_pointSelectionEvent)
 
     def slot_setContrast(self, contrastDict):
         #logger.info(f'contrastDict:')
@@ -690,7 +721,7 @@ class ImagePlotWidget(QtWidgets.QWidget):
     def refreshSlice(self):
         self._setSlice(self._currentSlice)
     
-    def _setSlice(self, sliceNumber : int):
+    def _setSlice(self, sliceNumber : int, doEmit = True):
         """
         
         Args:
@@ -770,9 +801,10 @@ class ImagePlotWidget(QtWidgets.QWidget):
         # emit
         #logger.info(f'  -->> emit signalUpdateSlice() _currentSlice:{self._currentSlice}')
 
-        self._blockSlots = True
-        self.signalUpdateSlice.emit(self._currentSlice)
-        self._blockSlots = False
+        if doEmit:
+            self._blockSlots = True
+            self.signalUpdateSlice.emit(self._currentSlice)
+            self._blockSlots = False
 
     def toggleImageView(self):
         """Show/hide image.
@@ -794,16 +826,41 @@ class ImagePlotWidget(QtWidgets.QWidget):
         la.calculateAndStoreRadiusLines(segmentID = segmentID, radius = radius)
         self.refreshSlice()
 
+    def _old_tmpSlot(self, obj):
+        logger.info(obj)
+
+    def _old_monkeyPatchMouseMove(self, event, emit=True):
+        # PyQt5.QtGui.QMouseEvent
+        logger.info(event)
+        self._plotWidget._orig_mouseMoveEvent(event)
+        
+        if emit:
+            self.signalMouseEvent.emit(event)
+
     def _buildUI(self):
         hBoxLayout = QtWidgets.QHBoxLayout()
 
         # we are now a QWidget
         self._plotWidget = pg.PlotWidget()  # pyqtgraph.widgets.PlotWidget.PlotWidget
         # monkey patch wheel event
-        logger.warning(f'remember, we are monkey patching plotWidget wheel event')
-        logger.info(f'  self._plotWidget:{self._plotWidget}')
+        logger.warning(f'remember, we are monkey patching imagePlotWidget wheel event')
+        # logger.info(f'  self._plotWidget:{self._plotWidget}')
         self._plotWidget.orig_wheelEvent = self._plotWidget.wheelEvent
-        self._plotWidget.wheelEvent = self.wheelEvent
+        self._plotWidget.wheelEvent = self.wheelEvent_monkey_patch
+
+        # 20230706 trying to get signal on mouse drag so we can link stack widgets
+        # print(self._plotWidget.sigTransformChanged)
+        # sys.exit(1)
+        #if 1:
+            # nope
+            # self._plotWidget.sigTransformChanged.connect(self.tmpSlot)
+            # self._plotWidget._orig_mouseMoveEvent = self._plotWidget.mouseMoveEvent
+            # self._plotWidget.mouseMoveEvent = self.monkeyPatchMouseMove
+
+            # nope
+            # pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene
+            # print('self._plotWidget.scene():', type(self._plotWidget.scene()))
+            # print(self._plotWidget.scene().mouseDragEvent)
 
         hBoxLayout.addWidget(self._plotWidget)
 
@@ -848,7 +905,8 @@ class ImagePlotWidget(QtWidgets.QWidget):
                                                                 _displayOptions,
                                                                 _displayOptionsLine,
                                                                 lineAnnotations,
-                                                                self._myStack)
+                                                                stack=self._myStack,
+                                                                )
         self._aPointPlot.signalAnnotationClicked2.connect(self.slot_selectAnnotation2)
         self.signalAnnotationSelection2.connect(self._aPointPlot.slot_selectAnnotation2)
         self.signalUpdateSlice.connect(self._aPointPlot.slot_setSlice)
@@ -859,7 +917,8 @@ class ImagePlotWidget(QtWidgets.QWidget):
         _displayOptions = self._displayOptionsDict['lineDisplay']
         self._aLinePlot = pymapmanager.interface.linePlotWidget(lineAnnotations,
                                                                 self._plotWidget,
-                                                                _displayOptions)
+                                                                _displayOptions,
+                                                                stack=self._myStack)
 
         self._aLinePlot.signalAnnotationClicked2.connect(self.slot_selectAnnotation2)
         self.signalAnnotationSelection2.connect(self._aLinePlot.slot_selectAnnotation2)

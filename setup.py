@@ -79,6 +79,7 @@ setup(
             'ipython',
             'jupyter',
             'pytest',
+            'pytest-qt',
             'flake8'
 		],
         'test': [

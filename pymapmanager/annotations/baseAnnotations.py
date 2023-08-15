@@ -19,6 +19,7 @@ import pymapmanager.annotations
 
 from pymapmanager._logger import logger
 
+# class EditAnnotationEvent():
 class AddAnnotationEvent():
     """Added annotations are proposed as just (z,y,x) points
     
@@ -28,7 +29,12 @@ class AddAnnotationEvent():
         pymapamanger.annotations.pointAnnotation.pointTypes
         pymapamanger.annotations.lineAnnotations.linePointTypes
     """
-    def __init__(self, z : float, y : float, x : float, pointType = None):
+    def __init__(self,
+                    # add, delete, change
+                    z : float,
+                    y : float,
+                    x : float,
+                    pointType = None):
         self._dict = {
             'x': x,
             'y': y,
@@ -38,6 +44,12 @@ class AddAnnotationEvent():
             'addedRowIdx': None,
         }      
 
+    def __str__(self):
+        retStr = 'AddAnnotationEvent\n'
+        for k,v in self._dict.items():
+            retStr += f'  {k}: {v}\n'
+        return retStr
+        
     def getZYXDictForm(self):
         dict = {
             'x': self._dict['x'],
@@ -77,7 +89,7 @@ class SelectionEvent():
                  isAlt : bool = False,
                  isShift : bool = False,
                  lineIdx : List[int] = None,
-                 ):
+                 stack : "pymapmanager.stack" = None):
         
         if isinstance(rowIdx, int):
             rowIdx = [rowIdx]
@@ -88,7 +100,8 @@ class SelectionEvent():
             'isEsc': isEsc,
             'isAlt': isAlt,
             'isShift': isShift,
-            'lineIdx': lineIdx
+            'lineIdx': lineIdx,
+            'stack': stack,
         }
 
     def __str__(self):
@@ -103,16 +116,8 @@ class SelectionEvent():
         return self.type == pymapmanager.annotations.pointAnnotations
     
     def isLineSelection(self):
-        # annotationType = self._selDict['annotationObject']
-        logger.info(f'--->> check type {self.type}')
-        # logger.info(f'--->> controlled type {pymapmanager.annotations.lineAnnotations}')
-        # return annotationType == pymapmanager.annotations.lineAnnotations
-
-        # Altered on 4/19 because self.type would return <class 'type'>
-        # rather than  <class 'pymapmanager.annotations.lineAnnotations.lineAnnotations'>
         return self.type == pymapmanager.annotations.lineAnnotations
     
-
     def linePointSelected(self):
         """
         isLineSelection is throwing error
@@ -155,6 +160,9 @@ class SelectionEvent():
         _values = self.annotationObject.getValues(colStr, self.getRows())
         return _values
     
+    def getStack(self):
+        return self._selDict['stack']
+
     @property
     def isEsc(self):
         return self._selDict['isEsc']
@@ -309,7 +317,11 @@ class annotationType(enum.Enum):
     segment = 'segment'
 
 class baseAnnotations():
-    def getAnnotationDict(self):
+    def _old_getAnnotationDict(self, rowIdx : int):
+        """Get one row as a dict.
+        
+        Depreciated, just use annotations as an iter !
+        """
         theDict = {}
         for column in self._columns:
             theDict[column.getName()] = None
@@ -323,7 +335,7 @@ class baseAnnotations():
         Args:
             path (str | None): Full path to a file (a csv file). If None then wait to create on save.
         """
-        self._analsisParams = analysisParams
+        self._analysisParams = analysisParams
         self._path = path
         #Full path to file we load/save. Can be None if we are new and have not saved.
         
@@ -634,9 +646,7 @@ class baseAnnotations():
     #     return self._df
     
     def getAllColumnNames(self):
-        """
-        
-        Returns a list of all column names to be displayed in table interface
+        """Returns a list of all column names to be displayed in table interface
         """
         statList = []
 
@@ -701,19 +711,21 @@ class baseAnnotations():
                     ) -> Union[np.ndarray, None]:
         """Get value(s) from a column or list of columns.
 
-        Args:
-            colName (str | List(str)): Column(s) to get values from
-            rowIdx (int | list(int)): Rows to get values from
+        Arguments
+        ==========
+        colName : str | List(str)
+            Column(s) to get values from
+        rowIdx: int | list(int)
+            Rows to get values from
 
-        Returns:
+        Returns
+        =======
             Annotation values (np.ndarray)
         """
 
-        # ensure it is a list
         if not isinstance(colName, list):
             colName = [colName]
 
-        # check column names exist
         if not self.columns.columnIsValid(colName):
             logger.error(f'did not find column name "{colName}"')
             return
@@ -726,28 +738,17 @@ class baseAnnotations():
         df = self._df
      
         try:
-            # TODO (cudmore) can't mix compareColName (reduceRows) and rowIdx
-            # ret = df.loc[rowIdx, colName].to_numpy(na_value=np.nan)
-
             # 6/12 - Johnson changed
             # na_value=np.nan argument causes error for certain columns such as "indexes"
             # might not be necessary and removed
             ret = df.loc[rowIdx, colName].to_numpy()
 
-            # print("ret", ret)
-
-            #logger.info(f'ret:{type(ret)} {ret.shape}')
-            #if len(colName)==1:
             if ret.shape[1]==1:
                 ret = ret.flatten() # ensure 1D (for napari)
             return ret
-        #except (IndexError) as e:
-        #    logger.error(f'Did not find rows: "{rowIdx}"')
-        #    return None
-        #except (IndexingError) as e:
-        #    logger.error(f'IndexingError: {e}')
         except (KeyError) as e:
             logger.error(f'bad rowIdx(s) {rowIdx}, colName:{colName} range is 0...{len(self)-1}')
+            logger.error(f'  _path: {self._path}')
             #print(traceback.format_exc())
             return None
 

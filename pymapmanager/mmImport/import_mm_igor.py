@@ -1,17 +1,18 @@
 """
 Script to import mapmanager-igor into native pymapmanager.
+
+TODO:
+    20230707, add new Johnson code to store spine side left/right
+        See: utils/updateAllSpineAnalysis.py
 """
-import os, sys
-#from pprint import pprint
+
+import os
+import sys
+import time
 
 import pandas as pd
-#import numpy as np
-
-# from pymapmanager.annotations.pointAnnotations import pointAnnotations
-# from pymapmanager.stack import stack
 
 import pymapmanager as pmm
-
 from pymapmanager._logger import logger
 
 # a function to import
@@ -139,18 +140,17 @@ def _import_lines_mapmanager_igor(path : str):
 
     return header, df
 
-def importTimepoint(mapName : str = 'rr30a', session : int =0):
-    # 20230521
-
-    """
-    This will do a fresh import from MapManager Igor export txt files
+def importTimepoint(mapName : str = 'rr30a', session : int = 0):
+    """This will do a fresh import from MapManager Igor export txt files
     Once we load the stack, we start with empty point annotations
     Any existing data will be lost
+
+    # 20230521
     """
 
     # 1)
     # import igor stackdb
-    igorPath = f'/Users/cudmore/Sites/PyMapManager-Data/public/{mapName}/stackdb/{mapName}_s{session}_db2.txt'
+    igorPath = f'../PyMapManager-Data/public/{mapName}/stackdb/{mapName}_s{session}_db2.txt'
     #path = '/Users/cudmore/Sites/PyMapManager-Data/public/rr30a/stackdb/rr30a_s0_db2.txt'
     header, df = _import_points_mapmanager_igor(igorPath)
 
@@ -158,15 +158,20 @@ def importTimepoint(mapName : str = 'rr30a', session : int =0):
     # print(df)
 
     # load an empty stack
-    dstPath = f'/Users/cudmore/Sites/PyMapManager-Data/maps/{mapName}/{mapName}_s{session}_ch2.tif'
+    dstPath = f'../PyMapManager-Data/maps/{mapName}/{mapName}_s{session}_ch2.tif'
     # dstPath = '/Users/cudmore/Sites/PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
     s = pmm.stack(dstPath)
+    s.loadImages(channel=1)
     s.loadImages(channel=2)
     
     analysisParams = s.analysisParams
 
     # make a new empty point annotations
-    s._annotations = pmm.annotations.pointAnnotations(analysisParams=analysisParams)
+    # tmpDf = s._annotations.getDataFrame()
+    # print(tmpDf.columns)
+    # sys.exit(1)
+
+    s._annotations = pmm.annotations.pointAnnotations(stack=s, analysisParams=analysisParams)
     pa = s.getPointAnnotations()
 
     # assign values in point annotations from igor
@@ -191,12 +196,12 @@ def importTimepoint(mapName : str = 'rr30a', session : int =0):
     # 2)
     # do the same for lines
     # import igor stackdb
-    igorLinePath = f'/Users/cudmore/Sites/PyMapManager-Data/public/{mapName}/line/{mapName}_s{session}_l.txt'
+    igorLinePath = f'../PyMapManager-Data/public/{mapName}/line/{mapName}_s{session}_l.txt'
     # igorLinePath = '/Users/cudmore/Sites/PyMapManager-Data/public/rr30a/line/rr30a_s1_l.txt'
     headerLine, dfLines = _import_lines_mapmanager_igor(igorLinePath)
     # print('headerLine:', headerLine)
-    print('dfLines')
-    print(dfLines.head())
+    # print('dfLines')
+    # print(dfLines.head())
 
     # make a new empty point annotations
     s._lines = pmm.annotations.lineAnnotations(analysisParams=analysisParams)
@@ -222,17 +227,25 @@ def importTimepoint(mapName : str = 'rr30a', session : int =0):
     print('la._df')
     print(la._df.head())
 
+    # (1) set analysis params for all spines
+    pa.storeParameterValues(None, la, imgChannel=None, stack=None)
+
     #
-    # call johnsons functions to find brightest path
+    # (2) call johnsons functions to find brightest path
     segmentID = None
     channel = 2
     pa.calculateBrightestIndexes(s, segmentID, channel)
 
     #
-    # call johnsons function to get segment radius lines
+    # (3) call johnsons function to get segment radius lines
     radius = 3
     # medianFilterWidth = 5
-    la.calculateAndStoreRadiusLines(segmentID, radius=radius)
+    startSec = time.time()
+    #la.calculateAndStoreRadiusLines(segmentID, radius=radius)  # johnson code
+    la.makeRadiusLines(segmentID, radius=radius)  # cudmore code
+    stopSec = time.time()
+    print('radius lines took', round(stopSec-startSec,3), 'seconds')
+    # calculateAndStoreRadiusLines radius lines took 0.692 seconds
 
     #
     # calculate xBackground, yBackground, intensity columns
@@ -240,11 +253,12 @@ def importTimepoint(mapName : str = 'rr30a', session : int =0):
     # for one spine use `setSingleSpineOffsetDictValues``
     # june 7, was this
     # pa.setBackGroundMaskOffsets(segmentID=None, lineAnnotation=la, channelNumber=channel, stack=s)
-
+    
+    # (4)
     pa.updateAllSpineAnalysis(None, la, channel, s)
 
-    # export roi as json
-    # exportAllSpineROI
+    # (5)
+    pa.storeROICoords(None, la)
 
     # finally, save
     # s.save()
@@ -262,7 +276,7 @@ def loadWhatWeConverted():
     app = pmm.interface.PyMapManagerApp()
     
     # create a stack widget
-    bsw = pmm.interface.stackWidget(myStack=myStack)
+    bsw = pmm.interface.stackWidget(stack=myStack)
 
     # snap to an image
     #bsw._imagePlotWidget.slot_setSlice(30)
@@ -280,7 +294,8 @@ if __name__ == '__main__':
     # session 4 is failing
     # importTimepoint(mapName, session=4)
 
-    importTimepoint(mapName, session=8)
+    # just one timepoint
+    importTimepoint(mapName, session=6)
 
     if 0:
         # only do this once, otherwise spines will be repeated
@@ -289,4 +304,4 @@ if __name__ == '__main__':
             #     break
             importTimepoint(mapName, timepointIndex)
     
-    loadWhatWeConverted()
+    #loadWhatWeConverted()

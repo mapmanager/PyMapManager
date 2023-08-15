@@ -290,7 +290,7 @@ def run():
     # run pyqt interface
     app = pymapmanager.interface.PyMapManagerApp()
 
-    bsw = pmm.interface.stackWidget(myStack=myStack)
+    bsw = pmm.interface.stackWidget(stack=myStack)
 
     # useful on startup, to snap to an image
     # bsw.slot_setSlice(30)

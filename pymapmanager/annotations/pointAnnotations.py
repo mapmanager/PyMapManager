@@ -1,10 +1,9 @@
 """
 """
-#import os
 import enum
 import math
 from pprint import pprint
-from typing import List, Union
+from typing import List, Union, Optional
 
 import pandas as pd
 import numpy as np  # TODO (cudmore) only used for return signature?
@@ -16,6 +15,8 @@ from pymapmanager.annotations import baseAnnotations
 from pymapmanager.annotations import ColumnItem
 from pymapmanager.annotations import comparisonTypes
 # from pymapmanager.annotations import fileTypeClass
+
+# from pymapmanager import AnalysisParams  # gives circular import
 
 import pymapmanager.utils
 import pymapmanager.annotations.mpSpineInt
@@ -41,14 +42,15 @@ class pointAnnotations(baseAnnotations):
 
     # def __init__(self, path : Union[str, None] = None, analysisParams = None):
     # def __init__(self, stack, la = None, *args,**kwargs):
-    def __init__(self, stack, la = None, path = None, analysisParams = None):
+    def __init__(self, stack, la = None, path = None,
+                    analysisParams : "AnalysisParams" = None):
         # super().__init__(*args,**kwargs)
         super().__init__(path, analysisParams)
 
         # done in parent
         # june 28, this is done in the parent???
         #self._analysisParams = kwargs['analysisParams']
-        self._analysisParams = analysisParams
+        # self._analysisParams : "AnalysisParams" = analysisParams
         
         self._stack = stack
         self._lineAnnotations = la
@@ -285,13 +287,49 @@ class pointAnnotations(baseAnnotations):
 
     def addSpine(self, x, y, z,
                  segmentID,
-                 dfSegment):
+                stack : "pymapmanager.stack"
+                ):
+        
         newRow = super().addAnnotation(x, y, z)
 
-        self._df.loc[newRow, 'roiType'] = pointTypes.spineROI
+        logger.info(f'making new spine: newRow:{newRow} x:{x}, y:{y}, z:{z}, segmentID:{segmentID}')
+
+        #la : "pymapmanager.annotations.lineAnnotations",
+        la = stack.getLineAnnotations()
+
+        imageChannel = 2
+        
+        self._df.loc[newRow, 'roiType'] = pointTypes.spineROI.value
         self._df.loc[newRow, 'segmentID'] = segmentID
 
-        # calculate brightest index, rois, and intensity
+        # spine annotations have a lot of default columns
+        paramKeyList = self._analysisParams.getParamList()
+        for paramKey in paramKeyList:
+            self._df.loc[newRow, paramKey] = self._analysisParams.getCurrentValue(paramKey)
+
+        # TODO
+        # # calculate brightest index, rois, and intensity
+
+        xyzSegment = la.get_zyx_list(segmentID)
+                    
+        # grab the raw image data the user is viewing
+        #imgData = self.getStack().getImageChannel(imageChannel)
+        _imageSlice = z
+        imgSliceData = stack.getImageSlice(_imageSlice, imageChannel)
+        # TODO: change this to getMaxImageSlice
+        newZYXValues = None
+        # this does lots:
+        #   (i) connect spine to brightest index on segment
+        #   (ii) calculate all spine intensity for a channel
+        self.updateSpineInt(newZYXValues,
+                                                    newRow,
+                                                    xyzSegment,
+                                                    imageChannel,
+                                                    imgSliceData,
+                                                    la
+                                                    )
+                                                    
+        return newRow
 
     def addAnnotation(self,
                     x, y, z,
@@ -373,15 +411,20 @@ class pointAnnotations(baseAnnotations):
         #                                                   upSlices=upSlices, downSlices = downSlices)
 
         spineDict = self.getRows_v2(rowIdx, asDict=True)
-        analysisDict = mpSpineInt.intAnalysisWorker(spineDict, zyxLine, imgData)
+        analysisDict = pymapmanager.annotations.mpSpineInt.intAnalysisWorker(spineDict, zyxLine, imgData)
         
         # fill in all the values
         logger.info('intAnalysisWorker returned')
         print(analysisDict)
 
-    def updateSpineInt(self, newZYXValues: None, spineIdx, zyxLineSegment, 
-                       channelNumber : int, imgData : np.array, 
-                       la: "pymapmanager.annotations.lineAnnotations", brightestIndex: int = None):
+    def updateSpineInt(self,
+                        newZYXValues: None,
+                        spineIdx,
+                        zyxLineSegment, 
+                       channelNumber : int,
+                       imgData : np.array, 
+                       la: "pymapmanager.annotations.lineAnnotations",
+                       brightestIndex: int = None):
         """Update all spine intensity measurements for:
             (1) a spine mask roi
             (2) minimal background roi (from a grid of candidates).
@@ -413,6 +456,7 @@ class pointAnnotations(baseAnnotations):
         # logger.info('This is setting lots of columns in our backend with all intensity measurements')
         # logger.info(f'  imgData.shape {imgData.shape}')
 
+        #TODO: before calling updateSpineInt() just set new z/y/x, no need for logic
         # logger.info(f"spineIdx:{spineIdx}")
         if(newZYXValues is None):
             _z = self.getValue('z', spineIdx)
@@ -426,9 +470,6 @@ class pointAnnotations(baseAnnotations):
             self.setValue('y', spineIdx, _y)
             self.setValue('x', spineIdx, _x)
 
-        # Send signal to update table widget and refresh interface image
-        # _myPointListWidget
-
         # logger.info(f"x coordinate value :{_x}")
         # logger.info(f"y coordinate value :{_y}")
         # logger.info(f"z coordinate value :{_z}")
@@ -436,6 +477,7 @@ class pointAnnotations(baseAnnotations):
         segmentID = self.getValue('segmentID', spineIdx)
         chStr = str(channelNumber)
         
+        #TODO: before calling updateSpineInt() just set brightestIdx to np.nan and calc here if it is np.nan
         # 1) find brightest path to line segment
         #brightestIndex = self.reconnectToSegment(spineIdx, xyzLineSegment, imgData)
         if (brightestIndex is None):
@@ -445,22 +487,25 @@ class pointAnnotations(baseAnnotations):
             brightestIndex = self.calculateSingleBrightestIndex(channel = channelNumber, spineRowIdx = spineIdx
                                                              , lineAnnotation = la, img = imgData)
             
-            logger.info(f"newly calculated brightestIndex is :{brightestIndex}")
+            logger.info(f"  newly calculated brightestIndex is :{brightestIndex}")
 
-        logger.info(f"brightestIndex:{brightestIndex}")
+        logger.info(f"  brightestIndex:{brightestIndex}")
 
         # 1.1) set the backend value
         self.setValue('brightestIndex', spineIdx, brightestIndex)
 
         # New Step: 6/29/23 
         # Add connection side to indicate which side to connect spine to line
-        closestPointSide = la.getSingleSpineLineConnection(brightestIndex, _x, _y)
-        if (closestPointSide == "Left"):
-            self.setValue('connectionSide', spineIdx, "Left")
-        elif (closestPointSide == "Right"):
-            self.setValue('connectionSide', spineIdx, "Right")
-        else:
-            logger.info(f"Error when setting connection side:{closestPointSide}")
+        spinePoint = (_x, _y)
+        xLeft= la.getValue(['xLeft'], brightestIndex)
+        xRight= la.getValue(['xRight'], brightestIndex)
+        yLeft= la.getValue(['yLeft'], brightestIndex)
+        yRight= la.getValue(['yRight'], brightestIndex)
+
+        leftRadiusPoint = (xLeft, yLeft)
+        rightRadiusPoint = (xRight, yRight)
+        
+        # closestPoint = pymapmanager.utils.getCloserPoint2(spinePoint, leftRadiusPoint, rightRadiusPoint)
 
         # 2) calculate spine roi (spine rectangle - segment polygon) ... complicated
 
@@ -479,8 +524,8 @@ class pointAnnotations(baseAnnotations):
             self.setValue('yLine', spineIdx, yBrightestLine)
             self.setValue('zLine', spineIdx, zBrightestLine)
         
-        logger.info(f"xBrightestLine:{xBrightestLine}")
-        logger.info(f"yBrightestLine:{yBrightestLine}")
+        logger.info(f"  xBrightestLine:{xBrightestLine}")
+        logger.info(f"  yBrightestLine:{yBrightestLine}")
         
         # Analysis Parameters
         # width = self._analysisParams.getCurrentValue("width")
@@ -493,9 +538,9 @@ class pointAnnotations(baseAnnotations):
         extendTail = int(self.getValue('extendTail', spineIdx))
         radius = int(self.getValue('radius', spineIdx))
 
-        logger.info(f"width:{width}")
-        logger.info(f"extendHead:{extendHead}")
-        logger.info(f"extendTail:{extendTail}")
+        logger.info(f"  width:{width}")
+        logger.info(f"  extendHead:{extendHead}")
+        logger.info(f"  extendTail:{extendTail}")
 
         spineRectROI = pymapmanager.utils.calculateRectangleROIcoords(xPlotSpines = _x, yPlotSpines = _y,
                                                                       xPlotLines = xBrightestLine,
@@ -516,8 +561,6 @@ class pointAnnotations(baseAnnotations):
         finalSpineROIMask = pymapmanager.utils.calculateFinalMask(rectanglePoly = spineRectROI, 
                                                                   linePoly = lineSegmentROI)
                                                                 
-        # logger.info(f"finalSpineROIMask:{finalSpineROIMask}")
-
         # 3) calculate dict for spine with keys ('Sum', 'Min', 'Max', 'Mean', ....)
         #   and store as columns in our pandas dataframe
 
@@ -559,7 +602,9 @@ class pointAnnotations(baseAnnotations):
         self.setValue('xBackgroundOffset', spineIdx, backgroundRoiOffset[0])
         self.setValue('yBackgroundOffset', spineIdx, backgroundRoiOffset[1])
 
-        print("spineIdx", spineIdx)
+        print('pa.updateSpineInt spineIdx:', spineIdx)
+        print('  ', self._path)
+
         backgroundMask = pymapmanager.utils.calculateBackgroundMask(finalSpineROIMask, backgroundRoiOffset)
 
         # TODO: Check if backgroundMask is out of bounds (of 1024x1024)
@@ -574,13 +619,17 @@ class pointAnnotations(baseAnnotations):
 
         # Segment
         segmentIntDict = pymapmanager.utils._getIntensityFromMask(segmentMask, imgData)
-        self.setIntValue(spineIdx, 'segment', channelNumber, segmentIntDict)
+        if segmentIntDict is not None:
+            self.setIntValue(spineIdx, 'segment', channelNumber, segmentIntDict)
 
         segmentBackgroundMask = pymapmanager.utils.calculateBackgroundMask(segmentMask, backgroundRoiOffset)
         segmentBackgroundIntDict = pymapmanager.utils._getIntensityFromMask(segmentBackgroundMask, imgData)
-        self.setIntValue(spineIdx, 'segmentBackground', channelNumber, segmentBackgroundIntDict)
+        if segmentBackgroundIntDict is not None:
+            self.setIntValue(spineIdx, 'segmentBackground', channelNumber, segmentBackgroundIntDict)
 
-
+        # abb 20230810
+        self.storeJaggedPolygon(la, spineIdx)
+        self.storeSegmentPolygon(spineIdx, la, forFinalMask = False)
 
     def _old_reconnectToSegment(self, rowIdx : int):
         """Connect a point to brightest path to a line segment.
@@ -754,20 +803,26 @@ class pointAnnotations(baseAnnotations):
         isTrue = True
         for idx, row in self._df.iterrows():
             if row['roiType'] == 'spineROI':
+                
                 if row['segmentID'] >= 0:
                     pass
                 else:
                     logger.error(f"row {idx} spineROI does not have a segmentID, found {row['segmentID']}")
                     isTrue = False
+                
                 if row['brightestIndex'] >= 0:
                     pass
                 else:
                     logger.warning(f"row {idx} spineROI does not have a brightestIndex, found {row['brightestIndex']}. Need to use util._findBrightestIndex()")
-                    #isTrue = False
+                    isTrue = False
         
         return isTrue
 
-    def calculateSingleBrightestIndex(self, channel: int, spineRowIdx: int, lineAnnotation, img):
+    def calculateSingleBrightestIndex(self,
+                                      channel: int,
+                                      spineRowIdx: int,
+                                      lineAnnotation,
+                                      img):
         """
             Args:
                 stack: the stack that we are using to acquire all the data
@@ -783,15 +838,12 @@ class pointAnnotations(baseAnnotations):
 
         segmentID = self.getValue("segmentID", spineRowIdx)
         segmentID = int(segmentID)
-        # print("segmentID", segmentID)
-        logger.info(f"segmentID:{segmentID} spineRowIDX:{spineRowIdx}")
+
+        # logger.info(f"segmentID:{segmentID} spineRowIDX:{spineRowIdx}")
        
         segmentZYX = lineAnnotation.getZYXlist(segmentID, ['linePnt'])
-        # print("segmentZYX", segmentZYX)
-        # segmentZYX2 = lineAnnotation.get_zyx_list(spineRowIdx)
-        # print("segmentZYX2", segmentZYX2)
 
-        # # Pull out into list z y x 
+        # Pull out into list z y x 
         x = self.getValue("x", spineRowIdx)
         y = self.getValue("y", spineRowIdx)
         z = self.getValue("z", spineRowIdx)
@@ -809,8 +861,8 @@ class pointAnnotations(baseAnnotations):
         brightestIndex = pymapmanager.utils._findBrightestIndex(x, y, z, segmentZYX, img, numPnts = numPts)
 
         brightestIndex = brightestIndex + startRow
+
         # Store into backend
-        # backendIdx
         self.setValue("brightestIndex", spineRowIdx, brightestIndex)
 
         return brightestIndex
@@ -822,21 +874,15 @@ class pointAnnotations(baseAnnotations):
                 channel: int,
                 upValue = 1,
                 downValue = 1):
-        """
-            Function to calculate brightest indexes within one segment or multiple segments and 
-            saves them into the back end
+        """Get brightest index for all spines in a segment(s).
         """
         lineAnnotation = stack.getLineAnnotations()
         pointAnnotation = stack.getPointAnnotations()
-        # img = stack.getImageChannel(channel = channel)
         if segmentID is None:
-            # grab all segment IDs into a list
+            # all segment IDs
             segmentID = lineAnnotation.getSegmentList()
-            # print("segmentID", segmentID)
-
         elif (isinstance(segmentID, int)):
-            newIDlist = []
-            newIDlist.append(segmentID)
+            newIDlist = [segmentID]
             segmentID = newIDlist
 
         segmentSpineDFs = []
@@ -845,8 +891,6 @@ class pointAnnotations(baseAnnotations):
         for id in segmentID:
             segmentSpineDFs.append(self.getSegmentSpines(id))
 
-        # print("segmentSpineDFs", segmentSpineDFs)
-
         # Loop through all segments in the given list
         for index in range(len(segmentID)):
             # print("index", index)
@@ -854,10 +898,8 @@ class pointAnnotations(baseAnnotations):
             # print("currentDF", currentDF)
             # Looping through all spines connected to one segment
             for idx, val in enumerate(currentDF["index"]):
-                # print("Val", val)
                 # val = current index
                 spineZval = pointAnnotation.getValue("z", val)
-                # img = stack.getImageChannel(channel=channel)
                 
                 # logger.info('DEBUG')
                 # logger.info(f'  spineZval:{spineZval}')
@@ -867,11 +909,10 @@ class pointAnnotations(baseAnnotations):
                 
                 img = stack.getMaxProjectSlice(spineZval, channel, upValue, downValue)
                 self.calculateSingleBrightestIndex(channel, val, lineAnnotation, img)
-                # print("stored", idx)
-
 
     def calculateJaggedPolygon(self, lineAnnotations, _selectedRow, _channel, img):
         """ Return coordinates of polygon connecting spine to line within AnnotationPlotWidget.py.
+        
         This will be used to plot whenever we click a new spine on the interface
         """
         segmentID = self.getValue('segmentID', _selectedRow)
@@ -903,12 +944,15 @@ class pointAnnotations(baseAnnotations):
         # extendHead = self._analysisParams.getCurrentValue("extendHead")
         # extendTail = self._analysisParams.getCurrentValue("extendTail")
         # radius = self._analysisParams.getCurrentValue("radius")
+        try:
+            width = int(self.getValue('width', _selectedRow))
+            extendHead = int(self.getValue('extendHead', _selectedRow))
+            extendTail = int(self.getValue('extendTail', _selectedRow))
+            radius = int(self.getValue('radius', _selectedRow))
+        except (ValueError) as e:
+            logger.warning(e)
+            return
         
-        width = int(self.getValue('width', _selectedRow))
-        extendHead = int(self.getValue('extendHead', _selectedRow))
-        extendTail = int(self.getValue('extendTail', _selectedRow))
-        radius = int(self.getValue('radius', _selectedRow))
-
         logger.info(f"width:{width}")
         logger.info(f"extendHead:{extendHead}")
         logger.info(f"extendTail:{extendTail}")
@@ -964,13 +1008,17 @@ class pointAnnotations(baseAnnotations):
 
         brightestIndex = self.getValue('brightestIndex', spineRowIndex)
         brightestIndex = int(brightestIndex)
-        # radius = self._analysisParams.getCurrentValue("radius")
-        radius = int(self.getValue('radius', spineRowIndex))
-
+        
+        try:
+            # radius = self._analysisParams.getCurrentValue("radius")
+            radius = int(self.getValue('radius', spineRowIndex))
+        except (ValueError) as e:
+            logger.error(e)
+            return
+        
         segmentPolygon = pymapmanager.utils.calculateLineROIcoords(brightestIndex, radius, lineAnnotations, forFinalMask)
 
         return segmentPolygon
-
 
     def OLD_setSingleSpineOffsetDictValues(self, spineRowIdx: int, lineAnnotation, channelNumber, myStack):
         """

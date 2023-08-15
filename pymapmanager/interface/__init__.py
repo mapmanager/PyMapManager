@@ -16,3 +16,6 @@ from .stackWidgetToolbars import TopToolBar
 from .stackWidgetToolbars import StatusToolbar
 
 from .pyMapManagerApp import PyMapManagerApp
+
+from .appDisplayOptions import AppDisplayOptions
+from .mmMapTable import mmMapTable

@@ -9,8 +9,12 @@ from pymapmanager._logger import logger
 class HistogramWidget(QtWidgets.QWidget):
     signalContrastChange = QtCore.Signal(object) # (contrast dict)
 
-    def __init__(self, myStack, contrastDict : dict,
-                    sliceNumber:int=0, channel:int=1, parent=None):
+    def __init__(self,
+                 myStack,
+                 contrastDict : dict,
+                 sliceNumber:int=0,
+                 channel:int=1,
+                 parent=None):
         """Histogram widget to show image intensities.
         """
         # as toolbar
@@ -51,7 +55,7 @@ class HistogramWidget(QtWidgets.QWidget):
     def slot_setChannel(self, channel : int):
         """Show/hide channel buttons.
         """
-        logger.info(f'bHistogramWidget channel:{channel}')
+        # logger.info(f'bHistogramWidget channel:{channel}')
         self._channel = channel
         
         if channel in [1,2,3]:
@@ -66,24 +70,6 @@ class HistogramWidget(QtWidgets.QWidget):
                 histWidget.show()
         else:
             logger.error(f'Did not understand channel: {channel}')
-
-        # for histWidget in self.histWidgetList:
-        #     histWidget.slot_setChannel(channel)
-
-        '''
-        # update spinbox and slider with channels current contrast
-        minContrast = self._contrastDict[channel]['minContrast']
-        maxContrast = self._contrastDict[channel]['maxContrast']
-
-        self.minSpinBox.setValue(minContrast)
-        self.minContrastSlider.setValue(minContrast)
-
-        self.maxSpinBox.setValue(maxContrast)
-        self.maxContrastSlider.setValue(maxContrast)
-
-        # refresh
-        self._setSlice(self._sliceNumber)
-        '''
 
     def slot_setSlice(self, sliceNumber):
         self._setSlice(sliceNumber)
@@ -439,17 +425,18 @@ class _histogram(QtWidgets.QWidget):
         self.myGridLayout.addWidget(self.maxContrastSlider, row, col)
         col += 1
 
-        # pyqtgraph histogram
+        brush = 0.7 #pgColor = 0.7
+
+        # pyqtgraph histogram seems to be platform dependent
         # don't actually use image on building, wait until self.slot_setImage()
         # Exception: len(X) must be len(Y)+1 since stepMode=True (got (0,) and (0,))
-        # abb hopkins, windows
-        x = [0, 1]  #[np.nan, np.nan]
-        y = [0]  #[np.nan]
-        # abb hopkins, mac
-        # x = None
-        # y = None
+        # july 9, 2023 on linxux was this
+        # x = [0, 1]  #[np.nan, np.nan]
+        # y = [0]  #[np.nan]
+        # now this
+        x = []
+        y = []
 
-        brush = 0.7 #pgColor = 0.7
 
         self.pgPlotWidget = pg.PlotWidget()
         self.pgHist = pg.PlotCurveItem(x, y, stepMode='center', fillLevel=0, brush=brush)

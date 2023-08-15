@@ -118,7 +118,11 @@ def _getIntensityFromMask2(imgMaskList, img : np.ndarray) -> dict:
 
     return theDict
 
-def _findBrightestIndex(x, y, z, zyxLine : List[List[float]], image: np.ndarray, numPnts: int = 5, linewidth: int = 1) -> int:
+def _findBrightestIndex(x, y, z,
+                        zyxLine : List[List[float]],
+                        image: np.ndarray,
+                        numPnts: int = 5,
+                        linewidth: int = 1) -> int:
     """Find the brightest path in an image volume
         From one point (x,y,z) to the given candidates line (xyzLine).
         
@@ -523,12 +527,10 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations, forFinalMask):
                 coordinateList.append([xLeft, yLeft])
                 # print("xLeft is", xLeft)
             else:
-                logger.warning(f'lineIndex:{lineIndex} xLeft:{xLeft} yLeft:{yLeft}')
+                logger.warning(f'lineIndex:{lineIndex} i:{i} xLeft:{xLeft} yLeft:{yLeft}')
 
-    # totalPoints = totalPoints.reverse()
-    totalPoints.reverse()
-    # print(totalPoints)
     # Reverse the order to record points on the "right side" starting from the end
+    totalPoints.reverse()
     for i in totalPoints:
         # Account for beginning and end of LineAnnotations indexing
         if(lineIndex+i >= 0 and lineIndex+i <= len(lineAnnotations)):
@@ -550,8 +552,10 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations, forFinalMask):
     # filteredY= scipy.signal.medfilt(coordinateList[:,1] , medianFilterWidth)
     # filteredCoordinateList = [filteredX filteredY]
 
-    coordinateList[:,0] = scipy.signal.medfilt(coordinateList[:,0] , medianFilterWidth)
-    coordinateList[:,1] = scipy.signal.medfilt(coordinateList[:,1] , medianFilterWidth)
+    # aug 8
+    # IndexError: too many indices for array: array is 1-dimensional, but 2 were indexed
+    # coordinateList[:,0] = scipy.signal.medfilt(coordinateList[:,0] , medianFilterWidth)
+    # coordinateList[:,1] = scipy.signal.medfilt(coordinateList[:,1] , medianFilterWidth)
 
     # coordinateList = scipy.signal.medfilt2d(coordinateList , medianFilterWidth)
     # coordinateList = scipy.signal.medfilt(coordinateList , medianFilterWidth)
@@ -591,6 +595,10 @@ def calculateFinalMask(rectanglePoly, linePoly):
 
     points = np.vstack((y,x)).T
 
+    # getting error
+    # ValueError: 'vertices' must be 2D with shape (M, 2). Your input has shape (0,).
+    #print('linePoly:', linePoly, type(linePoly))
+    
     segmentPath = Path(linePoly)
     segmentMask = segmentPath.contains_points(points, radius=0)
     segmentMask = segmentMask.reshape((ny,nx))
@@ -817,17 +825,13 @@ def getCloserPoint2(spinePoint, leftRadiusPoint, rightRadiusPoint):
 
         returns: closest Point in form (x, y)
     """
+    closestPoint = None
     radiusPoints = [leftRadiusPoint, rightRadiusPoint]
-    # print()
     dist = float('inf') # np.inf
     closestIdx = None
-    # print("zyxLine", zyxLine)
     for idx, point in enumerate(radiusPoints):
-        # print("x y z",x,y,z)
         dx = abs(spinePoint[1]-point[1])
         dy = abs(spinePoint[0]-point[0])
-        # print("point[0]:", point[0],point[1],point[2])
-        # print("dx dy dz:", dx, dy, dz)
         _dist = math.sqrt( dx**2 + dy**2)
         if _dist < dist:
             dist = _dist
@@ -845,10 +849,16 @@ def getCloserPointSide(spinePoint, leftRadiusPoint, rightRadiusPoint):
     radiusPoints = [leftRadiusPoint, rightRadiusPoint]
     # print()
     dist = float('inf') # np.inf
-    closestIdx = None
+    # closestIdx = None
 
+    # radiusPoints is ocasionally all nan
+    # it is calculated in la.calculateAndStoreRadiusLines()
+    # logger.info(f'radiusPoints:{radiusPoints}')
+    # logger.info(f'spinePoint:{spinePoint}')
+
+    closestPoint = None
     for idx, point in enumerate(radiusPoints):
-
+        
         dx = abs(spinePoint[1]-point[1])
         dy = abs(spinePoint[0]-point[0])
         _dist = math.sqrt( dx**2 + dy**2)

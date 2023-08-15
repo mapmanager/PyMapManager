@@ -9,6 +9,7 @@ import numpy as np
 import pyqtgraph as pg
 
 import pymapmanager
+import pymapmanager.interface
 import pymapmanager.annotations
 from pymapmanager.analysisParams import AnalysisParams
 from pymapmanager.interface.scatterPlotWindow import ScatterPlotWindow
@@ -55,100 +56,6 @@ def _mapColor(type:str, lut:str):
 
 #         # analysisWindow = analysisLayout
 #         self.layout.addLayout(windowLayout)
-
-
-class stackDisplayOptions():
-    """Class to encapsulate all display options.
-    
-    Behaves just like a dict of dict.
-    """
-    def __init__(self):
-        self._displayOptionsDict : dict = self._getDefaultDisplayOptions()
-
-    def __getitem__(self, key):
-        """Allow [] indexing with ['key'].
-        """
-        try:
-            #return self._dDict[key]['currentValue']
-            return self._displayOptionsDict[key]
-        except (KeyError) as e:
-            logger.error(f'{e}')
-
-    def save(self):
-        """Save dict to json file.
-        """
-        pass
-
-    def load(self):
-        """Load dict from json file.
-        """
-        pass
-
-    def _getDefaultDisplayOptions(self):
-        # TODO: make widget to display
-        # TODO: make a version of this for analysis variables
-        theDict = {}
-
-        # interface.stackWidget
-        theDict['windowState'] = {}
-        theDict['windowState']['defaultChannel'] = 2
-        theDict['windowState']['showContrast'] = False
-        # TODO: add booleans for all our children (lineListWidget, pointListWidget)
-        # TODO: add boolean for children in ImagePlotWidget (_myImage, _aPointPlot, _aLinePlot)
-        theDict['windowState']['doEditSegments'] = False  # toggle in lineListWidget
-        theDict['windowState']['left'] = 100  # position on screen
-        theDict['windowState']['top'] = 100  # position on screen
-        theDict['windowState']['width'] = 700  # position on screen
-        theDict['windowState']['height'] = 500  # position on screen
-
-        # TODO: pass into imageplotwidget
-        theDict['windowState']['zPlusMinus'] = 3
-        
-        # interface.pointPlotWidget
-        theDict['pointDisplay'] = {}
-        theDict['pointDisplay']['width'] = 2
-        theDict['pointDisplay']['color'] = 'r'
-        theDict['pointDisplay']['symbol'] = 'o'
-        theDict['pointDisplay']['size'] = 8
-        theDict['pointDisplay']['zorder'] = 4  # higher number will visually be on top
-        # user selection
-        theDict['pointDisplay']['widthUserSelection'] = 2
-        theDict['pointDisplay']['colorUserSelection'] = 'y'
-        theDict['pointDisplay']['symbolUserSelection'] = 'o'
-        theDict['pointDisplay']['sizeUserSelection'] = 10
-        theDict['pointDisplay']['zorderUserSelection'] = 5  # higher number will visually be on top
-
-        # May 11, 2023 adding value to test
-        theDict['pointDisplay']['zPlusMinus'] = 3
-
-        # TODO:
-        # Add stuff to control connected line plot
-        theDict['spineLineDisplay'] = {}
-        theDict['spineLineDisplay']['width'] = 3
-        theDict['spineLineDisplay']['color'] = 'r'
-        theDict['spineLineDisplay']['symbol'] = 'o'
-        theDict['spineLineDisplay']['size'] = 5
-        theDict['spineLineDisplay']['zorder'] = 7  # higher number will visually be on top
-
-        # interface.linePlotWidget
-        theDict['lineDisplay'] = {}
-        theDict['lineDisplay']['width'] = 1
-        theDict['lineDisplay']['color'] = 'b'
-        theDict['lineDisplay']['symbol'] = 'o'
-        theDict['lineDisplay']['size'] = 5
-        theDict['lineDisplay']['zorder'] = 1  # higher number will visually be on top
-
-        # user selection
-        theDict['lineDisplay']['widthUserSelection'] = 2
-        theDict['lineDisplay']['colorUserSelection'] = 'c'
-        theDict['lineDisplay']['symbolUserSelection'] = 'o'
-        theDict['lineDisplay']['sizeUserSelection'] = 9
-        theDict['lineDisplay']['zorderUserSelection'] = 2  # higher number will visually be on top
-
-        #
-        theDict['lineDisplay']['zPlusMinus'] = 3
-
-        return theDict
 
 class stackWidgetState():
     """Class to manage the state in a stack widget.
@@ -253,21 +160,26 @@ class stackWidget(QtWidgets.QMainWindow):
 
     def __init__(self,
                  path : str = None,
-                 myStack : pymapmanager.stack = None,
-                 show : bool = True):
+                 stack : pymapmanager.stack = None,
+                 appDisplayOptions : "pymapmanager.interface.AppDisplayOptions" = None,
+                 defaultChannel : int = 1,
+                 show : bool = True,
+                 ):
         """
         Args:
             path: path to file
-            myStack: bimpy.bStack object
+            stack: bimpy.bStack object
         """
         super().__init__()
         
-        if myStack is not None:
-            self.myStack = myStack
+        if stack is not None:
+            self.myStack = stack
         elif path is not None:
-            self.myStack = pymapmanager.stack(path)
+            # TODO: we need to be able to open a stack widget and load only one channel (saved time)
+            self.myStack = pymapmanager.stack(path, loadImageData=True)
+            # self.myStack.loadImages(defaultChannel)
         else:
-            logger.error('Must specify either path or myStack')
+            logger.error('Must specify either path or stack')
             raise ValueError
 
         self._channelColor = ['g', 'r', 'b']
@@ -279,7 +191,10 @@ class stackWidget(QtWidgets.QMainWindow):
         # TODO (cudmore) eventually these will be program options we get in __init__
         # This assigns self._displayOptionsDict 
         #self._getDefaultDisplayOptions()
-        self._displayOptionsDict : stackDisplayOptions = stackDisplayOptions()
+        if appDisplayOptions is None:
+            self._displayOptionsDict : pymapmanager.interface.AppDisplayOptions = pymapmanager.interface.AppDisplayOptions()
+        else:
+            self._displayOptionsDict = appDisplayOptions
 
         # self._detectionParamsDict : DetectionParams = DetectionParams()
         # self._detectionParamsDict.signalParameterChanged.connect(self.slot_parameterChanged)
@@ -350,9 +265,9 @@ class stackWidget(QtWidgets.QMainWindow):
         # interface.pointPlotWidget
         theDict['pointDisplay'] = {}
         theDict['pointDisplay']['width'] = 2
-        theDict['pointDisplay']['color'] = 'r'
+        theDict['pointDisplay']['color'] = 'b'
         theDict['pointDisplay']['symbol'] = 'o'
-        theDict['pointDisplay']['size'] = 8
+        theDict['pointDisplay']['size'] = 10
         theDict['pointDisplay']['zorder'] = 4  # higher number will visually be on top
         # user selection
         theDict['pointDisplay']['widthUserSelection'] = 2
@@ -365,7 +280,7 @@ class stackWidget(QtWidgets.QMainWindow):
         # Add stuff to control connected line plot
         theDict['spineLineDisplay'] = {}
         theDict['spineLineDisplay']['width'] = 3
-        theDict['spineLineDisplay']['color'] = 'r'
+        theDict['spineLineDisplay']['color'] = 'b'
         theDict['spineLineDisplay']['symbol'] = 'o'
         theDict['spineLineDisplay']['size'] = 5
         theDict['spineLineDisplay']['zorder'] = 7  # higher number will visually be on top
@@ -400,7 +315,13 @@ class stackWidget(QtWidgets.QMainWindow):
             minStackIntensity = np.min(_stackData)
             maxStackIntensity = np.max(_stackData)
 
-            logger.info(f'  minStackIntensity:{minStackIntensity} maxStackIntensity:{maxStackIntensity}')
+            if minStackIntensity is None:
+                minStackIntensity = 0
+            if maxStackIntensity is None:
+                maxStackIntensity = 255
+                
+            logger.warning('need to fix this when there is no image data')
+            logger.info(f'  channel {channelIdx} minStackIntensity:{minStackIntensity} maxStackIntensity:{maxStackIntensity}')
 
             self._contrastDict[channelNumber] = {
                 'channel': channelNumber,
@@ -678,13 +599,15 @@ class stackWidget(QtWidgets.QMainWindow):
                                 self._contrastDict,
                                 self._colorLutDict,
                                 self._displayOptionsDict,
-                                self)
+                                self,
+                                )
         hBoxLayout.addWidget(self._imagePlotWidget)
 
         vBoxLayout.addLayout(hBoxLayout)  # image and slider
 
         # histogram widget goes into a dock
         self._histogramWidget = pymapmanager.interface.HistogramWidget(self.myStack, self._contrastDict, parent=self)
+        
         #vBoxLayout.addWidget(_histogramWidget)
 
         _showContrast = self._displayOptionsDict['windowState']['showContrast']
@@ -772,7 +695,7 @@ class stackWidget(QtWidgets.QMainWindow):
         #
         # connect signal/slot
 
-        self._imagePlotWidget.signalCancelSelection2.connect(self.slot_selectAnnotation2)
+        # self._imagePlotWidget.signalCancelSelection2.connect(self.slot_selectAnnotation2)
 
         self._imagePlotWidget.signalUpdateSlice.connect(self._histogramWidget.slot_setSlice)
         self._imagePlotWidget.signalUpdateSlice.connect(self._statusToolbar.slot_setSlice)
@@ -804,7 +727,6 @@ class stackWidget(QtWidgets.QMainWindow):
 
         # Why does this have two of the same lines?
         self._imagePlotWidget.signalAnnotationSelection2.connect(self.slot_selectAnnotation2)
-        self._imagePlotWidget.signalAnnotationSelection2.connect(self.slot_selectAnnotation2)
 
         # 8/10 - added for selectioninfo widget
         self.signalSelectAnnotation2.connect(self._selectionInfoWidget.slot_selectAnnotation2)
@@ -835,7 +757,7 @@ class stackWidget(QtWidgets.QMainWindow):
 
         # 6/28 - signal to update analysis parameter values in backend on selected spine
         self._imagePlotWidget.signalReanalyzeSpine.connect(self.slot_reanalyzeSpine)
-        
+                
         # emitted when we actually add an annotation to the backend
         self.signalAddedAnnotation.connect(self._imagePlotWidget._aPointPlot.slot_addedAnnotation)
         self.signalAddedAnnotation.connect(self._myPointListWidget.slot_addedAnnotation)
@@ -847,6 +769,7 @@ class stackWidget(QtWidgets.QMainWindow):
         self._myPointListWidget.signalDeletingAnnotation.connect(self.slot_deletingAnnotation)
         self._myLineListWidget.signalDeletingAnnotation.connect(self.slot_deletingAnnotation)
         
+        self.signalDeletedAnnotation.connect(self._imagePlotWidget.slot_deletedAnnotation)
         self.signalDeletedAnnotation.connect(self._imagePlotWidget._aPointPlot.slot_deletedAnnotation)
         self.signalDeletedAnnotation.connect(self._myPointListWidget.slot_deletedAnnotation)
         self.signalDeletedAnnotation.connect(self._myLineListWidget.slot_deletedAnnotation)
@@ -882,8 +805,8 @@ class stackWidget(QtWidgets.QMainWindow):
 
         la = self.getStack().getLineAnnotations()        
         _selectionEvent = pymapmanager.annotations.SelectionEvent(la,
-                                                            rowIdx=None
-                                                            )
+                                                            rowIdx=None,
+                                                            stack=self.myStack)
         # Update all Rows in table
         self.signalPointChanged.emit(_selectionEvent)
 
@@ -996,6 +919,8 @@ class stackWidget(QtWidgets.QMainWindow):
         one spine ROI
 
         Changes the position of that SpineROI and sets it in the backend
+        
+        TODO: cudmore will rewrite this
         """
         logger.info('Moving SpineROI')
         logger.info(f'moving spine Index {addEvent.getAddedRow()}')
@@ -1041,8 +966,8 @@ class stackWidget(QtWidgets.QMainWindow):
 
         # TODO: Make a signal that sends list of spines that just changed
         _selectionEvent = pymapmanager.annotations.SelectionEvent(la,
-                                                            rowIdx=currentAnnotationRow
-                                                            )
+                                                            rowIdx=currentAnnotationRow,
+                                                            stack=self.myStack)
         self.signalPointChanged.emit(_selectionEvent)
 
         # Selects new Spine in list
@@ -1068,6 +993,10 @@ class stackWidget(QtWidgets.QMainWindow):
         """Respond to user clicking add segment
         
         Add an empty segment
+
+        Notes
+        -----
+        Not implemented!
         """
         logger.info('MARCH 2 ... FIX THIS')
 
@@ -1112,7 +1041,7 @@ class stackWidget(QtWidgets.QMainWindow):
         # decide if new annotation is valid given the window state
         # both spineROI and controlPnt require a single segment selection
         _selectSegment, _segmentRowDict = self.annotationSelection.getSegmentSelection()
-        if _selectSegment is None or len(_selectSegment)>1:
+        if _selectSegment is None or len(_selectSegment)>1 or len(_selectSegment)==0:
             logger.warning(f'Did not create annotation, requires one segment selection but got {_selectSegment}')
             self.signalSetStatus.emit('Did not add spineROI or controlPnt, please select one segment.')
             return
@@ -1144,38 +1073,38 @@ class stackWidget(QtWidgets.QMainWindow):
             # add a spineROI to point annotations
             roiType = pymapmanager.annotations.pointTypes.spineROI
             # add the new annotation to the backend
-            newAnnotationRow = self.myStack.getPointAnnotations().addAnnotation(roiType,
-                                                                                _selectSegment,
-                                                                                x, y, z,
-                                                                                imageChannel)
+            logger.info('ADDING SPINE')
+            la = self.getStack().getLineAnnotations()
+            newAnnotationRow = self.myStack.getPointAnnotations().addSpine(x, y, z,
+                                                                            _selectSegment,
+                                                                            self.getStack())
 
         logger.info(f'=== Added point annotation roiType:{roiType} _selectSegment:{_selectSegment} x:{x}, y:{y}, z{z}')
 
-
+        # 20230810, moved to pointAnnotations
         # adding a spine roi require lots of additional book-keeping
-        if roiType == pymapmanager.annotations.pointTypes.spineROI:
+        # if roiType == pymapmanager.annotations.pointTypes.spineROI:
 
-            # TODO: Simplify code to be a function in the backend (in stack?)
-            # grab the zyx of the selected segment
-            la = self.getStack().getLineAnnotations()
-            xyzSegment = la.get_zyx_list(_selectSegment)
+        #     # TODO: Simplify code to be a function in the backend (in stack?)
+        #     # grab the zyx of the selected segment
+        #     la = self.getStack().getLineAnnotations()
+        #     xyzSegment = la.get_zyx_list(_selectSegment)
                         
-            # grab the raw image data the user is viewing
-            #imgData = self.getStack().getImageChannel(imageChannel)
-            _imageSlice = self.annotationSelection.getCurrentSlice()  # could use z
-            imgSliceData = self.getStack().getImageSlice(_imageSlice, imageChannel)
-            # TODO: change this to getMaxImageSlice
-            newZYXValues = None
-            # this does lots:
-            #   (i) connect spine to brightest index on segment
-            #   (ii) calculate all spine intensity for a channel
-            self.myStack.getPointAnnotations().updateSpineInt(newZYXValues,
-                                                        newAnnotationRow,
-                                                        xyzSegment,
-                                                        imageChannel,
-                                                        imgSliceData,
-                                                        la
-                                                        )
+        #     # grab the raw image data the user is viewing
+        #     _imageSlice = self.annotationSelection.getCurrentSlice()  # could use z
+        #     imgSliceData = self.getStack().getImageSlice(_imageSlice, imageChannel)
+        #     # TODO: change this to getMaxImageSlice
+        #     newZYXValues = None
+        #     # this does lots:
+        #     #   (i) connect spine to brightest index on segment
+        #     #   (ii) calculate all spine intensity for a channel
+        #     self.myStack.getPointAnnotations().updateSpineInt(newZYXValues,
+        #                                                 newAnnotationRow,
+        #                                                 xyzSegment,
+        #                                                 imageChannel,
+        #                                                 imgSliceData,
+        #                                                 la
+        #                                                 )
 
         # if we made it here, we added a new annotation
         # emit a signal to notify other widgets that this was successful
@@ -1184,6 +1113,7 @@ class stackWidget(QtWidgets.QMainWindow):
         #addDict['newAnnotationRow'] = newAnnotationRow
         addEvent.setAddedRow(newAnnotationRow)
         logger.info(f'  -->> emit signalAddedAnnotation')
+        logger.info(f'   addEvent: {addEvent}')
         self.signalAddedAnnotation.emit(addEvent)
         
         # update the text in the status bar
@@ -1227,6 +1157,7 @@ class stackWidget(QtWidgets.QMainWindow):
             logger.warning(f'Not implemented, delete an entire segment')
         else:
             logger.warning(f'did not understand annotationType: {annotationType}')
+        
 
     def slot_editSegments(self, state : bool):
         """Toggle edit state of segments
@@ -1255,8 +1186,8 @@ class stackWidget(QtWidgets.QMainWindow):
         self._imagePlotWidget._aPointPlot.slot_setDisplayType(roiTypeEnumList)
 
     def slot_selectAnnotation2(self, selectionEvent : pymapmanager.annotations.SelectionEvent):
-        logger.info('')
-        #logger.info(selectionEvent)
+        
+        # logger.info(selectionEvent)
         
         rows = selectionEvent.getRows()
         
@@ -1269,6 +1200,8 @@ class stackWidget(QtWidgets.QMainWindow):
             logger.error(f'did not understand selectionEvent.type: {selectionEvent.type}')
             return
         
+        logger.info(f'ASSIGNING _currentSelection to selectionEvent:')
+        logger.info(f'    {selectionEvent}')
         self._currentSelection = selectionEvent
 
         self.signalSelectAnnotation2.emit(selectionEvent)
@@ -1278,18 +1211,22 @@ class stackWidget(QtWidgets.QMainWindow):
         self.annotationSelection.setImageChannel(channel)
 
     def slot_setSlice(self, currentSlice : int):
-        logger.info(f'currentSlice:{currentSlice}')
+        #logger.info(f'currentSlice:{currentSlice}')
         self.annotationSelection.setCurrentSlice(currentSlice)
 
     def selectSegmentID(self, segmentID: int, isAlt : bool = False):
         _lineAnnotations = self.myStack.getLineAnnotations()
         _selectionEvent = pymapmanager.annotations.SelectionEvent(_lineAnnotations,
                                                                     rowIdx=segmentID,
-                                                                    isAlt=isAlt)
+                                                                    isAlt=isAlt,
+                                                                    stack=self.myStack)
         logger.info(f'  -->> emit signalSelectAnnotation2')
         self.signalSelectAnnotation2.emit(_selectionEvent)
 
-    def zoomToPointAnnotation(self, idx : int, isAlt : bool = False, select : bool = False):
+    def zoomToPointAnnotation(self,
+                              idx : int,
+                              isAlt : bool = False,
+                              select : bool = False):
         """Zoom to a point annotation.
         
         This should be called externally. For example, when selecting a point in a stackMap.
@@ -1318,8 +1255,9 @@ class stackWidget(QtWidgets.QMainWindow):
             return
         
         _selectionEvent = pymapmanager.annotations.SelectionEvent(_pointAnnotations,
-                                                                    rowIdx=idx,
-                                                                    isAlt=isAlt)
+                                                                rowIdx=idx,
+                                                                isAlt=isAlt,
+                                                                stack=self.myStack)
         logger.info(f'  -->> emit signalSelectAnnotation2')
         self.signalSelectAnnotation2.emit(_selectionEvent)
 
@@ -1340,8 +1278,8 @@ class stackWidget(QtWidgets.QMainWindow):
         self.myStack.getPointAnnotations().updateAllSpineAnalysis(segmentID, la, imageChannel, stack)
         
         _selectionEvent = pymapmanager.annotations.SelectionEvent(la,
-                                                            rowIdx=None
-                                                            )
+                                                            rowIdx=None,
+                                                            mmstackMap=self.myStack)
         # Update all Rows in table
         self.signalPointChanged.emit(_selectionEvent)
 

@@ -1,8 +1,9 @@
+import sys
 
 import pymapmanager as pmm
 
 def test_spineUpdate():
-    stackPath = '../PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
+    stackPath = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
     myStack = pmm.stack(stackPath)
 
     # Testing calculation of brightest Index
@@ -31,7 +32,8 @@ def test_spineUpdate():
                                                 )
     
     brightestIdx = myStack.getPointAnnotations().getValue("brightestIndex", spineIdx)
-    assert brightestIdx == 274
+    # Note: This depends on stackPath and spineIdx
+    assert brightestIdx == float(283)
     
     # Testing when Spine is moved
     newZYXValues = {"x": 600, 
@@ -45,8 +47,11 @@ def test_spineUpdate():
                                                 imgSliceData,
                                                 la
                                                 )
+    brightestIdx = myStack.getPointAnnotations().getValue("brightestIndex", spineIdx)
+    assert brightestIdx == float(254)
     
      # Testing when Spine is manually connected (brightest Index is manually picked)
+    newZYXValues = None
     brightestIndex = 151
     myStack.getPointAnnotations().updateSpineInt(newZYXValues,
                                             spineIdx,
@@ -56,6 +61,8 @@ def test_spineUpdate():
                                             la,
                                             brightestIndex = brightestIndex
                                             )
+    brightestIdx = myStack.getPointAnnotations().getValue("brightestIndex", spineIdx)
+    assert brightestIdx == float(brightestIndex)
 
 if __name__ == '__main__':
     test_spineUpdate()

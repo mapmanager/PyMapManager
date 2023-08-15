@@ -466,6 +466,65 @@ class lineAnnotations(baseAnnotations):
 
         return dfOneSegment
 
+    def _makeRadiusLines(self, segmentID : int,
+                                radius : float,
+                                medianFilter : int
+                        ):
+        """Make left/right radius lines for one segment ID.
+        """
+        startRow, stopRow = self._segmentStartRow(segmentID)
+
+        logger.info(f'segmentID:{segmentID} startRow:{startRow} stopRow:{stopRow}')
+
+        for row in range(startRow, stopRow+1):
+                if row==startRow or row==stopRow:
+                    orthogonalROIXinitial = float('nan')
+                    orthogonalROIYinitial = float('nan')
+
+                    orthogonalROIXend = float('nan')
+                    orthogonalROIYend = float('nan')
+
+                else:
+
+                    xCurr = self.getValue('x', row)
+                    yCurr = self.getValue('y', row)
+
+                    xPrev = self.getValue('x', row-1)
+                    yPrev = self.getValue('y', row-1)
+
+                    xNext = self.getValue('x', row+1)
+                    yNext = self.getValue('y', row+1)
+
+                    yDel, xDel = pymapmanager.utils.computeTangentLine((xPrev,yPrev), (xNext,yNext), radius)
+
+                    orthogonalROIXinitial = xCurr - yDel
+                    orthogonalROIYinitial = yCurr + xDel
+
+                    orthogonalROIXend = xCurr + yDel
+                    orthogonalROIYend = yCurr - xDel
+
+                # assign to backend
+                self.setValue("xRight", row, orthogonalROIXinitial)
+                self.setValue("yRight", row, orthogonalROIYinitial)
+
+                self.setValue("xLeft", row, orthogonalROIXend)
+                self.setValue("yLeft", row, orthogonalROIYend)
+
+    def makeRadiusLines(self,
+                segmentID : Union[int, List[int]] = None,
+                radius = 3,
+                medianFilter = 5):
+        """Make left/right radius lines for a number of segments.segmentID.
+        """
+        if segmentID is None:
+            # grab all segment IDs into a list
+            segmentID = self.getSegmentList()
+        elif (isinstance(segmentID, int)):
+            segmentID = [segmentID]
+
+        for segment in segmentID:
+            self._makeRadiusLines(segment, radius=radius, medianFilter=medianFilter)
+
     # def getRadiusLines(self):
     def calculateAndStoreRadiusLines(self, segmentID : Union[int, List[int]] = None, radius = 3, medianFilterWidth = 5):
         """Calculates all the xyz coordinates for the Shaft (Spine) ROI for given segment(s)
@@ -494,7 +553,7 @@ class lineAnnotations(baseAnnotations):
             newIDlist.append(segmentID)
             segmentID = newIDlist
 
-        print("segmentID: ", segmentID)
+        print("  segmentID: ", segmentID)
         segmentDFs = []
 
         # List of all segmentID dataframes 
@@ -516,19 +575,15 @@ class lineAnnotations(baseAnnotations):
         # Looping through each segment individually
         # Nested for loop
         for index in range(len(segmentID)):
-            print("segmentID index", index)
+            # logger.info(f'segmentID index: {index}')
             currentDF = segmentDFs[index]
-            # print("currentDF", currentDF)
             xPlot = currentDF['x']
-            # print("xPlot, ", xPlot)
             yPlot = currentDF['y']
             zPlot = currentDF['z']
 
-            # print("xPlot, ", xPlot)
-
             offset = currentDF['index'].iloc[0]
             # offset = currentDF.get_value()
-            print("offset, ", offset)
+            print("  offset, ", offset)
 
             # logger.info('Using median_filter for x, y{}')
             # xPlot = scipy.ndimage.median_filter(xPlot, medianFilterWidth)
@@ -615,7 +670,21 @@ class lineAnnotations(baseAnnotations):
             
             for i, val in enumerate(indexes):
             
-                # print(val)
+                # abb, blank out the first and last, this allows us to plot as line
+                # realistically, we can't compute first/last tangent for a segment
+                # if i==0 or i==len(indexes-1):
+                #     logger.info(f'setting start/stop pnt of segment to nan')
+                #     print('  segmentID is:', index)
+                #     print('  index into df is:', val)
+                    
+                #     self.setValue("xRight", val, float('nan'))
+                #     self.setValue("yRight", val, float('nan'))
+                #     # self.setValue("zLeft", val, orthogonalROIZinitial[i])
+
+                #     self.setValue("xLeft", val, float('nan'))
+                #     self.setValue("yLeft", val, float('nan'))
+                #     continue
+
                 # Here val is the actual index within the dataframe
                 # while i is the new index respective to each segment
                 self.setValue("xRight", val, orthogonalROIXinitial[i])

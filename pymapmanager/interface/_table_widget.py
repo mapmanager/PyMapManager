@@ -26,6 +26,8 @@ class myTableView(QtWidgets.QTableView):
             isAlt (bool)
     """
 
+    signalDoubleClick = QtCore.Signal(object, object)
+
     def __init__(self, parent=None):
         # super(myTableView, self).__init__(parent)
         super().__init__(parent)
@@ -54,6 +56,18 @@ class myTableView(QtWidgets.QTableView):
         # to allow click on already selected row
         #self.clicked.connect(self.on_user_click_row)
 
+        self.doubleClicked.connect(self.on_double_clicked)
+
+    def getSelectedRowDict(self):
+        selectedRows = self.selectionModel().selectedRows()
+        if len(selectedRows) == 0:
+            return None
+        else:
+            selectedItem = selectedRows[0]
+            selectedRow = selectedItem.row()
+        rowDict = self.getMyModel().myGetRowDict(selectedRow)
+        return rowDict
+    
     def getMyModel(self):
         return self.myModel
     
@@ -87,14 +101,14 @@ class myTableView(QtWidgets.QTableView):
         # if we filtered/reduced, we need to use column 'index'
         # df.loc[df['column_name'] == some_value]
 
-        logger.info(f'model rowIdx:{rowIdx} corresponds to visual row:{visualRow}')
+        # logger.info(f'model rowIdx:{rowIdx} corresponds to visual row:{visualRow}')
         super().selectRow(visualRow)
 
     def mySelectRows(self, rows : Set[int]):
         """Make a new row selection from viewer.
         """
 
-        logger.info(f'rows:{rows}')
+        # logger.info(f'rows:{rows}')
 
         # to stop event recursion
         self.blockUpdate = True
@@ -176,10 +190,9 @@ class myTableView(QtWidgets.QTableView):
         
         TODO:
             This is used so alt+click (option on macos) will work
-                even in row is already selected. This is causing 'double'
+                even if row is already selected. This is causing 'double'
                 selection callbacks with on_selectionChanged()
-        """                
-        # pure PyQt
+        """
         modifiers = QtWidgets.QApplication.keyboardModifiers()
         #isShift = modifiers == QtCore.Qt.ShiftModifier
         isAlt = modifiers == QtCore.Qt.AltModifier
@@ -188,12 +201,12 @@ class myTableView(QtWidgets.QTableView):
             return
         
         row = self.proxy.mapToSource(item).row()
-        logger.info(f'row:{row} isAlt:{isAlt}')
+        logger.info(f'-->> signalSelectionChanged.emit row:{row} isAlt:{isAlt}')
 
         selectedRowList = [row]
         self.signalSelectionChanged.emit(selectedRowList, isAlt)
 
-    # Thsi is a bug in qt, alt does not work, will only be fixed in qt6
+    # This is a bug in qt, alt does not work, will only be fixed in qt6
     # def keyPressEvent(self, event : QtGui.QKeyEvent):
     #     """Respond to keyboard. Inherited from QWidget.
 
@@ -210,6 +223,20 @@ class myTableView(QtWidgets.QTableView):
     #         _modifiers = event.modifiers()
     #         isAlt2 = modifiers == QtCore.Qt.AltModifier
     #         logger.info(f'  isAlt2:{isAlt2}')
+
+    def on_double_clicked(self, item):
+        # logger.info(f'{item}')
+
+        modifiers = QtWidgets.QApplication.keyboardModifiers()
+        #isShift = modifiers == QtCore.Qt.ShiftModifier
+        isAlt = modifiers == QtCore.Qt.AltModifier
+        
+        row = self.proxy.mapToSource(item).row()
+        # logger.info(f'row:{row} isAlt:{isAlt}')
+
+        selectedRowList = [row]
+        logger.info(f'-->> signalDoubleClick.emit selectedRowList:{selectedRowList} isAlt:{isAlt}')
+        self.signalDoubleClick.emit(selectedRowList, isAlt)
 
     def on_selectionChanged(self, selected, deselected):
         """Respond to change in selection.
@@ -249,7 +276,7 @@ class myTableView(QtWidgets.QTableView):
         # reduce to list of unique values
         selectedIndexes = list(set(selectedIndexes))  # to get unique values
         
-        logger.info(f'selectedIndexes:{selectedIndexes} isAlt:{isAlt}')
+        logger.info(f'-->> signalSelectionChanged.emit selectedIndexes:{selectedIndexes} isAlt:{isAlt}')
         
         self.signalSelectionChanged.emit(selectedIndexes, isAlt)
 
