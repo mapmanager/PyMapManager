@@ -335,7 +335,7 @@ class baseAnnotations():
         Args:
             path (str | None): Full path to a file (a csv file). If None then wait to create on save.
         """
-        self._analsisParams = analysisParams
+        self._analysisParams = analysisParams
         self._path = path
         #Full path to file we load/save. Can be None if we are new and have not saved.
         

@@ -12,7 +12,14 @@ from pymapmanager.annotations.pointAnnotations import pointTypes
 
 # test init
 def test_point_annotation():
-    pa = pymapmanager.annotations.pointAnnotations()
+    
+    # 	path = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
+    stackPath = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
+    stack = pymapmanager.stack(stackPath)
+    
+    analysisParams = pymapmanager.AnalysisParams()
+
+    pa = pymapmanager.annotations.pointAnnotations(stack=stack, analysisParams=analysisParams)
     assert len(pa) == 0
 
     # test add
@@ -21,7 +28,7 @@ def test_point_annotation():
     y = 20
     z = 30
     segmentID = 0
-    pa.addAnnotation(roiType, x=x, y=y, z=z, segmentID=segmentID)
+    pa.addAnnotation(x=x, y=y, z=z, roiType=roiType, segmentID=segmentID)
     assert len(pa) == 1
 
     roiType = pointTypes.spineROI
@@ -29,7 +36,7 @@ def test_point_annotation():
     y = 21
     z = 31
     segmentID = 0
-    pa.addAnnotation(roiType, x=x, y=y, z=z, segmentID=segmentID)
+    pa.addAnnotation(x=x, y=y, z=z, roiType=roiType, segmentID=segmentID)
     assert len(pa) == 2
     assert pa.numAnnotations == 2
 
@@ -77,7 +84,13 @@ def test_int_columns():
         pytest -k 'test_int_columns'
         ```
     """
-    pa = pymapmanager.annotations.pointAnnotations()
+    stackPath = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
+    stack = pymapmanager.stack(stackPath)
+    
+    analysisParams = pymapmanager.AnalysisParams()
+
+    pa = pymapmanager.annotations.pointAnnotations(stack=stack, analysisParams=analysisParams)
+
     assert len(pa) == 0
 
     # test add
@@ -86,7 +99,7 @@ def test_int_columns():
     y = 20
     z = 30
     segmentID = 0
-    pa.addAnnotation(roiType, x=x, y=y, z=z, segmentID=segmentID)
+    pa.addAnnotation(x=x, y=y, z=z, roiType=roiType, segmentID=segmentID)
     assert len(pa) == 1
 
     # set some intensity columns
@@ -136,9 +149,13 @@ def test_int_columns():
 #     pa.updateSpineInt(spineIdx, zyxLineSegment, channelNumber, imgData, la)
 
 def test_isValid():
-    # need to include some test data
-    # path = '../../PyMapManager-Data/one-timepoint/rr30a_s0/rr30a_s0_la.txt
-    pa = pymapmanager.annotations.pointAnnotations()
+    stackPath = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
+    stack = pymapmanager.stack(stackPath)
+    
+    analysisParams = pymapmanager.AnalysisParams()
+
+    pa = pymapmanager.annotations.pointAnnotations(stack=stack, analysisParams=analysisParams)
+    
     assert len(pa) == 0
 
     # add
@@ -147,7 +164,10 @@ def test_isValid():
     y = 20
     z = 30
     segmentID = 0
-    pa.addAnnotation(roiType, segmentID, x=x, y=y, z=z)
+    newRow = pa.addSpine(x=x, y=y, z=z, segmentID=segmentID, stack=stack)
+
+    assert newRow == 0
+
 
     # this will be false as we have not connected the spine to the line/segment
     # not sure how to implement this here as we need an image to do that!
@@ -155,4 +175,5 @@ def test_isValid():
 
 if __name__ == '__main__':
     #test_point_annotation()
-    test_isValid()
+    #test_isValid()
+    pass

@@ -693,7 +693,7 @@ class stackWidget(QtWidgets.QMainWindow):
         #
         # connect signal/slot
 
-        self._imagePlotWidget.signalCancelSelection2.connect(self.slot_selectAnnotation2)
+        # self._imagePlotWidget.signalCancelSelection2.connect(self.slot_selectAnnotation2)
 
         self._imagePlotWidget.signalUpdateSlice.connect(self._histogramWidget.slot_setSlice)
         self._imagePlotWidget.signalUpdateSlice.connect(self._statusToolbar.slot_setSlice)
@@ -767,6 +767,7 @@ class stackWidget(QtWidgets.QMainWindow):
         self._myPointListWidget.signalDeletingAnnotation.connect(self.slot_deletingAnnotation)
         self._myLineListWidget.signalDeletingAnnotation.connect(self.slot_deletingAnnotation)
         
+        self.signalDeletedAnnotation.connect(self._imagePlotWidget.slot_deletedAnnotation)
         self.signalDeletedAnnotation.connect(self._imagePlotWidget._aPointPlot.slot_deletedAnnotation)
         self.signalDeletedAnnotation.connect(self._myPointListWidget.slot_deletedAnnotation)
         self.signalDeletedAnnotation.connect(self._myLineListWidget.slot_deletedAnnotation)
@@ -1110,6 +1111,7 @@ class stackWidget(QtWidgets.QMainWindow):
         #addDict['newAnnotationRow'] = newAnnotationRow
         addEvent.setAddedRow(newAnnotationRow)
         logger.info(f'  -->> emit signalAddedAnnotation')
+        logger.info(f'   addEvent: {addEvent}')
         self.signalAddedAnnotation.emit(addEvent)
         
         # update the text in the status bar
@@ -1153,6 +1155,7 @@ class stackWidget(QtWidgets.QMainWindow):
             logger.warning(f'Not implemented, delete an entire segment')
         else:
             logger.warning(f'did not understand annotationType: {annotationType}')
+        
 
     def slot_editSegments(self, state : bool):
         """Toggle edit state of segments
@@ -1195,6 +1198,8 @@ class stackWidget(QtWidgets.QMainWindow):
             logger.error(f'did not understand selectionEvent.type: {selectionEvent.type}')
             return
         
+        logger.info(f'ASSIGNING _currentSelection to selectionEvent:')
+        logger.info(f'    {selectionEvent}')
         self._currentSelection = selectionEvent
 
         self.signalSelectAnnotation2.emit(selectionEvent)
@@ -1248,9 +1253,9 @@ class stackWidget(QtWidgets.QMainWindow):
             return
         
         _selectionEvent = pymapmanager.annotations.SelectionEvent(_pointAnnotations,
-                                                                    rowIdx=idx,
-                                                                    isAlt=isAlt,
-                                                                    stack=self.myStack)
+                                                                rowIdx=idx,
+                                                                isAlt=isAlt,
+                                                                stack=self.myStack)
         logger.info(f'  -->> emit signalSelectAnnotation2')
         self.signalSelectAnnotation2.emit(_selectionEvent)
 

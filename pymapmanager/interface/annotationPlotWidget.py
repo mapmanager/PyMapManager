@@ -553,10 +553,11 @@ class annotationPlotWidget(QtWidgets.QWidget):
             doLine = False
             #self._scatter.connect(False)
         
-        # connect is from ('all' 'pairs', 'finite')
+        # connect is from ('all' 'pairs', 'finite', ndarray of [0, 1])
         # Show points in the segment
         
-        # self._scatter.setData(x, y)
+        logger.info(f'set data slice {sliceNumber} has {len(x)} {len(y)}')
+
         self._scatter.setData(x, y,
                             #   symbolBrush=None,
                             #   markeredgewidth=0.0,
@@ -606,8 +607,16 @@ class annotationPlotWidget(QtWidgets.QWidget):
 
         # select the new annotaiton
         newAnnotationRow = addAnnotationEvent.getAddedRow()
-        self._selectAnnotation(newAnnotationRow)
+        # self._selectAnnotation(newAnnotationRow)
 
+        _selectionEvent = pymapmanager.annotations.SelectionEvent(self._annotations,
+                                                                    rowIdx=newAnnotationRow,
+                                                                    isAlt=False,
+                                                                    stack=self._stack)
+        
+        logger.info(f'  -->> emit signalAnnotationClicked2 {_selectionEvent}')
+        self.signalAnnotationClicked2.emit(_selectionEvent)
+        
     def slot_deletedAnnotation(self, dDict : dict):
         """Slot called after an annotation was deleted.
         Also called when moving spine (since original spine is deleted in the process)
@@ -704,12 +713,66 @@ class pointPlotWidget(annotationPlotWidget):
         # make all spine lines
         self._bMakeSpineLines()
 
+    def _newLabel(self, rowIdx, x ,y):
+        """Make a new label at (x,y) with text rowIdx.
+        
+        Notes
+        -----
+        Need to dynamically set pnt size to user option.
+        """
+        label = pg.LabelItem('', **{'color': '#FFF','size': '6pt'})
+        label.setPos(QtCore.QPointF(x-9, y-9))
+        label.setText(str(rowIdx))
+        label.hide()
+        return label
+
     def slot_addedAnnotation(self, addAnnotationEvent : pymapmanager.annotations.AddAnnotationEvent):
+        """
+        Notes
+        -----
+        Need to defer calling super() until we update out interface.
+        """
+        # order matters
+        # super().slot_addedAnnotation(addAnnotationEvent)
+
+        logger.info(f'pointPlotWidget addAnnotationEvent:{addAnnotationEvent}')
+        
+        addedRow = addAnnotationEvent.getAddedRow()
+        _, ySpine, xSpine = addAnnotationEvent.getZYX()
+
+        # add a label
+        newLabel = self._newLabel(addedRow, xSpine, ySpine)
+        # label_value.setText(str(row['index']), rotateAxis=(1, 0), angle=90)  
+        self._view.addItem(newLabel)  
+        self._labels.append(newLabel)  # our own list
+
+        # add a spine line
+        _brightestIndex = self.pointAnnotations.getValue(['brightestIndex'], addedRow)
+        xLeft= self.lineAnnotations.getValue(['xLeft'], _brightestIndex)
+        xRight= self.lineAnnotations.getValue(['xRight'], _brightestIndex)
+        yLeft= self.lineAnnotations.getValue(['yLeft'], _brightestIndex)
+        yRight= self.lineAnnotations.getValue(['yRight'], _brightestIndex)
+
+        leftRadiusPoint = (xLeft, yLeft)
+        rightRadiusPoint = (xRight, yRight)
+        spinePoint = (xSpine, ySpine)
+        closestPoint = pymapmanager.utils.getCloserPoint2(spinePoint, leftRadiusPoint, rightRadiusPoint)
+
+        logger.info(f'   xSpine:{xSpine}')
+        logger.info(f'   ySpine:{ySpine}')
+        logger.info(f'   closestPoint:{closestPoint}')
+
+        self._xSpineLines = np.append(self._xSpineLines, xSpine)
+        self._xSpineLines = np.append(self._xSpineLines, closestPoint[0])
+
+        self._ySpineLines = np.append(self._ySpineLines, ySpine)
+        self._ySpineLines = np.append(self._ySpineLines, closestPoint[1])
+
+        self._spineLinesConnect = np.append(self._spineLinesConnect, 1)  # connect
+        self._spineLinesConnect = np.append(self._spineLinesConnect, 0)  # don't connect
+
+        # order matters
         super().slot_addedAnnotation(addAnnotationEvent)
-
-        # TODO: add a label
-
-        # TODO: add a spine line
 
     def slot_deletedAnnotation(self, delDict : dict):
         """Delete an annotation by removing its label and spine line.

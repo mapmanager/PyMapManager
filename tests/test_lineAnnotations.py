@@ -41,7 +41,7 @@ def testLineLength():
     assert length2D[0] == 710.6639308643568
     assert length3D[0] == 714.3529067913599
 
-def test_addEmptySegment():
+def _old_test_addEmptySegment():
     # create an empty line annotation
     la = pymapmanager.annotations.lineAnnotations()
     

@@ -43,14 +43,14 @@ class pointAnnotations(baseAnnotations):
     # def __init__(self, path : Union[str, None] = None, analysisParams = None):
     # def __init__(self, stack, la = None, *args,**kwargs):
     def __init__(self, stack, la = None, path = None,
-                    analysisParams : "AnalysisParams"= None):
+                    analysisParams : "AnalysisParams" = None):
         # super().__init__(*args,**kwargs)
         super().__init__(path, analysisParams)
 
         # done in parent
         # june 28, this is done in the parent???
         #self._analysisParams = kwargs['analysisParams']
-        self._analysisParams : "AnalysisParams" = analysisParams
+        # self._analysisParams : "AnalysisParams" = analysisParams
         
         self._stack = stack
         self._lineAnnotations = la
@@ -299,7 +299,7 @@ class pointAnnotations(baseAnnotations):
 
         imageChannel = 2
         
-        self._df.loc[newRow, 'roiType'] = pointTypes.spineROI
+        self._df.loc[newRow, 'roiType'] = pointTypes.spineROI.value
         self._df.loc[newRow, 'segmentID'] = segmentID
 
         # spine annotations have a lot of default columns
@@ -417,9 +417,14 @@ class pointAnnotations(baseAnnotations):
         logger.info('intAnalysisWorker returned')
         print(analysisDict)
 
-    def updateSpineInt(self, newZYXValues: None, spineIdx, zyxLineSegment, 
-                       channelNumber : int, imgData : np.array, 
-                       la: "pymapmanager.annotations.lineAnnotations", brightestIndex: int = None):
+    def updateSpineInt(self,
+                        newZYXValues: None,
+                        spineIdx,
+                        zyxLineSegment, 
+                       channelNumber : int,
+                       imgData : np.array, 
+                       la: "pymapmanager.annotations.lineAnnotations",
+                       brightestIndex: int = None):
         """Update all spine intensity measurements for:
             (1) a spine mask roi
             (2) minimal background roi (from a grid of candidates).
@@ -491,13 +496,16 @@ class pointAnnotations(baseAnnotations):
 
         # New Step: 6/29/23 
         # Add connection side to indicate which side to connect spine to line
-        closestPointSide = la.getSingleSpineLineConnection(brightestIndex, _x, _y)
-        if (closestPointSide == "Left"):
-            self.setValue('connectionSide', spineIdx, "Left")
-        elif (closestPointSide == "Right"):
-            self.setValue('connectionSide', spineIdx, "Right")
-        else:
-            logger.error(f"  Did not get valid closestPointSide:{closestPointSide}")
+        spinePoint = (_x, _y)
+        xLeft= la.getValue(['xLeft'], brightestIndex)
+        xRight= la.getValue(['xRight'], brightestIndex)
+        yLeft= la.getValue(['yLeft'], brightestIndex)
+        yRight= la.getValue(['yRight'], brightestIndex)
+
+        leftRadiusPoint = (xLeft, yLeft)
+        rightRadiusPoint = (xRight, yRight)
+        
+        # closestPoint = pymapmanager.utils.getCloserPoint2(spinePoint, leftRadiusPoint, rightRadiusPoint)
 
         # 2) calculate spine roi (spine rectangle - segment polygon) ... complicated
 
@@ -795,16 +803,18 @@ class pointAnnotations(baseAnnotations):
         isTrue = True
         for idx, row in self._df.iterrows():
             if row['roiType'] == 'spineROI':
+                
                 if row['segmentID'] >= 0:
                     pass
                 else:
                     logger.error(f"row {idx} spineROI does not have a segmentID, found {row['segmentID']}")
                     isTrue = False
+                
                 if row['brightestIndex'] >= 0:
                     pass
                 else:
                     logger.warning(f"row {idx} spineROI does not have a brightestIndex, found {row['brightestIndex']}. Need to use util._findBrightestIndex()")
-                    #isTrue = False
+                    isTrue = False
         
         return isTrue
 
@@ -902,6 +912,7 @@ class pointAnnotations(baseAnnotations):
 
     def calculateJaggedPolygon(self, lineAnnotations, _selectedRow, _channel, img):
         """ Return coordinates of polygon connecting spine to line within AnnotationPlotWidget.py.
+        
         This will be used to plot whenever we click a new spine on the interface
         """
         segmentID = self.getValue('segmentID', _selectedRow)

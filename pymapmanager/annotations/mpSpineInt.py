@@ -93,7 +93,18 @@ def intAnalysisWorker(spineDict, zyxLine, imgData, la):
                                                        numPnts = numPtsForBrightest)
         brightestIndex += startRow
 
-    closestPointSide = la.getSingleSpineLineConnection(brightestIndex, xSpine, ySpine)
+    # Add connection side to indicate which side to connect spine to line
+    xLeft= la.getValue(['xLeft'], brightestIndex)
+    xRight= la.getValue(['xRight'], brightestIndex)
+    yLeft= la.getValue(['yLeft'], brightestIndex)
+    yRight= la.getValue(['yRight'], brightestIndex)
+
+    spinePoint = (xSpine, ySpine)
+    leftRadiusPoint = (xLeft, yLeft)
+    rightRadiusPoint = (xRight, yRight)
+    closestPoint = pmm.utils.getCloserPoint2(spinePoint, leftRadiusPoint, rightRadiusPoint)
+
+    # closestPointSide = la.getSingleSpineLineConnection(brightestIndex, xSpine, ySpine)
 
     # segment coordinates of spines brightest index
     # zyxLine is for one segment
@@ -195,7 +206,7 @@ def intAnalysisWorker(spineDict, zyxLine, imgData, la):
     retDict = {
         'spineIdx': spineIdx,
         'brightestIndex': brightestIndex,  # may or may not have calculated
-        'closestPointSide': closestPointSide,
+        # 'closestPointSide': closestPointSide,
         'spineRoiPoly': finalSpineROI,
         'sInt': spineIntDict,
         'sbInt': spineBackgroundIntDict,

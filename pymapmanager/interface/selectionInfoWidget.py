@@ -157,8 +157,21 @@ class SelectionInfoWidget(QtWidgets.QWidget):
     def _updateUI(self, rowIdx):
         """ Called whenever selectAnnotation slot receives new signal
         """
+        
         # print("values:", self.pa.getValues(self.infoList, rowIdx))
+        
+        # results in error when no spine selected
+        # this causes pytest to fail as compared to runtime which prints the IndexError and continues
+        # IndexError: index 0 is out of bounds for axis 0 with size 0
+        #backendVal = self.pa.getValues(self.infoList, rowIdx)[0]
+
+        # abb to fix IndexError: index 0 is out of bounds for axis 0 with size 0
+        if len(rowIdx) == 0:
+            #TODO: no selection, need to blank out all controls (QLabel)
+            return
+
         backendVal = self.pa.getValues(self.infoList, rowIdx)[0]
+
         # print("widgetDict:", self.widgetDict)
         # print("length of :", len(backendVal))
         index = 0
@@ -181,9 +194,10 @@ class SelectionInfoWidget(QtWidgets.QWidget):
                 logger.info(f"type of backendVal[index]: {type(backendVal[index])}")
                 valType = type(backendVal[index])
                 if valType == float:
-                    checkInt = int(backendVal[index])
-                    logger.info(f"checkInt is {checkInt}")
-                    itemWidget.setText(str(checkInt))
+                    # checkInt = int(backendVal[index])
+                    # logger.info(f"checkInt is {checkInt}")
+                    # itemWidget.setText(str(checkInt))
+                    itemWidget.setText(str(backendVal[index]))
                 else:
                     logger.info(f"2nd route")
                     itemWidget.setText(str(backendVal[index]))
@@ -211,6 +225,7 @@ class SelectionInfoWidget(QtWidgets.QWidget):
         # if selectionEvent.getRows() == None:
             # self.myHighlighter._setData([], [])
         # else:
-        self._updateUI(selectionEvent.getRows()[0])
+        # self._updateUI(selectionEvent.getRows()[0])
+        self._updateUI(selectionEvent.getRows())
         self._blockSlots = False
     

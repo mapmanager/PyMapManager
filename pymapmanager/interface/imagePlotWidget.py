@@ -55,7 +55,7 @@ class ImagePlotWidget(QtWidgets.QWidget):
 
     signalAnnotationSelection2 = QtCore.Signal(object)  # pymapmanager.annotations.SelectionEvent
     #signalCancelSelection = QtCore.Signal(object, object)
-    signalCancelSelection2 = QtCore.Signal(object)  # pymapmanager.annotations.SelectEvent
+    #signalCancelSelection2 = QtCore.Signal(object)  # pymapmanager.annotations.SelectEvent
     """Signal emitted on keyboard 'esc' to cancel all selections
     
     Args:
@@ -305,14 +305,14 @@ class ImagePlotWidget(QtWidgets.QWidget):
                                                                       rowIdx=[],
                                                                       isAlt=False,
                                                                       stack=self._myStack)
-            self.signalCancelSelection2.emit(_pointSelectionEvent)
+            self.signalAnnotationSelection2.emit(_pointSelectionEvent)
 
             # _segmentSelectionEvent = pymapmanager.annotations.SelectionEvent(self._aLinePlot._annotations)
-            _segmentSelectionEvent = pymapmanager.annotations.SelectionEvent(self._aLinePlot._annotations,
-                                                                      rowIdx=[],
-                                                                      isAlt=False,
-                                                                      stack=self._myStack)
-            self.signalCancelSelection2.emit(_segmentSelectionEvent)
+            # _segmentSelectionEvent = pymapmanager.annotations.SelectionEvent(self._aLinePlot._annotations,
+            #                                                           rowIdx=[],
+            #                                                           isAlt=False,
+            #                                                           stack=self._myStack)
+            # self.signalAnnotationSelection2.emit(_segmentSelectionEvent)
 
         elif event.key() in [QtCore.Qt.Key_Delete, QtCore.Qt.Key_Backspace]:
             # if we have a point selection. delete it from backend
@@ -356,9 +356,7 @@ class ImagePlotWidget(QtWidgets.QWidget):
             For now this will only delete selected point annotations in point plot.
             It does not delete segments.
         """
-        
-        logger.info('')
-        
+                
         # for _aLinePlot we will have to types of selected annotation:
         #   1) point in line
         #   2) segmentID
@@ -374,6 +372,8 @@ class ImagePlotWidget(QtWidgets.QWidget):
         # if there is a selection and it is an annotation point (not a line)
         _currentSelection = self._stackWidgetParent.getCurrentSelection()
         
+        logger.info(_currentSelection)
+
         if not _currentSelection.isPointSelection():
             return
         _rows = _currentSelection.getRows()
@@ -426,7 +426,8 @@ class ImagePlotWidget(QtWidgets.QWidget):
         # get the current selection from the parent stack widget (can be none)
         currentSelection = self._stackWidgetParent.getCurrentSelection()
         _selectedRows = currentSelection.getRows()
-        if _selectedRows is not None:
+        # if _selectedRows is not None:
+        if len(_selectedRows) > 0:
             addedRowIdx =_selectedRows[0]
         else:
             addedRowIdx = None
@@ -495,7 +496,8 @@ class ImagePlotWidget(QtWidgets.QWidget):
             #     'y': y,
             #     'z': z,
             # }
-            _addAnnotationEvent = pymapmanager.annotations.AddAnnotationEvent(z, y, x)
+            pointType = pymapmanager.annotations.pointTypes.spineROI
+            _addAnnotationEvent = pymapmanager.annotations.AddAnnotationEvent(z, y, x, pointType)
             logger.info(f'-->> signalAddingAnnotation.emit {_addAnnotationEvent}')
             self.signalAddingAnnotation.emit(_addAnnotationEvent)
 
@@ -579,16 +581,26 @@ class ImagePlotWidget(QtWidgets.QWidget):
             if selectionEvent.isPointSelection():
                 #print('!!! SET SLICE AND ZOOM')
                 rowIdx = selectionEvent.getRows()
-                rowIdx = rowIdx[0]
-                x = selectionEvent.annotationObject.getValue('x', rowIdx)
-                y = selectionEvent.annotationObject.getValue('y', rowIdx)
-                z = selectionEvent.annotationObject.getValue('z', rowIdx)
-                #logger.info(f' calling _zoomToPoint with x:{x} and y:{y}')
-                self._zoomToPoint(x, y)
-                #logger.info(f' calling _setSlice with z:{z}')
-                self._setSlice(z)
+                if len(rowIdx) > 0:
+                    rowIdx = rowIdx[0]
+                    x = selectionEvent.annotationObject.getValue('x', rowIdx)
+                    y = selectionEvent.annotationObject.getValue('y', rowIdx)
+                    z = selectionEvent.annotationObject.getValue('z', rowIdx)
+                    #logger.info(f' calling _zoomToPoint with x:{x} and y:{y}')
+                    self._zoomToPoint(x, y)
+                    #logger.info(f' calling _setSlice with z:{z}')
+                    self._setSlice(z)
 
         self._blockSlots = False
+
+    def slot_deletedAnnotation(self, delDict : dict):
+        """On delete, cancel spine selection.
+        """
+        _pointSelectionEvent = pymapmanager.annotations.SelectionEvent(self._aPointPlot._annotations,
+                                                                    rowIdx=[],
+                                                                    isAlt=False,
+                                                                    stack=self._myStack)
+        self.signalAnnotationSelection2.emit(_pointSelectionEvent)
 
     def slot_setContrast(self, contrastDict):
         #logger.info(f'contrastDict:')
