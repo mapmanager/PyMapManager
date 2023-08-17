@@ -196,9 +196,9 @@ class SelectionInfoWidget(PmmWidget):
             #     except TypeError as e:
             #         logger.error(f"QSpinBox analysisParam:{itemName} ... {e}")
             if isinstance(itemWidget, QtWidgets.QLabel):
-                logger.info(f"widget is a qlabel")
-                logger.info(f"backendVal[index]: {backendVal[index]}")
-                logger.info(f"type of backendVal[index]: {type(backendVal[index])}")
+                # logger.info(f"widget is a qlabel")
+                # logger.info(f"backendVal[index]: {backendVal[index]}")
+                # logger.info(f"type of backendVal[index]: {type(backendVal[index])}")
                 valType = type(backendVal[index])
                 if valType == float:
                     # checkInt = int(backendVal[index])
@@ -206,7 +206,6 @@ class SelectionInfoWidget(PmmWidget):
                     # itemWidget.setText(str(checkInt))
                     itemWidget.setText(str(backendVal[index]))
                 else:
-                    logger.info(f"2nd route")
                     itemWidget.setText(str(backendVal[index]))
 
             elif isinstance(itemWidget, QtWidgets.QLineEdit):
@@ -218,26 +217,23 @@ class SelectionInfoWidget(PmmWidget):
     # Slot that receives signal from other widgets (Stack/ AnotationPlotWidget)
     def slot_selectAnnotation2(self, selectionEvent : "pymapmanager.annotations.SelectionEvent"):
         super().slot_selectAnnotation2(selectionEvent)
-        # sometimes when we emit a signal, it wil recursively come back to this slot
-        # if self._blockSlots:
-        #     return
+        logger.info(f'slot_selectAnnotation2')
 
-        # logger.info(f'selectInfoWidget Slot received {selectionEvent}')
-        # self.selectAnnotation(selectionEvent)
-        self.selectAnnotation()
+        # self.selectAnnotation()
+        # Select Annotation is already being called in parent class
 
     def selectAnnotation(self):
-        # make a visual selection
-        # self._blockSlots = True
+        # logger.info(f'select annotation')
         # logger.info(f'selectInfoWidget Slot received 2: {selectionEvent}')
-
         # self._updateUI(selectionEvent.getRows()[0])
-        # self._blockSlots = False
+
         super().selectAnnotation()
 
     def selectAction(self):
+        # logger.info(f'select action')
         selectionEvent = super().selectAction()
-        self._updateUI(selectionEvent.getRows()[0])
+        # self._updateUI(selectionEvent.getRows()[0])
+        self._updateUI(selectionEvent.getRows())
          
     
     def slot_addedAnnotation(self):

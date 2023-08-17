@@ -759,24 +759,31 @@ class ScatterPlotWindow(QtWidgets.QWidget):
         # print("columnNameX", columnNameX)
         # print("self._df[columnNameX]", self._df[columnNameX])
 
-        # TODO: this implementation has a current bug. 
+        # Fixes bug when
         # If both columns (x and y) have the same name it will interpret it as a df
-        xStat = self._df[columnNameX].tolist()
-        yStat = self._df[columnNameY].tolist()
+        if columnNameX == columnNameY:
+            xStat = self._df.iloc[:,0]
+            yStat = xStat   
+            # print("test", xStat)
+        else:
+            # With difference column names we can get the values separatedly as a list
+            xStat = self._df[columnNameX].tolist()
+            yStat = self._df[columnNameY].tolist()
+
         xyStatIndex = self._df["index"].tolist()
         idList = self._df["segmentID"].tolist()
 
         xMin = np.nanmin(xStat)
         xMax = np.nanmax(xStat)
-        print("xMin: ", xMin, "xMax: ", xMax)
+        # print("xMin: ", xMin, "xMax: ", xMax)
         yMin = np.nanmin(yStat)
         yMax = np.nanmax(yStat)
-        print("yMin: ", yMin, "yMax: ", yMax)
+        # print("yMin: ", yMin, "yMax: ", yMax)
         self.axScatter.set_xlim([xMin, xMax])
         self.axScatter.set_ylim([yMin, yMax])
 
         if self.dict["invertY"]:
-            print("inverting y")
+            # print("inverting y")
             self.axScatter.invert_yaxis()
 
         # self.scatterPoints.set_data(yStat, xStat)
@@ -809,9 +816,9 @@ class ScatterPlotWindow(QtWidgets.QWidget):
         if updateHighlighter:
             xHStat = self.pa.getValues(colName = columnNameX, rowIdx = self.storedRowIdx)
             yHStat = self.pa.getValues(colName = columnNameY, rowIdx = self.storedRowIdx)
-            print("self.storedRowIdx", self.storedRowIdx)
-            print("xHStat", xHStat)
-            print("yHStat", yHStat)
+            # print("self.storedRowIdx", self.storedRowIdx)
+            # print("xHStat", xHStat)
+            # print("yHStat", yHStat)
 
             self.myHighlighter._setData(xHStat, yHStat)
         # self.myHighlighter.update_highlightPlot(self.axScatter)

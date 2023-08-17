@@ -434,8 +434,12 @@ class _histogram(QtWidgets.QWidget):
         # x = [0, 1]  #[np.nan, np.nan]
         # y = [0]  #[np.nan]
         # now this
-        x = []
-        y = []
+
+        x = [np.nan, np.nan]
+        y = [np.nan]
+
+        # x = []
+        # y = []
 
 
         self.pgPlotWidget = pg.PlotWidget()

@@ -42,7 +42,8 @@ class PmmWidget(QtWidgets.QWidget):
         if self._blockSlots:
             return
 
-        logger.info(f'Slot received {selectionEvent}')
+        # logger.info(f'Slot received {selectionEvent}')
+        # logger.info(f'slot_selectAnnotation2 in progress')
         self.selectAnnotation()
 
     def selectAnnotation(self):
@@ -53,18 +54,20 @@ class PmmWidget(QtWidgets.QWidget):
         # make a visual selection
         self._blockSlots = True
         # logger.info(f'selectInfoWidget Slot received 2: {selectionEvent}')
-
+        # logger.info(f'selectAnnotation in progress')
+                    
         # Fill in: Complete desired action
         self.selectAction()
         self._blockSlots = False
     
     def selectAction(self):
         """
-            Function where inherited class specifies the action that they do once a new point is selected
+            Function where inherited class specifies the unique action that they do once a new point is selected
             
             Returns:
                 SelectionEvent that is used by the the child class to update its widget
         """
+        # logger.info(f'selectAction in progress')
         selectionEvent = self.getCurrentSelection()
         return selectionEvent
     
