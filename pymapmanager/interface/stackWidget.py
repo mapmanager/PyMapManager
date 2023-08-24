@@ -523,6 +523,7 @@ class stackWidget(QtWidgets.QMainWindow):
         if self._scatterPlotWindow is None:
             pa = self.myStack.getPointAnnotations()
             self._scatterPlotWindow : ScatterPlotWindow = ScatterPlotWindow(pointAnnotations = pa)
+            # self._scatterPlotWindow = ScatterPlotWindow(pointAnnotations = pa)
 
             # add the code to make a bidirectional signal/slot connection
             # between our children (imagePlotWidgtet and ScatterPlotWidget)
@@ -730,6 +731,9 @@ class stackWidget(QtWidgets.QMainWindow):
 
         # 8/10 - added for selectioninfo widget
         self.signalSelectAnnotation2.connect(self._selectionInfoWidget.slot_selectAnnotation2)
+
+        # scatterPlotWindow
+        # self.signalSelectAnnotation2.connect(self._scatterPlotWindow.slot_selectAnnotation2)
 
         self.signalSelectAnnotation2.connect(self._myPointListWidget.slot_selectAnnotation2)
         self.signalSelectAnnotation2.connect(self._myLineListWidget.slot_selectAnnotation2)
