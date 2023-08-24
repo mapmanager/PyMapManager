@@ -273,6 +273,18 @@ class ImagePlotWidget(QtWidgets.QWidget):
         else:
             logger.info('No action?')
 
+    def _tmp_CancelSelection(self):
+        """
+        TODO
+        ----
+        - If there is no election then do not emit a new cancel selection
+        """
+        _pointSelectionEvent = pymapmanager.annotations.SelectionEvent(self._aPointPlot._annotations,
+                                                                    rowIdx=[],
+                                                                    isAlt=False,
+                                                                    stack=self._myStack)
+        self.signalAnnotationSelection2.emit(_pointSelectionEvent)
+
     def keyPressEvent(self, event : QtGui.QKeyEvent):
         """Override PyQt key press.
         
@@ -300,13 +312,15 @@ class ImagePlotWidget(QtWidgets.QWidget):
             #self.signalCancelSelection.emit(None, False)  # (selIdx, isAlt)
 
             # two signals, one for each of our plots (point, line)
-            # _pointSelectionEvent = pymapmanager.annotations.SelectionEvent(self._aPointPlot._annotations)
-            _pointSelectionEvent = pymapmanager.annotations.SelectionEvent(self._aPointPlot._annotations,
-                                                                      rowIdx=[],
-                                                                      isAlt=False,
-                                                                      stack=self._myStack)
-            self.signalAnnotationSelection2.emit(_pointSelectionEvent)
 
+            self._tmp_CancelSelection()
+            # _pointSelectionEvent = pymapmanager.annotations.SelectionEvent(self._aPointPlot._annotations,
+            #                                                           rowIdx=[],
+            #                                                           isAlt=False,
+            #                                                           stack=self._myStack)
+            # self.signalAnnotationSelection2.emit(_pointSelectionEvent)
+
+            # maybe put back in ??? aug 17
             # _segmentSelectionEvent = pymapmanager.annotations.SelectionEvent(self._aLinePlot._annotations)
             # _segmentSelectionEvent = pymapmanager.annotations.SelectionEvent(self._aLinePlot._annotations,
             #                                                           rowIdx=[],

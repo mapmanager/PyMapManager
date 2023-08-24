@@ -688,7 +688,7 @@ class pointPlotWidget(annotationPlotWidget):
         # self._spineConnections = pg.ScatterPlotItem(pen=pg.mkPen(width=10,
         #                                     color='g'), symbol='o', size=10)
         # line1 = plt.plot(x, y, pen ='g', symbol ='x', symbolPen ='g', symbolBrush = 0.2, name ='green')
-        self._spineConnections = self._view.plot([],[], pen=pg.mkPen(width=width, color=color), symbol=symbol, connect='all')
+        self._spineConnections = self._view.plot([],[], pen=pg.mkPen(width=width, color=color), symbol=symbol, connect='pairs')
         self._spineConnections.setZValue(zorder) 
         # self._view.addItem(self._spineConnections)
 
@@ -917,7 +917,8 @@ class pointPlotWidget(annotationPlotWidget):
         _yData = self._ySpineLines[_spineLineIndex]
         _connect = self._spineLinesConnect[_spineLineIndex]
 
-        self._spineConnections.setData(_xData, _yData, connect=_connect)
+        # self._spineConnections.setData(_xData, _yData, connect=_connect)
+        self._spineConnections.setData(_xData, _yData)
 
         # else:
         #     if len(self.labels) > 0:

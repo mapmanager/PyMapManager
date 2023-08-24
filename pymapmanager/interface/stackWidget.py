@@ -1072,7 +1072,7 @@ class stackWidget(QtWidgets.QMainWindow):
             roiType = pymapmanager.annotations.pointTypes.spineROI
             # add the new annotation to the backend
             logger.info('ADDING SPINE')
-            la = self.getStack().getLineAnnotations()
+            # la = self.getStack().getLineAnnotations()
             newAnnotationRow = self.myStack.getPointAnnotations().addSpine(x, y, z,
                                                                             _selectSegment,
                                                                             self.getStack())

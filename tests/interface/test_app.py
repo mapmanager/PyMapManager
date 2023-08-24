@@ -21,6 +21,10 @@ def stackWidgetObject(qtbot):
 #     assert stackWidgetObject is not None
     
 def test_stackWidget_zoomToPointAnnotation(stackWidgetObject):
+
+    # figure out how to set log level
+    # caplog.set_level(logger.ERROR)
+
     assert stackWidgetObject is not None
 
     spineIndex = 90  # in segmentID == 1
@@ -60,6 +64,13 @@ def test_stackWidget_zoomToPointAnnotation(stackWidgetObject):
     isAlt = False
     stackWidgetObject.zoomToPointAnnotation(spineIndex, isAlt=isAlt)
 
-    stackWidgetObject._imagePlotWidget._deleteAnnotation()
+    # think of all cases
+    # delete when there is a selection
+    # delete and there is no selection
+    
+    # cancel selection
+    stackWidgetObject._imagePlotWidget._tmp_CancelSelection()
 
+    # delete cancels the selection
+    stackWidgetObject._imagePlotWidget._deleteAnnotation()
 
