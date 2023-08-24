@@ -215,19 +215,18 @@ class SelectionInfoWidget(PmmWidget):
             index += 1
     
     # Slot that receives signal from other widgets (Stack/ AnotationPlotWidget)
-    def slot_selectAnnotation2(self, selectionEvent : "pymapmanager.annotations.SelectionEvent"):
-        super().slot_selectAnnotation2(selectionEvent)
-        logger.info(f'slot_selectAnnotation2')
+    # def slot_selectAnnotation2(self, selectionEvent : "pymapmanager.annotations.SelectionEvent"):
+    #     super().slot_selectAnnotation2(selectionEvent)
+    #     logger.info(f'slot_selectAnnotation2')
+    #     # self.selectAnnotation()
+    #     # Select Annotation is already being called in parent class
 
-        # self.selectAnnotation()
-        # Select Annotation is already being called in parent class
+    # def selectAnnotation(self):
+    #     # logger.info(f'select annotation')
+    #     # logger.info(f'selectInfoWidget Slot received 2: {selectionEvent}')
+    #     # self._updateUI(selectionEvent.getRows()[0])
 
-    def selectAnnotation(self):
-        # logger.info(f'select annotation')
-        # logger.info(f'selectInfoWidget Slot received 2: {selectionEvent}')
-        # self._updateUI(selectionEvent.getRows()[0])
-
-        super().selectAnnotation()
+    #     super().selectAnnotation()
 
     def selectAction(self):
         # logger.info(f'select action')
@@ -248,4 +247,4 @@ class SelectionInfoWidget(PmmWidget):
         """
 
         # Get current value of note and the selection RowIdx and emit it 
-        self.signalUpdateNote.emit()
+        self.signalUpdateNote.emit(currentVal)

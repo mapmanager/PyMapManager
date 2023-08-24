@@ -15,6 +15,8 @@ class PmmWidget(QtWidgets.QWidget):
 
     signalAnnotationSelection2 = QtCore.Signal(object)  # pymapmanager.annotations.SelectionEvent
 
+    # Add edit Annotation (add, delete, change)
+
     def __init__(self, parent = None):
         """ Base class for pymapmanager widgets
 

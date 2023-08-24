@@ -12,6 +12,7 @@ import matplotlib.markers as mmarkers
 import numpy as np
 import seaborn as sns
 from random import randint
+from pymapmanager.interface.pmmWidget import PmmWidget
 
 class Highlighter(object):
     def __init__(self, parentPlot, ax, x, y, xyStatIndex):
@@ -50,7 +51,7 @@ class Highlighter(object):
         self.mouseDownEvent = None
         # self.keyIsDown = None
 
-        # self.ax.figure.canvas.mpl_connect("key_press_event", self._keyPressEvent)
+        self.ax.figure.canvas.mpl_connect("key_press_event", self.keyPressEvent)
         # self.ax.figure.canvas.mpl_connect("key_release_event", self._keyReleaseEvent)
 
         self.keepOnMotion = self.ax.figure.canvas.mpl_connect(
@@ -119,8 +120,13 @@ class Highlighter(object):
         # else:
         #     self.mask = np.zeros(self.x.shape, dtype=bool)
 
-    def keyPressEvent(self, event):
-        logger.info(event)
+    def keyPressEvent(self, event : QtGui.QKeyEvent):
+        # logger.info(f"event is {event}" )
+        # logger.info(f"event key is {event.key}")
+
+        if event.key == "escape":
+            # empty highlighter
+            self._setData([], [])
         # self.keyIsDown = event.key
 
     # def _keyPressEvent(self, event):
@@ -336,7 +342,7 @@ class myStatListWidget(QtWidgets.QWidget):
 
         self.signalUpdateStat.emit(self._id, statName)
     
-class ScatterPlotWindow(QtWidgets.QWidget):
+class ScatterPlotWindow(PmmWidget):
     """Plot x/y statistics as a scatter.
 
     Get stat names and variables from sanpy.bAnalysisUtil.getStatList()
@@ -881,46 +887,66 @@ class ScatterPlotWindow(QtWidgets.QWidget):
         self.myHighlighter = Highlighter(self, self.axScatter, [], [], [])
 
 
-    def slot_selectAnnotation2(self, selectionEvent : "pymapmanager.annotations.SelectionEvent"):
-        # sometimes when we emit a signal, it wil recursively come back to this slot
-        if self._blockSlots:
-            return
+    # def slot_selectAnnotation2(self, selectionEvent : "pymapmanager.annotations.SelectionEvent"):
+    #     # sometimes when we emit a signal, it wil recursively come back to this slot
+    #     if self._blockSlots:
+    #         return
 
-        # return
+    #     # return
 
-        # logger.info(f'slot_selectAnnotation2: {selectionEvent}')
-        self._selectAnnotation(selectionEvent)
+    #     # logger.info(f'slot_selectAnnotation2: {selectionEvent}')
+    #     self._selectAnnotation(selectionEvent)
 
 
-    def _selectAnnotation(self, selectionEvent):
-        # make a visual selection
-        self._blockSlots = True
-        # logger.info(f'selectionEvent: {selectionEvent}')
+    # def _selectAnnotation(self, selectionEvent):
+    #     # make a visual selection
+    #     self._blockSlots = True
+    #     # logger.info(f'selectionEvent: {selectionEvent}')
 
+    #     if selectionEvent.getRows() == None:
+    #         self.myHighlighter._setData([], [])
+    #     else:
+    #         columnNameX = self.xPlotWidget.getCurrentStat()
+    #         xStat = self.pa.getValues(colName = columnNameX, rowIdx = selectionEvent.getRows())
+       
+    #         columnNameY = self.yPlotWidget.getCurrentStat()
+    #         yStat = self.pa.getValues(colName = columnNameY, rowIdx = selectionEvent.getRows())
+
+    #         # logger.info(f'xStat {xStat}')
+    #         # logger.info(f'yStat {yStat}')
+
+    #         # roiType = pymapmanager.annotations.pointTypes[self.dict["roiType"]]
+    #         # xStat = self.pa.getfilteredValues(columnNameX, roiType, self.dict["segmentID"])
+    #         # yStat = self.pa.getfilteredValues(columnNameY, roiType, self.dict["segmentID"])
+    #         # xyStatIndex = self.pa.getfilteredValues(columnNameY = "index", roiType, self.dict["segmentID"])
+    #         self.myHighlighter._setData(xStat, yStat)
+
+    #         # Store selected rows
+    #         self.storedRowIdx = selectionEvent.getRows()
+
+    #         # logger.info(f'selectionEvent my highter set')
+    #         # logger.info(f'selectionEvent my highter rowIdx: {selectionEvent.getRows()}')
+    #     self._blockSlots = False
+
+    def selectAction(self):        
+        
+        selectionEvent = super().selectAction()
+
+        # If nothing is selected empty highlighter plot
         if selectionEvent.getRows() == None:
             self.myHighlighter._setData([], [])
-        else:
+        else: 
+            # Otherwise get the appropriate values and plot
             columnNameX = self.xPlotWidget.getCurrentStat()
             xStat = self.pa.getValues(colName = columnNameX, rowIdx = selectionEvent.getRows())
        
             columnNameY = self.yPlotWidget.getCurrentStat()
             yStat = self.pa.getValues(colName = columnNameY, rowIdx = selectionEvent.getRows())
 
-            # logger.info(f'xStat {xStat}')
-            # logger.info(f'yStat {yStat}')
-
-            # roiType = pymapmanager.annotations.pointTypes[self.dict["roiType"]]
-            # xStat = self.pa.getfilteredValues(columnNameX, roiType, self.dict["segmentID"])
-            # yStat = self.pa.getfilteredValues(columnNameY, roiType, self.dict["segmentID"])
-            # xyStatIndex = self.pa.getfilteredValues(columnNameY = "index", roiType, self.dict["segmentID"])
             self.myHighlighter._setData(xStat, yStat)
 
             # Store selected rows
             self.storedRowIdx = selectionEvent.getRows()
-
-            # logger.info(f'selectionEvent my highter set')
-            # logger.info(f'selectionEvent my highter rowIdx: {selectionEvent.getRows()}')
-        self._blockSlots = False
     
     def selectPointsFromHighlighter(self, selectedPointsList):
         # selectionEvent : "pymapmanager.annotations.SelectionEvent"

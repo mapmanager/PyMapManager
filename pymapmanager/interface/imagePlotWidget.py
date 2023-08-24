@@ -295,6 +295,8 @@ class ImagePlotWidget(QtWidgets.QWidget):
 
         elif event.key() == QtCore.Qt.Key_Escape:
             # cancel all user selections
+            # logger.info(f'escape event is {event}')
+            # logger.info(f'escape event key is {event.key()}')
             logger.info(f'  -->> emit signalCancelSelection CANCEL')
             
             #self.signalCancelSelection.emit(None, False)  # (selIdx, isAlt)
