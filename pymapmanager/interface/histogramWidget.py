@@ -437,6 +437,10 @@ class _histogram(QtWidgets.QWidget):
         x = []
         y = []
 
+        # macOS
+        x = [0, 1]  #[np.nan, np.nan]
+        y = [0]  #[np.nan]
+
 
         self.pgPlotWidget = pg.PlotWidget()
         self.pgHist = pg.PlotCurveItem(x, y, stepMode='center', fillLevel=0, brush=brush)

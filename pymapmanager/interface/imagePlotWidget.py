@@ -123,12 +123,13 @@ class ImagePlotWidget(QtWidgets.QWidget):
         self._blockSlots = False
 
         self._state = stackWidgetState.baseState
+        # not used
         
-        # Variable to keep track of State, Used for Moving Spine ROI
         self._mouseMovedState = False
+        # Variable to keep track of State, Used for Moving Spine ROI
 
-        # Variable to keep track of State, Used creating new connection to an existing Spine ROI
         self._mouseConnectState = False
+        # Variable to keep track of State, Used creating new connection to an existing Spine ROI
 
         self._buildUI()
 
@@ -466,7 +467,7 @@ class ImagePlotWidget(QtWidgets.QWidget):
             self.signalMouseClickConnect.emit(_selectionEvent)
             self._mouseConnectState = False
 
-        if self._mouseMovedState and addedRowIdx is not None:
+        elif self._mouseMovedState and addedRowIdx is not None:
             logger.info(f'-->> ENTERING MOVE STATE')
             logger.info(f'-->> signalMouseClick.emit {_addAnnotationEvent}')
             # Either set backend or send signal to set backend?

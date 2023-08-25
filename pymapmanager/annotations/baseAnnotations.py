@@ -10,7 +10,7 @@ import time
 import traceback
 from pprint import pprint
 
-from typing import List, Union, Optional  # , Callable, Iterator
+from typing import List, Union, Tuple, Optional  # , Callable, Iterator
 
 import numpy as np
 import pandas as pd
@@ -93,17 +93,41 @@ class SelectionEvent():
         
         if isinstance(rowIdx, int):
             rowIdx = [rowIdx]
-        
+        elif rowIdx is None:
+            rowIdx = []
+
         self._selDict = {
             'annotationObject': annotation,
             'rowIdx': rowIdx,
+            'lineIdx': lineIdx,
+
+            'stack': stack,
+
+            'channel': 1,
+            'slice': 0,
+            
             'isEsc': isEsc,
             'isAlt': isAlt,
             'isShift': isShift,
-            'lineIdx': lineIdx,
-            'stack': stack,
+
+            # additional state
+            'isMoveAnnotation': False,
+            'isReconnectSpine': False,
+            'isEditSegment': False,
         }
 
+    @property
+    def isMoveAnnotation(self):
+        return self._selDict['isMoveAnnotation']
+    
+    @property
+    def isReconnectSpine(self):
+        return self._selDict['isReconnectSpine']
+    
+    @property
+    def isEditSegment(self):
+        return self._selDict['isEditSegment']
+    
     def __str__(self):
         _str = '\n'  # f"  {self.type}" + '\n'
         for k,v in self._selDict.items():
@@ -171,9 +195,62 @@ class SelectionEvent():
     def isAlt(self):
         return self._selDict['isAlt']
 
+    @isAlt.setter
+    def isAlt(self, value):
+        self._selDict['isAlt'] = value
+
     @property
     def isShift(self):
         return self._selDict['isShift']
+
+    def getCurrentSlice(self) -> int:
+        return self._selDict['slice']
+
+    def setCurrentSlice(self, currentSlice : int):
+        self._selDict['slice'] = currentSlice
+
+    def getImageChannel(self) -> Union[int,str]:
+        """Get the image we are viewing.
+        """
+        return self._selDict['channel']
+    
+    def setImageChannel(self, imageChannel : int):
+        self._selDict['slice'] = imageChannel
+
+    def getPointSelection(self) -> Tuple[int, dict]:
+        """
+        Returns:
+            pointSelection: row
+            pointRowDict: dictionary of column keys and values.
+        """
+        return self._pointSelection, self._pointRowDict
+
+    def getSegmentSelection(self) -> Tuple[int, dict]:
+        """
+        Returns:
+            segmentSelection: row
+            segmentRowDict: dictionary of column keys and values.
+        """
+        return self._segmentSelection, self._segmentRowDict
+
+    def setPointSelection(self, pointSelection : Union[List[int], None]):
+        self._pointSelection = pointSelection
+        if pointSelection is None:
+            self._pointRowDict = None
+        else:
+            pa  = self.getStack().getPointAnnotations()
+            self._pointRowDict = pa.getRows_v2(pointSelection, asDict=True)
+
+        # logger.info('')
+        # print('self._rowDict:', self._rowDict)
+
+    def setSegmentSelection(self, segmentSelection : Union[List[int],None]):
+        self._segmentSelection = segmentSelection
+        if segmentSelection is None:
+            self._segmentRowDict = None
+        else:
+            la  = self.getStack().getLineAnnotations()
+            self._segmentRowDict = la.getRows_v2(segmentSelection, asDict=True)
 
 class fileTypeClass(enum.Enum):
     mapmanager_igor = 'mapmanager_igor'

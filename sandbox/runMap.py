@@ -13,6 +13,10 @@ def run():
     #_map = app._mapList[0]
     # app.openStackRun(_map, 3, 1)
     
+    bsw = app.openStack2(_map, 1)
+
+    bsw.zoomToPointAnnotation(99, isAlt=True, select=True)
+
     sys.exit(app.exec_())
 
 if __name__ == '__main__':

@@ -259,6 +259,7 @@ class annotationPlotWidget(QtWidgets.QWidget):
         # Displaying Radius Lines
         penWidth = 6
         _pen = pg.mkPen(width=penWidth, color=color)
+
         # self._leftRadiusLines = pg.ScatterPlotItem(
         #                     #pen=_pen,  # None to not draw lines
         #                     symbol=symbol,
@@ -283,12 +284,23 @@ class annotationPlotWidget(QtWidgets.QWidget):
         # logger.info(f'adding _leftRadiusLines to view: {self.__class__.__name__}')
         # self._view.addItem(self._leftRadiusLines)
 
-        self._rightRadiusLines = pg.ScatterPlotItem(pen=None,  # None to not draw lines
-                            symbol=symbol,
-                            size=size,
-                            color=color,
-                            hoverable=True
-                            )
+        # self._rightRadiusLines = pg.ScatterPlotItem(pen=None,  # None to not draw lines
+        #                     symbol=symbol,
+        #                     size=size,
+        #                     color=color,
+        #                     hoverable=True
+        #                     )
+
+        self._rightRadiusLines = self._view.plot([],[],
+                                        pen=_pen, # None to not draw lines
+                                        symbol = None,
+                                        # symbolColor  = 'red',
+                                        symbolPen=None,
+                                        fillOutline=False,
+                                        markeredgewidth=0.0,
+                                        #symbolBrush = color,
+                                        #connect='finite',
+                                        )
 
         self._rightRadiusLines.setZValue(zorder)  # put it on top, may need to change '10'
 
@@ -556,7 +568,7 @@ class annotationPlotWidget(QtWidgets.QWidget):
         # connect is from ('all' 'pairs', 'finite', ndarray of [0, 1])
         # Show points in the segment
         
-        logger.info(f'set data slice {sliceNumber} has {len(x)} {len(y)}')
+        # logger.info(f'set data slice {sliceNumber} has {len(x)} {len(y)}')
 
         self._scatter.setData(x, y,
                             #   symbolBrush=None,
@@ -578,14 +590,23 @@ class annotationPlotWidget(QtWidgets.QWidget):
             try:
                 self._leftRadiusLines.setData(self._dfPlot['xLeft'].to_numpy(),
                                               self._dfPlot['yLeft'].to_numpy(),
-                                                connect='finite',
+                                                # connect='finite',
                                               )
             except (KeyError) as e:
                 logger.error('while plotting left radius')
                 print('exception is:', e)
                 print(self._dfPlot['xLeft'])
 
-            self._rightRadiusLines.setData(self._dfPlot['xRight'], self._dfPlot['yRight'])
+            # self._rightRadiusLines.setData(self._dfPlot['xRight'], self._dfPlot['yRight'])
+            try:
+                self._rightRadiusLines.setData(self._dfPlot['xRight'].to_numpy(),
+                                              self._dfPlot['yRight'].to_numpy(),
+                                                # connect='finite',
+                                              )
+            except (KeyError) as e:
+                logger.error('while plotting right radius')
+                print('exception is:', e)
+                print(self._dfPlot['xRight'])
 
         # 20230206 removed while implementing tracing thread
         # as far as I understand, setData() calls this

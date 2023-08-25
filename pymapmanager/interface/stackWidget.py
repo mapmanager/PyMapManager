@@ -57,7 +57,8 @@ def _mapColor(type:str, lut:str):
 #         # analysisWindow = analysisLayout
 #         self.layout.addLayout(windowLayout)
 
-class stackWidgetState():
+class tmp_stackWidgetState():
+    # moved functionality to base annotation selection event
     """Class to manage the state in a stack widget.
         
         Keep track of:
@@ -80,8 +81,16 @@ class stackWidgetState():
         self._segmentRowDict : Union[List[dict], None] = None
 
         self._imageChannel : int = channel  # channel number we are currently viewing
-
         self._currentSlice = 0
+
+        # self._isMovePoint = False
+        # self._isConnectPoint = False
+        # self._isEditSegment = False
+
+        # keyboard state to emit
+        self._isAlt = False
+        self._isCtrl = False
+        self._isCmd = False
 
     def getCurrentSlice(self) -> int:
         return self._currentSlice
@@ -208,10 +217,18 @@ class stackWidget(QtWidgets.QMainWindow):
 
         self._selectionInfoWidget = None
 
-        _channel = self._displayOptionsDict['windowState']['defaultChannel']
-        self.annotationSelection = stackWidgetState(self, channel=_channel)
+        # TODO: Aug 2023, these are two parallel systems and should be merged?
+        # system 1
+        # _channel = self._displayOptionsDict['windowState']['defaultChannel']
+        # self.annotationSelection = stackWidgetState(self, channel=_channel)
 
-        self._currentSelection = pymapmanager.annotations.SelectionEvent()
+        # system 2
+        # this is forcing all selections to be points, need to fix in the future
+        self._currentSelection = pymapmanager.annotations.SelectionEvent(
+                                                        annotation=self.myStack.getPointAnnotations(),
+                                                        stack=self.myStack)
+        _channel = self._displayOptionsDict['windowState']['defaultChannel']
+        self._currentSelection.setImageChannel(_channel)
         """Keep track of the current selection"""
 
         self._buildUI()
@@ -226,6 +243,10 @@ class stackWidget(QtWidgets.QMainWindow):
         if show:
             self.show()
 
+    @property
+    def currentSelection(self):
+        return self._currentSelection
+    
     def getCurrentSelection(self):
         return self._currentSelection
     
@@ -389,9 +410,9 @@ class stackWidget(QtWidgets.QMainWindow):
             self._histogramWidget.setVisible(state)
             
             if state:
-                _channel = self.annotationSelection.getImageChannel()
+                _channel = self.currentSelection.getImageChannel()
                 self._histogramWidget.slot_setChannel(_channel)
-                _slice = self.annotationSelection.getCurrentSlice()
+                _slice = self.currentSelection.getCurrentSlice()
                 self._histogramWidget.slot_setSlice(_slice)
         
         elif name =='Selection Info':
@@ -639,10 +660,11 @@ class stackWidget(QtWidgets.QMainWindow):
         # point list
         # oct 2022 balt
         self._myPointListWidget = \
-                pymapmanager.interface.pointListWidget(self,
+                pymapmanager.interface.pointListWidget(
+                                    # self,
                                     self.myStack.getPointAnnotations(),
                                     title='Points',
-                                    displayOptionsDict = self._displayOptionsDict['windowState']
+                                    # displayOptionsDict = self._displayOptionsDict['windowState']
                                     )
         #hBoxLayout_main.addWidget(myPointListWidget)
 
@@ -656,10 +678,11 @@ class stackWidget(QtWidgets.QMainWindow):
         # line list
         # oct 2022 balt
         self._myLineListWidget = \
-                pymapmanager.interface.lineListWidget(self,
+                pymapmanager.interface.lineListWidget(
+                                    # self,
                                     self.myStack.getLineAnnotations(),
                                     title='Lines',
-                                    displayOptionsDict = self._displayOptionsDict['windowState']
+                                    # displayOptionsDict = self._displayOptionsDict['windowState']
                                     )
         self.lineListDock = QtWidgets.QDockWidget('Lines',self)
         self.lineListDock.setWidget(self._myLineListWidget)
@@ -830,8 +853,8 @@ class stackWidget(QtWidgets.QMainWindow):
             currentAnnotationRow = selectionEvent.getRows()[0]
             logger.info(f'connecting spine Index {currentAnnotationRow}')
 
-            imageChannel = self.annotationSelection.getImageChannel()
-            _selectSegment, _segmentRowDict = self.annotationSelection.getSegmentSelection()
+            imageChannel = self.currentSelection.getImageChannel()
+            _selectSegment, _segmentRowDict = self.currentSelection.getSegmentSelection()
             _selectSegment = _selectSegment[0]
 
             la = self.getStack().getLineAnnotations()
@@ -839,7 +862,7 @@ class stackWidget(QtWidgets.QMainWindow):
                         
             # grab the raw image data the user is viewing
             #imgData = self.getStack().getImageChannel(imageChannel)
-            _imageSlice = self.annotationSelection.getCurrentSlice()  # could use z
+            _imageSlice = self.currentSelection.getCurrentSlice()  # could use z
             imgSliceData = self.getStack().getImageSlice(_imageSlice, imageChannel)
 
             roiType = pymapmanager.annotations.pointTypes.spineROI
@@ -926,8 +949,8 @@ class stackWidget(QtWidgets.QMainWindow):
         # Get the index of the point
         # Use the new values of the click to override the old values within the backend
         # Recalculate Brightest Index + right/left points
-        imageChannel = self.annotationSelection.getImageChannel()
-        _selectSegment, _segmentRowDict = self.annotationSelection.getSegmentSelection()
+        imageChannel = self.currentSelection.getImageChannel()
+        _selectSegment, _segmentRowDict = self.currentSelection.getSegmentSelection()
         _selectSegment = _selectSegment[0]
 
         pa = self.myStack.getPointAnnotations()
@@ -937,7 +960,7 @@ class stackWidget(QtWidgets.QMainWindow):
                     
         # grab the raw image data the user is viewing
         #imgData = self.getStack().getImageChannel(imageChannel)
-        _imageSlice = self.annotationSelection.getCurrentSlice()  # could use z
+        _imageSlice = self.currentSelection.getCurrentSlice()  # could use z
         # imgSliceData = self.getStack().getImageSlice(_imageSlice, imageChannel)
         upSlices = 1
         downSlices = 1
@@ -1038,7 +1061,7 @@ class stackWidget(QtWidgets.QMainWindow):
 
         # decide if new annotation is valid given the window state
         # both spineROI and controlPnt require a single segment selection
-        _selectSegment, _segmentRowDict = self.annotationSelection.getSegmentSelection()
+        _selectSegment, _segmentRowDict = self.currentSelection.getSegmentSelection()
         if _selectSegment is None or len(_selectSegment)>1 or len(_selectSegment)==0:
             logger.warning(f'Did not create annotation, requires one segment selection but got {_selectSegment}')
             self.signalSetStatus.emit('Did not add spineROI or controlPnt, please select one segment.')
@@ -1047,7 +1070,7 @@ class stackWidget(QtWidgets.QMainWindow):
         _selectSegment = _selectSegment[0]
 
         # the image channel (1,2,3,...) the user is viewing
-        imageChannel = self.annotationSelection.getImageChannel()
+        imageChannel = self.currentSelection.getImageChannel()
         if isinstance(imageChannel, str):
             logger.warning(f'Did not create annotation, requires viewing one image channel, got {imageChannel}')
             self.signalSetStatus.emit(f'Did not create annotation, requires viewing one image channel, got {imageChannel}')
@@ -1185,34 +1208,39 @@ class stackWidget(QtWidgets.QMainWindow):
 
     def slot_selectAnnotation2(self, selectionEvent : pymapmanager.annotations.SelectionEvent):
         
-        # logger.info(selectionEvent)
+        logger.info('incoming selection event')
+        logger.info(selectionEvent)
         
+        print(' ')
+        logger.info('existing self.currentSelection')
+        logger.info(self.currentSelection)
+
         rows = selectionEvent.getRows()
         
         # determine the type of event
         if selectionEvent.type == pymapmanager.annotations.pointAnnotations:
-            self.annotationSelection.setPointSelection(rows)
+            self.currentSelection.setPointSelection(rows)
         elif selectionEvent.type == pymapmanager.annotations.lineAnnotations:
-            self.annotationSelection.setSegmentSelection(rows)
+            self.currentSelection.setSegmentSelection(rows)
         else:
             logger.error(f'did not understand selectionEvent.type: {selectionEvent.type}')
             return
         
-        logger.info(f'ASSIGNING _currentSelection to selectionEvent:')
-        logger.info(f'    {selectionEvent}')
-        self._currentSelection = selectionEvent
+        # logger.info(f'ASSIGNING _currentSelection to selectionEvent:')
+        # logger.info(f'    {selectionEvent}')
+        # self._currentSelection = selectionEvent
 
-        self.signalSelectAnnotation2.emit(selectionEvent)
+        self.signalSelectAnnotation2.emit(self.currentSelection)
 
     def slot_setChannel(self, channel : int):
         logger.info(f'channel:{channel}')
-        self.annotationSelection.setImageChannel(channel)
+        self.currentSelection.setImageChannel(channel)
 
     def slot_setSlice(self, currentSlice : int):
         #logger.info(f'currentSlice:{currentSlice}')
-        self.annotationSelection.setCurrentSlice(currentSlice)
+        self.currentSelection.setCurrentSlice(currentSlice)
 
-    def selectSegmentID(self, segmentID: int, isAlt : bool = False):
+    def _old_selectSegmentID(self, segmentID: int, isAlt : bool = False):
         _lineAnnotations = self.myStack.getLineAnnotations()
         _selectionEvent = pymapmanager.annotations.SelectionEvent(_lineAnnotations,
                                                                     rowIdx=segmentID,
@@ -1252,12 +1280,16 @@ class stackWidget(QtWidgets.QMainWindow):
             logger.warning('point annotations is empty')
             return
         
-        _selectionEvent = pymapmanager.annotations.SelectionEvent(_pointAnnotations,
-                                                                rowIdx=idx,
-                                                                isAlt=isAlt,
-                                                                stack=self.myStack)
+        # _selectionEvent = pymapmanager.annotations.SelectionEvent(_pointAnnotations,
+        #                                                         rowIdx=idx,
+        #                                                         isAlt=isAlt,
+        #                                                         stack=self.myStack)
+        
+        self.currentSelection.setPointSelection(idx)
+        self.currentSelection.isAlt = isAlt
+
         logger.info(f'  -->> emit signalSelectAnnotation2')
-        self.signalSelectAnnotation2.emit(_selectionEvent)
+        self.signalSelectAnnotation2.emit(self.currentSelection)
 
 
     def updateSpineAnalysis(self):
@@ -1266,7 +1298,7 @@ class stackWidget(QtWidgets.QMainWindow):
         """
         logger.info('updateSpineAnalysis')
 
-        imageChannel = self.annotationSelection.getImageChannel()
+        imageChannel = self.currentSelection.getImageChannel()
 
         pa = self.myStack.getPointAnnotations()
         la = self.getStack().getLineAnnotations()        

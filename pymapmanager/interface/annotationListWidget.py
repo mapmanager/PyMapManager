@@ -59,10 +59,10 @@ class annotationListWidget(QtWidgets.QWidget):
     """
 
     def __init__(self,
-                    theStackWidget,
+                    # theStackWidget,
                     annotations : pymapmanager.annotations.baseAnnotations,
                     title : str,
-                    displayOptionsDict : dict,
+                    # displayOptionsDict : dict,
                     parent = None):
         """
         Args:
@@ -76,10 +76,12 @@ class annotationListWidget(QtWidgets.QWidget):
 
         # logger.info(f'{title} {type(annotations)}')
 
-        self._stackWidget = theStackWidget
+        # self._stackWidget = theStackWidget
         self._annotations : pymapmanager.annotations.baseAnnotations = annotations
         self._title : str = title
-        self._displayOptionsDict = displayOptionsDict
+        
+        # refaxctor aug 24
+        # self._displayOptionsDict = displayOptionsDict
 
         self._blockSlots : bool = False
         #Set to true on emit() signal so corresponding slot is not called.
@@ -253,12 +255,13 @@ class annotationListWidget(QtWidgets.QWidget):
         #self.signalRowSelection.emit(rowList, isAlt)
 
         # version 2
-        _stack = self._stackWidget.getStack()
+        # _stack = self._stackWidget.getStack()
 
         _selectionEvent = pymapmanager.annotations.SelectionEvent(self._annotations,
                                                                   rowIdx=rowList,
                                                                   isAlt=isAlt,
-                                                                  stack=_stack)
+                                                                #   stack=_stack
+                                                                  )
 
         logger.info(f'  -->> emit signalRowSelection2 {_selectionEvent}')
 
@@ -440,11 +443,14 @@ class lineListWidget(annotationListWidget):
         hBoxLayout = QtWidgets.QHBoxLayout()
         vControlLayout.addLayout(hBoxLayout)
 
-        _editSegment = self._displayOptionsDict['doEditSegments']
+        # refactor aug 24
+        # _editSegment = self._displayOptionsDict['doEditSegments']
 
         # edit checkbox
         aCheckbox = QtWidgets.QCheckBox('Edit')
-        aCheckbox.setChecked(_editSegment)
+        # aCheckbox.setChecked(_editSegment)
+        aCheckbox.setChecked(False)
+        aCheckbox.setChecked(True)  # wil get updated on slot_selectAnnotation
         aCheckbox.stateChanged.connect(self.on_segment_edit_checkbox)
         hBoxLayout.addWidget(aCheckbox, alignment=_alignLeft)
         # aLabel = QtWidgets.QLabel('Edit')
@@ -452,21 +458,24 @@ class lineListWidget(annotationListWidget):
 
         # new line segment button
         self._addSegmentButton = QtWidgets.QPushButton('+')
-        self._addSegmentButton.setEnabled(_editSegment)
+        # self._addSegmentButton.setEnabled(_editSegment)
+        self._addSegmentButton.setEnabled(False)
         _callback = lambda state, buttonName='+': self.on_segment_button_clicked(state, buttonName)
         self._addSegmentButton.clicked.connect(_callback)
         hBoxLayout.addWidget(self._addSegmentButton, alignment=_alignLeft)
 
         # delete line segment button
         self._deleteSegmentButton = QtWidgets.QPushButton('-')
-        self._deleteSegmentButton.setEnabled(_editSegment)
+        # self._deleteSegmentButton.setEnabled(_editSegment)
+        self._deleteSegmentButton.setEnabled(False)
         _callback = lambda state, buttonName='-': self.on_segment_button_clicked(state, buttonName)
         self._deleteSegmentButton.clicked.connect(_callback)
         hBoxLayout.addWidget(self._deleteSegmentButton, alignment=_alignLeft)
 
         # trace and cancel (A*)
         self._traceCancelButton = QtWidgets.QPushButton('trace')  # toggle b/w trace/cancel
-        self._traceCancelButton.setEnabled(_editSegment)
+        # self._traceCancelButton.setEnabled(_editSegment)
+        self._traceCancelButton.setEnabled(False)
         _callback = lambda state, buttonName='trace_cancel': self.on_segment_button_clicked(state, buttonName)
         self._traceCancelButton.clicked.connect(_callback)
         hBoxLayout.addWidget(self._traceCancelButton, alignment=_alignLeft)
@@ -475,7 +484,7 @@ class lineListWidget(annotationListWidget):
 
         return vControlLayout
 
-    def _updateTracingButton(self, rowIdx):
+    def _updateTracingButton(self, selectionEvent : pymapmanager.annotations.SelectionEvent):
         """Turn tracing button on/off depending on state.
         """
         #
@@ -484,18 +493,21 @@ class lineListWidget(annotationListWidget):
         # 2) it is not the first control pnt in a segmentID
         # Need to run this code every time there is a new point selection
         
-        _doEditSegments = self._displayOptionsDict['doEditSegments']
-        
-        logger.info(f'_doEditSegments: {_doEditSegments}')
+        # refactor aug 24, just emit and will get change in slot_selectAnnotation
+        # _doEditSegments = self._displayOptionsDict['doEditSegments']
+        # logger.info(f'_doEditSegments: {_doEditSegments}')
 
-        logger.info(f'  rowIdx:{rowIdx}')
-        if not _doEditSegments or rowIdx is None or isinstance(rowIdx,list):
+        rows = selectionEvent.getRows()
+        isEditSegment = selectionEvent.isEditSegment
+
+        logger.info(f'  rows:{rows}')
+        if not isEditSegment or rows == []:
            # no selection, always off
            traceState = False
         else:
-            #rowIdx = rowIdx[0]
+            rowIdx = rows[0]
 
-            pa = self._stackWidget.getStack().getPointAnnotations()
+            pa = selectionEvent.getStack().getPointAnnotations()
             isControlPnt = pa.rowColIs(rowIdx, 'roiType', 'controlPnt')
             logger.info(f'  isControlPnt: {isControlPnt} {type(isControlPnt)}')
             if not isControlPnt:
@@ -534,21 +546,18 @@ class lineListWidget(annotationListWidget):
         change the text in _traceCancelButton b/w 'Trace' and 'Cancel'
         """
         # checkbox can have 3-states
-        if state > 0:
-            state = True
-        else:
-            state = False
+        state = state > 0
 
         # change the state of the stack widget !!!
-        self._displayOptionsDict['doEditSegments'] = state
-                         
-        self._addSegmentButton.setEnabled(state)
-        self._deleteSegmentButton.setEnabled(state)
+        #self._displayOptionsDict['doEditSegments'] = state
+
+        # self._addSegmentButton.setEnabled(state)
+        # self._deleteSegmentButton.setEnabled(state)
         
         # get current selected point
-        rowIdx, rowDict = self._stackWidget.annotationSelection.getPointSelection()
+        # rowIdx, rowDict = self._stackWidget.annotationSelection.getPointSelection()
         
-        self._updateTracingButton(rowIdx)
+        # self._updateTracingButton(rowIdx)
 
         logger.info(f'  -->> emit signalEditSegments() state:{state}')
         self.signalEditSegments.emit(state)
@@ -592,7 +601,8 @@ class lineListWidget(annotationListWidget):
         self._myTableView.mySelectRows(segmentIDs)
 
         # toggle tracing button on/off depending on selection
-        self._updateTracingButton(rows)
+        # self._updateTracingButton(rows)
+        self._updateTracingButton(selectionEvent)
 
     def slot_selectAnnotation(self, rows : Union[List[int], None], isAlt : bool = False):
         """Select annotation at index.

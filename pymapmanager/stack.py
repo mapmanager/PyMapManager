@@ -336,7 +336,7 @@ class stack():
 
         channelIdx = channel - 1
         if self._images[channelIdx] is None:
-            logger.error(f'channel {channelIdx} is None')
+            logger.error(f'channel index {channelIdx} is None')
             return
         data =  self._images[channelIdx][imageSlice][:][:]
         return data
@@ -400,6 +400,8 @@ class stack():
         TODO: Need to get from max project if we are showing that
         """
         _image = self.getImageSlice(imageSlice=imageSlice, channel=channel)
+        if _image is None:
+            return np.nan
         try:
             _intensity = _image[y,x]
         except (IndexError) as e:

@@ -10,24 +10,24 @@ from pymapmanager._logger import logger
 def pointListWidgetObject(qtbot):
     path = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
     
-    sw = stackWidget(path=path)
+    # sw = stackWidget(path=path)
     # sw.showScatterPlot()
     # sw.showAnalysisParams()
 
     # TODO: annotationListWidget should be given stack, not stack widget
-    theStackWidget = sw
+    # theStackWidget = sw
     
     stack = pymapmanager.stack(path)
     pointAnnotations = stack.getPointAnnotations()
 
     title = 'xxx'
-    displayOptionsDict = {}
+    # displayOptionsDict = {}
 
     aPointListWidget = pointListWidget(
-                    theStackWidget,
+                    # theStackWidget,
                     pointAnnotations,
                     title,
-                    displayOptionsDict,
+                    # displayOptionsDict,
                     parent = None
                     )
 
@@ -77,5 +77,6 @@ def test_pointListWidgetObject(pointListWidgetObject):
     pointListWidgetObject.on_table_selection(-newAnnotationRow*100)
 
 if __name__ == '__main__':
-    test_pointListWidgetObject()
+    pass
+    # test_pointListWidgetObject()
 
