@@ -511,6 +511,8 @@ class ImagePlotWidget(QtWidgets.QWidget):
             #     'y': y,
             #     'z': z,
             # }
+            # let stack widget decide what type of point (like spine roi,
+            # does this on basis of ???
             pointType = pymapmanager.annotations.pointTypes.spineROI
             _addAnnotationEvent = pymapmanager.annotations.AddAnnotationEvent(z, y, x, pointType)
             logger.info(f'-->> signalAddingAnnotation.emit {_addAnnotationEvent}')

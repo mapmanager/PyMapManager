@@ -79,10 +79,22 @@ class AddAnnotationEvent():
     def getAddedRow(self):
         return self._dict['addedRowIdx']
 
+from enum import Enum, auto
+class pmmEventType(Enum):
+    selection = auto()
+    add = auto()
+    delete = auto()
+    change = auto()
+    movingPnt = auto()
+    movedPnt = auto()                                                                                                                                                                     
+    connectingLinePnt = auto()
+    connectedLinePnt = auto()
+
 class SelectionEvent():
     """Created and emited on an annotation selection.
     """
     def __init__(self,
+                #  eventType : pmmEventType,
                  annotation : "baseAnnotations" = None,
                  rowIdx : List[int] = None,
                  isEsc : bool = False,
@@ -97,6 +109,7 @@ class SelectionEvent():
             rowIdx = []
 
         self._selDict = {
+            'eventType': None,
             'annotationObject': annotation,
             'rowIdx': rowIdx,
             'lineIdx': lineIdx,
