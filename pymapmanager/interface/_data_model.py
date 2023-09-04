@@ -32,12 +32,26 @@ class pandasModel(QtCore.QAbstractTableModel):
         #self._myFont = QtGui.QFont('Arial', pointSize=10)
 
     def rowCount(self, parent=None):
-        return self._data.shape[0]
+        # abb sept
+        return len(self._data.index) 
+        # return self._data.shape[0]
 
     def columnCount(self, parnet=None):
-        return self._data.shape[1]
+        # abb sept
+        return len(self._data.columns.values) 
+        # return self._data.shape[1]
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
+        # abb sept
+        # if role == QtCore.Qt.DisplayRole:
+        #     i = index.row()
+        #     j = index.column()
+        #     ret = '{0}'.format(self._data.iat[i, j])
+        #     # print('ret:', ret, type(ret))
+        #     return ret
+        # else:
+        #     return QtCore.QVariant()
+
         if index.isValid():
             if role == QtCore.Qt.ToolTipRole:
                 # no tooltips here
@@ -46,22 +60,27 @@ class pandasModel(QtCore.QAbstractTableModel):
                 columnName = self._data.columns[index.column()]
 
                 realRow = index.row()
-                retVal = self._data.loc[realRow, columnName]
-                if isinstance(retVal, np.float64):
-                    retVal = float(retVal)
-                elif isinstance(retVal, np.int64):
-                    retVal = int(retVal)
-                elif isinstance(retVal, np.bool_):
-                    retVal = str(retVal)
-                elif isinstance(retVal, list):
-                    retVal = str(retVal)
-                elif isinstance(retVal, str) and retVal == 'nan':
-                    retVal = ''
+                try:
+                    retVal = self._data.loc[realRow, columnName]
+                except(KeyError) as e:
+                    # logger.error(f'key error {e}')
+                    return # QtCore.QVariant()
+                else:
+                    if isinstance(retVal, np.float64):
+                        retVal = float(retVal)
+                    elif isinstance(retVal, np.int64):
+                        retVal = int(retVal)
+                    elif isinstance(retVal, np.bool_):
+                        retVal = str(retVal)
+                    elif isinstance(retVal, list):
+                        retVal = str(retVal)
+                    elif isinstance(retVal, str) and retVal == 'nan':
+                        retVal = ''
 
-                if isinstance(retVal, float) and math.isnan(retVal):
-                    # don't show 'nan' in table
-                    retVal = ''
-                return retVal
+                    if isinstance(retVal, float) and math.isnan(retVal):
+                        # don't show 'nan' in table
+                        retVal = ''
+                    return retVal
 
             elif role == QtCore.Qt.FontRole:
                 #realRow = self._data.index[index.row()]
@@ -161,6 +180,9 @@ class pandasModel(QtCore.QAbstractTableModel):
         return QtCore.QVariant()
 
     def flags(self, index):
+        # abb sept
+        return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+        
         if not index.isValid():
             logger.warning(f'index is not valid: {index}')
 

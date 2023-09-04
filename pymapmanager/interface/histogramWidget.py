@@ -1,3 +1,5 @@
+import platform
+
 import numpy as np
 
 from qtpy import QtGui, QtCore, QtWidgets
@@ -433,13 +435,17 @@ class _histogram(QtWidgets.QWidget):
         # july 9, 2023 on linxux was this
         # x = [0, 1]  #[np.nan, np.nan]
         # y = [0]  #[np.nan]
-        # now this
-        x = []
-        y = []
 
-        # macOS
-        x = [0, 1]  #[np.nan, np.nan]
-        y = [0]  #[np.nan]
+        _system = platform.system()
+        if _system == 'Linux':
+            x = []
+            y = []
+        elif _system == 'Darwin':
+            x = [0, 1]  
+            y = [0]
+        elif _system == 'Windows':
+            x = [0, 1]  
+            y = [0]
 
 
         self.pgPlotWidget = pg.PlotWidget()

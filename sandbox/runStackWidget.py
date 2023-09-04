@@ -1,5 +1,7 @@
 import sys
 
+from qtpy import QtGui, QtCore, QtWidgets
+
 import pymapmanager.mmMap
 
 import pymapmanager.interface

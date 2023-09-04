@@ -79,17 +79,6 @@ class AddAnnotationEvent():
     def getAddedRow(self):
         return self._dict['addedRowIdx']
 
-from enum import Enum, auto
-class pmmEventType(Enum):
-    selection = auto()
-    add = auto()
-    delete = auto()
-    change = auto()
-    movingPnt = auto()
-    movedPnt = auto()                                                                                                                                                                     
-    connectingLinePnt = auto()
-    connectedLinePnt = auto()
-
 class SelectionEvent():
     """Created and emited on an annotation selection.
     """
@@ -581,6 +570,12 @@ class baseAnnotations():
         """
         return self._columns
         
+    def __str__(self):
+        retStr = ''
+        retStr += self.__class__.__name__  # name of class
+        retStr += f' len({len(self)})'
+        return retStr
+
     def __len__(self) -> int:
         """Return the number of annotations.
         """
@@ -1080,6 +1075,9 @@ class baseAnnotations():
         if not isinstance(rowIdx, list):
             rowIdx = [rowIdx]
         self._df.drop(labels=rowIdx, axis=0, inplace=True)
+        
+        # want to not do this, deleted annotations index will be lost forever (desired)
+        # that way annotations after index deleted do not change their index
         self._resetIndex()
 
         self._dataModified = True

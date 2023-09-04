@@ -12,7 +12,7 @@ from pymapmanager._logger import logger
 import pymapmanager.stack
 import pymapmanager.annotations
 
-class BasePlotWidget(ABC):
+class _experimental_BasePlotWidget(ABC):
     """Abstract class to derive all annotation plots from.
     
     This is experimental an not used.

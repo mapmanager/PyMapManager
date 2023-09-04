@@ -61,7 +61,7 @@ class annotationListWidget(QtWidgets.QWidget):
     def __init__(self,
                     # theStackWidget,
                     annotations : pymapmanager.annotations.baseAnnotations,
-                    title : str,
+                    title : str = '',
                     # displayOptionsDict : dict,
                     parent = None):
         """
