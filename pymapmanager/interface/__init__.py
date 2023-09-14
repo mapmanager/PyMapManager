@@ -7,6 +7,13 @@ from ._table_widget import myTableView
 from .annotationListWidget import pointListWidget
 from .annotationListWidget import lineListWidget
 
+from .scatterPlotWindow import ScatterPlotWindow
+from .selectionInfoWidget import SelectionInfoWidget
+from .searchWidget import searchListWidget
+from .analysisParamWidget import AnalysisParamWidget
+
+from .searchWidget import SearchWidget
+
 from .annotationPlotWidget import linePlotWidget
 from .annotationPlotWidget import pointPlotWidget
 

@@ -58,6 +58,12 @@ class myTableView(QtWidgets.QTableView):
 
         self.doubleClicked.connect(self.on_double_clicked)
 
+        # Create Proxy 
+        self.proxy = QtCore.QSortFilterProxyModel()
+
+    def getProxy(self):
+        return self.proxy
+    
     def getSelectedRowDict(self):
         selectedRows = self.selectionModel().selectedRows()
         if len(selectedRows) == 0:
@@ -148,14 +154,15 @@ class myTableView(QtWidgets.QTableView):
         selectionModel = self.selectionModel()
         if selectionModel is not None:
             selectionModel.selectionChanged.disconnect(self.on_selectionChanged)
-
-        self.proxy = QtCore.QSortFilterProxyModel()
+ 
+        # self.proxy = QtCore.QSortFilterProxyModel()
+        
         self.proxy.setSourceModel(model)
 
         self.myModel.beginResetModel()
         self.setModel(self.proxy)
         self.myModel.endResetModel()
-        
+
         self.selectionModel().selectionChanged.connect(self.on_selectionChanged)
         #self.selectionModel().currentChanged.connect(self.old_on_currentChanged)
 

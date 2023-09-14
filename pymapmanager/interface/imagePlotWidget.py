@@ -588,7 +588,7 @@ class ImagePlotWidget(QtWidgets.QWidget):
                     x = selectionEvent.annotationObject.getValue('x', rowIdx)
                     y = selectionEvent.annotationObject.getValue('y', rowIdx)
                     z = selectionEvent.annotationObject.getValue('z', rowIdx)
-                    #logger.info(f' calling _zoomToPoint with x:{x} and y:{y}')
+                    # logger.info(f' calling _zoomToPoint with x:{x} and y:{y}')
                     self._zoomToPoint(x, y)
                     #logger.info(f' calling _setSlice with z:{z}')
                     self._setSlice(z)

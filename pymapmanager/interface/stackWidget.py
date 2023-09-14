@@ -12,10 +12,6 @@ import pymapmanager
 import pymapmanager.interface
 import pymapmanager.annotations
 from pymapmanager.analysisParams import AnalysisParams
-from pymapmanager.interface.scatterPlotWindow import ScatterPlotWindow
-from pymapmanager.interface.selectionInfoWidget import SelectionInfoWidget
-import pymapmanager.interface
-from pymapmanager.interface.analysisParamWidget import AnalysisParamWidget
 
 from pymapmanager._logger import logger
 
@@ -207,6 +203,8 @@ class stackWidget(QtWidgets.QMainWindow):
         self._scatterPlotWindow = None
 
         self._selectionInfoWidget = None
+
+        self._searchWidget = None
 
         _channel = self._displayOptionsDict['windowState']['defaultChannel']
         self.annotationSelection = stackWidgetState(self, channel=_channel)
@@ -447,6 +445,9 @@ class stackWidget(QtWidgets.QMainWindow):
         plotScatter_action = QtWidgets.QAction("&Plot Scatter", self)
         plotScatter_action.triggered.connect(self.showScatterPlot)
 
+        search_action = QtWidgets.QAction("&Show Search", self)
+        search_action.triggered.connect(self.showSearchWidget)
+
         # selectionInfoWidget_action = QtWidgets.QAction("&Selection Info", self)
         # selectionInfoWidget_action.triggered.connect(self.showSelectionInfo)
 
@@ -460,6 +461,8 @@ class stackWidget(QtWidgets.QMainWindow):
         analysisMenu.addAction(openParameterList_action)
 
         analysisMenu.addAction(plotScatter_action)
+
+        analysisMenu.addAction(search_action)
 
         # analysisMenu.addAction(selectionInfoWidget_action)
 
@@ -515,14 +518,15 @@ class stackWidget(QtWidgets.QMainWindow):
         # tmp_dPWidget: AnalysisParams = AnalysisParams()
         tmp_dPWidget = self.myStack.analysisParams
         # Show Detection Widget
-        self._analysisParamsWidget: AnalysisParamWidget = AnalysisParamWidget(tmp_dPWidget)
+
+        self._analysisParamsWidget = pymapmanager.interface.AnalysisParamWidget(tmp_dPWidget)
         # self._analysisParamsWidget.signalParameterChanged.connect(self.slot_parameterChanged)
         self._analysisParamsWidget.signalSaveParameters.connect(self.slot_saveParameters)
 
     def showScatterPlot(self):
         if self._scatterPlotWindow is None:
             pa = self.myStack.getPointAnnotations()
-            self._scatterPlotWindow : ScatterPlotWindow = ScatterPlotWindow(pointAnnotations = pa)
+            self._scatterPlotWindow = pymapmanager.interface.ScatterPlotWindow(pointAnnotations = pa)
             # self._scatterPlotWindow = ScatterPlotWindow(pointAnnotations = pa)
 
             # add the code to make a bidirectional signal/slot connection
@@ -533,6 +537,28 @@ class stackWidget(QtWidgets.QMainWindow):
             self._scatterPlotWindow.signalAnnotationSelection2.connect(self._imagePlotWidget.slot_selectAnnotation2)
 
         self._scatterPlotWindow.show()
+
+    def showSearchWidget(self, state):
+        # Add boolean to show and hide (called visible)
+        if self._searchWidget is None:
+        
+            searchListWidget = pymapmanager.interface.searchListWidget(self,
+                                self.myStack.getPointAnnotations(),
+                                title='Points',
+                                displayOptionsDict = self._displayOptionsDict['windowState'])
+
+            self.signalSelectAnnotation2.connect(searchListWidget.slot_selectAnnotation2)
+
+            searchListWidget.signalRowSelection2.connect(self.slot_selectAnnotation2)
+
+            self._searchWidget = pymapmanager.interface.SearchWidget(searchListWidget)
+
+            self._searchWidget.signalSearchUpdate.connect(searchListWidget.doSearch)
+
+        else:
+            self._searchWidget.setVisible(state)
+
+        self._searchWidget.show()
 
     # def showSelectionInfo(self, state):
     #     # Add boolean to show and hide (called visible)
@@ -551,23 +577,6 @@ class stackWidget(QtWidgets.QMainWindow):
     #         self._selectionInfoWidget.setVisible(state)
 
     #     self._selectionInfoWidget.show()
-
-       
-    # def OLD_showNewWindow(self, layout):
-    #     if self.window is None:
-    #         logger.info('analysis param window opened')
-    #         # analysisLayout = self._detectionParamsDict.buildAnalysisParamUI()
-    #         # print("type", type(analysisLayout))
-    #         print("layout", layout)
-    #         print("type", type(layout))
-    #         self.window = AnotherWindow(layout)
-    #         self.window.show()
-    #         # analysisWindow = self._detectionParamsDict.buildAnalysisParamUI()
-
-    #     else:
-    #         self.window.close()  # Close window.
-    #         self.window = None  # Discard reference.
-    #         logger.info('analysis param window closed')
 
     def _on_user_close(self):
         logger.info('')
@@ -673,7 +682,7 @@ class stackWidget(QtWidgets.QMainWindow):
         # 8/10 - Adding selection info widget
         # self._selectionInfoWidget : SelectionInfoWidget = SelectionInfoWidget(pointAnnotations = self.myStack.getPointAnnotations())
         self._selectionInfoWidget = \
-                            SelectionInfoWidget(pointAnnotations = self.myStack.getPointAnnotations())
+                            pymapmanager.interface.SelectionInfoWidget(pointAnnotations = self.myStack.getPointAnnotations())
         # self._selectionInfoWidget = SelectionInfoWidget()
         # self._selectionInfoWidget = pymapmanager.interface.SelectionInfoWidget()
         self.selectionInfoDock = QtWidgets.QDockWidget('Selection Info',self)
@@ -725,6 +734,8 @@ class stackWidget(QtWidgets.QMainWindow):
         # connect our children signals to our slot
         self._myPointListWidget.signalRowSelection2.connect(self.slot_selectAnnotation2)
         self._myLineListWidget.signalRowSelection2.connect(self.slot_selectAnnotation2)
+
+
 
         # Why does this have two of the same lines?
         self._imagePlotWidget.signalAnnotationSelection2.connect(self.slot_selectAnnotation2)

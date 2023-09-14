@@ -18,7 +18,7 @@ import math
 from functools import partial
 
 class SelectionInfoWidget(PmmWidget):
-    """A widget that displays the information of the Spine point that is selection.
+    """A widget that displays the information of the Spine point that is selected.
     Some information can be altered by the user.
     """
 

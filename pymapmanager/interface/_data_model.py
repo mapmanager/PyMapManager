@@ -323,3 +323,6 @@ class pandasModel(QtCore.QAbstractTableModel):
     
     def myGetRowDict(self, row : int):
         return self._data.loc[row]
+    
+    def myGetColValues(self, columnName : str):
+        return self._data[columnName]
