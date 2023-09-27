@@ -351,7 +351,8 @@ class stackWidget(QtWidgets.QMainWindow):
                 'maxContrast': maxStackIntensity,  # set by user
                 #'minStackIntensity': minStackIntensity,  # to set histogram/contrast slider guess
                 #'maxStackIntensity': maxStackIntensity,
-                'bitDepth': self.myStack.header['bitDepth']
+                # 'bitDepth': self.myStack.header['bitDepth']
+                'bitDepth': 8,
             }
 
     def _buildColorLut(self):
