@@ -61,6 +61,10 @@ class myTableView(QtWidgets.QTableView):
         # Create Proxy 
         self.proxy = QtCore.QSortFilterProxyModel()
 
+        # TODO: REMOVE
+        # self.mySetColumnHidden('x', True)
+        # self.setColumnHidden(1, True)
+
     def getProxy(self):
         return self.proxy
     

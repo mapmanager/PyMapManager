@@ -241,7 +241,7 @@ class annotationPlotWidget(QtWidgets.QWidget):
                                         )
         # ,pen=pg.mkPen(width=width, color=color), symbol=symbol)
 
-        zorder = 100
+        # zorder = 100
         self._scatter.setZValue(zorder)  # put it on top, may need to change '10'
         
         # when using ScatterPlotItem
@@ -267,28 +267,44 @@ class annotationPlotWidget(QtWidgets.QWidget):
         #                     hoverable=True
         #                     )
 
+        # TODO: Move to linePlotWidget
         self._leftRadiusLines = self._view.plot([],[],
-                                        pen=_pen, # None to not draw lines
-                                        symbol = None,
+                                        # pen=_pen, # None to not draw lines
+                                        pen=None,
+                                        symbol = symbol,
                                         # symbolColor  = 'red',
                                         symbolPen=None,
                                         fillOutline=False,
                                         markeredgewidth=0.0,
-                                        #symbolBrush = color,
+                                        symbolBrush = color,
                                         #connect='finite',
                                         )
+        
  
         self._leftRadiusLines.setZValue(zorder)  # put it on top, may need to change '10'
 
         # logger.info(f'adding _leftRadiusLines to view: {self.__class__.__name__}')
         # self._view.addItem(self._leftRadiusLines)
 
-        self._rightRadiusLines = pg.ScatterPlotItem(pen=None,  # None to not draw lines
-                            symbol=symbol,
-                            size=size,
-                            color=color,
-                            hoverable=True
-                            )
+        # self._rightRadiusLines = pg.ScatterPlotItem(pen=None,  # None to not draw lines
+        #                     symbol=symbol,
+        #                     size=size,
+        #                     color=color,
+        #                     hoverable=True
+        #                     )
+
+        self._rightRadiusLines = self._view.plot([],[],
+                                        # pen=_pen, # None to not draw lines
+                                        pen=None,
+                                        symbol = symbol,
+                                        # symbolColor  = 'red',
+                                        symbolPen=None,
+                                        fillOutline=False,
+                                        markeredgewidth=0.0,
+                                        symbolBrush = color,
+                                        #connect='finite',
+                                        )
+        
 
         self._rightRadiusLines.setZValue(zorder)  # put it on top, may need to change '10'
 
@@ -301,7 +317,7 @@ class annotationPlotWidget(QtWidgets.QWidget):
         symbol = self._displayOptions['symbolUserSelection']
         size = self._displayOptions['sizeUserSelection']
         zorder = self._displayOptions['zorderUserSelection']
-
+        zorder = 100
         # this scatter plot get updated when user click an annotation
         self._scatterUserSelection = pg.ScatterPlotItem(pen=pg.mkPen(width=width,
                                             color=color), symbol=symbol, size=size)
@@ -578,14 +594,18 @@ class annotationPlotWidget(QtWidgets.QWidget):
             try:
                 self._leftRadiusLines.setData(self._dfPlot['xLeft'].to_numpy(),
                                               self._dfPlot['yLeft'].to_numpy(),
-                                                connect='finite',
+                                                # connect='finite',
                                               )
             except (KeyError) as e:
                 logger.error('while plotting left radius')
                 print('exception is:', e)
                 print(self._dfPlot['xLeft'])
 
-            self._rightRadiusLines.setData(self._dfPlot['xRight'], self._dfPlot['yRight'])
+            # self._rightRadiusLines.setData(self._dfPlot['xRight'], self._dfPlot['yRight'])
+            self._rightRadiusLines.setData(self._dfPlot['xRight'].to_numpy(),
+                                        self._dfPlot['yRight'].to_numpy(),
+                                        )
+
 
         # 20230206 removed while implementing tracing thread
         # as far as I understand, setData() calls this
@@ -786,12 +806,14 @@ class pointPlotWidget(annotationPlotWidget):
         """
         super().slot_deletedAnnotation(delDict)
         
-        # logger.info(f'pointPlotWidget slot_deletedAnnotation {delDict}')
+        logger.info(f'pointPlotWidget slot_deletedAnnotation {delDict}')
         
         annotationIndexList = delDict['annotationIndex']
         
-        if len(annotationIndexList) == 1:
-            oneIndex = annotationIndexList[0]
+        # if len(annotationIndexList) == 1:
+        if annotationIndexList is not None:
+            # oneIndex = annotationIndexList[0]
+            oneIndex = annotationIndexList
             
             # remove the deleted annotation from our label list
             popped_item = self._labels.pop(oneIndex)  # remove from list
@@ -860,14 +882,14 @@ class pointPlotWidget(annotationPlotWidget):
             if roiType == "spineROI":
                 
                 # firstSelectedRow = spine row index
-                # jaggedPolygon = self.pointAnnotations.calculateJaggedPolygon(self.lineAnnotations, firstSelectedRow, self._channel, self.img)
-                jaggedPolygon = self.pointAnnotations.getValue("spineROICoords", firstSelectedRow)
+                jaggedPolygon = self.pointAnnotations.calculateJaggedPolygon(self.lineAnnotations, firstSelectedRow, self._channel, self.img)
+                # jaggedPolygon = self.pointAnnotations.getValue("spineROICoords", firstSelectedRow)
 
                 if jaggedPolygon is not None:
                     # TODO: Move this to load in base annotations
-                    jaggedPolygon = eval(jaggedPolygon)
-                    # logger.info(f'within list {jaggedPolygon} list type {type(jaggedPolygon)}')
-                    jaggedPolygon = np.array(jaggedPolygon)
+                    # jaggedPolygon = eval(jaggedPolygon)
+                    # # logger.info(f'within list {jaggedPolygon} list type {type(jaggedPolygon)}')
+                    # jaggedPolygon = np.array(jaggedPolygon)
 
                     self._spinePolygon.setData(jaggedPolygon[:,1], jaggedPolygon[:,0])
 

@@ -205,6 +205,7 @@ class stackWidget(QtWidgets.QMainWindow):
         self._selectionInfoWidget = None
 
         self._searchWidget = None
+        self._searchWidget2 = None
 
         _channel = self._displayOptionsDict['windowState']['defaultChannel']
         self.annotationSelection = stackWidgetState(self, channel=_channel)
@@ -446,7 +447,7 @@ class stackWidget(QtWidgets.QMainWindow):
         plotScatter_action.triggered.connect(self.showScatterPlot)
 
         search_action = QtWidgets.QAction("&Show Search", self)
-        search_action.triggered.connect(self.showSearchWidget)
+        search_action.triggered.connect(self.showSearchWidget2)
 
         # selectionInfoWidget_action = QtWidgets.QAction("&Selection Info", self)
         # selectionInfoWidget_action.triggered.connect(self.showSelectionInfo)
@@ -541,9 +542,10 @@ class stackWidget(QtWidgets.QMainWindow):
     def showSearchWidget(self, state):
         # Add boolean to show and hide (called visible)
         if self._searchWidget is None:
-        
+            
+            pa = self.myStack.getPointAnnotations()
             searchListWidget = pymapmanager.interface.searchListWidget(self,
-                                self.myStack.getPointAnnotations(),
+                                pa,
                                 title='Points',
                                 displayOptionsDict = self._displayOptionsDict['windowState'])
 
@@ -551,15 +553,55 @@ class stackWidget(QtWidgets.QMainWindow):
 
             searchListWidget.signalRowSelection2.connect(self.slot_selectAnnotation2)
 
-            self._searchWidget = pymapmanager.interface.SearchWidget(searchListWidget)
+            self._searchWidget = pymapmanager.interface.SearchWidget(searchListWidget, pa)
 
             self._searchWidget.signalSearchUpdate.connect(searchListWidget.doSearch)
+            self._searchWidget.signalColumnChange.connect(searchListWidget.doColumnChange)
 
         else:
             self._searchWidget.setVisible(state)
 
         self._searchWidget.show()
 
+    def showSearchWidget2(self, state):
+        # Add boolean to show and hide (called visible)
+        if self._searchWidget2 is None:
+            
+            df = self.myStack.getPointAnnotations().getDataFrame()
+            self._searchWidget2 = pymapmanager.interface.SearchController(df)
+            # self._searchWidget2.signalAnnotationSelection2.connect(self.slot_selectAnnotation2)
+
+            # TODO: Find alternative?
+            # self._searchWidget2.selectRowOnStart(self._currentSelection)
+            
+            self.signalSelectAnnotation2.connect(self._searchWidget2.slot_selectAnnotation2)
+            self._searchWidget2.signalAnnotationSelection2.connect(self.convertToAnnotationEvent)
+
+            # Connecting Signals to Update Table model within Search Widget
+            self.signalPointChanged.connect(self._searchWidget2.slot_updateRow)
+            self.signalAddedAnnotation.connect(self._searchWidget2.slot_addRow)
+            self.signalDeletedAnnotation.connect(self._searchWidget2.slot_deleteRow)
+
+        else:
+            self._searchWidget2.setVisible(state)
+
+        self._searchWidget2.show()
+
+    def convertToAnnotationEvent(self, proxyRowIdx):
+        """ 
+        Convert proxyRowIdx to a selection event to update all other widget
+        Args:
+            proxyRowIdx: Index selected in proxy model of Search Widget
+        """
+        pa = self.myStack.getPointAnnotations()
+        _selectionEvent = pymapmanager.annotations.SelectionEvent(pa,
+                                                        rowIdx=proxyRowIdx,
+                                                        stack=self.myStack)
+        # self.signalSelectAnnotation2.emit(_selectionEvent)
+
+        # Call Stack Widget function that signals other widgets
+        self.slot_selectAnnotation2(_selectionEvent)
+            
     # def showSelectionInfo(self, state):
     #     # Add boolean to show and hide (called visible)
     #     if self._selectionInfoWidget is None:
@@ -993,7 +1035,7 @@ class stackWidget(QtWidgets.QMainWindow):
         # self._imagePlotWidget._aPointPlot.slot_deletedAnnotation()
         deleteDict = {
                 'annotationType': pymapmanager.annotations.annotationType.point,
-                'annotationIndex': currentAnnotationRow,
+                'annotationIndex': currentAnnotationRow, # Check to see where its used as a list/ int
                 'isSegment': False,
             }
         self.signalDeletedAnnotation.emit(deleteDict)
@@ -1202,7 +1244,7 @@ class stackWidget(QtWidgets.QMainWindow):
 
     def slot_selectAnnotation2(self, selectionEvent : pymapmanager.annotations.SelectionEvent):
         
-        # logger.info(selectionEvent)
+        logger.info(selectionEvent)
         
         rows = selectionEvent.getRows()
         

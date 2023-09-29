@@ -16,6 +16,7 @@ from pymapmanager.annotations import pointAnnotations
 from pymapmanager.interface.pmmWidget import PmmWidget
 from pymapmanager.interface.annotationListWidget import annotationListWidget
 from pymapmanager.interface._data_model import pandasModel
+from PyQt5.QtCore import Qt, QSortFilterProxyModel, QAbstractTableModel
 
 # Move into SearchWidget
 class searchListWidget(annotationListWidget):
@@ -43,6 +44,9 @@ class searchListWidget(annotationListWidget):
 
         self.proxy = self._myTableView.getProxy()
 
+        # self.currentSearchStr = ""
+        self.currentColName = "note"
+
     def setDisplayPointType(self, pointType : pymapmanager.annotations.pointTypes):
         """Displaly just one pointType(s) in the table.
         
@@ -60,6 +64,14 @@ class searchListWidget(annotationListWidget):
         TODO: we need to limit this to roiType like (spineRoi, controlPnt)
         """
         dfPoints = self._annotations.getDataFrame()
+
+        # dfPoints = [
+        #     [4, 9, 2],
+        #     [1, "hello", 0],
+        #     [3, 5, 0],
+        #     [3, 3, "what"],
+        #     ["this", 8, 9],
+        # ]
         
         if self._displayPointTypeList is not None:
             dfPoints = dfPoints[dfPoints['roiType'].isin(self._displayPointTypeList)]
@@ -72,6 +84,8 @@ class searchListWidget(annotationListWidget):
     def doSearch(self, searchStr):
         """Temporary patch: to update dataframe after search
         """
+        # self.currentSearchStr = searchStr
+
         df = self._annotations.getDataFrame()
 
         # myModel = pandasModel(filtered_df)
@@ -80,7 +94,8 @@ class searchListWidget(annotationListWidget):
         # Note, segmentID, RoiType
         # Acquire index of column to use within filter model
         df = df.reset_index()
-        colIdx = df.columns.get_loc("note")
+        # colIdx = df.columns.get_loc("note")
+        colIdx = df.columns.get_loc(self.currentColName)
         # logger.info(f'df.columns: {df.columns}')
         # logger.info(f'colIdx: {colIdx}')
         
@@ -91,6 +106,12 @@ class searchListWidget(annotationListWidget):
 
         # logger.info(f'receiving search: {searchStr}')
         self.proxy.setFilterFixedString(searchStr)
+
+    def doColumnChange(self, colName):
+        """ Update Data frame with new column selection
+        """
+        # self.doSearch(self.currentSearchStr, colName)
+        self.currentColName = colName
 
     def slot_selectAnnotation2(self, selectionEvent : pymapmanager.annotations.SelectionEvent):
         """
@@ -120,18 +141,20 @@ class SearchWidget(PmmWidget):
     # Need to receive selection event signal
     # Signal to send to update other widgets
     signalSearchUpdate = QtCore.Signal(object)
+    signalColumnChange = QtCore.Signal(object)
 
-    def __init__(self, searchListWidget):
+    def __init__(self, searchListWidget, pa):
     # def __init__(self, parent = None):
         """
         """
         super().__init__(None)
         # super().__init__(parent, )
 
-        self.pa = pointAnnotations
+        self.pa = pa
 
         self.searchListWidget = searchListWidget
         self._buildGUI()
+        # self.searchUI()
         self.show()
     
     def _buildGUI(self):
@@ -148,9 +171,29 @@ class SearchWidget(PmmWidget):
         
         # Horizontal Layout
         horizLayout = QtWidgets.QHBoxLayout()
+        vLayout = QtWidgets.QVBoxLayout()
+
+        vLayout.addStretch()
+        # vLayout.setContentsMargins(0,0,0,0)
+        # vLayout.setSpacing(5)
+        
         # Leftside holds Notes:
-        aLabel = QtWidgets.QLabel("Note")
-        horizLayout.addWidget(aLabel)
+        # aLabel = QtWidgets.QLabel("Note")
+
+        self.columnNameComboBox = QtWidgets.QComboBox()
+        self.columnNameComboBox.setFixedWidth(120)
+        allColumnNames = self.pa.getAllColumnNames()
+        # print("test types", self.pa.getRoiTypes())
+        for columnName in allColumnNames:
+            self.columnNameComboBox.addItem(str(columnName))
+        self.columnNameComboBox.setCurrentText("note")
+        self.columnNameComboBox.currentTextChanged.connect(self._onNewColumnChoice)
+        # bitDepthComboBox.setCurrentIndex(bitDepthIdx)
+        # bitDepthComboBox.currentIndexChanged.connect(self.bitDepth_Callback)
+        # hLayoutHeader.addWidget(self.roiTypeComboBox)
+
+        vLayout.addWidget(self.columnNameComboBox)
+        # horizLayout.addWidget(self.columnNameComboBox)
 
         #  along with search bar
         #  need to update it when point list is clicked
@@ -159,13 +202,24 @@ class SearchWidget(PmmWidget):
         # aWidget.setAlignment(QtCore.Qt.AlignLeft)
         searchBar.textChanged.connect(self.updateSearch)
         # textFinished
-        horizLayout.addWidget(searchBar)
-
-        # Right side holds a pointListWidget
-        # need to update this pointListWidget, by reducing/ filtering whenever search bar is filled
+        # horizLayout.addWidget(searchBar)
+        vLayout.addWidget(searchBar)
+       
+        
+        # vLayout.addStretch(1)
+        vLayout.addStretch()
+        horizLayout.addLayout(vLayout)
+        # # Right side holds a pointListWidget
+        # # need to update this pointListWidget, by reducing/ filtering whenever search bar is filled
         horizLayout.addWidget(self.searchListWidget)
+
         return horizLayout
     
+    def _onNewColumnChoice(self, columnName):
+        # self.dict["columnName"] = columnName
+        # self.signalSearchUpdate()
+        self.signalColumnChange.emit(columnName)
+
     def updateSearch(self, searchStr):
         """
             Send signal/ update the pointAnnotationList to display filtered DF

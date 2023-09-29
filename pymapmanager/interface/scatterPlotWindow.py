@@ -49,10 +49,14 @@ class Highlighter(object):
         # print("self.y: ", self.y)
 
         self.mouseDownEvent = None
-        # self.keyIsDown = None
+        self.keyIsDown = None
 
-        self.ax.figure.canvas.mpl_connect("key_press_event", self.keyPressEvent)
-        # self.ax.figure.canvas.mpl_connect("key_release_event", self._keyReleaseEvent)
+        self._keepPickEvent = self.ax.figure.canvas.mpl_connect("pick_event", self._on_spine_pick_event3)
+        # self.ax.figure.canvas.mpl_connect("pick_event", self._on_spike_pick_event3)
+
+        # self.ax.figure.canvas.mpl_connect("key_press_event", self.keyPressEvent)
+        self.ax.figure.canvas.mpl_connect("key_press_event", self._keyPressEvent)
+        self.ax.figure.canvas.mpl_connect("key_release_event", self._keyReleaseEvent)
 
         self.keepOnMotion = self.ax.figure.canvas.mpl_connect(
             "motion_notify_event", self.on_mouse_move
@@ -68,6 +72,69 @@ class Highlighter(object):
     #     (self._highlight, ) = self.ax.plot(
     #         [], [], "o", markersize=self.markerSize, color="yellow", zorder=10
     #     )
+    def _on_spine_pick_event3(self, event):
+        """
+        
+        Parameters
+        ----------
+        event : matplotlib.backend_bases.PickEvent
+        """
+        # import inspect
+        # from pprint import pprint
+
+        # logger.info(f'entering click spike event{event}')
+        # logger.info(f'print artist {event.artist}')
+        # logger.info(f'print artist {event.ind}')
+        # pprint(inspect.getmembers(event))
+
+        # ignore when not left mouse button
+        if event.mouseevent.button != 1:
+            logger.info(f'NOT LEFT MOUSE BUTTON')
+            return
+
+        # no hits
+        if len(event.ind) < 1:
+            logger.info(f'NO HITS')
+            return
+
+        _clickedPlotIdx = event.ind[0]
+        logger.info(f'HighLighter _clickedPlotIdx: {_clickedPlotIdx} keyIsDown:{self.keyIsDown}')
+
+        # convert to what we are actually plotting
+        try:
+            # get actual spine index
+            _realPointIndex = self.xyStatIndex[_clickedPlotIdx]
+
+        except (IndexError) as e:
+            logger.warning(f'  xxx we are not plotting _realPointIndex {_realPointIndex}')
+
+
+        # if shift then add to mask
+        # self.mask |= _insideMask
+        newMask = np.zeros(self.x.shape, dtype=bool)
+        newMask[_clickedPlotIdx] = True
+        
+        if self.keyIsDown == "shift":
+
+            newSelectedSpikes = np.where(newMask == True)
+            newSelectedSpikes = newSelectedSpikes[0]  # why does np do this ???
+
+            # add to mask
+            # self.mask |= newMask
+            self.maskPoints |= newMask
+            
+        else:
+            # replace with new
+            # self.mask = newMask
+            self.maskPoints = newMask
+
+        xy = np.column_stack([self.x[self.maskPoints], self.y[self.maskPoints]])
+        # self._highlight.set_offsets(xy)
+        self._highlight.set_data(xy[:,0], xy[:,1])
+        
+        self._HighlighterReleasedEvent()
+
+        self.canvas.draw()
 
     def update_axScatter(self, newAXScatter):
         self.ax = newAXScatter
@@ -120,22 +187,30 @@ class Highlighter(object):
         # else:
         #     self.mask = np.zeros(self.x.shape, dtype=bool)
 
-    def keyPressEvent(self, event : QtGui.QKeyEvent):
-        # logger.info(f"event is {event}" )
-        # logger.info(f"event key is {event.key}")
+    # def keyPressEvent(self, event : QtGui.QKeyEvent):
+    #     # logger.info(f"event is {event}" )
+    #     # logger.info(f"event key is {event.key}")
+    #     logger.info(f'entering key press event')
+    #     if event.key == "escape":
+    #         # empty highlighter
+    #         self._setData([], [])
+    #     # self.keyIsDown = event.key
 
-        if event.key == "escape":
+    def _keyPressEvent(self, event):
+        # logger.info(f'key press event')
+        self.keyIsDown = event.key
+        logger.info(f'key press event {self.keyIsDown}')
+
+        if self.keyIsDown == "escape":
+            # Clear Mask
+            self.maskPoints = np.zeros(self.x.shape, dtype=bool)
+
             # empty highlighter
             self._setData([], [])
-        # self.keyIsDown = event.key
 
-    # def _keyPressEvent(self, event):
-    #     # logger.info(event)
-    #     self.keyIsDown = event.key
-
-    # def _keyReleaseEvent(self, event):
-    #     # logger.info(event)
-    #     self.keyIsDown = None
+    def _keyReleaseEvent(self, event):
+        logger.info(f'key release event')
+        self.keyIsDown = None
 
     def _setData(self, xStat, yStat):
         """" Set the data that is highlighted in yellow 
@@ -180,25 +255,21 @@ class Highlighter(object):
         if event1 is None or event2 is None:
             return
 
-        self.maskPoints = self.inside(event1, event2)
+        # Changed 9/14
+        # self.maskPoints = self.inside(event1, event2)
+        _insideMask = self.inside(event1, event2)
 
-        # print(" self.maskPoints ",  self.maskPoints )
+
+        self.maskPoints |= _insideMask
         # X is set as y in init
-        xy = np.column_stack([self.x[self.maskPoints ], self.y[self.maskPoints ]])
-        # xy = np.column_stack([self.x[0][self.maskPoints ], self.y[0][self.maskPoints ]])
-        # xy = np.column_stack([self.x[1][self.maskPoints ], self.y[1][self.maskPoints ]])
-        
-        # print("xy", xy[:,1])
-
+        xy = np.column_stack([self.x[self.maskPoints], self.y[self.maskPoints]])
 
         # self._highlight.set_offsets(xy)
-        # self._highlight.set_data(xy[:,1], xy[:,0])
 
+        logger.info(f'setting data on mouse move')
         # Highlights the data in yellow
         self._highlight.set_data(xy[:,0], xy[:,1])
         # self._highlight.set_data(xy[:,1], xy[:,0])
-
-        # self._highlight.invert_yaxis()
 
         # self._highlight.set_data(self.maskPoints)
         self.canvas.draw()
@@ -243,6 +314,8 @@ class Highlighter(object):
         self._parentPlot.selectPointsFromHighlighter(indexList)
 
         return
+    
+
 
 class myStatListWidget(QtWidgets.QWidget):
     """
@@ -377,6 +450,8 @@ class ScatterPlotWindow(PmmWidget):
 
         # add to dictionary
         self.color = plt.get_cmap("cool")
+        plt.style.use("dark_background")
+
         # self.color2 = plt.get_cmap('viridis')
         # print("color2", self.color2)
         # n = 40
@@ -626,7 +701,9 @@ class ScatterPlotWindow(PmmWidget):
             
         # print("xDFStat", xDFStat)
 
-        self.scatterPoints = self.axScatter.scatter(xDFStat, yDFStat, s = self._markerSize, c = idList, cmap = self.color)
+        # Display points color coordinated by segment
+        self.scatterPoints = self.axScatter.scatter(xDFStat, yDFStat, s = self._markerSize, c = idList, cmap = self.color
+                                                    ,  picker=True)
 
         # Added to test histogram
         self.scatter_hist(xDFStat, yDFStat, self.axHistX, self.axHistY)
@@ -799,7 +876,7 @@ class ScatterPlotWindow(PmmWidget):
 
         # Plot New Plot    
         self.myHighlighter.update_axScatter(self.axScatter) 
-        self.scatterPoints = self.axScatter.scatter(xStat, yStat, s = 12, c = idList, cmap = plt.get_cmap("cool"))
+        self.scatterPoints = self.axScatter.scatter(xStat, yStat, s = 12, c = idList, cmap = plt.get_cmap("cool"), picker=True)
         self.axScatter.grid(False)
 
    
@@ -879,7 +956,7 @@ class ScatterPlotWindow(PmmWidget):
             # self.axHistX.tick_params(axis="x", labelbottom=False) # no labels
             # self.axHistX.tick_params(axis="y", labelleft=False) # no labels
         else:
-            self.axScatter = self.static_canvas.figure.add_subplot(self.gs[0, 0])
+            self.axScatter = self.static_canvas.figure.add_subplot(self.gs[0, 0], picker=True)
             self.axHistX = None
             self.axHistY = None
 

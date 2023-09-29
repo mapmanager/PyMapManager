@@ -10,6 +10,9 @@ from .annotationListWidget import lineListWidget
 from .scatterPlotWindow import ScatterPlotWindow
 from .selectionInfoWidget import SelectionInfoWidget
 from .searchWidget import searchListWidget
+
+from .searchWidget2 import SearchController
+
 from .analysisParamWidget import AnalysisParamWidget
 
 from .searchWidget import SearchWidget

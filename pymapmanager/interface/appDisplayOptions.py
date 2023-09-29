@@ -57,7 +57,7 @@ class AppDisplayOptions():
         theDict['pointDisplay']['colorUserSelection'] = 'y'
         theDict['pointDisplay']['symbolUserSelection'] = 'o'
         theDict['pointDisplay']['sizeUserSelection'] = 10
-        theDict['pointDisplay']['zorderUserSelection'] = 5  # higher number will visually be on top
+        theDict['pointDisplay']['zorderUserSelection'] = 10  # higher number will visually be on top
 
         # May 11, 2023 adding value to test
         theDict['pointDisplay']['zPlusMinus'] = 3
