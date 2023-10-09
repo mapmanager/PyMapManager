@@ -25,16 +25,26 @@ class PmmSearchWidget(PmmWidget):
         df = self.stack.getPointAnnotations().getDataFrame()
         return df
 
+    # def slot_selectAnnotation2(self, selectionEvent):
+    #     logger.info(f"pmmSearchWidget slot_selectAnnotation2")
+
+    #     # Check for pa selection event
+    #     if selectionEvent.isPointSelection:
+    #         super().slot_selectAnnotation2(selectionEvent)
+
     def selectAction(self):        
         """ Updates selection within QTableView
         """
-        logger.info(f"searchWidget2 Select Action")
+        # logger.info(f"searchWidget2 Select Action")
         selectionEvent = super().selectAction()
-        rowIdxList = selectionEvent.getRows()
-        logger.info(f"rowIdxList: {rowIdxList}")
-        if len(rowIdxList) > 0:
-            rowIdx = rowIdxList[0]
-            self.mySeachWidget.selectRowInView(rowIdx)
+        # logger.info(f"selection event type {selectionEvent.type}") 
+        # Ensure that it is a point selection and not line
+        if selectionEvent.isPointSelection():
+            rowIdxList = selectionEvent.getRows()
+            logger.info(f"rowIdxList: {rowIdxList}")
+            if len(rowIdxList) > 0:
+                rowIdx = rowIdxList[0]
+                self.mySeachWidget.selectRowInView(rowIdx)
 
     def slot_deletedRow(self, selectionEvent):
         # df = selectionEvent.getDF()
