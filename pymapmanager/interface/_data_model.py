@@ -74,48 +74,52 @@ class pandasModel(QtCore.QAbstractTableModel):
                 return QtCore.QVariant()
                 #return QtCore.QVariant(self._myFont)
 
-            elif role == QtCore.Qt.ForegroundRole:
-                columnName = self._data.columns[index.column()]
-                colorColumns = ['Symbol', 'Shape Type']
-                #if columnName == 'Symbol':
-                if columnName in colorColumns:
-                    # don't get col from index, get from name
-                    realRow = self._data.index[index.row()]
-                    face_color = self._data.loc[realRow, 'Face Color'] # rgba
-                    # TODO: face_color is sometimes a scalar
-                    # try:
-                    #  _color = (np.array(color.getRgb()) / 255).astype(np.float32)
-                    try:
-                        #r = int(face_color[0] * 255)
-                        #g = int(face_color[1] * 255)
-                        #b = int(face_color[2] * 255)
-                        #alpha = int(face_color[3] * 255)
-                        #theColor = QtCore.QVariant(QtGui.QColor(r, g, b, alpha))
-                        # swap AA
-                        # napari uses proper order #RRGGBBAA
-                        # pyqt uses stange order #AARRGGBB
-                        face_color = face_color[0] + face_color[7:9] + face_color[1:7]
-                        theColor = QtCore.QVariant(QtGui.QColor(face_color))
-                        return theColor
-                    except (IndexError) as e:
-                        logger.error(f'expecting "Face Color"" as list of rgba, got scalar of {face_color}')
-                        return QtCore.QVariant()
-                return QtCore.QVariant()
+            # ~~~~ 10/5: commented out due to error ~~~~
+            # elif role == QtCore.Qt.ForegroundRole:
+            #     columnName = self._data.columns[index.column()]
+            #     colorColumns = ['Symbol', 'Shape Type', 'note']
+            #     #if columnName == 'Symbol':
+            #     if columnName in colorColumns:
+            #         # don't get col from index, get from name
+            #         realRow = self._data.index[index.row()]
+            #         face_color = self._data.loc[realRow, 'Face Color'] # rgba
+            #         # TODO: face_color is sometimes a scalar
+            #         # try:
+            #         #  _color = (np.array(color.getRgb()) / 255).astype(np.float32)
+            #         try:
+            #             #r = int(face_color[0] * 255)
+            #             #g = int(face_color[1] * 255)
+            #             #b = int(face_color[2] * 255)
+            #             #alpha = int(face_color[3] * 255)
+            #             #theColor = QtCore.QVariant(QtGui.QColor(r, g, b, alpha))
+            #             # swap AA
+            #             # napari uses proper order #RRGGBBAA
+            #             # pyqt uses stange order #AARRGGBB
+            #             face_color = face_color[0] + face_color[7:9] + face_color[1:7]
+            #             theColor = QtCore.QVariant(QtGui.QColor(face_color))
+            #             theColor = QtCore.QVariant(QtGui.QColor(200, 100, 100))
+            #             return theColor
+            #         except (IndexError) as e:
+            #             logger.error(f'expecting "Face Color"" as list of rgba, got scalar of {face_color}')
+            #             return QtCore.QVariant()
+            #     return QtCore.QVariant()
 
-            elif role == QtCore.Qt.BackgroundRole:
-                columnName = self._data.columns[index.column()]
-                if columnName == 'Face Color':
-                    realRow = self._data.index[index.row()]
-                    face_color = self._data.loc[realRow, 'Face Color'] # rgba
-                    face_color = face_color[0] + face_color[7:9] + face_color[1:7]
-                    theColor = QtCore.QVariant(QtGui.QColor(face_color))
-                    return theColor         
-                elif index.row() % 2 == 0:
-                        return QtCore.QVariant()
-                        #return QtCore.QVariant(QtGui.QColor('#111122'))
-                else:
-                    return QtCore.QVariant()
-                    #return QtCore.QVariant(QtGui.QColor('#666666'))
+            #  ~~~~ 10/5: commented out due to error ~~~~
+            # elif role == QtCore.Qt.BackgroundRole:
+            #     columnName = self._data.columns[index.column()]
+            #     if columnName == 'note':
+            #         realRow = self._data.index[index.row()]
+            #         face_color = self._data.loc[realRow, 'Face Color'] # rgba
+            #         face_color = face_color[0] + face_color[7:9] + face_color[1:7]
+            #         theColor = QtCore.QVariant(QtGui.QColor(face_color))
+            #         theColor = QtCore.QVariant(QtGui.QColor(200, 100, 100))
+            #         return theColor         
+            #     elif index.row() % 2 == 0:
+            #             return QtCore.QVariant()
+            #             #return QtCore.QVariant(QtGui.QColor('#111122'))
+            #     else:
+            #         return QtCore.QVariant()
+            #         #return QtCore.QVariant(QtGui.QColor('#666666'))
         #
         return QtCore.QVariant()
 

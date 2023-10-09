@@ -154,6 +154,9 @@ class stackWidget(QtWidgets.QMainWindow):
 
     signalPointChanged = QtCore.Signal(object)  # pymapmanager.annotations.SelectionEvent
 
+    signalUpdateSearchDF = QtCore.Signal(object) # For connecting with Search DF
+
+    signalUpdateAnnotation = QtCore.Signal(object)
     def __init__(self,
                  path : str = None,
                  stack : pymapmanager.stack = None,
@@ -196,6 +199,8 @@ class stackWidget(QtWidgets.QMainWindow):
         # self._detectionParamsDict.signalParameterChanged.connect(self.slot_parameterChanged)
 
         pa = self.myStack.getPointAnnotations()
+        self.paDF = self.myStack.getPointAnnotations().getDataFrame()
+
         self.statList = pa.getAllColumnNames()
         # print("self.statList",self.statList)
         # print("pa is " , pa)
@@ -206,6 +211,7 @@ class stackWidget(QtWidgets.QMainWindow):
 
         self._searchWidget = None
         self._searchWidget2 = None
+        self._pmmSearchWidget = None
 
         _channel = self._displayOptionsDict['windowState']['defaultChannel']
         self.annotationSelection = stackWidgetState(self, channel=_channel)
@@ -563,42 +569,87 @@ class stackWidget(QtWidgets.QMainWindow):
 
         self._searchWidget.show()
 
+    def getPointAnnotationDF(self):
+        self.paDF = self.myStack.getPointAnnotations().getDataFrame()
+        return self.paDF
+    
     def showSearchWidget2(self, state):
-        # Add boolean to show and hide (called visible)
-        if self._searchWidget2 is None:
+
+        if self._pmmSearchWidget is None:
             
-            df = self.myStack.getPointAnnotations().getDataFrame()
-            self._searchWidget2 = pymapmanager.interface.SearchController(df)
-            # self._searchWidget2.signalAnnotationSelection2.connect(self.slot_selectAnnotation2)
+            # from pymapmanager.interface.pmmSearchWidget import PmmSearchWidget
 
-            # TODO: Find alternative?
-            # self._searchWidget2.selectRowOnStart(self._currentSelection)
-            
-            self.signalSelectAnnotation2.connect(self._searchWidget2.slot_selectAnnotation2)
-            self._searchWidget2.signalAnnotationSelection2.connect(self.convertToAnnotationEvent)
+            self._pmmSearchWidget = pymapmanager.interface.PmmSearchWidget(self.myStack)
+            # self._pmmSearchWidget = PmmSearchWidget(self.paDF)
 
-            # Connecting Signals to Update Table model within Search Widget
-            self.signalPointChanged.connect(self._searchWidget2.slot_updateRow)
-            self.signalAddedAnnotation.connect(self._searchWidget2.slot_addRow)
-            self.signalDeletedAnnotation.connect(self._searchWidget2.slot_deleteRow)
 
+            self.signalSelectAnnotation2.connect(self._pmmSearchWidget.slot_selectAnnotation2)
+            self._pmmSearchWidget.signalAnnotationSelection2.connect(self.slot_selectAnnotation2)
+            # self._pmmSearchWidget.signalRequestDFUpdate.connect(self.slot_updateSearchDF)
+
+            self.signalPointChanged.connect(self._pmmSearchWidget.slot_updatedRow)
+            self.signalAddedAnnotation.connect(self._pmmSearchWidget.slot_addedRow)
+            self.signalDeletedAnnotation.connect(self._pmmSearchWidget.slot_deletedRow)
+            # self.signalUpdateSearchDF.connect(self._pmmSearchWidget.slot_updateDF)
+    
         else:
-            self._searchWidget2.setVisible(state)
+            self._pmmSearchWidget.setVisible(state)
 
-        self._searchWidget2.show()
+        # logger.info(f'showSearchWidget2 DF {self.paDF}')
+        self._pmmSearchWidget.show()
+        
+    # def showSearchWidget2(self, state):
+    #     # Add boolean to show and hide (called visible)
+    #     # df = self.myStack.getPointAnnotations().getDataFrame()
+    #     # self.getPointAnnotationDF()
+    #     if self._searchWidget2 is None:
+    #         # Perhaps this is not updated?
+    #         # self.df = self.myStack.getPointAnnotations().getDataFrame()
+    #         self._searchWidget2 = pymapmanager.interface.SearchController(self.paDF)
+    #         # self._searchWidget2.signalAnnotationSelection2.connect(self.slot_selectAnnotation2)
+            
+    #         # TODO: need to check for only pointannotation selection when sending to searchWidget
+    #         # Have searchWidget derive runctions from pmmWidget to check type
+    #         self.signalSelectAnnotation2.connect(self._searchWidget2.slot_selectAnnotation2)
+    #         self._searchWidget2.signalAnnotationSelection2.connect(self.convertToAnnotationEvent)
+    #         self._searchWidget2.signalRequestDFUpdate.connect(self.slot_updateSearchDF)
 
-    def convertToAnnotationEvent(self, proxyRowIdx):
+    #         # Connecting Signals to Update Table model within Search Widget
+    #         # TODO: Change the first three signals to connect to slot_updateDF? since they are indirectly calling it
+    #         self.signalPointChanged.connect(self._searchWidget2.slot_updateRow)
+    #         self.signalAddedAnnotation.connect(self._searchWidget2.slot_addRow)
+    #         self.signalDeletedAnnotation.connect(self._searchWidget2.slot_deleteRow)
+    #         self.signalUpdateSearchDF.connect(self._searchWidget2.slot_updateDF)
+
+    #         # derive from searchwidget to have slots that interpret data from stack widget
+            
+
+    #     else:
+    #         self._searchWidget2.setVisible(state)
+
+    #     logger.info(f'showSearchWidget2 DF {self.paDF}')
+    #     self._searchWidget2.show()
+
+    def slot_updateSearchDF(self):
+       
+       paDF = self.getPointAnnotationDF()
+       self.signalUpdateSearchDF.emit(paDF)
+
+    def convertToAnnotationEvent(self, proxyRowIdx, isAlt):
         """ 
         Convert proxyRowIdx to a selection event to update all other widget
         Args:
             proxyRowIdx: Index selected in proxy model of Search Widget
+            isAlt: True if alt key pressed so that we can snap to point
         """
         pa = self.myStack.getPointAnnotations()
-        _selectionEvent = pymapmanager.annotations.SelectionEvent(pa,
+        _selectionEvent = pymapmanager.annotations.SelectionEvent(annotation=pa,
                                                         rowIdx=proxyRowIdx,
-                                                        stack=self.myStack)
+                                                        stack=self.myStack,
+                                                        isAlt=isAlt)
         # self.signalSelectAnnotation2.emit(_selectionEvent)
 
+        # if _selectionEvent.type == pymapmanager.annotations.pointAnnotations:
         # Call Stack Widget function that signals other widgets
         self.slot_selectAnnotation2(_selectionEvent)
             
@@ -725,6 +776,8 @@ class stackWidget(QtWidgets.QMainWindow):
         # self._selectionInfoWidget : SelectionInfoWidget = SelectionInfoWidget(pointAnnotations = self.myStack.getPointAnnotations())
         self._selectionInfoWidget = \
                             pymapmanager.interface.SelectionInfoWidget(pointAnnotations = self.myStack.getPointAnnotations())
+        
+        self._selectionInfoWidget.signalUpdateNote.connect(self.slot_updateNote)
         # self._selectionInfoWidget = SelectionInfoWidget()
         # self._selectionInfoWidget = pymapmanager.interface.SelectionInfoWidget()
         self.selectionInfoDock = QtWidgets.QDockWidget('Selection Info',self)
@@ -831,6 +884,9 @@ class stackWidget(QtWidgets.QMainWindow):
         self.signalDeletedAnnotation.connect(self._myPointListWidget.slot_deletedAnnotation)
         self.signalDeletedAnnotation.connect(self._myLineListWidget.slot_deletedAnnotation)
 
+        # TODO: Eventually change temp fix when merging with cudmore
+        self.signalUpdateAnnotation.connect(self._imagePlotWidget._aPointPlot.slot_updateAnnotation)
+
         # set title
         self.setWindowTitle(self.myStack.getFileName())
 
@@ -851,25 +907,27 @@ class stackWidget(QtWidgets.QMainWindow):
         self.move(left,top)
         self.resize(width, height)
     
-
+    # TODO: Current bug: reanalyzing two times in a row crashes interface
+    # Scenario: Width to 5 then width to 1
     def slot_reanalyzeSpine(self, event : pymapmanager.annotations.SelectionEvent):
         # logger.info(f'moving spine Index {event.getAddedRow()}')
         logger.info(f'updating spine Index {event.getRows()[0]}')
         spineRowIdx = event.getRows()[0]
         self.myStack.getPointAnnotations().updateParameterValues(spineRowIdx)
 
-        # TODO: reflect changes within table and plot interface
-
         la = self.getStack().getLineAnnotations()        
         _selectionEvent = pymapmanager.annotations.SelectionEvent(la,
                                                             rowIdx=None,
                                                             stack=self.myStack)
-        # Update all Rows in table
-        self.signalPointChanged.emit(_selectionEvent)
+        # # Update all Rows in table
+        # self.signalPointChanged.emit(_selectionEvent)
 
+        self.signalPointChanged.emit(self._currentSelection)
+        # Reselect current spine to show visual change
         self.signalSelectAnnotation2.emit(self._currentSelection)
 
-        return
+
+        # return
 
     def slot_ConnectSpineROI(self, selectionEvent : pymapmanager.annotations.SelectionEvent):
         """ Responds to user clicking on a line point while we are in "connect" mode for one 
@@ -1033,15 +1091,28 @@ class stackWidget(QtWidgets.QMainWindow):
 
         # Deselect current spine point and Show new spine point
         # self._imagePlotWidget._aPointPlot.slot_deletedAnnotation()
-        deleteDict = {
-                'annotationType': pymapmanager.annotations.annotationType.point,
-                'annotationIndex': currentAnnotationRow, # Check to see where its used as a list/ int
-                'isSegment': False,
-            }
-        self.signalDeletedAnnotation.emit(deleteDict)
+        # deleteDict = {
+        #         'annotationType': pymapmanager.annotations.annotationType.point,
+        #         'annotationIndex': [currentAnnotationRow], # Check to see where its used as a list/ int
+        #         'isSegment': False,
+        #     }
+        # self.signalDeletedAnnotation.emit(deleteDict)
+
+
+        logger.info(f'moving self._currentSelection {self._currentSelection}')
 
         # Reselect New Spine in list and image plot widget
-        self.signalSelectAnnotation2.emit(self._currentSelection)
+        # self.signalSelectAnnotation2.emit(self._currentSelection)
+
+        # 10/8 Fix
+
+        self.signalUpdateAnnotation.emit(addEvent)
+
+        reSelectEvent = pymapmanager.annotations.SelectionEvent(pa,
+                                                        rowIdx=currentAnnotationRow,
+                                                        isAlt=True,
+                                                        stack=self.myStack)
+        self.signalSelectAnnotation2.emit(reSelectEvent)
         
         # Selects new Spine in image displayed
         # self._imagePlotWidget._aPointPlot.slot_selectAnnotation2(self._currentSelection)
@@ -1346,7 +1417,6 @@ class stackWidget(QtWidgets.QMainWindow):
 
         # Update the table that shows the data 
 
-    # TODO: change this so that it only updates current value when the save button is pressed
     # def slot_parameterChanged(self, parameterDict):
     def slot_saveParameters(self, parameterDict):
         """
@@ -1365,15 +1435,43 @@ class stackWidget(QtWidgets.QMainWindow):
 
         for key, newVal in parameterDict.items():
             _pointAnnotations._analysisParams.setCurrentValue(key, newVal)
+        
+        # Get current index
+        # Set it in backend
 
         # Update current plot
         self.signalSelectAnnotation2.emit(self._currentSelection)
+        # self.signalPointChanged.emit(self._currentSelection)
+        
         
         # for key, new_val in _pointAnnotations._analysisParams.getDict().items():
         #     # print first key
         #     print(key)
         #     break
 
+    def slot_updateNote(self, newNoteVal):
+        """
+        """
+        # Get current index
+
+        if newNoteVal is None:
+            return
+
+        currentRowIdx = self._currentSelection.getRows()[0]
+        # logger.info(f'slot_updateNote ----> currentRowIdx: {currentRowIdx}')
+        
+        pa = self.myStack.getPointAnnotations()
+        # Update backend of index
+        pa.setValue('note', currentRowIdx, newNoteVal)
+        # pa = self.myStack.getPointAnnotations()
+        # # Update all Rows in table
+        # _selectionEvent = pymapmanager.annotations.SelectionEvent(pa,
+        #                                                 rowIdx=currentRowIdx,
+        #                                                 )
+        # self.signalPointChanged.emit(_selectionEvent)
+        self.signalPointChanged.emit(self._currentSelection)
+        
+        # self.signalSelectAnnotation2.emit(self._currentSelection)
 
 if __name__ == '__main__':
     logger.error('Depreciated. please run with "python sandbox/runStackWidget.py"')

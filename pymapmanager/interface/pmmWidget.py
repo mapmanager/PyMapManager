@@ -29,6 +29,9 @@ class PmmWidget(QtWidgets.QWidget):
         self._currentSelection = None
 
         self._currentEditAnnotationEvent = None
+
+        # self.setVisible(False)
+        # self.hide()
         # Include pointAnnotations?
 
     # @property

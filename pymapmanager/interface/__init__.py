@@ -12,6 +12,7 @@ from .selectionInfoWidget import SelectionInfoWidget
 from .searchWidget import searchListWidget
 
 from .searchWidget2 import SearchController
+from .pmmSearchWidget import PmmSearchWidget
 
 from .analysisParamWidget import AnalysisParamWidget
 

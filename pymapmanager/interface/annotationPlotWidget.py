@@ -796,6 +796,9 @@ class pointPlotWidget(annotationPlotWidget):
         # order matters
         super().slot_addedAnnotation(addAnnotationEvent)
 
+        # 10/8: Quick fix to update UI and remove deleted spines
+        # self._refreshSlice()
+
     def slot_deletedAnnotation(self, delDict : dict):
         """Delete an annotation by removing its label and spine line.
         
@@ -810,11 +813,17 @@ class pointPlotWidget(annotationPlotWidget):
         
         annotationIndexList = delDict['annotationIndex']
         
-        # if len(annotationIndexList) == 1:
-        if annotationIndexList is not None:
-            # oneIndex = annotationIndexList[0]
-            oneIndex = annotationIndexList
-            
+        # TODO: Check why sometimes this is a list instead of an int
+        # NOTE: Delete removes a list, but move point removes an int
+        # Should be fixed now
+
+
+        if len(annotationIndexList) == 1:
+        # if annotationIndexList is not None:
+            oneIndex = annotationIndexList[0]
+
+            # oneIndex = annotationIndexList
+            logger.info(f'oneIndex: {oneIndex}')
             # remove the deleted annotation from our label list
             popped_item = self._labels.pop(oneIndex)  # remove from list
             self._view.removeItem(popped_item)  # remove from pyqtgraph view
@@ -842,6 +851,69 @@ class pointPlotWidget(annotationPlotWidget):
 
         # TODO: probably not necc. as we should (in theory) receive a slot_selectAnnotation with [] annotations to select
         self._cancelSpineRoiSelection()
+
+        # 10/8: Quick fix to update UI and remove deleted spines
+        self._refreshSlice()
+
+    # Added by Johnson as temp fix for moving spine
+    def slot_updateAnnotation(self, updateAnnotationEvent : pymapmanager.annotations.AddAnnotationEvent):
+        
+  
+        updatedRowIdx = updateAnnotationEvent.getAddedRow()
+        _, ySpine, xSpine = updateAnnotationEvent.getZYX()
+
+        logger.info(f'slot_updateAnnotation updatedRowIdx: {updatedRowIdx}')
+        
+        # add a spine line
+        _brightestIndex = self.pointAnnotations.getValue(['brightestIndex'], updatedRowIdx)
+        xLeft= self.lineAnnotations.getValue(['xLeft'], _brightestIndex)
+        xRight= self.lineAnnotations.getValue(['xRight'], _brightestIndex)
+        yLeft= self.lineAnnotations.getValue(['yLeft'], _brightestIndex)
+        yRight= self.lineAnnotations.getValue(['yRight'], _brightestIndex)
+
+        leftRadiusPoint = (xLeft, yLeft)
+        rightRadiusPoint = (xRight, yRight)
+        spinePoint = (xSpine, ySpine)
+        closestPoint = pymapmanager.utils.getCloserPoint2(spinePoint, leftRadiusPoint, rightRadiusPoint)
+
+
+        self._labels[updatedRowIdx].setPos(QtCore.QPointF(xSpine-9, ySpine-9))  
+        
+        updatedRowIdx = updatedRowIdx * 2
+        logger.info(f' self._xSpineLines[updatedRowIdx]: {self._xSpineLines[updatedRowIdx]}')
+        logger.info(f' self._xSpineLines[updatedRowIdx+1]: {self._xSpineLines[updatedRowIdx+1]}')
+
+        logger.info(f' self._ySpineLines[updatedRowIdx]: {self._ySpineLines[updatedRowIdx]}')
+        logger.info(f' self._ySpineLines[updatedRowIdx+1]: {self._ySpineLines[updatedRowIdx+1]}')
+
+        self._xSpineLines[updatedRowIdx] = xSpine
+        self._xSpineLines[updatedRowIdx+1] = closestPoint[0]
+        # self._xSpineLines[realIndex+2] = 1  #float('nan')
+
+        self._ySpineLines[updatedRowIdx] = ySpine
+        self._ySpineLines[updatedRowIdx+1] = closestPoint[1]
+
+
+        # Update label
+        # label_value = pg.LabelItem('', **{'color': '#FFF','size': '6pt'})
+        # label_value.setPos(QtCore.QPointF(xSpine-9, ySpine-9))
+        # label_value.setText(str(updatedRowIdx))
+        # label_value.hide()
+        # # label_value.setText(str(row['index']), rotateAxis=(1, 0), angle=90)  
+        # self._view.addItem(label_value)  
+        # self._labels[updatedRowIdx] = label_value  # our own list
+        
+        # self._labels[updatedRowIdx] = self._labels[updatedRowIdx].setPos(QtCore.QPointF(xSpine-9, ySpine-9))  
+        # self._ySpineLines[realIndex+2] = 1  #float('nan')
+        # logger.info(f'self._labels[updatedRowIdx {self._labels[updatedRowIdx].text}')
+    
+        # self._spineLinesConnect[realIndex] = 1
+        # self._spineLinesConnect[realIndex+1] = 0
+        # Unselect current selection
+        # Move
+        # Reselect
+        # Update spinelines connect
+        self._refreshSlice()
 
     def _cancelSpineRoiSelection(self):
         """Cancel spine ROI selection.

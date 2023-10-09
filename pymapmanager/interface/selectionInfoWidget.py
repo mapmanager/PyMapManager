@@ -126,9 +126,6 @@ class SelectionInfoWidget(PmmWidget):
             # elif isinstance(valueType, str):
             elif valueType ==  str:
                 # logger.info("type is string")
-                # text edit
-       
-
                 if itemName == "note":
                     aWidget = QtWidgets.QLineEdit(currentValue)
                     aWidget.setAlignment(QtCore.Qt.AlignLeft)

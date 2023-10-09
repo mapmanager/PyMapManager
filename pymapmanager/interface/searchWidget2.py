@@ -28,7 +28,7 @@ class TableModel(QAbstractTableModel):
         super().__init__()
         self._data = data # pandas dataframe
 
-    def getSelectedRow(self):
+    def OLD_getSelectedRow(self):
         selectedRows = self.selectionModel().selectedRows()
         # logger.info(f'selectedRows {selectedRows}')
 
@@ -78,6 +78,7 @@ class TableModel(QAbstractTableModel):
         # for i in range(rows):
         #     self._data.insert(position, rowContent)
 
+        # 10/3 - data is already being updated by the backend by this point
         # print("rowContent", rowContent)
         self.beginInsertRows(QModelIndex, self.rowCount(None), self.rowCount(None))
         print("insert df before", self._data)
@@ -109,16 +110,16 @@ class TableModel(QAbstractTableModel):
         self.myRefreshModel()
 
     # NOTE: Only necessary in editable Table View
-    def setData(self, row, col, value, role = None):
-        """ 
-            index: row index
-        """
-        #  Acquire q model index from row
-        # print("iloc", self._data.iloc[index.row(),index.column()])
-        tableIndex =  self.index(row, col)
-        self._data.iloc[tableIndex.row(),tableIndex.column()] = value
-        # self.data_changed.emit(tableIndex,tableIndex)
-        print("self._data", self._data)
+    # def setData(self, row, col, value, role = None):
+    #     """ 
+    #         index: row index
+    #     """
+    #     #  Acquire q model index from row
+    #     # print("iloc", self._data.iloc[index.row(),index.column()])
+    #     tableIndex =  self.index(row, col)
+    #     self._data.iloc[tableIndex.row(),tableIndex.column()] = value
+    #     # self.data_changed.emit(tableIndex,tableIndex)
+    #     print("self._data", self._data)
  
     def data(self, index, role):
         """
@@ -175,13 +176,30 @@ class TableModel(QAbstractTableModel):
         # the length (only works if all rows are an equal length)
         return len(self._data.columns)
 
-    def update_data(self):
+    # DEFUNCT
+    def OLD_update_data(self):
         """ Call whenever self.df is updated
 
         # TODO: implement insertRows and removeRows for more efficiency
         """
+
+        logger.info(f'updating DATA within MODEL!')
+        # self.beginResetModel()
+        # ### self.modelReset() # this is a signal sent when resetting model
+        # # self._data = self._data.reset_index(drop=True)
+        # self._data.reset_index(drop=True)
+        # self.endResetModel()
+        # self.myRefreshModel()
+        self.layoutChanged.emit()
+        # print("df after", self._data)
+    
+    def updateDF(self, newDF):
+        """ update df
+        """
+        # self._data = newDF
+        # self.layoutChanged.emit()
         self.beginResetModel()
-        # self.modelReset()
+        self._data = newDF
         self.endResetModel()
 
 class myQTableView(QtWidgets.QTableView):
@@ -191,7 +209,7 @@ class myQTableView(QtWidgets.QTableView):
         This will replace SearchListWidget
     """
 
-    signalAnnotationSelection2 = QtCore.Signal(object)
+    signalAnnotationSelection2 = QtCore.Signal(object, object) # two objects: 1st = rowidx, 2nd = isAlt
 
     def __init__(self, df):
         super().__init__()
@@ -204,6 +222,7 @@ class myQTableView(QtWidgets.QTableView):
         self.colList = []
         self.df = df
         self.model = None
+        self.mySelectionModel = None
 
         self.setColList()
         self.setDF(self.df)
@@ -282,9 +301,10 @@ class myQTableView(QtWidgets.QTableView):
             # self.model.endResetModel()
 
             # self.selectionChanged.connect(self.on_selectionChanged)
-            self.selectionModel = self.selectionModel()
-            self.selectionModel.selectionChanged.connect(self.on_selectionChanged)
-            
+            # if self.selectionModel is None:
+            self.mySelectionModel = self.selectionModel()
+            self.mySelectionModel.selectionChanged.connect(self.on_selectionChanged)
+                
 
     def selected_rows(self, selection):
         indexes = []
@@ -307,22 +327,29 @@ class myQTableView(QtWidgets.QTableView):
         # indexes = index.indexes()
         # logger.info(f'item {indexes[0].row.data} ') #data {item.data()}
 
-        tableViewRow = self.selectionModel.selection().indexes()
+        tableViewRow = self.mySelectionModel.selection().indexes()
 
         # if 0 <= index < len(self.model.rowCount()):
         try:
-            logger.info(f'tableViewRow[0] {tableViewRow[0]} ')
-            
+            selectedRow = tableViewRow[0]
+            logger.info(f'tableViewRow[0]: {selectedRow} ')
+    
             # Since every index shares the same row we can just use the 1st one
             # rowIdx = tableViewRow[0].row()
             # logger.info(f'cellList {tableViewRow} rowIdx {rowIdx} ') 
 
             # Retrieve the actual row from the proxy by indexing with the tableViewRow
-            proxyRow = self.proxyModel.mapToSource(tableViewRow[0]).row()
-            logger.info(f'proxyRow {proxyRow} ') 
+            proxyRow = self.proxyModel.mapToSource(selectedRow).row()
+            logger.info(f'proxyRow: {proxyRow} ') 
 
+            modifiers = QtWidgets.QApplication.queryKeyboardModifiers()
+        
+            #isShift = modifiers == QtCore.Qt.ShiftModifier
+            isAlt = modifiers == QtCore.Qt.AltModifier
+            logger.info(f'searchwidget isAlt: {isAlt} ') 
+            
             # Emit signal so that other widgets know the row idx selected
-            self.signalAnnotationSelection2.emit(proxyRow)
+            self.signalAnnotationSelection2.emit(proxyRow, isAlt)
         
         except IndexError as e:
              logger.info(f'error from tableViewRow[0]: {e}')
@@ -344,9 +371,12 @@ class myQTableView(QtWidgets.QTableView):
     def insertRow(self, index = None, rowContent = None):
         # index = self.table.currentIndex()
         # Index might need to be transmitted through signal
-        print(index)
+        # print("index", index)
         # self.model.insertRows(index, 1, QModelIndex(), rowContent)
-        self.update_data()
+        self.model.old_insertRows(index, 1, QModelIndex(), rowContent)
+        # self.update_data()
+        logger.info(f'insertRow') 
+        # self.mySetModel()
 
     def deleteRow(self, index = None):
         # index = self.table.currentIndex()
@@ -355,9 +385,9 @@ class myQTableView(QtWidgets.QTableView):
         # self.model.removeRows(index, 1)
         self.update_data()
 
-    def setData(self, row, col, value):
-        # self.model.setData(row, col, value)
-        self.update_data()
+    # def setData(self, row, col, value):
+    #     # self.model.setData(row, col, value)
+    #     self.update_data()
 
     def old_updateModel(self):
         """
@@ -367,10 +397,18 @@ class myQTableView(QtWidgets.QTableView):
 
     def update_data(self):
         self.model.update_data()
+
+        # self.model.beginResetModel()
+        # # self.setModel(self.proxyModel)
+        # # self.modelReset()
+
+
+        # self.model.endResetModel()
+
     
     def _selectRow(self, rowIdx):
         """
-            Selects row with model via SelectionModel
+            Selects row with model via mySelectionModel
         """
 
         # Remove previously selected rows
@@ -386,17 +424,24 @@ class myQTableView(QtWidgets.QTableView):
 
         # logger.info(f"selecting row in Selection model {modelIndex}")
         mode = QtCore.QItemSelectionModel.Select | QtCore.QItemSelectionModel.Rows
-        self.selectionModel.select(proxyIndex, mode)
+        self.mySelectionModel.select(proxyIndex, mode)
         column = 0
         # index = self.model.index(rowIdx, column)
         self.scrollTo(proxyIndex, QtWidgets.QAbstractItemView.PositionAtTop) 
 
     def _selectNewRow(self):
         rowIdx =  self.model.rowCount(None)
-        logger.info(f"_selectNewRow rowIdx: {rowIdx}")
+        logger.info(f"_selectNewRow rowIdx: {rowIdx-1}")
         self._selectRow(rowIdx-1)
 
-class SearchController(PmmWidget):
+    def _selectModelRow(self, rowIdx):
+        logger.info(f"_selectModelRow rowIdx: {rowIdx}")
+        self._selectRow(rowIdx)
+
+    def updateDF(self, df):
+        self.model.updateDF(df)
+
+class SearchController(QtWidgets.QWidget):
     """ prototype for SearchWidget
 
     Args: 
@@ -404,14 +449,16 @@ class SearchController(PmmWidget):
     """
     signalSearchUpdate = QtCore.Signal(object)
     signalColUpdate = QtCore.Signal(object)
-
+    signalRequestDFUpdate = QtCore.Signal(object)
     # Signal to update other widgets
-    signalAnnotationSelection2 = QtCore.Signal(object)
+    signalAnnotationSelection2 = QtCore.Signal(object, object)
 
     def __init__(self, df: pd.DataFrame):
         """
         """
         super().__init__(None)
+
+        self._df = df
 
         self.allColumnNames = []
         # self.colIdxRemoved = []
@@ -432,9 +479,9 @@ class SearchController(PmmWidget):
         windowLayout = self.searchUI()
         self.layout.addLayout(windowLayout)
 
-    def emitAnnotationSelection(self, proxyRowIdx):
+    def emitAnnotationSelection(self, proxyRowIdx, isAlt):
         logger.info(f'Search controller emitting proxyRowIdx: {proxyRowIdx}')
-        self.signalAnnotationSelection2.emit(proxyRowIdx)
+        self.signalAnnotationSelection2.emit(proxyRowIdx, isAlt)
 
     def hideColComboBox(self, colNames):
         """ Called everytime we hide column
@@ -518,18 +565,46 @@ class SearchController(PmmWidget):
         self.signalColUpdate.emit(newColName)
 
     def slot_updateRow(self):
-        self.myQTableView.update_data()
+        # self.myQTableView.update_data()
+        self.signalRequestDFUpdate.emit(None)
 
     def slot_addRow(self):
+        # logger.info(f'Add Row {_selectionEvent}')
+
+        # logger.info(f'slot_addRow self._df: {signalDF}')
         # self.myQTableView.insertRow()
-        self.myQTableView.update_data()
+        # self.myQTableView.update_data()
+        # self.myQTableView.old_updateModel()
         # TODO: Need to select newly created Row
-        logger.info(f'Select new Row after add')
+        # logger.info(f'Select new Row after add')
+        self.signalRequestDFUpdate.emit(None)
         self.myQTableView._selectNewRow()
+
+    ### Functions that need to be used by adapted slots
+    def _deletedRow(self, df):
+        self.slot_updateDF(df)
+
+    def _addedRow(self, df):
+        self.slot_updateDF(df)
+        self.myQTableView._selectNewRow()
+    
+    def _updatedRow(self, df, selectionIdx):
+        logger.info(f'updating row')
+        self.slot_updateDF(df)
+        # self.myQTableView._selectNewRow()
+        self.selectRowInView(selectionIdx)
+
+        # rowIdx = selectionEvent.getRows()[0]
+        # self.myQTableView._selectRow(selectionIdx)
+        # self.myQTableView._selectModelRow(selectionIdx)
+        # self.myQTableView._selectNewRow()
+    ###
 
     def slot_deleteRow(self, rowNum):
         # self.myQTableView.deleteRow(rowNum)
-        self.myQTableView.update_data()
+        # self.myQTableView.update_data()
+        self.signalRequestDFUpdate.emit(None)
+        # self.myQTableView.old_updateModel()
 
     def hideColumns(self, hiddenColList):
         self.myQTableView.hideColumns(hiddenColList)
@@ -537,23 +612,39 @@ class SearchController(PmmWidget):
     def showColumns(self, showColList):
         self.myQTableView.showColumns(showColList)
     
-    def selectRowOnStart(self, selectionEvent):
+
+    def selectRowInView(self, rowIdx):
         """
-            Call this function whenever searchWidget is instantiated to 
-            select the current row in the UI
+            Call this function whenever to select a new row in the UI
         """
-        rowIdx = selectionEvent.getRows()[0]
+        logger.info(f'selectRowInView')
         self.myQTableView._selectRow(rowIdx)
 
-    def selectAction(self):        
-        """ Updates selection within QTableView
-        """
-        logger.info(f"searchWidget2 Select Action")
-        selectionEvent = super().selectAction()
-        rowIdxList = selectionEvent.getRows()
-        logger.info(f"rowIdxList: {rowIdxList}")
-        if len(rowIdxList) > 0:
-            rowIdx = rowIdxList[0]
-            self.myQTableView._selectRow(rowIdx)
+    # def selectRowOnStart(self, selectionEvent):
+    #     """
+    #         Call this function whenever searchWidget is instantiated to 
+    #         select the current row in the UI
+    #     """
+    #     rowIdx = selectionEvent.getRows()[0]
+    #     self.myQTableView._selectRow(rowIdx)
+
+    # def selectAction(self):        
+    #     """ Updates selection within QTableView
+    #     """
+    #     logger.info(f"searchWidget2 Select Action")
+    #     selectionEvent = super().selectAction()
+    #     rowIdxList = selectionEvent.getRows()
+    #     logger.info(f"rowIdxList: {rowIdxList}")
+    #     if len(rowIdxList) > 0:
+    #         rowIdx = rowIdxList[0]
+    #         self.myQTableView._selectRow(rowIdx)
 
         #Check cancel selection
+
+    def slot_updateDF(self, df):
+        """
+        Args:
+            df = dataframe use to update model
+        """
+
+        self.myQTableView.updateDF(df)
