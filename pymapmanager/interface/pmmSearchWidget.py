@@ -18,10 +18,18 @@ class PmmSearchWidget(PmmWidget):
     # TODO: hide PmmWidget in PmmSearchWidget
     # only show mySearchWidget
     def show(self):
+        """
+            Override show function
+        """
+        # Hides both pmmWidget and SearchWidget
         self.hide()
+        # Only show SearchWidget
         self.mySeachWidget.show()
 
     def getDF(self):
+        """
+            Get the current point annotation dataframe
+        """
         df = self.stack.getPointAnnotations().getDataFrame()
         return df
 
@@ -47,16 +55,25 @@ class PmmSearchWidget(PmmWidget):
                 self.mySeachWidget.selectRowInView(rowIdx)
 
     def slot_deletedRow(self, selectionEvent):
+        """
+            Update searchwidget on delete
+        """
         # df = selectionEvent.getDF()
         df = self.getDF()
         self.mySeachWidget._deletedRow(df)
 
     def slot_addedRow(self, selectionEvent):
+        """
+            Update searchwidget on add
+        """
         # df = selectionEvent.getDF()
         df = self.getDF()
         self.mySeachWidget._addedRow(df)
 
     def slot_updatedRow(self, selectionEvent):
+        """
+            Update searchwidget when a row's column(s) change
+        """
         selectionIdx = selectionEvent.getRows()[0]
         logger.info(f"selectionIdx: {selectionIdx}")
         df = self.getDF()
@@ -68,6 +85,7 @@ class PmmSearchWidget(PmmWidget):
 
     def slot_convertToAnnotationEvent(self, proxyRowIdx, isAlt):
         """ 
+            Convert selected annotation to an event to be used in the rest of pymapmanager widgets
         """
         logger.info(f"slot_convertToAnnotationEvent")
         pa = self.stack.getPointAnnotations()
