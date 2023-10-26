@@ -39,8 +39,8 @@ class myQSortFilterProxyModel(QSortFilterProxyModel):
         self.currentComparisonSymbol = newSymbol
         self.invalidateFilter()
 
-    def slot_setComparisonValue(self, newSymbol):
-        self.currentComparisonValue = newSymbol
+    def slot_setComparisonValue(self, newValue):
+        self.currentComparisonValue = newValue
         self.invalidateFilter()
 
     # def getComparisonSymbol(self):
@@ -50,10 +50,10 @@ class myQSortFilterProxyModel(QSortFilterProxyModel):
         self.nameRegExp.setPattern(regExp)
         self.invalidateFilter()
 
-    def slot_setSymbolFilter(self, newSymbol):
-        self.currentComparisonSymbol = newSymbol
-        # Invalidate current filter to reset filtering
-        self.invalidateFilter()
+    # def slot_setSymbolFilter(self, newSymbol):
+    #     self.currentComparisonSymbol = newSymbol
+    #     # Invalidate current filter to reset filtering
+    #     self.invalidateFilter()
 
     # Write a test function for this for the different cases
     def filterAcceptsRow(self, sourceRow, sourceParent):
@@ -85,7 +85,7 @@ class myQSortFilterProxyModel(QSortFilterProxyModel):
         #Check for float conversion?
         if checkPattern:
             if (checkComparisonVal):
-                # Change this an enumerated type
+                # Change this to an enumerated type
                 if (self.currentComparisonSymbol == ""):
                     return True
                 elif(self.currentComparisonSymbol == "="):
@@ -118,6 +118,8 @@ class myQSortFilterProxyModel(QSortFilterProxyModel):
                 elif(self.currentComparisonSymbol == "None"):
                     return True
                 else:
+                    # Any unaccounted for symbol will be False
+                    logger.info(f'Warning: Symbol is not accounted for.')
                     return False
             else:
                 # When there is no comparison value show row
@@ -328,6 +330,7 @@ class myQTableView(QtWidgets.QTableView):
         self.colList = []
         self.df = df
         self.model = None
+        self.proxyModel = None
         self.mySelectionModel = None
 
         self.setColList()
@@ -341,6 +344,9 @@ class myQTableView(QtWidgets.QTableView):
 
         # self.setSortingEnabled(True)
 
+    def getProxyModel(self):
+        return self.proxyModel
+    
     def getDF(self):
         return self.df
     
@@ -834,8 +840,6 @@ class SearchController(QtWidgets.QWidget):
             self.compValLine.setText("")
             self.compValLine.setEnabled(False)
 
-    
-
 
     def _onNewComparisonSymbol(self, newCompSymbol):
         """
@@ -935,3 +939,6 @@ class SearchController(QtWidgets.QWidget):
         """
 
         self.myQTableView.updateDF(df)
+
+    def getMyQTableView(self):
+        return self.myQTableView
