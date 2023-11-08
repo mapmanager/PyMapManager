@@ -11,7 +11,14 @@ from .scatterPlotWindow import ScatterPlotWindow
 from .selectionInfoWidget import SelectionInfoWidget
 from .searchWidget import searchListWidget
 
+
+# from .scatterPlotWindow2 import ScatterPlotWindow2
+from .pmmScatterPlotWidget import PmmScatterPlotWidget
+
 from .searchWidget2 import SearchController
+from .searchWidget2 import TableModel
+from .searchWidget2 import myQTableView
+from .searchWidget2 import myQSortFilterProxyModel
 from .pmmSearchWidget import PmmSearchWidget
 
 from .analysisParamWidget import AnalysisParamWidget

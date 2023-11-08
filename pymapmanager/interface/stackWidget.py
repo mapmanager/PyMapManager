@@ -212,6 +212,7 @@ class stackWidget(QtWidgets.QMainWindow):
         self._searchWidget = None
         self._searchWidget2 = None
         self._pmmSearchWidget = None
+        self._pmmScatterPlotWidget= None
 
         _channel = self._displayOptionsDict['windowState']['defaultChannel']
         self.annotationSelection = stackWidgetState(self, channel=_channel)
@@ -450,7 +451,7 @@ class stackWidget(QtWidgets.QMainWindow):
         updateAnalysis_action.triggered.connect(self.updateSpineAnalysis)
 
         plotScatter_action = QtWidgets.QAction("&Plot Scatter", self)
-        plotScatter_action.triggered.connect(self.showScatterPlot)
+        plotScatter_action.triggered.connect(self.showScatterPlot2)
 
         search_action = QtWidgets.QAction("&Show Search", self)
         search_action.triggered.connect(self.showSearchWidget2)
@@ -530,20 +531,39 @@ class stackWidget(QtWidgets.QMainWindow):
         # self._analysisParamsWidget.signalParameterChanged.connect(self.slot_parameterChanged)
         self._analysisParamsWidget.signalSaveParameters.connect(self.slot_saveParameters)
 
-    def showScatterPlot(self):
-        if self._scatterPlotWindow is None:
-            pa = self.myStack.getPointAnnotations()
-            self._scatterPlotWindow = pymapmanager.interface.ScatterPlotWindow(pointAnnotations = pa)
-            # self._scatterPlotWindow = ScatterPlotWindow(pointAnnotations = pa)
+    # 11/6/23 Commented out to test new scatterplotwindow2
+    # def showScatterPlot(self):
+    #     if self._scatterPlotWindow is None:
+    #         pa = self.myStack.getPointAnnotations()
+    #         self._scatterPlotWindow = pymapmanager.interface.ScatterPlotWindow(pointAnnotations = pa)
+    #         # self._scatterPlotWindow = ScatterPlotWindow(pointAnnotations = pa)
 
-            # add the code to make a bidirectional signal/slot connection
-            # between our children (imagePlotWidgtet and ScatterPlotWidget)
-            self._imagePlotWidget.signalAnnotationSelection2.connect(self._scatterPlotWindow.slot_selectAnnotation2)
+    #         # add the code to make a bidirectional signal/slot connection
+    #         # between our children (imagePlotWidgtet and ScatterPlotWidget)
+    #         self._imagePlotWidget.signalAnnotationSelection2.connect(self._scatterPlotWindow.slot_selectAnnotation2)
             
-            # make the signal in ScatterPlotWidow
-            self._scatterPlotWindow.signalAnnotationSelection2.connect(self._imagePlotWidget.slot_selectAnnotation2)
+    #         # make the signal in ScatterPlotWidow
+    #         self._scatterPlotWindow.signalAnnotationSelection2.connect(self._imagePlotWidget.slot_selectAnnotation2)
 
-        self._scatterPlotWindow.show()
+    #     self._scatterPlotWindow.show()
+
+    def showScatterPlot2(self, state):
+        if self._pmmScatterPlotWidget is None:
+            pa = self.myStack.getPointAnnotations()
+            self._pmmScatterPlotWidget = pymapmanager.interface.PmmScatterPlotWidget(self.myStack)
+
+            self.signalSelectAnnotation2.connect(self._pmmScatterPlotWidget.slot_selectAnnotation2)
+            self._pmmScatterPlotWidget.signalAnnotationSelection2.connect(self.slot_selectAnnotation2)
+            # self._pmmSearchWidget.signalRequestDFUpdate.connect(self.slot_updateSearchDF)
+
+            self.signalPointChanged.connect(self._pmmScatterPlotWidget.slot_updatedRow)
+            self.signalAddedAnnotation.connect(self._pmmScatterPlotWidget.slot_addedRow)
+            self.signalDeletedAnnotation.connect(self._pmmScatterPlotWidget.slot_deletedRow)
+        else:
+            self._searchWidget.setVisible(state)
+
+        self._pmmScatterPlotWidget.show()
+
 
     def showSearchWidget(self, state):
         # Add boolean to show and hide (called visible)
@@ -635,6 +655,7 @@ class stackWidget(QtWidgets.QMainWindow):
        paDF = self.getPointAnnotationDF()
        self.signalUpdateSearchDF.emit(paDF)
 
+    # DEFUNCT
     def convertToAnnotationEvent(self, proxyRowIdx, isAlt):
         """ 
         Convert proxyRowIdx to a selection event to update all other widget
@@ -1456,7 +1477,14 @@ class stackWidget(QtWidgets.QMainWindow):
 
         if newNoteVal is None:
             return
+        
+        # if self._currentSelection.getRows() != None:
 
+        # logger.info(f'slot_updateNote ----> self._currentSelection.getRows(): {self._currentSelection.getRows()}')
+
+        if self._currentSelection.getRows() == None:
+            return
+        
         currentRowIdx = self._currentSelection.getRows()[0]
         # logger.info(f'slot_updateNote ----> currentRowIdx: {currentRowIdx}')
         
