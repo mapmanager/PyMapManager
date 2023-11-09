@@ -130,6 +130,14 @@ class Highlighter(object):
             [], [], "o", markersize=self.markerSize, color="yellow", zorder=10
         )
 
+    def get_xyVal(self):
+        """
+            Return the line data as an (xdata, ydata) pair.
+
+            # If orig is True, return the original data.
+        """
+        return self._highlight.get_data()
+
     def set_xy(self, newX, newY, newIndex):
         self.x = newX
         self.y = newY
@@ -204,6 +212,9 @@ class Highlighter(object):
         self._highlight.set_data(xStat, yStat)
 
         self.canvas.draw()
+
+        # Could add code: to fix manually selecting points
+        # self._parentPlot.selectPointsFromHighlighter(indexList)
 
     def on_mouse_move(self, event):
         """When mouse is down, respond to movement and select points.
@@ -1090,6 +1101,9 @@ class ScatterPlotWindow2(QtWidgets.QWidget):
         self.rePlot()
      # ----------- Functions that need to be used by adapted slots (END) ----------- #
 
+    def getHighlighter(self):
+        return self.myHighlighter
+    
 def makeDF():
     df = pd.DataFrame()
     df["A"] = [10,20,30]

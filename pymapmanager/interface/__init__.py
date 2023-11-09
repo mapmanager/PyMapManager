@@ -12,7 +12,7 @@ from .selectionInfoWidget import SelectionInfoWidget
 from .searchWidget import searchListWidget
 
 
-# from .scatterPlotWindow2 import ScatterPlotWindow2
+from .scatterPlotWindow2 import ScatterPlotWindow2
 from .pmmScatterPlotWidget import PmmScatterPlotWidget
 
 from .searchWidget2 import SearchController

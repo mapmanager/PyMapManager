@@ -560,7 +560,7 @@ class stackWidget(QtWidgets.QMainWindow):
             self.signalAddedAnnotation.connect(self._pmmScatterPlotWidget.slot_addedRow)
             self.signalDeletedAnnotation.connect(self._pmmScatterPlotWidget.slot_deletedRow)
         else:
-            self._searchWidget.setVisible(state)
+            self._pmmScatterPlotWidget.setVisible(state)
 
         self._pmmScatterPlotWidget.show()
 
