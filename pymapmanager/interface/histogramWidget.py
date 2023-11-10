@@ -28,7 +28,8 @@ class HistogramWidget(QtWidgets.QWidget):
 
         self._sliceNumber = sliceNumber
         self._channel = channel
-        self._maxValue = 2**self._myStack.header['bitDepth']  # will default to 8 if not found
+        # self._maxValue = 2**self._myStack.header['bitDepth']  # will default to 8 if not found
+        self._maxValue = 2**8
         self._sliceImage = None  # set by 
 
         self.plotLogHist = True
@@ -236,7 +237,8 @@ class _histogram(QtWidgets.QWidget):
 
         self._sliceNumber = 0
         self._channel = channel
-        self._maxValue = 2**self._myStack.header['bitDepth']  # will default to 8 if not found
+        # self._maxValue = 2**self._myStack.header['bitDepth']  # will default to 8 if not found
+        self._maxValue = 2**8
         self._sliceImage = None  # set by 
 
         self._plotLogHist = True

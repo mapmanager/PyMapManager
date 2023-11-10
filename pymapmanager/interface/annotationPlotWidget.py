@@ -983,6 +983,9 @@ class pointPlotWidget(annotationPlotWidget):
         for index, row in df.iterrows():
             realIndex = index * 2
             _brightestIndex = row['brightestIndex']
+            logger.info(f'_brightestIndex:{_brightestIndex} {type(_brightestIndex)}')
+            if isinstance(_brightestIndex, pd._libs.missing.NAType):
+                continue
             if np.isnan(_brightestIndex):
                 continue
 
