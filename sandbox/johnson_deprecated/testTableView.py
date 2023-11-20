@@ -6,6 +6,9 @@ import pandas as pd
 from qtpy import QtGui, QtCore, QtWidgets
 from pymapmanager._logger import logger
 
+"""
+    Experimenting with table widget (model class, proxy class) to create a search widget
+"""
 # class tableWidget(QtWidgets.QWidget):
 #     """Signal when user selects the roi type(s) to display.
 #         If 'all' is selected then list is all roiType.
@@ -105,10 +108,10 @@ class protoSearchWidget(QtWidgets.QWidget):
 
         vLayout.addWidget(self.colNameComBox)
 
-        searchBar = QtWidgets.QLineEdit("")
-        searchBar.setFixedWidth(120)
-        searchBar.textChanged.connect(self.updateSearch)
-        vLayout.addWidget(searchBar)
+        self.searchBar = QtWidgets.QLineEdit("")
+        self.searchBar.setFixedWidth(120)
+        self.searchBar.textChanged.connect(self.updateSearch)
+        vLayout.addWidget(self.searchBar)
 
         vLayout.addStretch()
         horizLayout.addLayout(vLayout)
@@ -118,6 +121,17 @@ class protoSearchWidget(QtWidgets.QWidget):
 
         return horizLayout
     
+
+    def inputSearchBar(self, searchStr):
+         self.searchBar.setText(searchStr)
+
+    def inputColumnChoice(self, colName):
+        logger.info(f' inputColumnChoice, inputted colName: {colName}')
+        if colName in self.allColumnNames:
+            self.colNameComBox.setCurrentText(colName)
+        else:
+            logger.info(f' colName input not in list, inputted colName: {colName}')
+
     def updateSearch(self, searchStr):
         """"""
         self.signalSearchUpdate.emit(searchStr)
@@ -545,6 +559,7 @@ class myQTableView(QTableView):
     #     index = self.table.currentIndex()
     #     self.model.removeRows(index.row(), 1, index)
 
+# No longer using this for testing !!!
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -612,7 +627,7 @@ def testDF():
     df = makeDF()
 
     container = protoSearchWidget(df)
-    container.colNameComBox.setCurrentText("B")
+    # container.colNameComBox.setCurrentText("B")
 
    
 
@@ -698,7 +713,9 @@ if __name__ == '__main__':
     # app.exec_()
 
     container = testDF()
-
+    # container.inputSearchBar("11")
+    # container.inputColumnChoice("BUT")
+    # container.updateSearch("11")
     # add = testADD()
 
     # df = pd.DataFrame()

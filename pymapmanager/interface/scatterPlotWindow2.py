@@ -73,9 +73,11 @@ class Highlighter(object):
             "button_release_event", self.on_button_release
         )
 
+
     def _on_spine_pick_event3(self, event):
         """
-        
+        Used for picking individual Spines
+
         Parameters
         ----------
         event : matplotlib.backend_bases.PickEvent
@@ -204,7 +206,7 @@ class Highlighter(object):
         
         """
         # logger.info(f'selectedSpikes: {selectedSpikes}')
-        logger.info(f'xStat: {xStat} yStat: {yStat}')
+        # logger.info(f'xStat: {xStat} yStat: {yStat}')
 
         logger.info(f'setting data in highlighter')
 
@@ -214,7 +216,8 @@ class Highlighter(object):
         self.canvas.draw()
 
         # Could add code: to fix manually selecting points
-        # self._parentPlot.selectPointsFromHighlighter(indexList)
+        # Send signal to parent plot to emit signal (of indexes to highlight) to main interface
+        # self._parentPlot.selectPointsFromHighlighter(storedRowIdx)
 
     def on_mouse_move(self, event):
         """When mouse is down, respond to movement and select points.
@@ -250,14 +253,14 @@ class Highlighter(object):
         # self.maskPoints = self.inside(event1, event2)
         _insideMask = self.inside(event1, event2)
 
-        logger.info(f"self.maskPoints {self.maskPoints} _insideMask  {_insideMask}")
+        # logger.info(f"self.maskPoints {self.maskPoints} _insideMask  {_insideMask}")
         # logger.info(f"_insideMask  {_insideMask}")
         self.maskPoints |= _insideMask
 
         # X is set as y in init
         xy = np.column_stack([self.x[self.maskPoints], self.y[self.maskPoints]])
 
-        logger.info(f'setting data on mouse move')
+        # logger.info(f'setting data on mouse move')
         # Highlights the data in yellow
         self._highlight.set_data(xy[:,0], xy[:,1])
         # self._highlight.set_data(xy[:,1], xy[:,0])
@@ -429,7 +432,7 @@ class ScatterPlotWindow2(QtWidgets.QWidget):
         # Can Store dataframe here so that we can grab from it within this class
         # This would require us to update this dataframe too everytime we make a change to it elsewhere
         self._df = inputtedDF
-        logger.info(f"self._df {self._df}")
+        # logger.info(f"self._df {self._df}")
         self.setColumnList()
 
         if filterColumn != None:
@@ -485,7 +488,7 @@ class ScatterPlotWindow2(QtWidgets.QWidget):
         # self.filterStrList = filterStrList
         self.filterStrList = self._df[filterColumn].unique().tolist()
         self.filterStrList.append("All") # Need to be able to show all values
-        logger.info(f"self.filterStrList {self.filterStrList}")
+        # logger.info(f"self.filterStrList {self.filterStrList}")
 
         # Currently setting last value as current filter type
         self.dict["filterStr"] = self.filterStrList[-1]
@@ -915,6 +918,7 @@ class ScatterPlotWindow2(QtWidgets.QWidget):
             xHStat = self._df.loc[self.storedRowIdx, columnNameX].to_numpy()
             yHStat = self._df.loc[self.storedRowIdx, columnNameY].to_numpy()
             # ret = df.loc[rowIdx, colName].to_numpy()
+            # self.myHighlighter._setData(xHStat, yHStat, self.storedRowIdx)
             self.myHighlighter._setData(xHStat, yHStat)
         # self.myHighlighter.update_highlightPlot(self.axScatter)
 

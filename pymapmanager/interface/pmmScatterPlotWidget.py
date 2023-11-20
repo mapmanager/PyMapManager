@@ -59,9 +59,9 @@ class PmmScatterPlotWidget(PmmWidget):
         if selectionEvent.isPointSelection():
             rowIdxList = selectionEvent.getRows()
             logger.info(f"rowIdxList: {rowIdxList}")
-            if len(rowIdxList) > 0:
+            # if len(rowIdxList) > 0:
                 # rowIdx = rowIdxList[0]
-                self.myScatterPlotWindow.selectHighlighterPoints(rowIdxList)
+            self.myScatterPlotWindow.selectHighlighterPoints(rowIdxList)
 
 
     def slot_convertToAnnotationEvent(self, proxyRowIdx):
