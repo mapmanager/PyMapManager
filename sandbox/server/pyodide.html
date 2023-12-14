@@ -1,0 +1,85 @@
+<!doctype html>
+<html>
+  <head>
+      <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+  </head>
+  <body>
+    Pyodide test page <br>
+    Open your browser console to see Pyodide output
+    <script type="text/javascript">
+      async function main(){
+        let pyodide = await loadPyodide();  //Create pyodide environment
+        console.log(pyodide.runPython(`
+            import sys
+            sys.version
+        `));
+        // pyodide.runPython("print(1 + 2)");
+        
+        // ***** DEFUNCT - CORS ERROR ***** //
+        // Load in zipped file
+        // let zipResponse = await fetch("rr30a_s0_ch2.zip");
+        // let zipBinary = await zipResponse.arrayBuffer();
+        // pyodide.unpackArchive(zipBinary, "zip");
+        // pyodide.runPython("print(zipBinary)")
+        // *****  DEFUNCT - CORS ERROR ***** //
+      
+        // Load in pymapmanager
+        // pip install -e .[gui]
+
+        await pyodide.loadPackage("micropip");
+        const micropip = pyodide.pyimport("micropip");
+
+        let serverAddress = 'http://localhost:8001/sandbox/server/johnson-ftpshare/';
+        await micropip.install(serverAddress + 'brightest_path_lib-1.0.13-py3-none-any.whl');
+        await micropip.install(serverAddress + 'pymapmanager-0.2.1-py3-none-any.whl');
+
+        // await micropip.install(serverAddress + 'sandbox/server/johnson-ftpshare/PyQt5-5.15.10-cp37-abi3-win32.whl');
+        await micropip.install("geopandas")
+        await micropip.install("seaborn")
+
+        // All code that requires qtpy and Pyqt5 needs to be conditioned so that its not used in pyodide
+        // https://stackoverflow.com/questions/73431803/couldnt-find-a-pure-python-3-wheel-for-tensorflow-you-can-use-micropip-inst
+        // await micropip.install("qtpy")
+        // // https://superuser.com/questions/1433913/qtpy-pythonqterror-no-qt-bindings-could-be-found
+        // // await micropip.install("pyqt5-tools")
+        // await micropip.install("PyQt5")
+
+        // Load in zipped file
+        await pyodide.runPythonAsync(`
+            """Load a zip from http and unpack it into pyodide runtime filesystem.
+            """
+            from pyodide.http import pyfetch
+            tifZipPath = 'http://localhost:8001/sandbox/server/rr30a_s0_ch2.zip'
+
+            response = await pyfetch(tifZipPath)
+            print('tifZipPath response:', response.ok, response.status)
+            await response.unpack_archive()
+        `);
+      
+        // Downloading a single py file and run function testLayers_pyodide()
+        await pyodide.runPythonAsync(`
+            from pyodide.http import pyfetch
+            response = await pyfetch("http://localhost:8001/sandbox/server/testLayersScript.py")
+            with open("testLayersScript_tmp.py", "wb") as f:
+                f.write(await response.bytes())
+
+            import os
+            print('os.getcwd():', os.getcwd())  # /home/pyodide
+            print(os.listdir(os.getcwd()))
+
+        `);
+        
+        pyodide.runPython("testString = 'Checkpoint!!!!!!!!!!!!!!!'")
+        pyodide.runPython("print(testString)");
+
+        let pyodideTifPath = 'rr30a_s0_ch2.tif';
+
+        pkg = pyodide.pyimport("testLayersScript_tmp");
+        
+        pkg.run(pyodideTifPath)
+          // http://localhost:8001/sandbox/server/pyodide.html
+        }
+      main();
+    </script>
+  </body>
+</html>

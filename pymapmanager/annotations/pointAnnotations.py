@@ -744,7 +744,7 @@ class pointAnnotations(baseAnnotations):
                     compareValues=compareValues)
     
         # print("compareValues", compareValues)
-
+        # logger.info(f"values type: {type(values)} values: {values}")
         return values
         # return dfPoints
 
@@ -992,7 +992,12 @@ class pointAnnotations(baseAnnotations):
         finalSetOfCoords.append(topTwoRectCoords[0])
         finalSetOfCoords.append(topTwoRectCoords[1])
         finalSetOfCoords = np.array(finalSetOfCoords)
-        # logger.info(f"finalSetOfCoords: {finalSetOfCoords}")
+        logger.info(f"finalSetOfCoords: {finalSetOfCoords}")
+
+        # xe = finalSetOfCoords[:,1]
+        # ye = finalSetOfCoords[:,0]
+
+        # polygon_converted_geom = [[x, y] for x in xe for y in ye]
 
         # return finalSetOfCoords
         # finalMaskPolyCoords = np.column_stack(np.where(finalMaskPoly > 0))

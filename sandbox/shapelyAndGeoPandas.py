@@ -477,13 +477,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
             segmentID = int(explodedLineStrings["segmentID"][i])
             if currentIndex != segmentID:
-                print("currentIndex:", currentIndex, ", i[0]:", i[0], ", i:", i, ", segmentID:", segmentID)
+                # print("currentIndex:", currentIndex, ", i[0]:", i[0], ", i:", i, ", segmentID:", segmentID)
                 xPoints = np.append(xPoints, np.nan)
                 yPoints = np.append(yPoints, np.nan)
                 currentIndex = segmentID
         
             # print("i[0]", i[0])
-            print("i", i)
+            # print("i", i)
             # print("explodedLineStrings[geometry][i]", explodedLineStrings["geometry"][i])
             x,y = explodedLineStrings["geometry"][i].xy
             # print("X: ", x)

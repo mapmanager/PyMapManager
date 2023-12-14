@@ -797,8 +797,10 @@ class baseAnnotations():
         # colName += 'index'
 
         values = df.loc[:,colName].values
+        # logger.info(f"values converting before {values}")
         if values.shape[1]==1:
             values = values.flatten() # ensure 1D (for napari)
+        # logger.info(f"colName{colName} values converting {values}")
         return values
 
     def getDFWithCondition(self,
