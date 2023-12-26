@@ -106,7 +106,7 @@ class PixelSource:
         points_frame["note"] = "this is a note"
         # logger.info(f'selections: {selections}')
         selected = get_selected(points_frame, "spineID", selections)
-        # logger.info(f'selected: {selected}')
+        logger.info(f'selected: {selected}')
 
         points_frame["radius"] = 2
 
@@ -334,13 +334,15 @@ def filter_mask(d, index_filter):
 
 
 def get_selected(df: pd.DataFrame, selection_id: str, selected_ids: [str, str]):
+    logger.info(f"df.index.name: {df.index.name}")
     if df.index.name == selection_id:
-        # logger.info(f"df.index.name: {df.index.name}")
+        logger.info(f"df.index.name: {df.index.name}")
         # # logger.info(f"df.index == selected_ids[selection_id]: {df.index == selected_ids[selection_id]}")
         # logger.info(f"selected_ids[selection_id]: {selected_ids[selection_id]}")
         # logger.info(f"df.index: {df.index}")
         return df.index == selected_ids[selection_id]
-
+    
+    logger.info(f"dataframe selected from: {df}")
     return df[selection_id] == selected_ids[selection_id]
 
 

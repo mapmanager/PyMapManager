@@ -26,7 +26,8 @@ class PixelSource:
         self.pendingAnchor = None
 
     def get_spines(self, options):
-        z_range = options['selection']['z']
+        # z_range = options['selection']['z']
+        z_range = options['slices']
         selections = options['annotationSelections']
         index_filter = options["filters"]
 
@@ -176,7 +177,8 @@ class PixelSource:
             TODO: Add type and example of each options so that that it can be used in the backend
         
         """
-        z_range = options['selection']['z']
+        # z_range = options['selection']['z']
+        z_range = options['slices']
         selections = options['annotationSelections']
 
         # clip the lines
@@ -189,16 +191,16 @@ class PixelSource:
         segments_frame.properties = {
             "editOn": "segmentID"
         }
-        segments_frame["stroke"] = selection_color(
-            segments_frame, "segmentID", selections, [0, 255, 0], [255, 0, 0])
+        # segments_frame["stroke"] = selection_color(
+        #     segments_frame, "segmentID", selections, [0, 255, 0], [255, 0, 0])
 
         frames = []
 
         if options["showLineSegmentsRadius"]:
             frames.extend(leftRightBounds(segments_frame.copy()))
 
-        segments_frame["strokeWidth"] = 3
-        frames.append(segments_frame)
+        # segments_frame["strokeWidth"] = 3
+        # frames.append(segments_frame)
 
         return frames
 

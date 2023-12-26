@@ -30,7 +30,7 @@ class Layers:
         self.pa = pointAnnotations
         self.la = lineAnnotations
 
-        # self.pixelSource = self.newPixelSource()
+        self.pixelSource = self.newPixelSource()
 
 
     def createSpinePointGeoPandas(self):
@@ -39,34 +39,20 @@ class Layers:
         # Acquire only spinePoints
         paDF = paDF[paDF['roiType'] == "spineROI"]
         # logger.info(f"filterd paDF {paDF}")
-        # gdf = geopandas.GeoDataFrame(
-        #     paDF, geometry=geopandas.points_from_xy(paDF.x, paDF.y, paDF.z))
 
         pointsGeometry = gpd.points_from_xy(paDF.x, paDF.y, paDF.z)
         # logger.info(f"pointsGeometry {pointsGeometry}")
         newDF = paDF[["index", "segmentID", "xBackgroundOffset", "yBackgroundOffset"]].copy()
+        newDF.rename(columns={"index": "spineID"}, inplace=True)
+        newDF['spineID'] = newDF['spineID'].astype(str)
         # Note: spineID replaces index in pixelSource
-        newDF["points"] = pointsGeometry
+        # newDF["point"] = pointsGeometry
 
-        # brightestIndex = paDF.brightestIndex
-        # logger.info(f"brightestIndex: {brightestIndex}")
-
-        # labels = []
-        # for index, brightestIndex in paDF["brightestIndex"].items():
-        #     logger.info(f"index: {index} brightestIndex: {brightestIndex}")
-        #     xBrightestIndex = self.la.getValue("x", brightestIndex)
-        #     yBrightestIndex = self.la.getValue("y", brightestIndex)
-        #     # slope = int((paDF.y - yBrightestIndex)/ (paDF.x -xBrightestIndex))
-        #     xSpine = self.pa.getValue("x", index)
-        #     ySpine = self.pa.getValue("y", index)
-        #     zSpine = self.pa.getValue("z", index)
-        #     adjust = 1.2
-        #     slope = int((ySpine - yBrightestIndex)/ (xSpine - xBrightestIndex)) * adjust
-        #     if slope > 0:
-        #         labelPoint = Point(xSpine - slope, ySpine - slope, slope)
-
-        #     labelPoint = Point(xSpine - slope, ySpine - slope, zSpine)
-        #     labels.append(labelPoint)
+        # points_gdf = gpd.GeoDataFrame(
+        #     newDF, geometry = newDF["point"])
+        points_gdf = gpd.GeoDataFrame(newDF, geometry=pointsGeometry)
+        # points_gdf = points_gdf.drop('point', axis=1) # remove origina; point column
+        points_gdf.rename_geometry("point", inplace=True)
 
         anchor = []
         for index, brightestIndex in paDF["brightestIndex"].items():
@@ -80,14 +66,18 @@ class Layers:
         # anchor = GeometryArray(anchor)
 
         # geomtryAnchor = 
-        newDF["anchor"] = anchor
-
-        return newDF
+        # newDF["anchor"] = anchor
+        # points_gdf = gpd.GeoDataFrame(newDF, geometry=anchor)
+        # points_gdf.rename_geometry("anchor", inplace=True)
+        points_gdf["anchor"] = anchor
+        # return newDF
+        points_gdf = points_gdf.set_index('spineID')
+        return points_gdf
 
     def createLineGeoPandas(self):
         """ Return geopandas df with two columns: segmentID and segment (represented by LINESTRING)
         """
-        
+
         laDF = self.la.getFullDataFrame()
 
         # logger.info(f"laDF: {laDF}")
@@ -97,9 +87,9 @@ class Layers:
         
         line_gdf = gdf.groupby(['segmentID'])['geometry'].apply(lambda x: LineString(x.tolist()))
         line_gdf = gpd.GeoDataFrame(line_gdf, geometry='geometry')
+        line_gdf.rename_geometry("segment", inplace=True)
 
-
-        logger.info(f"gdf: {gdf}")
+        # logger.info(f"gdf: {gdf}")
         logger.info(f"line_gdf: {line_gdf}")
         return line_gdf
 
@@ -113,6 +103,28 @@ class Layers:
 
         # logger.info(f"points: {points}")
         return PixelSource(line_segments, points)
+    
+    def getLayers(self, options):
+        """ Call function within pixelSource class to retrieve all the layers
+        
+        Args:
+            Options: 
+                Example:
+                    Options = {"selection": {'z': [29,30]},
+                    "showLineSegments": True,
+                    "annotationSelections": { # Note this requires the values to be strings
+                            'segmentID': '1',
+                            'spineID': '33'},
+                    #    "annotationSelections": [33],
+                    "showLineSegmentsRadius": 3,
+                    "showSpines": True,
+                    "filters": [], #[1,2,3,4],
+                    "showAnchors": True,
+                    "showLabels": True
+                    }
+        """
+        return self.pixelSource.getLayers(options)
+
 
     # def setLayers(self):
     #     """ Returns all needed layers that is displayed in the User Interface

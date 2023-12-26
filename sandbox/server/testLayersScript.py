@@ -5,7 +5,7 @@ import pymapmanager.mmMap
 import pymapmanager.interface
 import pymapmanager.annotations
 from pymapmanager._logger import logger
-from pymapmanager.annotations.layers import Layers
+from pymapmanager.annotations.pmmLayers import Layers
 
 def run(inputPath):
     

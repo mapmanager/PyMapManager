@@ -22,8 +22,9 @@ from shapely.ops import nearest_points
 from shapely.geometry import LineString, Point, MultiLineString, Polygon
 
 from pymapmanager.annotations.pixelSource import PixelSource
+from pymapmanager.layers import Layer, MultiLineLayer, LineLayer, PointLayer, PolygonLayer
 
-class Layers:
+class PmmLayers:
     def __init__(self, pointAnnotations, lineAnnotations):
         super().__init__()
 
@@ -45,13 +46,8 @@ class Layers:
         newDF = paDF[["index", "segmentID", "xBackgroundOffset", "yBackgroundOffset"]].copy()
         newDF.rename(columns={"index": "spineID"}, inplace=True)
         newDF['spineID'] = newDF['spineID'].astype(str)
-        # Note: spineID replaces index in pixelSource
-        # newDF["point"] = pointsGeometry
 
-        # points_gdf = gpd.GeoDataFrame(
-        #     newDF, geometry = newDF["point"])
         points_gdf = gpd.GeoDataFrame(newDF, geometry=pointsGeometry)
-        # points_gdf = points_gdf.drop('point', axis=1) # remove origina; point column
         points_gdf.rename_geometry("point", inplace=True)
 
         anchor = []
@@ -62,15 +58,8 @@ class Layers:
             zBrightestIndex = self.la.getValue("z", brightestIndex)
             anchorPoint = Point(xBrightestIndex, yBrightestIndex, zBrightestIndex)
             anchor.append(anchorPoint)
-        # anchor = geopandas.points_from_xy(paDF.x + slope, paDF.y + slope, paDF.z)
-        # anchor = GeometryArray(anchor)
 
-        # geomtryAnchor = 
-        # newDF["anchor"] = anchor
-        # points_gdf = gpd.GeoDataFrame(newDF, geometry=anchor)
-        # points_gdf.rename_geometry("anchor", inplace=True)
         points_gdf["anchor"] = anchor
-        # return newDF
         points_gdf = points_gdf.set_index('spineID')
         return points_gdf
 
@@ -123,7 +112,29 @@ class Layers:
                     "showLabels": True
                     }
         """
-        return self.pixelSource.getLayers(options)
+        frames =  self.pixelSource.getLayers(options)
+
+        # Frames are currently in different geopandas frames
+        # need to convert to geoseries and create a corresponding layer object
+        finalLayers = []
+        for frame in frames:
+            # logger.info(f"frame, {frame.geometry} type, {type(frame.geometry)}")
+            geometrySeries = frame.geometry
+            geometryType = geometrySeries.geom_type[0]
+            # logger.info(f"geometryType, {geometryType}, type is  {type(geometryType)}")
+            if geometryType == "Polygon":
+                # print("This is a Polygon")
+                finalLayers.append(PointLayer(geometrySeries))
+            elif geometryType == "MultiLineString":
+                finalLayers.append(MultiLineLayer(geometrySeries))
+            elif geometryType == "LineString":
+                finalLayers.append(LineLayer(geometrySeries))
+            elif geometryType == "Point":
+                finalLayers.append(PointLayer(geometrySeries))
+            # break
+        return finalLayers
+
+    # Might be better to figure out how to calculate frames one at a time
 
 
     # def setLayers(self):

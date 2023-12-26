@@ -19,4 +19,4 @@ from .lineAnnotations2 import lineAnnotations2
 
 from .mpSpineInt import intAnalysisWorker
 
-from .layers import Layers
+from .pmmLayers import PmmLayers
