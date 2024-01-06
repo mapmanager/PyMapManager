@@ -60,7 +60,8 @@ setup(
 	extras_require={
         'gui': [
 			'matplotlib',
-			'qtpy',
+			'seaborn',
+            'qtpy',
             'PyQt5',  # This will not work on macOS arm
             'pyqtgraph',
             'pyqtdarktheme',
