@@ -12,10 +12,6 @@ import pymapmanager
 import pymapmanager.interface
 import pymapmanager.annotations
 from pymapmanager.analysisParams import AnalysisParams
-from pymapmanager.interface.scatterPlotWindow import ScatterPlotWindow
-from pymapmanager.interface.selectionInfoWidget import SelectionInfoWidget
-import pymapmanager.interface
-from pymapmanager.interface.analysisParamWidget import AnalysisParamWidget
 
 from pymapmanager._logger import logger
 
@@ -167,6 +163,9 @@ class stackWidget(QtWidgets.QMainWindow):
 
     signalPointChanged = QtCore.Signal(object)  # pymapmanager.annotations.SelectionEvent
 
+    signalUpdateSearchDF = QtCore.Signal(object) # For connecting with Search DF
+
+    signalUpdateAnnotation = QtCore.Signal(object)
     def __init__(self,
                  path : str = None,
                  stack : pymapmanager.stack = None,
@@ -209,6 +208,8 @@ class stackWidget(QtWidgets.QMainWindow):
         # self._detectionParamsDict.signalParameterChanged.connect(self.slot_parameterChanged)
 
         pa = self.myStack.getPointAnnotations()
+        self.paDF = self.myStack.getPointAnnotations().getDataFrame()
+
         self.statList = pa.getAllColumnNames()
         # print("self.statList",self.statList)
         # print("pa is " , pa)
@@ -216,6 +217,16 @@ class stackWidget(QtWidgets.QMainWindow):
         self._scatterPlotWindow = None
 
         self._selectionInfoWidget = None
+
+        self._searchWidget = None
+        self._searchWidget2 = None
+        self._pmmSearchWidget = None
+        self._pmmScatterPlotWidget= None
+
+        self._searchWidget = None
+        self._searchWidget2 = None
+        self._pmmSearchWidget = None
+        self._pmmScatterPlotWidget= None
 
         # TODO: Aug 2023, these are two parallel systems and should be merged?
         # system 1
@@ -467,7 +478,10 @@ class stackWidget(QtWidgets.QMainWindow):
         updateAnalysis_action.triggered.connect(self.updateSpineAnalysis)
 
         plotScatter_action = QtWidgets.QAction("&Plot Scatter", self)
-        plotScatter_action.triggered.connect(self.showScatterPlot)
+        plotScatter_action.triggered.connect(self.showScatterPlot2)
+
+        search_action = QtWidgets.QAction("&Show Search", self)
+        search_action.triggered.connect(self.showSearchWidget2)
 
         # selectionInfoWidget_action = QtWidgets.QAction("&Selection Info", self)
         # selectionInfoWidget_action.triggered.connect(self.showSelectionInfo)
@@ -482,6 +496,8 @@ class stackWidget(QtWidgets.QMainWindow):
         analysisMenu.addAction(openParameterList_action)
 
         analysisMenu.addAction(plotScatter_action)
+
+        analysisMenu.addAction(search_action)
 
         # analysisMenu.addAction(selectionInfoWidget_action)
 
@@ -537,24 +553,154 @@ class stackWidget(QtWidgets.QMainWindow):
         # tmp_dPWidget: AnalysisParams = AnalysisParams()
         tmp_dPWidget = self.myStack.analysisParams
         # Show Detection Widget
-        self._analysisParamsWidget: AnalysisParamWidget = AnalysisParamWidget(tmp_dPWidget)
+
+        self._analysisParamsWidget = pymapmanager.interface.AnalysisParamWidget(tmp_dPWidget)
         # self._analysisParamsWidget.signalParameterChanged.connect(self.slot_parameterChanged)
         self._analysisParamsWidget.signalSaveParameters.connect(self.slot_saveParameters)
 
-    def showScatterPlot(self):
-        if self._scatterPlotWindow is None:
-            pa = self.myStack.getPointAnnotations()
-            self._scatterPlotWindow : ScatterPlotWindow = ScatterPlotWindow(pointAnnotations = pa)
+    # 11/6/23 Commented out to test new scatterplotwindow2
+    # def showScatterPlot(self):
+    #     if self._scatterPlotWindow is None:
+    #         pa = self.myStack.getPointAnnotations()
+    #         self._scatterPlotWindow = pymapmanager.interface.ScatterPlotWindow(pointAnnotations = pa)
+    #         # self._scatterPlotWindow = ScatterPlotWindow(pointAnnotations = pa)
 
-            # add the code to make a bidirectional signal/slot connection
-            # between our children (imagePlotWidgtet and ScatterPlotWidget)
-            self._imagePlotWidget.signalAnnotationSelection2.connect(self._scatterPlotWindow.slot_selectAnnotation2)
+    #         # add the code to make a bidirectional signal/slot connection
+    #         # between our children (imagePlotWidgtet and ScatterPlotWidget)
+    #         self._imagePlotWidget.signalAnnotationSelection2.connect(self._scatterPlotWindow.slot_selectAnnotation2)
             
-            # make the signal in ScatterPlotWidow
-            self._scatterPlotWindow.signalAnnotationSelection2.connect(self._imagePlotWidget.slot_selectAnnotation2)
+    #         # make the signal in ScatterPlotWidow
+    #         self._scatterPlotWindow.signalAnnotationSelection2.connect(self._imagePlotWidget.slot_selectAnnotation2)
 
-        self._scatterPlotWindow.show()
+    #     self._scatterPlotWindow.show()
 
+    def showScatterPlot2(self, state):
+        if self._pmmScatterPlotWidget is None:
+            pa = self.myStack.getPointAnnotations()
+            self._pmmScatterPlotWidget = pymapmanager.interface.PmmScatterPlotWidget(self.myStack)
+
+            self.signalSelectAnnotation2.connect(self._pmmScatterPlotWidget.slot_selectAnnotation2)
+            self._pmmScatterPlotWidget.signalAnnotationSelection2.connect(self.slot_selectAnnotation2)
+            # self._pmmSearchWidget.signalRequestDFUpdate.connect(self.slot_updateSearchDF)
+
+            self.signalPointChanged.connect(self._pmmScatterPlotWidget.slot_updatedRow)
+            self.signalAddedAnnotation.connect(self._pmmScatterPlotWidget.slot_addedRow)
+            self.signalDeletedAnnotation.connect(self._pmmScatterPlotWidget.slot_deletedRow)
+        else:
+            self._pmmScatterPlotWidget.setVisible(state)
+
+        self._pmmScatterPlotWidget.show()
+
+
+    def showSearchWidget(self, state):
+        # Add boolean to show and hide (called visible)
+        if self._searchWidget is None:
+            
+            pa = self.myStack.getPointAnnotations()
+            searchListWidget = pymapmanager.interface.searchListWidget(self,
+                                pa,
+                                title='Points',
+                                displayOptionsDict = self._displayOptionsDict['windowState'])
+
+            self.signalSelectAnnotation2.connect(searchListWidget.slot_selectAnnotation2)
+
+            searchListWidget.signalRowSelection2.connect(self.slot_selectAnnotation2)
+
+            self._searchWidget = pymapmanager.interface.SearchWidget(searchListWidget, pa)
+
+            self._searchWidget.signalSearchUpdate.connect(searchListWidget.doSearch)
+            self._searchWidget.signalColumnChange.connect(searchListWidget.doColumnChange)
+
+        else:
+            self._searchWidget.setVisible(state)
+
+        self._searchWidget.show()
+
+    def getPointAnnotationDF(self):
+        self.paDF = self.myStack.getPointAnnotations().getDataFrame()
+        return self.paDF
+    
+    def showSearchWidget2(self, state):
+
+        if self._pmmSearchWidget is None:
+            
+            # from pymapmanager.interface.pmmSearchWidget import PmmSearchWidget
+
+            self._pmmSearchWidget = pymapmanager.interface.PmmSearchWidget(self.myStack)
+            # self._pmmSearchWidget = PmmSearchWidget(self.paDF)
+
+
+            self.signalSelectAnnotation2.connect(self._pmmSearchWidget.slot_selectAnnotation2)
+            self._pmmSearchWidget.signalAnnotationSelection2.connect(self.slot_selectAnnotation2)
+            # self._pmmSearchWidget.signalRequestDFUpdate.connect(self.slot_updateSearchDF)
+
+            self.signalPointChanged.connect(self._pmmSearchWidget.slot_updatedRow)
+            self.signalAddedAnnotation.connect(self._pmmSearchWidget.slot_addedRow)
+            self.signalDeletedAnnotation.connect(self._pmmSearchWidget.slot_deletedRow)
+            # self.signalUpdateSearchDF.connect(self._pmmSearchWidget.slot_updateDF)
+    
+        else:
+            self._pmmSearchWidget.setVisible(state)
+
+        # logger.info(f'showSearchWidget2 DF {self.paDF}')
+        self._pmmSearchWidget.show()
+        
+    # def showSearchWidget2(self, state):
+    #     # Add boolean to show and hide (called visible)
+    #     # df = self.myStack.getPointAnnotations().getDataFrame()
+    #     # self.getPointAnnotationDF()
+    #     if self._searchWidget2 is None:
+    #         # Perhaps this is not updated?
+    #         # self.df = self.myStack.getPointAnnotations().getDataFrame()
+    #         self._searchWidget2 = pymapmanager.interface.SearchController(self.paDF)
+    #         # self._searchWidget2.signalAnnotationSelection2.connect(self.slot_selectAnnotation2)
+            
+    #         # TODO: need to check for only pointannotation selection when sending to searchWidget
+    #         # Have searchWidget derive runctions from pmmWidget to check type
+    #         self.signalSelectAnnotation2.connect(self._searchWidget2.slot_selectAnnotation2)
+    #         self._searchWidget2.signalAnnotationSelection2.connect(self.convertToAnnotationEvent)
+    #         self._searchWidget2.signalRequestDFUpdate.connect(self.slot_updateSearchDF)
+
+    #         # Connecting Signals to Update Table model within Search Widget
+    #         # TODO: Change the first three signals to connect to slot_updateDF? since they are indirectly calling it
+    #         self.signalPointChanged.connect(self._searchWidget2.slot_updateRow)
+    #         self.signalAddedAnnotation.connect(self._searchWidget2.slot_addRow)
+    #         self.signalDeletedAnnotation.connect(self._searchWidget2.slot_deleteRow)
+    #         self.signalUpdateSearchDF.connect(self._searchWidget2.slot_updateDF)
+
+    #         # derive from searchwidget to have slots that interpret data from stack widget
+            
+
+    #     else:
+    #         self._searchWidget2.setVisible(state)
+
+    #     logger.info(f'showSearchWidget2 DF {self.paDF}')
+    #     self._searchWidget2.show()
+
+    def slot_updateSearchDF(self):
+       
+       paDF = self.getPointAnnotationDF()
+       self.signalUpdateSearchDF.emit(paDF)
+
+    # DEFUNCT
+    def convertToAnnotationEvent(self, proxyRowIdx, isAlt):
+        """ 
+        Convert proxyRowIdx to a selection event to update all other widget
+        Args:
+            proxyRowIdx: Index selected in proxy model of Search Widget
+            isAlt: True if alt key pressed so that we can snap to point
+        """
+        pa = self.myStack.getPointAnnotations()
+        _selectionEvent = pymapmanager.annotations.SelectionEvent(annotation=pa,
+                                                        rowIdx=proxyRowIdx,
+                                                        stack=self.myStack,
+                                                        isAlt=isAlt)
+        # self.signalSelectAnnotation2.emit(_selectionEvent)
+
+        # if _selectionEvent.type == pymapmanager.annotations.pointAnnotations:
+        # Call Stack Widget function that signals other widgets
+        self.slot_selectAnnotation2(_selectionEvent)
+            
     # def showSelectionInfo(self, state):
     #     # Add boolean to show and hide (called visible)
     #     if self._selectionInfoWidget is None:
@@ -572,23 +718,6 @@ class stackWidget(QtWidgets.QMainWindow):
     #         self._selectionInfoWidget.setVisible(state)
 
     #     self._selectionInfoWidget.show()
-
-       
-    # def OLD_showNewWindow(self, layout):
-    #     if self.window is None:
-    #         logger.info('analysis param window opened')
-    #         # analysisLayout = self._detectionParamsDict.buildAnalysisParamUI()
-    #         # print("type", type(analysisLayout))
-    #         print("layout", layout)
-    #         print("type", type(layout))
-    #         self.window = AnotherWindow(layout)
-    #         self.window.show()
-    #         # analysisWindow = self._detectionParamsDict.buildAnalysisParamUI()
-
-    #     else:
-    #         self.window.close()  # Close window.
-    #         self.window = None  # Discard reference.
-    #         logger.info('analysis param window closed')
 
     def _on_user_close(self):
         logger.info('')
@@ -696,7 +825,11 @@ class stackWidget(QtWidgets.QMainWindow):
         # 8/10 - Adding selection info widget
         # self._selectionInfoWidget : SelectionInfoWidget = SelectionInfoWidget(pointAnnotations = self.myStack.getPointAnnotations())
         self._selectionInfoWidget = \
-                            SelectionInfoWidget(pointAnnotations = self.myStack.getPointAnnotations())
+                            pymapmanager.interface.SelectionInfoWidget(pointAnnotations = self.myStack.getPointAnnotations())
+        
+        self._selectionInfoWidget.signalUpdateNote.connect(self.slot_updateNote)
+        # self._selectionInfoWidget = SelectionInfoWidget()
+        # self._selectionInfoWidget = pymapmanager.interface.SelectionInfoWidget()
         self.selectionInfoDock = QtWidgets.QDockWidget('Selection Info',self)
         self.selectionInfoDock.setWidget(self._selectionInfoWidget)
         self.selectionInfoDock.setFloating(False)
@@ -747,11 +880,16 @@ class stackWidget(QtWidgets.QMainWindow):
         self._myPointListWidget.signalRowSelection2.connect(self.slot_selectAnnotation2)
         self._myLineListWidget.signalRowSelection2.connect(self.slot_selectAnnotation2)
 
+
+
         # Why does this have two of the same lines?
         self._imagePlotWidget.signalAnnotationSelection2.connect(self.slot_selectAnnotation2)
 
         # 8/10 - added for selectioninfo widget
         self.signalSelectAnnotation2.connect(self._selectionInfoWidget.slot_selectAnnotation2)
+
+        # scatterPlotWindow
+        # self.signalSelectAnnotation2.connect(self._scatterPlotWindow.slot_selectAnnotation2)
 
         self.signalSelectAnnotation2.connect(self._myPointListWidget.slot_selectAnnotation2)
         self.signalSelectAnnotation2.connect(self._myLineListWidget.slot_selectAnnotation2)
@@ -796,6 +934,9 @@ class stackWidget(QtWidgets.QMainWindow):
         self.signalDeletedAnnotation.connect(self._myPointListWidget.slot_deletedAnnotation)
         self.signalDeletedAnnotation.connect(self._myLineListWidget.slot_deletedAnnotation)
 
+        # TODO: Eventually change temp fix when merging with cudmore
+        self.signalUpdateAnnotation.connect(self._imagePlotWidget._aPointPlot.slot_updateAnnotation)
+
         # set title
         self.setWindowTitle(self.myStack.getFileName())
 
@@ -816,25 +957,27 @@ class stackWidget(QtWidgets.QMainWindow):
         self.move(left,top)
         self.resize(width, height)
     
-
+    # TODO: Current bug: reanalyzing two times in a row crashes interface
+    # Scenario: Width to 5 then width to 1
     def slot_reanalyzeSpine(self, event : pymapmanager.annotations.SelectionEvent):
         # logger.info(f'moving spine Index {event.getAddedRow()}')
         logger.info(f'updating spine Index {event.getRows()[0]}')
         spineRowIdx = event.getRows()[0]
         self.myStack.getPointAnnotations().updateParameterValues(spineRowIdx)
 
-        # TODO: reflect changes within table and plot interface
-
         la = self.getStack().getLineAnnotations()        
         _selectionEvent = pymapmanager.annotations.SelectionEvent(la,
                                                             rowIdx=None,
                                                             stack=self.myStack)
-        # Update all Rows in table
-        self.signalPointChanged.emit(_selectionEvent)
+        # # Update all Rows in table
+        # self.signalPointChanged.emit(_selectionEvent)
 
+        self.signalPointChanged.emit(self._currentSelection)
+        # Reselect current spine to show visual change
         self.signalSelectAnnotation2.emit(self._currentSelection)
 
-        return
+
+        # return
 
     def slot_ConnectSpineROI(self, selectionEvent : pymapmanager.annotations.SelectionEvent):
         """ Responds to user clicking on a line point while we are in "connect" mode for one 
@@ -998,15 +1141,28 @@ class stackWidget(QtWidgets.QMainWindow):
 
         # Deselect current spine point and Show new spine point
         # self._imagePlotWidget._aPointPlot.slot_deletedAnnotation()
-        deleteDict = {
-                'annotationType': pymapmanager.annotations.annotationType.point,
-                'annotationIndex': currentAnnotationRow,
-                'isSegment': False,
-            }
-        self.signalDeletedAnnotation.emit(deleteDict)
+        # deleteDict = {
+        #         'annotationType': pymapmanager.annotations.annotationType.point,
+        #         'annotationIndex': [currentAnnotationRow], # Check to see where its used as a list/ int
+        #         'isSegment': False,
+        #     }
+        # self.signalDeletedAnnotation.emit(deleteDict)
+
+
+        logger.info(f'moving self._currentSelection {self._currentSelection}')
 
         # Reselect New Spine in list and image plot widget
-        self.signalSelectAnnotation2.emit(self._currentSelection)
+        # self.signalSelectAnnotation2.emit(self._currentSelection)
+
+        # 10/8 Fix
+
+        self.signalUpdateAnnotation.emit(addEvent)
+
+        reSelectEvent = pymapmanager.annotations.SelectionEvent(pa,
+                                                        rowIdx=currentAnnotationRow,
+                                                        isAlt=True,
+                                                        stack=self.myStack)
+        self.signalSelectAnnotation2.emit(reSelectEvent)
         
         # Selects new Spine in image displayed
         # self._imagePlotWidget._aPointPlot.slot_selectAnnotation2(self._currentSelection)
@@ -1320,10 +1476,16 @@ class stackWidget(QtWidgets.QMainWindow):
 
         # Update the table that shows the data 
 
-    # TODO: change this so that it only updates current value when the save button is pressed
     # def slot_parameterChanged(self, parameterDict):
     def slot_saveParameters(self, parameterDict):
         """
+            Saves new Analysis parameter values. This is not applied to a spine unless the user press the "reanalyze" Button.
+
+            Args:
+                parameterDict: Dictionary of parameter where values have been changed within the analysisParamWidget
+            
+            Returns:
+
         """
         # Using key in dictionary match it up with key in pointAnnotations and update
         _pointAnnotations = self.myStack.getPointAnnotations()
@@ -1332,15 +1494,50 @@ class stackWidget(QtWidgets.QMainWindow):
 
         for key, newVal in parameterDict.items():
             _pointAnnotations._analysisParams.setCurrentValue(key, newVal)
+        
+        # Get current index
+        # Set it in backend
 
         # Update current plot
         self.signalSelectAnnotation2.emit(self._currentSelection)
+        # self.signalPointChanged.emit(self._currentSelection)
+        
         
         # for key, new_val in _pointAnnotations._analysisParams.getDict().items():
         #     # print first key
         #     print(key)
         #     break
 
+    def slot_updateNote(self, newNoteVal):
+        """
+        """
+        # Get current index
+
+        if newNoteVal is None:
+            return
+        
+        # if self._currentSelection.getRows() != None:
+
+        # logger.info(f'slot_updateNote ----> self._currentSelection.getRows(): {self._currentSelection.getRows()}')
+
+        if self._currentSelection.getRows() == None:
+            return
+        
+        currentRowIdx = self._currentSelection.getRows()[0]
+        # logger.info(f'slot_updateNote ----> currentRowIdx: {currentRowIdx}')
+        
+        pa = self.myStack.getPointAnnotations()
+        # Update backend of index
+        pa.setValue('note', currentRowIdx, newNoteVal)
+        # pa = self.myStack.getPointAnnotations()
+        # # Update all Rows in table
+        # _selectionEvent = pymapmanager.annotations.SelectionEvent(pa,
+        #                                                 rowIdx=currentRowIdx,
+        #                                                 )
+        # self.signalPointChanged.emit(_selectionEvent)
+        self.signalPointChanged.emit(self._currentSelection)
+        
+        # self.signalSelectAnnotation2.emit(self._currentSelection)
 
 if __name__ == '__main__':
     logger.error('Depreciated. please run with "python sandbox/runStackWidget.py"')

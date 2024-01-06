@@ -34,8 +34,17 @@ def run():
     # snap to an image
     #bsw._imagePlotWidget.slot_setSlice(30)
     
+    # Show scatter plot window 2
+    bsw.showScatterPlot2(state = True)
+
+    # Show search widget
+    # bsw.showSearchWidget2(state = True)
+        
     # select a point and zoom
     bsw.zoomToPointAnnotation(99, isAlt=True, select=True)
+
+    # Select segment
+    # Create new point
 
     # run the Qt event loop
     sys.exit(app.exec_())

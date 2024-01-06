@@ -7,6 +7,24 @@ from ._table_widget import myTableView
 from .annotationListWidget import pointListWidget
 from .annotationListWidget import lineListWidget
 
+from .scatterPlotWindow import ScatterPlotWindow
+from .selectionInfoWidget import SelectionInfoWidget
+from .searchWidget import searchListWidget
+
+
+from .scatterPlotWindow2 import ScatterPlotWindow2
+from .pmmScatterPlotWidget import PmmScatterPlotWidget
+
+from .searchWidget2 import SearchController
+from .searchWidget2 import TableModel
+from .searchWidget2 import myQTableView
+from .searchWidget2 import myQSortFilterProxyModel
+from .pmmSearchWidget import PmmSearchWidget
+
+from .analysisParamWidget import AnalysisParamWidget
+
+from .searchWidget import SearchWidget
+
 from .annotationPlotWidget import linePlotWidget
 from .annotationPlotWidget import pointPlotWidget
 

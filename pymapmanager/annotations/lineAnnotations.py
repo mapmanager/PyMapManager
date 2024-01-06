@@ -206,6 +206,11 @@ class lineAnnotations(baseAnnotations):
         """
         #return self._df
         return self._dfSegments
+    
+    def getFullDataFrame(self) -> pd.DataFrame:
+        """Get annotations as underlying `pandas.DataFrame`."""
+    
+        return self._df
 
     def getSegment_xyz(self, segmentID : Union[int, List[int], None] = None) -> List[List[int]]:
         """Get a list of (z,y,x, index, segmentID) values from a segment(s).

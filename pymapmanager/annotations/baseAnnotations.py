@@ -26,8 +26,8 @@ class AddAnnotationEvent():
     The parent stack window decides the pointType based on the state of the window
     
     We have two different point types enumes, one for pointAnnotation and one for line annotations
-        pymapamanger.annotations.pointAnnotation.pointTypes
-        pymapamanger.annotations.lineAnnotations.linePointTypes
+        pymapmanager.annotations.pointAnnotation.pointTypes
+        pymapmanager.annotations.lineAnnotations.linePointTypes
     """
     def __init__(self,
                     # add, delete, change
@@ -65,8 +65,8 @@ class AddAnnotationEvent():
         """
         Args:
             pointType is a enum from one of
-                pymapamanger.annotations.pointAnnotation.pointTypes
-                pymapamanger.annotations.lineAnnotations.linePointTypes
+                pymapmanager.annotations.pointAnnotation.pointTypes
+                pymapmanager.annotations.lineAnnotations.linePointTypes
         """
         self._dict['pointType'] = pointType
 
@@ -882,8 +882,10 @@ class baseAnnotations():
         # colName += 'index'
 
         values = df.loc[:,colName].values
+        # logger.info(f"values converting before {values}")
         if values.shape[1]==1:
             values = values.flatten() # ensure 1D (for napari)
+        # logger.info(f"colName{colName} values converting {values}")
         return values
 
     def getDFWithCondition(self,

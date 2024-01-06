@@ -308,6 +308,8 @@ class ImagePlotWidget(QtWidgets.QWidget):
 
         elif event.key() == QtCore.Qt.Key_Escape:
             # cancel all user selections
+            # logger.info(f'escape event is {event}')
+            # logger.info(f'escape event key is {event.key()}')
             logger.info(f'  -->> emit signalCancelSelection CANCEL')
             
             #self.signalCancelSelection.emit(None, False)  # (selIdx, isAlt)
@@ -603,7 +605,7 @@ class ImagePlotWidget(QtWidgets.QWidget):
                     x = selectionEvent.annotationObject.getValue('x', rowIdx)
                     y = selectionEvent.annotationObject.getValue('y', rowIdx)
                     z = selectionEvent.annotationObject.getValue('z', rowIdx)
-                    #logger.info(f' calling _zoomToPoint with x:{x} and y:{y}')
+                    # logger.info(f' calling _zoomToPoint with x:{x} and y:{y}')
                     self._zoomToPoint(x, y)
                     #logger.info(f' calling _setSlice with z:{z}')
                     self._setSlice(z)

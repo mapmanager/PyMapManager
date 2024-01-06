@@ -37,6 +37,7 @@ class AnalysisParamWidget(QtWidgets.QWidget):
         #    _dict = {paramName: value}
         #     self.signalParameterChanged.emit(_dict)
 
+        # Create a key value pair in changed value dictionary
         self.changedDict[paramName] = value
         # self._dict = {paramName: value}
 

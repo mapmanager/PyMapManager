@@ -50,7 +50,9 @@ def exportAllSpineROI(path):
             radius = 5
             forFinalMask = False
             # Note: lists are formatted in [x,y]
-            segmentPoly = pa.calculateSegmentPolygon(spineDF['index'], la, radius, forFinalMask)
+            # segmentPoly = pa.calculateSegmentPolygon(spineDF['index'], la, radius, forFinalMask)
+            segmentPoly = pa.calculateSegmentPolygon(spineDF['index'], la, forFinalMask)
+
 
             bOffsetX = int(pa.getValue("xBackgroundOffset", spineDF['index']))
             bOffsetY = int(pa.getValue("yBackgroundOffset", spineDF['index']))

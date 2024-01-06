@@ -241,7 +241,7 @@ class annotationPlotWidget(QtWidgets.QWidget):
                                         )
         # ,pen=pg.mkPen(width=width, color=color), symbol=symbol)
 
-        zorder = 100
+        # zorder = 100
         self._scatter.setZValue(zorder)  # put it on top, may need to change '10'
         
         # when using ScatterPlotItem
@@ -268,16 +268,19 @@ class annotationPlotWidget(QtWidgets.QWidget):
         #                     hoverable=True
         #                     )
 
+        # TODO: Move to linePlotWidget
         self._leftRadiusLines = self._view.plot([],[],
-                                        pen=_pen, # None to not draw lines
-                                        symbol = None,
+                                        # pen=_pen, # None to not draw lines
+                                        pen=None,
+                                        symbol = symbol,
                                         # symbolColor  = 'red',
                                         symbolPen=None,
                                         fillOutline=False,
                                         markeredgewidth=0.0,
-                                        #symbolBrush = color,
+                                        symbolBrush = color,
                                         #connect='finite',
                                         )
+        
  
         self._leftRadiusLines.setZValue(zorder)  # put it on top, may need to change '10'
 
@@ -292,15 +295,17 @@ class annotationPlotWidget(QtWidgets.QWidget):
         #                     )
 
         self._rightRadiusLines = self._view.plot([],[],
-                                        pen=_pen, # None to not draw lines
-                                        symbol = None,
+                                        # pen=_pen, # None to not draw lines
+                                        pen=None,
+                                        symbol = symbol,
                                         # symbolColor  = 'red',
                                         symbolPen=None,
                                         fillOutline=False,
                                         markeredgewidth=0.0,
-                                        #symbolBrush = color,
+                                        symbolBrush = color,
                                         #connect='finite',
                                         )
+        
 
         self._rightRadiusLines.setZValue(zorder)  # put it on top, may need to change '10'
 
@@ -313,7 +318,7 @@ class annotationPlotWidget(QtWidgets.QWidget):
         symbol = self._displayOptions['symbolUserSelection']
         size = self._displayOptions['sizeUserSelection']
         zorder = self._displayOptions['zorderUserSelection']
-
+        zorder = 100
         # this scatter plot get updated when user click an annotation
         self._scatterUserSelection = pg.ScatterPlotItem(pen=pg.mkPen(width=width,
                                             color=color), symbol=symbol, size=size)
@@ -598,15 +603,10 @@ class annotationPlotWidget(QtWidgets.QWidget):
                 print(self._dfPlot['xLeft'])
 
             # self._rightRadiusLines.setData(self._dfPlot['xRight'], self._dfPlot['yRight'])
-            try:
-                self._rightRadiusLines.setData(self._dfPlot['xRight'].to_numpy(),
-                                              self._dfPlot['yRight'].to_numpy(),
-                                                # connect='finite',
-                                              )
-            except (KeyError) as e:
-                logger.error('while plotting right radius')
-                print('exception is:', e)
-                print(self._dfPlot['xRight'])
+            self._rightRadiusLines.setData(self._dfPlot['xRight'].to_numpy(),
+                                        self._dfPlot['yRight'].to_numpy(),
+                                        )
+
 
         # 20230206 removed while implementing tracing thread
         # as far as I understand, setData() calls this
@@ -709,7 +709,9 @@ class pointPlotWidget(annotationPlotWidget):
         # self._spineConnections = pg.ScatterPlotItem(pen=pg.mkPen(width=10,
         #                                     color='g'), symbol='o', size=10)
         # line1 = plt.plot(x, y, pen ='g', symbol ='x', symbolPen ='g', symbolBrush = 0.2, name ='green')
-        self._spineConnections = self._view.plot([],[], pen=pg.mkPen(width=width, color=color), symbol=symbol, connect='pairs')
+        # self._spineConnections = self._view.plot([],[], pen=pg.mkPen(width=width, color=color), symbol=symbol, connect='all')
+        self._spineConnections = self._view.plot([],[], pen=pg.mkPen(width=width, color=color), symbol=symbol)
+
         self._spineConnections.setZValue(zorder) 
         # self._view.addItem(self._spineConnections)
 
@@ -795,6 +797,9 @@ class pointPlotWidget(annotationPlotWidget):
         # order matters
         super().slot_addedAnnotation(addAnnotationEvent)
 
+        # 10/8: Quick fix to update UI and remove deleted spines
+        # self._refreshSlice()
+
     def slot_deletedAnnotation(self, delDict : dict):
         """Delete an annotation by removing its label and spine line.
         
@@ -805,13 +810,21 @@ class pointPlotWidget(annotationPlotWidget):
         """
         super().slot_deletedAnnotation(delDict)
         
-        # logger.info(f'pointPlotWidget slot_deletedAnnotation {delDict}')
+        logger.info(f'pointPlotWidget slot_deletedAnnotation {delDict}')
         
         annotationIndexList = delDict['annotationIndex']
         
+        # TODO: Check why sometimes this is a list instead of an int
+        # NOTE: Delete removes a list, but move point removes an int
+        # Should be fixed now
+
+
         if len(annotationIndexList) == 1:
+        # if annotationIndexList is not None:
             oneIndex = annotationIndexList[0]
-            
+
+            # oneIndex = annotationIndexList
+            logger.info(f'oneIndex: {oneIndex}')
             # remove the deleted annotation from our label list
             popped_item = self._labels.pop(oneIndex)  # remove from list
             self._view.removeItem(popped_item)  # remove from pyqtgraph view
@@ -839,6 +852,69 @@ class pointPlotWidget(annotationPlotWidget):
 
         # TODO: probably not necc. as we should (in theory) receive a slot_selectAnnotation with [] annotations to select
         self._cancelSpineRoiSelection()
+
+        # 10/8: Quick fix to update UI and remove deleted spines
+        self._refreshSlice()
+
+    # Added by Johnson as temp fix for moving spine
+    def slot_updateAnnotation(self, updateAnnotationEvent : pymapmanager.annotations.AddAnnotationEvent):
+        
+  
+        updatedRowIdx = updateAnnotationEvent.getAddedRow()
+        _, ySpine, xSpine = updateAnnotationEvent.getZYX()
+
+        logger.info(f'slot_updateAnnotation updatedRowIdx: {updatedRowIdx}')
+        
+        # add a spine line
+        _brightestIndex = self.pointAnnotations.getValue(['brightestIndex'], updatedRowIdx)
+        xLeft= self.lineAnnotations.getValue(['xLeft'], _brightestIndex)
+        xRight= self.lineAnnotations.getValue(['xRight'], _brightestIndex)
+        yLeft= self.lineAnnotations.getValue(['yLeft'], _brightestIndex)
+        yRight= self.lineAnnotations.getValue(['yRight'], _brightestIndex)
+
+        leftRadiusPoint = (xLeft, yLeft)
+        rightRadiusPoint = (xRight, yRight)
+        spinePoint = (xSpine, ySpine)
+        closestPoint = pymapmanager.utils.getCloserPoint2(spinePoint, leftRadiusPoint, rightRadiusPoint)
+
+
+        self._labels[updatedRowIdx].setPos(QtCore.QPointF(xSpine-9, ySpine-9))  
+        
+        updatedRowIdx = updatedRowIdx * 2
+        logger.info(f' self._xSpineLines[updatedRowIdx]: {self._xSpineLines[updatedRowIdx]}')
+        logger.info(f' self._xSpineLines[updatedRowIdx+1]: {self._xSpineLines[updatedRowIdx+1]}')
+
+        logger.info(f' self._ySpineLines[updatedRowIdx]: {self._ySpineLines[updatedRowIdx]}')
+        logger.info(f' self._ySpineLines[updatedRowIdx+1]: {self._ySpineLines[updatedRowIdx+1]}')
+
+        self._xSpineLines[updatedRowIdx] = xSpine
+        self._xSpineLines[updatedRowIdx+1] = closestPoint[0]
+        # self._xSpineLines[realIndex+2] = 1  #float('nan')
+
+        self._ySpineLines[updatedRowIdx] = ySpine
+        self._ySpineLines[updatedRowIdx+1] = closestPoint[1]
+
+
+        # Update label
+        # label_value = pg.LabelItem('', **{'color': '#FFF','size': '6pt'})
+        # label_value.setPos(QtCore.QPointF(xSpine-9, ySpine-9))
+        # label_value.setText(str(updatedRowIdx))
+        # label_value.hide()
+        # # label_value.setText(str(row['index']), rotateAxis=(1, 0), angle=90)  
+        # self._view.addItem(label_value)  
+        # self._labels[updatedRowIdx] = label_value  # our own list
+        
+        # self._labels[updatedRowIdx] = self._labels[updatedRowIdx].setPos(QtCore.QPointF(xSpine-9, ySpine-9))  
+        # self._ySpineLines[realIndex+2] = 1  #float('nan')
+        # logger.info(f'self._labels[updatedRowIdx {self._labels[updatedRowIdx].text}')
+    
+        # self._spineLinesConnect[realIndex] = 1
+        # self._spineLinesConnect[realIndex+1] = 0
+        # Unselect current selection
+        # Move
+        # Reselect
+        # Update spinelines connect
+        self._refreshSlice()
 
     def _cancelSpineRoiSelection(self):
         """Cancel spine ROI selection.
@@ -879,14 +955,14 @@ class pointPlotWidget(annotationPlotWidget):
             if roiType == "spineROI":
                 
                 # firstSelectedRow = spine row index
-                # jaggedPolygon = self.pointAnnotations.calculateJaggedPolygon(self.lineAnnotations, firstSelectedRow, self._channel, self.img)
-                jaggedPolygon = self.pointAnnotations.getValue("spineROICoords", firstSelectedRow)
+                jaggedPolygon = self.pointAnnotations.calculateJaggedPolygon(self.lineAnnotations, firstSelectedRow, self._channel, self.img)
+                # jaggedPolygon = self.pointAnnotations.getValue("spineROICoords", firstSelectedRow)
 
                 if jaggedPolygon is not None:
                     # TODO: Move this to load in base annotations
-                    jaggedPolygon = eval(jaggedPolygon)
-                    # logger.info(f'within list {jaggedPolygon} list type {type(jaggedPolygon)}')
-                    jaggedPolygon = np.array(jaggedPolygon)
+                    # jaggedPolygon = eval(jaggedPolygon)
+                    # # logger.info(f'within list {jaggedPolygon} list type {type(jaggedPolygon)}')
+                    # jaggedPolygon = np.array(jaggedPolygon)
 
                     self._spinePolygon.setData(jaggedPolygon[:,1], jaggedPolygon[:,0])
 
@@ -938,8 +1014,12 @@ class pointPlotWidget(annotationPlotWidget):
         _yData = self._ySpineLines[_spineLineIndex]
         _connect = self._spineLinesConnect[_spineLineIndex]
 
+        # This is causing error to be outputted in Windows:
+        # FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+        # if curveArgs['connect'] == 'auto': # auto-switch to indicate non-finite values as interruptions in the curve
         # self._spineConnections.setData(_xData, _yData, connect=_connect)
-        self._spineConnections.setData(_xData, _yData)
+        self._spineConnections.setData(_xData, _yData, connect='pairs')
+
 
         # else:
         #     if len(self.labels) > 0:

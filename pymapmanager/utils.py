@@ -554,11 +554,9 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations, forFinalMask):
 
     # aug 8
     # IndexError: too many indices for array: array is 1-dimensional, but 2 were indexed
-    # coordinateList[:,0] = scipy.signal.medfilt(coordinateList[:,0] , medianFilterWidth)
-    # coordinateList[:,1] = scipy.signal.medfilt(coordinateList[:,1] , medianFilterWidth)
-
-    # coordinateList = scipy.signal.medfilt2d(coordinateList , medianFilterWidth)
-    # coordinateList = scipy.signal.medfilt(coordinateList , medianFilterWidth)
+    # Currently only able to filter post processing
+    coordinateList[:,0] = scipy.signal.medfilt(coordinateList[:,0] , medianFilterWidth)
+    coordinateList[:,1] = scipy.signal.medfilt(coordinateList[:,1] , medianFilterWidth)
 
     # Append the first coordinate at the end to make a fully closed polygon
     # Convert to list to use append
