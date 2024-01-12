@@ -992,7 +992,7 @@ class pointAnnotations(baseAnnotations):
         finalSetOfCoords.append(topTwoRectCoords[0])
         finalSetOfCoords.append(topTwoRectCoords[1])
         finalSetOfCoords = np.array(finalSetOfCoords)
-        logger.info(f"finalSetOfCoords: {finalSetOfCoords}")
+        # logger.info(f"finalSetOfCoords: {finalSetOfCoords}")
 
         # xe = finalSetOfCoords[:,1]
         # ye = finalSetOfCoords[:,0]
@@ -1398,6 +1398,30 @@ class pointAnnotations(baseAnnotations):
     #                 self.storeJaggedPolygon(lineAnnotation, spineRowIdx)
     #                 self.storeSegmentPolygon(spineRowIdx, lineAnnotation, forFinalMask = False)
 
+        # Testing UUID
+    # def createUUID(self):
+    #     from uuid import uuid4
+    #     # self._df['uuid'] = [uuid.uuid4() for _ in range(len(self._df.index))]
+    #     # self._df['uuid'] = self._df.index.map(lambda _: uuid4())
+    #     # self._df['uuid'] = [uuid4() for x in range(len(self._df))]
+    #     logger.info(f'creating and setting UUIDs')
+
+    #     colItem = ColumnItem(
+    #         name = "uniqueID",
+    #         type = object,
+    #         units = '',
+    #         humanname = 'uniqueID',
+    #         description = 'Unique identification'
+    #     )
+    #     self.addColumn(colItem)
+
+    #     # self._df["uuid"] = [uuid4() for x in range(self._df.shape[0])]
+    #     for row in range(self._df.shape[0]):
+    #         # logger.info(f'row: {row}')
+    #         self.setValue("uniqueID", row, uuid4())
+    #     logger.info(f'UUID: {self._df["uniqueID"]}')
+    #     # logger.info(f'UUID type: {type(self._df["uniqueID"][0])}')
+    #     # self._df.set_index()
 
 if __name__ == '__main__':
     pass

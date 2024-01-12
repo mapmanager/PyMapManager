@@ -4,8 +4,28 @@ from pymapmanager.layers.utils import getCoords, inRange, dropZ
 from pymapmanager.layers.line import LineLayer
 import geopandas as gp
 from shapely.geometry import LineString
+from pymapmanager._logger import logger
 
 class PointLayer(Layer):
+    def __init__(self, series: gp.GeoSeries, frameName, frameColor, spineIDs):
+        super().__init__(series, frameName, frameColor)
+        # self.series.index.name = "id"
+        # logger.info(f"frame.index.unique {frame.index.unique}")
+
+        # self.series.index = frame.index
+        self.spineIDList = spineIDs.tolist()
+        logger.info(f"self.spineIDList {self.spineIDList}")
+        # logger.info(f"self.spineIDList 62 {self.spineIDList[32]}")
+        # series.set_index(spineIDs.tolist()) # set index only works for entire dataframe not series
+        logger.info(f"self.series {self.series}")
+        self.properties = {}
+
+    # def getSpineSelectionID(self):
+    #     return self.spineIDList[0]
+
+    def getSpineID(self, relativeIndex):
+        return self.spineIDList[relativeIndex]
+
     # clip the shapes z axis
     def clipZ(self, range: (int, int)):
         self.series = self.series[inRange(self.series.z, range=range)]

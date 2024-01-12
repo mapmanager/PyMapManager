@@ -12,6 +12,7 @@ def getCoords(shape):
     if isinstance(shape, LineString):
         return [shape.coords]
     if isinstance(shape, MultiLineString):
+        # print("Entering MultiLineString")
         return [line.coords for line in shape.geoms]
     if isinstance(shape, Polygon):
         return [shape.exterior.coords]
