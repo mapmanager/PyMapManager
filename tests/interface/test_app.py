@@ -11,7 +11,7 @@ def stackWidgetObject(qtbot):
 	path = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
 	sw = stackWidget(path=path)
 
-	sw.showScatterPlot()
+	sw.showScatterPlot2(show=True)
 	sw.showAnalysisParams()
 
 	return sw
@@ -50,14 +50,16 @@ def test_stackWidget_zoomToPointAnnotation(stackWidgetObject):
     isAlt = True
     stackWidgetObject.zoomToPointAnnotation(spineIndex, isAlt=isAlt)
 
-	# segment selection
-    segmentID = 2
-    isAlt = False
-    stackWidgetObject.selectSegmentID(segmentID, isAlt)
+    # TODO: convert to use stackWidgetObject.currentSelection
 
-    segmentID = 3
-    isAlt = True
-    stackWidgetObject.selectSegmentID(segmentID, isAlt)
+	# segment selection
+    # segmentID = 2
+    # isAlt = False
+    # stackWidgetObject.selectSegmentID(segmentID, isAlt)
+
+    # segmentID = 3
+    # isAlt = True
+    # stackWidgetObject.selectSegmentID(segmentID, isAlt)
 
 	# select spine and delete
     spineIndex = 230  # in segmentID == 3

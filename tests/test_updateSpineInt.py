@@ -52,7 +52,7 @@ def test_spineUpdate():
     
      # Testing when Spine is manually connected (brightest Index is manually picked)
     newZYXValues = None
-    brightestIndex = 151
+    brightestIndex = 254  #151
     myStack.getPointAnnotations().updateSpineInt(newZYXValues,
                                             spineIdx,
                                             zyxLineSegment,

@@ -42,8 +42,12 @@ setup(
     license='GNU GPLv3',
     #packages = find_packages(),
     packages=find_packages(include=['pymapmanager',
-                            'pymapmanager.*', 'pymapmanager.annotations',
-                            'pymapmanager.interface']),
+                            'pymapmanager.*',
+                            'pymapmanager.annotations',
+                            'pymapmanager.interface',
+                            'pymapmanager.interface2',
+                            'pymapmanager.interface2.stackWidgets',
+                            ]),
     #packages = find_packages(exclude=['version']),
     #packages=[
     #    'pymapmanager',
@@ -55,6 +59,7 @@ setup(
         "scipy",
         "scikit-image",
         "tifffile",
+        "geopandas",
         "brightest-path-lib",
     ],
 	extras_require={
@@ -86,7 +91,7 @@ setup(
         'test': [
             'pytest',
             'pytest-cov',
-            #'pytest-qt',
+            'pytest-qt',
             'flake8',
         ]
     },

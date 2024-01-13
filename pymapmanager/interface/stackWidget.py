@@ -574,7 +574,7 @@ class stackWidget(QtWidgets.QMainWindow):
 
     #     self._scatterPlotWindow.show()
 
-    def showScatterPlot2(self, state):
+    def showScatterPlot2(self, show : bool):
         if self._pmmScatterPlotWidget is None:
             pa = self.myStack.getPointAnnotations()
             self._pmmScatterPlotWidget = pymapmanager.interface.PmmScatterPlotWidget(self.myStack)
@@ -587,7 +587,7 @@ class stackWidget(QtWidgets.QMainWindow):
             self.signalAddedAnnotation.connect(self._pmmScatterPlotWidget.slot_addedRow)
             self.signalDeletedAnnotation.connect(self._pmmScatterPlotWidget.slot_deletedRow)
         else:
-            self._pmmScatterPlotWidget.setVisible(state)
+            self._pmmScatterPlotWidget.setVisible(show)
 
         self._pmmScatterPlotWidget.show()
 

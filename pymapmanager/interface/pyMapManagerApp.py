@@ -3,6 +3,11 @@ import sys
 import math
 from typing import List, Union  # , Callable, Iterator, Optional
 
+# import pathlib
+# import glob
+# import importlib
+import inspect
+
 import numpy as np
 
 from qtpy import QtGui, QtCore, QtWidgets
@@ -17,7 +22,82 @@ import pymapmanager.interface
 
 from pymapmanager._logger import logger
 from pymapmanager.pmmUtils import getBundledDir
- 
+
+def loadPlugins(verbose=True) -> dict:
+    """Load plugins from both:
+        - Package: sanpy.interface.plugins
+        - Folder: <user>/sanpy_plugins
+
+    See: sanpy.fileLoaders.fileLoader_base.getFileLoader()
+    """
+    import pymapmanager.interface2.stackWidgets
+
+    pluginDict = {}
+
+    # Enum is to ignore bPlugins.py class ResponseType(Enum)
+    # remove, all sanpy widget
+    ignoreModuleList = [
+        "sanpyPlugin",
+        "myWidget",
+        "ResponseType",
+        "SpikeSelectEvent",
+        "basePlotTool",
+        "NavigationToolbar2QT",
+        "myStatListWidget",
+    ]
+
+    #
+    # system plugins from sanpy.interface.plugins
+    # print('loadPlugins sanpy.interface.plugins:', sanpy.interface.plugins)
+    # loadedList = []
+    for moduleName, obj in inspect.getmembers(pymapmanager.interface2.stackWidgets):
+        # logger.info(f'moduleName:{moduleName} obj:{obj}')
+        if inspect.isclass(obj):
+            # logger.info(f'obj is class moduleName: {moduleName}')
+            if moduleName in ignoreModuleList:
+                # our base plugin class
+                continue
+            # loadedList.append(moduleName)
+            fullModuleName = "pymapmanager.interface2.stackWidgets." + moduleName
+            
+            try:
+                _widgetName = obj._widgetName  # myHumanName is a static str
+            except (AttributeError) as e:
+                # not a pmmWidget !
+                # logger.info(e)
+                continue
+            
+            # _showInMenu = obj.showInMenu  # showInMenu is a static bool
+            onePluginDict = {
+                "pluginClass": moduleName,
+                "type": "system",
+                "module": fullModuleName,
+                "path": "",
+                "constructor": obj,
+                "humanName": _widgetName,
+                # "showInMenu": showInMenu,
+            }
+            if _widgetName in pluginDict.keys():
+                logger.warning(
+                    f'Plugin already added "{moduleName}" _widgetName:"{_widgetName}"'
+                )
+            else:
+                pluginDict[_widgetName] = onePluginDict
+    
+    # sort
+    pluginDict = dict(sorted(pluginDict.items()))
+
+    # print the loaded plugins
+    if verbose:
+        logger.info(f'app loadPlugins loaded {len(pluginDict.keys())} plugins:')
+
+        for k,v in pluginDict.items():
+            logger.info(f'   {k}')
+            for k2, v2 in v.items():
+                logger.info(f'     {k2}: {v2}')
+
+    return pluginDict
+
 class PyMapManagerApp(QtWidgets.QApplication):
     def __init__(self, argv=['']):
         super().__init__(argv)
@@ -35,6 +115,8 @@ class PyMapManagerApp(QtWidgets.QApplication):
         self._mapList : pmm.mmMap = []
         
         self._stackWidgetList : pmm.interface.stackWidget = []
+
+        self._stackWidgetPluginsDict = loadPlugins()
 
     def loadMap(self, path):
         _map = self._findMap(path)

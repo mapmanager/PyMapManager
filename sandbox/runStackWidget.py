@@ -35,7 +35,7 @@ def run():
     #bsw._imagePlotWidget.slot_setSlice(30)
     
     # Show scatter plot window 2
-    bsw.showScatterPlot2(state = True)
+    bsw.showScatterPlot2(show = True)
 
     # Show search widget
     # bsw.showSearchWidget2(state = True)
