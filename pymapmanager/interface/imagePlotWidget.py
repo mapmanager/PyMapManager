@@ -97,6 +97,7 @@ class ImagePlotWidget(QtWidgets.QWidget):
                     colorLutDict : dict,
                     displayOptionsDict : dict,
                     stackWidgetParent : "pymapmanager.interface.stackWidget",
+                    stateOptions : "pymapmanager.Options" = None,
                     parent=None):
         super().__init__(parent)
         
@@ -104,7 +105,7 @@ class ImagePlotWidget(QtWidgets.QWidget):
         self._contrastDict = contrastDict
         self._colorLutDict = colorLutDict
         self._displayOptionsDict = displayOptionsDict
-
+        self.stateOptions = stateOptions
         self._stackWidgetParent = stackWidgetParent
         # added to get the current selection
         
@@ -931,8 +932,9 @@ class ImagePlotWidget(QtWidgets.QWidget):
         
         _displayOptions = self._displayOptionsDict['pointDisplay']
         self._plotLayerWidget = pymapmanager.interface.plotLayerWidget(pgView = self._plotWidget,
-                                                                       displayOptions=_displayOptions,
-                                                                                       stack=self._myStack)
+                                                                        displayOptions=_displayOptions,
+                                                                        stack=self._myStack,
+                                                                        stateOptions=self.stateOptions)
         self._plotLayerWidget.signalAnnotationClicked2.connect(self.slot_selectAnnotation2)
         self.signalAnnotationSelection2.connect(self._plotLayerWidget.slot_selectAnnotation2)
         self.signalUpdateSlice.connect(self._plotLayerWidget.slot_setSlice)

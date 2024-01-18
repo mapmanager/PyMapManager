@@ -14,16 +14,22 @@ class PointLayer(Layer):
 
         # self.series.index = frame.index
         self.spineIDList = spineIDs.tolist()
-        logger.info(f"self.spineIDList {self.spineIDList}")
+        # logger.info(f"self.spineIDList {self.spineIDList}")
         # logger.info(f"self.spineIDList 62 {self.spineIDList[32]}")
         # series.set_index(spineIDs.tolist()) # set index only works for entire dataframe not series
-        logger.info(f"self.series {self.series}")
+        # logger.info(f"self.series {self.series}")
         self.properties = {}
 
     # def getSpineSelectionID(self):
     #     return self.spineIDList[0]
 
     def getSpineID(self, relativeIndex):
+        """
+            Args:
+                relative Index: index when clicking inside GUI
+            
+            Returns: Actual spine ID within dataframe that corresponds to GUI id
+        """
         return self.spineIDList[relativeIndex]
 
     # clip the shapes z axis

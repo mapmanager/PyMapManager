@@ -134,9 +134,9 @@ class PmmLayers:
             elif geometryType == "Point":
                 # logger.info(f"point frame.id, {frame.id}")
                 # logger.info(f"point frame {frame}")
-                logger.info(f"point frame {frame}")
+                # logger.info(f"point frame {frame}")
                 spineIDs = frame["spineID"]
-                logger.info(f"spineIDs {spineIDs}")
+                # logger.info(f"spineIDs {spineIDs}")
                 # TODO: need to pass in entire frame rather than series to retain spineID
                 finalLayers.append(PointLayer(geometrySeries, frameName, frameColor, spineIDs))
             # break

@@ -14,6 +14,7 @@ from pymapmanager.interface.plotLayers import PlotLayers
 from pymapmanager.options import Options
 import pymapmanager.stack
 import pymapmanager.annotations
+import time
 
 class plotLayerWidget(PlotLayers):
     """Base class to plot annotations in a pg view.
@@ -44,7 +45,8 @@ class plotLayerWidget(PlotLayers):
                         pgView,
                         displayOptions : dict,
                         # parent = None,
-                        stack : "pymapmanager.stack" = None):
+                        stack : "pymapmanager.stack" = None,
+                        stateOptions : "Options" = None):
         """
         Args:
             annotations:
@@ -61,7 +63,9 @@ class plotLayerWidget(PlotLayers):
         self._stack = stack
         self.pa = self._stack.getPointAnnotations()
         self.la = self._stack.getLineAnnotations()
+        self.stateOptions = stateOptions
 
+        self.layers = PmmLayers(self.pa, self.la)
         #self._selectedAnnotation = None
         # The current selection
         # depreciated, now use 
@@ -76,7 +80,7 @@ class plotLayerWidget(PlotLayers):
         self._channel = 1 # 1->0, 2->1, 3->2, etc
         # Keep track of current channel so that we can get current image slice
 
-        self._currentPlotIndex = None
+        # self._currentPlotIndex = None
         # Each time we replot, fill this in with annotation row index
         # of what we are actually plotting
 
@@ -88,6 +92,7 @@ class plotLayerWidget(PlotLayers):
         # then state changes, fetch from backend again
         # state is, for example, plotting ['spineROI'] versus ['spineROI', 'controlROI']
 
+        self.blockSlots = False
         self._buildUI()
     #def keyPressEvent(self, event : QtGui.QKeyEvent):
     def keyPressEvent(self, event):
@@ -102,18 +107,30 @@ class plotLayerWidget(PlotLayers):
         
         logger.info(f'(Initial Plot of PlotLayerWidget)')
 
-        # main scatter
-        layers = PmmLayers(self.pa, self.la)
-        options = Options()
-        # TODO: need to update options (state tracking within stackwidget)
-        # TODO: need to get z range
-        # Problem with this method. have to plot everything = need to specifiy spineID
-        # Solution: perhaps we pass in not selection parameter
-        self._currentSlice = self.pa.getValue("z", 99)
+        # # main scatter
+        # layers = PmmLayers(self.pa, self.la)
+        # # options = Options()
+        # # TODO: need to update options (state tracking within stackwidget)
+        # # TODO: need to get z range
+        # # Problem with this method. have to plot everything = need to specifiy spineID
+        # # Solution: perhaps we pass in not selection parameter
+        # # self._currentSlice = self.pa.getValue("z", 99)
+        # # logger.info(f'self._currentSlice: {self._currentSlice}')
+        self._currentRowIdx = 99
+        self.stateOptions.setSliceRange([self._currentSlice-2, self._currentSlice+2])
+        self.stateOptions.setSelection(segmentID="1", spineID=self._currentRowIdx )
+        self._currentSlice = self.pa.getValue("z", self._currentRowIdx)
+        # logger.info(f'self._currentSlice: {self._currentSlice}')
+        # logger.info(f'self._currentRowIdx: {self._currentRowIdx}')
+        # self._currentSlice = self._stack.getCurrentSlice()
+        # self._currentRowIdx= self._stack.getPointSelection()
+
         logger.info(f'self._currentSlice: {self._currentSlice}')
-        options.setSliceRange([self._currentSlice-2, self._currentSlice+2])
-        options.setSelection(segmentID="1", spineID="99")
-        test = layers.getLayers(options)
+        logger.info(f'self._currentRowIdx: {self._currentRowIdx}')
+
+        self.stateOptions.setSliceRange([self._currentSlice-2, self._currentSlice+2])
+        self.stateOptions.setSelection(segmentID="1", spineID=str(self._currentRowIdx))
+        test = self.layers.getLayers(self.stateOptions)
         
         for i, layer in enumerate(test):
             # logger.info(f'(Plotting Layer: {layer})')
@@ -122,6 +139,7 @@ class plotLayerWidget(PlotLayers):
                 logger.info(f'(Spine Layer: {layer})')
                 self.spineLayer = layer
 
+        # self.createScatterLayer()
         self.spinePointScatterPlot = self.getScatterLayer()
         logger.info(f'(self.spinePointScatterPlot  {self.spinePointScatterPlot })')
         self.spinePointScatterPlot.sigPointsClicked.connect(self._on_mouse_click)
@@ -135,6 +153,10 @@ class plotLayerWidget(PlotLayers):
 
     #     visible = not self._scatterUserSelection.isVisible()
     #     self._scatterUserSelection.setVisible(visible)
+    def resetSpineSelectionPlot(self):
+        self.spinePointScatterPlot = self.getScatterLayer()
+        logger.info(f'(self.spinePointScatterPlot  {self.spinePointScatterPlot })')
+        # self.spinePointScatterPlot.sigPointsClicked.connect(self._on_mouse_click)
 
     def _old_getSelectedAnnotation(self):
         """Get the currentently selected annotation.
@@ -197,14 +219,6 @@ class plotLayerWidget(PlotLayers):
             logger.info(f'dbIdx: {dbIdx}')
             # remember the point that was selected
             #self._selectedAnnotation = dbIdx
-            
-            # visually select in scatter
-            # self._selectAnnotation(dbIdx, isAlt)
-            # self.refreshLayers(rowIdx=dbIdx, slice=self._currentSlice)
-
-            # emit point selection signal
-            #logger.info(f'  -->> emit signalAnnotationClicked dbIdx:{dbIdx} isAlt:{isAlt}')
-            #self.signalAnnotationClicked.emit(dbIdx, isAlt)
 
             # TODO: Change this back to support line annotations
             # _selectionEvent = pymapmanager.annotations.SelectionEvent(self._annotations,
@@ -221,43 +235,6 @@ class plotLayerWidget(PlotLayers):
 
             # implement left/right arrow to select prev/next point
 
-    def OLD_selectAnnotation(self,
-                          dbIdx : List[int],
-                          isAlt : bool = False):
-        """Select annotations as 'yellow'
-
-        Args:
-            dbIdx: Index(row) of annotation, if None then cancel selection
-            isAlt: If True then snap z
-        """
-        if dbIdx is None:
-            #self._selectedAnnotation = None
-            x = []
-            y = []
-        else:
-            if isinstance(dbIdx, int):
-                dbIdx = [dbIdx]
-                logger.info(f'dbIdx: {dbIdx}')
-        
-            layers = PmmLayers(self.pa, self.la)
-            options = Options()
-            rowIdx = dbIdx
-            logger.info(f'rowIdx: {rowIdx}')
-            self._currentSlice = self.pa.getValue("z", rowIdx)
-            logger.info(f'self._currentSlice: {self._currentSlice}')
-            options.setSliceRange([self._currentSlice-2, self._currentSlice+2])
-
-
-            segmentID = self.pa.getValue("segmentID", rowIdx)
-            options.setSelection(segmentID=segmentID, spineID=rowIdx)
-            test = layers.getLayers(options)
-            
-            for i, layer in enumerate(test):
-                self.plotLayer(layer)
-
-            self._view.update()
-            self.view = self.getView()
-
     def slot_selectAnnotation2(self, selectionEvent : "pymapmanager.annotations.SelectionEvent"):
         logger.info('SELECTION EVENT IN LAYER PLOTTING CLASS')
         # if selectionEvent.type == type(self._annotations):
@@ -265,59 +242,87 @@ class plotLayerWidget(PlotLayers):
         #     isAlt = selectionEvent.isAlt
         #     self._selectAnnotation(rowIdx, isAlt)
 
-        layers = PmmLayers(self.pa, self.la)
-        options = Options()
+        # layers = PmmLayers(self.pa, self.la)
+        # options = Options()
         # TODO: need to update options (state tracking within stackwidget)
         # TODO: need to get z range
-        rowIdx = selectionEvent.getRows()[0]
-        self._currentRowIdx = rowIdx
-        # self._currentSlice = self.pa.getValue("z", rowIdx)
-        logger.info(f'self._currentSlice: {self._currentSlice}')
-        options.setSliceRange([self._currentSlice-2, self._currentSlice+2])
 
-
-        segmentID = self.pa.getValue("segmentID", rowIdx)
-        options.setSelection(segmentID=segmentID, spineID=rowIdx)
-        test = layers.getLayers(options)
+        # if self.blockSlots:
+        #     self.blockSlots = False
+        #     return
         
-        for i, layer in enumerate(test):
-            self.plotLayer(layer)
+        rowIdx = selectionEvent.getRows()[0]
+        logger.info(f'slot_selectionAnnotation2 rowIdx: {rowIdx}')
+        self._currentRowIdx = rowIdx
+        self._currentSlice = self.pa.getValue("z", rowIdx)
+        self.refreshLayers(rowIdx, self._currentSlice)
 
-        self._view.update()
-        self.view = self.getView()
+        # rowIdx = selectionEvent.getRows()[0]
+        # logger.info(f'slot_selectionAnnotation2 rowIdx: {rowIdx}')
+        # self._currentRowIdx = rowIdx
+        # # self._currentSlice = self.pa.getValue("z", rowIdx)
+        # logger.info(f'self._currentSlice: {self._currentSlice}')
+        # self.stateOptions.setSliceRange([self._currentSlice-2, self._currentSlice+2])
+
+        # segmentID = self.pa.getValue("segmentID", rowIdx)
+        # self.stateOptions.setSelection(segmentID=segmentID, spineID=rowIdx)
+        # test = self.layers.getLayers(self.stateOptions)
+        
+        # for i, layer in enumerate(test):
+        #     self.plotLayer(layer)
+        #     if layer.name == "Spine Points":
+        #         logger.info(f'(Spine Layer: {layer})')
+        #         self.spineLayer = layer
+
+        # self.resetSpineSelectionPlot()
+        # self.blockSlots = True
+        # self._view.update()
+        # self.view = self.getView()
 
     def refreshLayers(self, rowIdx, slice):
         """ Called whenever to replot all layers (anytime there is an update in slices and selection)
         
         """
-        layers = PmmLayers(self.pa, self.la)
-        options = Options()
+
+        # start = time.time()
+ 
+        # options = Options()
         # TODO: need to update options (state tracking within stackwidget)
-        # TODO: need to get z range
+        start = time.time()
         rowIdx = rowIdx
 
         currentSlice = slice
 
         logger.info(f'currentSlice: {currentSlice}')
-        options.setSliceRange([currentSlice-2, currentSlice+2])
+        # TODO: need to get z range
+        self.stateOptions.setSliceRange([currentSlice-2, currentSlice+2])
 
         segmentID = self.pa.getValue("segmentID", rowIdx)
-        options.setSelection(segmentID=segmentID, spineID=rowIdx)
-        test = layers.getLayers(options)
-        
+
+        self.stateOptions.setSelection(segmentID=segmentID, spineID=rowIdx)
+
+        test = self.layers.getLayers(self.stateOptions)
+
         for i, layer in enumerate(test):
             self.plotLayer(layer)
+            if layer.name == "Spine Points":
+                logger.info(f'(Spine Layer: {layer})')
+                self.spineLayer = layer # reset spine layer for mouse click detection
 
-        self._view.update()
-        self.view = self.getView()
+        # self.resetSpineSelectionPlot() # only needs to be done on slice refresh
+        end = time.time()
+        elapsedTime = end - start
+        logger.info(f'elapsedTime: {elapsedTime}')
+        # self._view.update()
+        # self.view = self.getView()
 
-    def slot_selectAnnotation(self, dbIdx : List[int], isAlt : bool):
-        """Respond to user selection of annotations.
+    # def slot_selectAnnotation(self, dbIdx : List[int], isAlt : bool):
+    #     """Respond to user selection of annotations.
         
-        Args:
-            dbIdx: index into underlying annotations
-        """
-        self._selectAnnotation(dbIdx, isAlt)
+    #     Args:
+    #         dbIdx: index into underlying annotations
+    #     """
+    #     self._selectAnnotation(dbIdx, isAlt)
 
     # def slot_deleteAnnotation(self, dbIdx : List[int]):
     #     """Signal received when user has deleted a point.
@@ -331,49 +336,27 @@ class plotLayerWidget(PlotLayers):
 
     #     self._refreshSlice()
 
-    def slot_setDisplayType(self, roiTypeList : List[pymapmanager.annotations.pointTypes]):
-        """Set the roiTypes to display in the plot.
+    # def slot_setDisplayType(self, roiTypeList : List[pymapmanager.annotations.pointTypes]):
+    #     """Set the roiTypes to display in the plot.
         
-        Args:
-            roiTypeList: A list of roiType to display.
+    #     Args:
+    #         roiTypeList: A list of roiType to display.
         
-        Notes:
-            This resets our state (_dfPlot) and requires a full refresh from the backend.
-        """
-        if not isinstance(roiTypeList, list):
-            roiTypeList = [roiTypeList]
+    #     Notes:
+    #         This resets our state (_dfPlot) and requires a full refresh from the backend.
+    #     """
+    #     if not isinstance(roiTypeList, list):
+    #         roiTypeList = [roiTypeList]
         
-        logger.info(f'roiTypeList:{roiTypeList}')
+    #     logger.info(f'roiTypeList:{roiTypeList}')
 
-        self._roiTypes = []
-        for roiType in roiTypeList:
-             self._roiTypes.append(roiType.value)
+    #     self._roiTypes = []
+    #     for roiType in roiTypeList:
+    #          self._roiTypes.append(roiType.value)
         
-        self._dfPlot = None
-        self._refreshSlice()
+    #     self._dfPlot = None
+    #     self._refreshSlice()
 
-    # def _refreshPlot(self):
-
-    #     layers = PmmLayers(self.pa, self.la)
-    #     options = Options()
-    #     # TODO: need to update options (state tracking within stackwidget)
-    #     # TODO: need to get z range
-    #     rowIdx = selectionEvent.getRows()[0]
-    #     self._currentSlice = self.pa.getValue("z", rowIdx)
-    #     logger.info(f'self._currentSlice: {self._currentSlice}')
-    #     options.setSliceRange([self._currentSlice-2, self._currentSlice+2])
-
-
-    #     segmentID = self.pa.getValue("segmentID", rowIdx)
-    #     options.setSelection(segmentID=segmentID, spineID=rowIdx)
-    #     test = layers.getLayers(options)
-        
-    #     for i, layer in enumerate(test):
-    #         self.plotLayer(layer)
-
-    #     self._view.update()
-    #     self.view = self.getView()
-    
     def _refreshSlice(self):
         # I don't think that the current slice is being updated, it will always pass in 0?
         logger.info(f'_currentSlice: {self._currentSlice}')
@@ -393,7 +376,11 @@ class plotLayerWidget(PlotLayers):
         
         self._currentSlice = sliceNumber
 
-        self.refreshLayers(self._currentRowIdx, self._currentSlice)
+        # self.refreshLayers(rowIdx = None, slice = self._currentSlice)
+        self.refreshLayers(rowIdx = self._currentRowIdx, slice = self._currentSlice)
+
+        self.resetSpineSelectionPlot() # only needs to be done on slice refresh
+
 
         # # theseSegments = None  # None for all segments
         # self._roiTypes = ['spineROI']

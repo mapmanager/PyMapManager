@@ -130,9 +130,13 @@ class Options():
             sliceRange:  {'segmentID': '',
                             'spineID': ''})
         """
-        self.setCurrentValue("annotationSelections", {'segmentID': str(segmentID),
-                            'spineID': str(spineID)})
-        
+
+        if spineID != None:
+            self.setCurrentValue("annotationSelections", {'segmentID': str(segmentID),
+                                'spineID': str(spineID)})
+        else:
+            self.setCurrentValue("annotationSelections", None)
+
     def setMultipleSelection(self, segmentIDs, spineIDs):
         """Set an Options parameter's current value.
 

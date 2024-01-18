@@ -736,6 +736,7 @@ class stackWidget(QtWidgets.QMainWindow):
                                 self._colorLutDict,
                                 self._displayOptionsDict,
                                 self,
+                                self.stateOptions, # Newly Added in: 2024
                                 )
         hBoxLayout.addWidget(self._imagePlotWidget)
 

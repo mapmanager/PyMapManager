@@ -35,6 +35,10 @@ class PlotLayers(QtWidgets.QWidget):
         # self.setCentralWidget(self.view)
         # self.plot_graph.plot([],[])
 
+
+    def createScatterLayer(self):
+        self.defineNewPointPlot("Spine Points", "Orange")
+
     def getScatterLayer(self):
         return self.plotDict["Spine Points"]
 
@@ -62,6 +66,7 @@ class PlotLayers(QtWidgets.QWidget):
         
         elif type(layer) == PointLayer:
             # TODO: Figure out how to get unique color
+            # Get x and y directly from series within layer class
             self.plotPointLayer(layer.getSeries(), layer.getName(), layer.getColor())
         
         elif type(layer) == PolygonLayer:
@@ -121,15 +126,31 @@ class PlotLayers(QtWidgets.QWidget):
         self.plotDict[plotName] = newPointPlot
 
     def plotPointLayer(self, pointDF, plotName, color):
-        xPoints = np.array([])
-        yPoints = np.array([])
+
+        # xPoints = np.array([np.nan]*len(pointDF.index))
+        # yPoints = np.array([np.nan]*len(pointDF.index))
+        # xPoints = np.array([])
+        # yPoints = np.array([])
+        
+        logger.info(f"len(pointDF.index): {len(pointDF.index)}")
+        
+        xPoints = np.zeros(len(pointDF.index))
+        yPoints = np.zeros(len(pointDF.index))
+        # try to pre Allocate x points rather than append
+        # TODO: Look into alternative to for loop
+        # logger.info(f"pointDF.xy: {pointDF.xy}")
 
         for i in pointDF.index:
             x,y = pointDF[i].xy
             # print("X: ", x)
             # print("Y: ", y)
-            xPoints = np.append(xPoints, x)
-            yPoints = np.append(yPoints, y)
+            # xPoints = np.append(xPoints, x)
+            # yPoints = np.append(yPoints, y)
+            # logger.info(f"i: {i} x: {x[0]} y: {y}")
+            # import sys
+            # sys.exit()
+            xPoints[i] = x[0]
+            yPoints[i] = y[0]
             # xPoints = np.append(xPoints, np.nan)
             # yPoints = np.append(yPoints, np.nan)
 
@@ -137,6 +158,7 @@ class PlotLayers(QtWidgets.QWidget):
             self.defineNewPointPlot(plotName, color) 
             self.plotDict[plotName].setData(xPoints, yPoints)
         else:
+            # Check if Points have changed and only update when they have
             self.plotDict[plotName].setData(xPoints, yPoints)
 
     def defineNewLinePlot(self, plotName, color):

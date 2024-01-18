@@ -74,8 +74,8 @@ class PixelSource:
       
         points_frame["note"] = "this is a note"
         # logger.info(f'selections: {selections}')
-        selected = get_selected(points_frame, "spineID", selections)
-        logger.info(f'testing to get more than one selected: {selected}')
+        # selected = get_selected(points_frame, "spineID", selections)
+        # logger.info(f'testing to get more than one selected: {selected}')
 
         points_frame["radius"] = 2
 
@@ -93,7 +93,7 @@ class PixelSource:
         points_frame.name = "Spine Points"
         points_frame["color"] = "Green"
 
-        logger.info(f'points_frame: {points_frame}')
+        # logger.info(f'points_frame: {points_frame}')
 
         frames.append(points_frame)
 
@@ -115,7 +115,12 @@ class PixelSource:
         # logger.info(f'selections["spineID"]: {selections["spineID"]}')
         # logger.info(f'points_frame: {points_frame}')
         # Get subset of dataframe for just selected spines
-                
+
+
+        # UPDATE: Check if a selection is passed in before adding/ calculating these new frames   
+        
+        # if selections != None:
+        selected = get_selected(points_frame, "spineID", selections)
         selectedSpines = points_frame.loc[[selections["spineID"]]]
         # logger.info(f'selectedSpines: {selectedSpines}')
 
