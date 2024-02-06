@@ -27,7 +27,9 @@ class PixelSource:
 
     def get_spines(self, options):
         # z_range = options['selection']['z']
-        z_range = options['slices']
+        z_range = options['sliceRange']
+
+        logger.info(f"z_range: {z_range}")
         selections = options['annotationSelections']
         index_filter = options["filters"]
 
@@ -55,8 +57,14 @@ class PixelSource:
         # render anchors and anchor lines
         if options["showAnchors"]:
             anchors_frame = self.get_anchors(visible_mask)
+            anchors_frame.name = "Brightest Points"
+            anchors_frame["color"] = "Yellow"
             frames.append(anchors_frame)
-            frames.append(self.get_anchor_lines(points_frame, anchors_frame))
+
+            anchor_lines = self.get_anchor_lines(points_frame, anchors_frame)
+            anchor_lines.name = "Spine Lines"
+            anchor_lines["color"] = "White"
+            frames.append(anchor_lines)
 
         # set point attributes
         points_frame.properties = {
@@ -66,17 +74,27 @@ class PixelSource:
       
         points_frame["note"] = "this is a note"
         # logger.info(f'selections: {selections}')
-        selected = get_selected(points_frame, "spineID", selections)
-        logger.info(f'selected: {selected}')
+        # selected = get_selected(points_frame, "spineID", selections)
+        # logger.info(f'testing to get more than one selected: {selected}')
 
         points_frame["radius"] = 2
 
         # render labels
         if options["showLabels"]:
-            frames.append(self.add_labels(visible_points, points_frame))
+            labels = self.add_labels(visible_points, points_frame)
+            labels.name = "Labels"
+            labels["color"] = "Pink"
+            frames.append(labels)
 
-        points_frame["fill"] = selection_color(
-            points_frame, "spineID", selections, [0, 255, 0], [255, 0, 0], selected)
+        # points_frame["fill"] = selection_color(
+        #     points_frame, "spineID", selections, [0, 255, 0], [255, 0, 0], selected)
+        # logger.info(f'points_frame["fill"]: {points_frame["fill"]}')
+    
+        points_frame.name = "Spine Points"
+        points_frame["color"] = "Green"
+
+        # logger.info(f'points_frame: {points_frame}')
+
         frames.append(points_frame)
 
         # filter elements
@@ -89,6 +107,27 @@ class PixelSource:
             else:
                 frame.loc[filtered_mask, "opacity"] = 255 / 3
 
+        # logger.info(f'self._points: {self._points}')
+        # logger.info(f'self._points[visible_mask]: {self._points[visible_mask]}')
+        
+        # logger.info(f'self._points[visible_mask][selected]: {self._points[visible_mask][selected]}')
+        
+        # logger.info(f'selections["spineID"]: {selections["spineID"]}')
+        # logger.info(f'points_frame: {points_frame}')
+        # Get subset of dataframe for just selected spines
+
+
+        # UPDATE: Check if a selection is passed in before adding/ calculating these new frames   
+        
+        # if selections != None:
+        selected = get_selected(points_frame, "spineID", selections)
+        selectedSpines = points_frame.loc[[selections["spineID"]]]
+        # logger.info(f'selectedSpines: {selectedSpines}')
+
+        selectedSpines.name = "Selected Spines"
+        selectedSpines["color"] = "Purple"
+        frames.append(selectedSpines)
+
         roiFrames = self.get_rios(
             self._points[visible_mask][selected])
 
@@ -98,6 +137,7 @@ class PixelSource:
         return frames
 
     def get_rios(self, spine_df, **kwargs):
+        # logger.info(f'get rois, spine_df: {spine_df}')
         frames = []
         if spine_df.shape[0] == 0:
             logger.info(f'get rois empty df: {spine_df}')
@@ -113,14 +153,18 @@ class PixelSource:
         for key in ["roi", "roi_segment"]:
             polys = roi_lines[key]
             frame = polys.to_frame(name="geometry")
+            frame.name = key
             frame["stroke"] = foreground_colors
+            frame["color"] = "White"
             frames.append(frame)
 
         # background roi
         for key in ["background_roi", "background_roi_segment"]:
             polys = roi_lines[key]
             frame = polys.to_frame(name="geometry")
+            frame.name = key
             frame["stroke"] = background_colors
+            frame["color"] = "White"
             frames.append(frame)
 
         return frames
@@ -178,7 +222,7 @@ class PixelSource:
         
         """
         # z_range = options['selection']['z']
-        z_range = options['slices']
+        z_range = options['sliceRange']
         selections = options['annotationSelections']
 
         # clip the lines
@@ -199,8 +243,13 @@ class PixelSource:
         if options["showLineSegmentsRadius"]:
             frames.extend(leftRightBounds(segments_frame.copy()))
 
+        # logger.info(f"test left name: {frames[0].name}")
+        # logger.info(f"test right name: {frames[1].name}")
+
         # segments_frame["strokeWidth"] = 3
-        # frames.append(segments_frame)
+        segments_frame.name = "SegmentLines"
+        segments_frame["color"] = "Blue"
+        frames.append(segments_frame)
 
         return frames
 
@@ -258,8 +307,14 @@ def leftRightBounds(geo_frame):
     left = geo_frame.copy()
     left["geometry"] = left["geometry"].apply(
         parallel_offset, direction="left")
+    left.name = "LeftRadiusLine"
+    # TODO: make this not hard coded
+    left["color"] = "Red"
+
     geo_frame["geometry"] = geo_frame["geometry"].apply(parallel_offset)
-    return [geo_frame, left]
+    geo_frame.name = "RightRadiusLine"
+    geo_frame["color"] = "Red"
+    return [left, geo_frame]
 
 
 def parallel_offset(line, direction="right", radius=4):
@@ -296,15 +351,16 @@ def filter_mask(d, index_filter):
 
 
 def get_selected(df: pd.DataFrame, selection_id: str, selected_ids: [str, str]):
+    logger.info(f"selected_ids: {selected_ids}")
     if df.index.name == selection_id:
         # logger.info(f"df.index.name: {df.index.name}")
         # # logger.info(f"df.index == selected_ids[selection_id]: {df.index == selected_ids[selection_id]}")
-        logger.info(f"selected_ids[selection_id]: {selected_ids[selection_id]}")
-        logger.info(f"df.index: {df.index}")
+        # logger.info(f"selected_ids[selection_id]: {selected_ids[selection_id]}")
+        # logger.info(f"df.index: {df.index}")
         return df.index == selected_ids[selection_id]
-    logger.info(f"df: {df}")
-    logger.info(f"df[selection_id]: {df[selection_id]}")
-    logger.info(f"selected_ids[selection_id]: {selected_ids[selection_id]}")
+    # logger.info(f"df: {df}")
+    # logger.info(f"df[selection_id]: {df[selection_id]}")
+    # logger.info(f"selected_ids[selection_id]: {selected_ids[selection_id]}")
     
     return df[selection_id] == selected_ids[selection_id]
 

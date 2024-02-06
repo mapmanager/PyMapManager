@@ -79,7 +79,7 @@ class PmmLayers:
         line_gdf.rename_geometry("segment", inplace=True)
 
         # logger.info(f"gdf: {gdf}")
-        logger.info(f"line_gdf: {line_gdf}")
+        # logger.info(f"line_gdf: {line_gdf}")
         return line_gdf
 
     def newPixelSource(self):
@@ -121,16 +121,24 @@ class PmmLayers:
             # logger.info(f"frame, {frame.geometry} type, {type(frame.geometry)}")
             geometrySeries = frame.geometry
             geometryType = geometrySeries.geom_type[0]
+            frameName = frame.name
+            frameColor = frame["color"][0]
             # logger.info(f"geometryType, {geometryType}, type is  {type(geometryType)}")
             if geometryType == "Polygon":
                 # print("This is a Polygon")
-                finalLayers.append(PointLayer(geometrySeries))
+                finalLayers.append(PolygonLayer(geometrySeries, frameName, frameColor))
             elif geometryType == "MultiLineString":
-                finalLayers.append(MultiLineLayer(geometrySeries))
+                finalLayers.append(MultiLineLayer(geometrySeries, frameName, frameColor))
             elif geometryType == "LineString":
-                finalLayers.append(LineLayer(geometrySeries))
+                finalLayers.append(LineLayer(geometrySeries, frameName, frameColor))
             elif geometryType == "Point":
-                finalLayers.append(PointLayer(geometrySeries))
+                # logger.info(f"point frame.id, {frame.id}")
+                # logger.info(f"point frame {frame}")
+                # logger.info(f"point frame {frame}")
+                spineIDs = frame["spineID"]
+                # logger.info(f"spineIDs {spineIDs}")
+                # TODO: need to pass in entire frame rather than series to retain spineID
+                finalLayers.append(PointLayer(geometrySeries, frameName, frameColor, spineIDs))
             # break
         return finalLayers
 

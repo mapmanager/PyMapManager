@@ -449,6 +449,9 @@ class stack():
     def getPointAnnotations(self) -> pymapmanager.annotations.pointAnnotations:
         return self._annotations
 
+    def createPaUUID(self):
+        self._annotations.createUUID()
+
     def getLineAnnotations(self) -> pymapmanager.annotations.lineAnnotations:
         return self._lines
 

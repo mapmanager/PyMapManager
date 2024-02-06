@@ -429,6 +429,16 @@ class baseAnnotations():
         # create Columns(), a list of ColumnItem()
         self._columns = Columns()
 
+        # TODO: Test UUID
+        colItem = ColumnItem(
+            name = 'uniqueID',
+            type = str,
+            units = '',
+            humanname = 'uniqueID',
+            description = 'Unique identification'
+        )
+        self.addColumn(colItem)
+
         # TODO (cudmore) Put all the parameters for these CoumnItem into a globally accessible dict
         # use this dict to create ColumnItem(dict['key']) and seld.addColumn()
         colItem = ColumnItem(
@@ -550,8 +560,9 @@ class baseAnnotations():
         )
         self.addColumn(colItem)
 
+
         #
-        # create dataframe with columnn names
+        # create dataframe with column names
         #columns = self._columns.getColumnNames()
         #self._df = pd.DataFrame(columns=columns)
 
@@ -814,7 +825,8 @@ class baseAnnotations():
         if not self.columns.columnIsValid(colName):
             logger.error(f'did not find column name "{colName}"')
             return
-            
+        
+        # logger.error(f'testing individual colName: "{colName}"')
         if rowIdx is None:
             rowIdx = range(self.numAnnotations)  # get all rows
         elif not isinstance(rowIdx, list):
@@ -1334,6 +1346,30 @@ class baseAnnotations():
             header += f'{k}={v};'
         header += '\n'
         return header
+    
+    # # Testing UUID
+    def createUUID(self):
+        from uuid import uuid4
+        logger.info(f'creating and setting UUIDs')
+
+        # colItem = ColumnItem(
+        #     name = 'uniqueID',
+        #     type = object,
+        #     units = '',
+        #     humanname = 'uniqueID',
+        #     description = 'Unique identification'
+        # )
+        # self.addColumn(colItem)
+
+        # self._df["uuid"] = [uuid4() for x in range(self._df.shape[0])]
+        for row in range(self._df.shape[0]):
+            # logger.info(f'row: {row}')
+            # self.setValue("uniqueID", row, uuid4())
+            self.setValue("uniqueID", row, str(uuid4()))
+
+        # logger.info(f'UUID: {self._df["uniqueID"]}')
+        # logger.info(f'UUID type: {type(self._df["uniqueID"][0])}')
+        # self._df.set_index()
 
 if __name__ == '__main__':
     pass

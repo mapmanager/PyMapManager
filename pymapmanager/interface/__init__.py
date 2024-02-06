@@ -21,12 +21,15 @@ from .searchWidget2 import myQTableView
 from .searchWidget2 import myQSortFilterProxyModel
 from .pmmSearchWidget import PmmSearchWidget
 
+from .searchWidget3 import SearchWidget3
+
 from .analysisParamWidget import AnalysisParamWidget
 
 from .searchWidget import SearchWidget
 
-from .annotationPlotWidget import linePlotWidget
-from .annotationPlotWidget import pointPlotWidget
+# from .annotationPlotWidget import linePlotWidget
+# from .annotationPlotWidget import pointPlotWidget
+from .annotationPlotWidget import plotLayerWidget
 
 from .imagePlotWidget import ImagePlotWidget
 from .histogramWidget import HistogramWidget

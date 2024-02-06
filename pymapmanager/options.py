@@ -51,10 +51,23 @@ class Options():
         #             "showLabels": True
 
         # TODO: Connect options to desktop GUI to use with signals/ slot
-        self._addOption("slices", [29,30])
+        # self._addOption("slices", [29,30])
+        # self._addOption("annotationSelections", {
+        #                     'segmentID': '1',
+        #                     'spineID': '33'})
+            # # self._addOption("segmentID", [1])
+            # # self._addOption("spineID", [33])
+        # self._addOption("filters", [])
+        # self._addOption("showLineSegmentsRadius", [3])
+        # self._addOption("showLineSegments", True)
+        # self._addOption("showSpines", True)
+        # self._addOption("showAnchors", True)
+        # self._addOption("showLabels", True)
+
+        self._addOption("sliceRange", [])
         self._addOption("annotationSelections", {
-                            'segmentID': '1',
-                            'spineID': '33'})
+                            'segmentID': '',
+                            'spineID': ''})
         # self._addOption("segmentID", [1])
         # self._addOption("spineID", [33])
         self._addOption("filters", [])
@@ -100,6 +113,48 @@ class Options():
             return
 
         self._optionsDict[key]['currentValue'] = value
+
+    def setSliceRange(self, sliceRange):
+        """Set an Slice rangeS
+
+        Args:
+            sliceRange: [startInteger, endInteger] 
+        """
+        self.setCurrentValue("sliceRange", sliceRange)
+
+    def setSelection(self, segmentID, spineID):
+        """Set an Options parameter's current value.
+
+
+        Args:
+            sliceRange:  {'segmentID': '',
+                            'spineID': ''})
+        """
+
+        if spineID != None:
+            self.setCurrentValue("annotationSelections", {'segmentID': str(segmentID),
+                                'spineID': str(spineID)})
+        else:
+            self.setCurrentValue("annotationSelections", None)
+
+    def setMultipleSelection(self, segmentIDs, spineIDs):
+        """Set an Options parameter's current value.
+
+
+        Args:
+            sliceRange:  {'segmentID': '',
+                            'spineID': ''})
+        """
+        tmpDict = {}
+        for i in spineIDs:
+            tmpDict["segmentID"].append(segmentIDs[i])
+            tmpDict["spineID"].append(i)
+        
+        logger.info(f"tmpDict {tmpDict}")
+        self.setCurrentValue("annotationSelections", tmpDict)
+                              
+        # self.setCurrentValue("annotationSelections", {'segmentID': str(segmentID),
+        #                     'spineID': str(spineID)})
     
     def __getitem__(self, key):
         """Allow [] indexing with ['key'].

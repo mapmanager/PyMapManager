@@ -1,19 +1,35 @@
 import geopandas as gp
 from typing import Literal
+from pymapmanager._logger import logger
 
 EventIDs = Literal["edit", "select"]
 
 
 class Layer:
-    def __init__(self, series: gp.GeoSeries):
+    def __init__(self, series: gp.GeoSeries, frameName, frameColor):
         if isinstance(series, Layer):
             self.series = series.series
             self.properties = series.properties
             return
+        self.name = frameName
+        self.color = frameColor
         self.series = series
         self.series.name = "geo"
-        self.series.index.name = "id"
+        # self.series.index.name = "id"
+        # logger.info(f"frame.index {frame.index}")
+
+        # self.series.index = frame.index
+        # logger.info(f"self.series {self.series}")
         self.properties = {}
+
+    def getColor(self):
+        return self.color
+    
+    def getName(self):
+        return self.name
+    
+    def getSeries(self):
+        return self.series 
 
     def on(self, event: EventIDs, key: str):
         self.properties[event] = key

@@ -19,13 +19,20 @@ def run():
     
     # load one stack
     stack = pymapmanager.stack(path=path, loadImageData=True)
+    # pa = stack.getPointAnnotations()
     logger.info(f'myStack: {stack}')
 
-    # creat the main application
+    # Create UUID
+    # pa.createUUID()
+    # stack.getPointAnnotations().createUUID()
+    stack.createPaUUID()
+
+    # create the main application
     app = pymapmanager.interface.PyMapManagerApp()
     
     # create a stack widget
     bsw = pymapmanager.interface.stackWidget(stack=stack)
+    bsw.toggleView(state=False, name = "Selection Info")
     bsw.show()
     
     # posRect = [100, 200, 800, 500]
@@ -35,7 +42,7 @@ def run():
     #bsw._imagePlotWidget.slot_setSlice(30)
     
     # Show scatter plot window 2
-    bsw.showScatterPlot2(show = True)
+    # bsw.showScatterPlot2(show = True)
 
     # Show search widget
     # bsw.showSearchWidget2(state = True)

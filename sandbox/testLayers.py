@@ -23,7 +23,7 @@ def run():
     layers = PmmLayers(pa, la)
 
     spGP = layers.createSpinePointGeoPandas()
-    spGP.to_csv("spineGeoPandas.csv")
+    # spGP.to_csv("spineGeoPandas.csv")
     logger.info(f'spGP: {spGP}')
     # lGP = layers.createLineGeoPandas()
     # logger.info(f'lGP: {lGP}')
@@ -45,6 +45,8 @@ def run():
     #         }
 
     options = Options()
+    options.setSliceRange([29,30])
+    options.setSelection(segmentID=1, spineID=33)
     
     test = layers.getLayers(options)
     # lineDF = test[0]
@@ -54,8 +56,17 @@ def run():
     # lineDF1 = test[1]
     # logger.info(f"lineDF1 {lineDF1}")
 
-    logger.info(f"test: {test[0]}")
-    logger.info(f"testing utils: {test[0]._encodeBin()}")
+    # logger.info(f"test: {test[0]}")
+
+    # logger.info(f"test: {test}")
+
+
+    # Print out all dataframes
+    for i, val in enumerate(test):
+        # logger.info(f"index: {i} frame: {val}")
+        logger.info(f"index: {i} type: {type(val)}")
+
+    # logger.info(f"testing utils: {test[0]._encodeBin()}")
     # lineDF = test[0]
     # lGP.to_csv("out.csv")
     

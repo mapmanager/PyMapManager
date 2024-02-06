@@ -138,6 +138,7 @@ class PixelSource:
 
     def get_rios(self, spine_df, **kwargs):
         frames = []
+        logger.info(f'get rois spine_df: {spine_df}')
         if spine_df.shape[0] == 0:
             logger.info(f'get rois empty df: {spine_df}')
             return frames
@@ -217,6 +218,7 @@ class PixelSource:
         
         """
         z_range = options['selection']['z']
+        # z_range = options['sliceRange']
         selections = options['annotationSelections']
 
         # clip the lines
@@ -333,13 +335,28 @@ def filter_mask(d, index_filter):
     return ~d.isin(index_filter)
 
 
-def get_selected(df: pd.DataFrame, selection_id: str, selected_ids: [str, str]):
+def OLD_get_selected(df: pd.DataFrame, selection_id: str, selected_ids: [str, str]):
     logger.info(f"df.index.name: {df.index.name}")
     if df.index.name == selection_id:
         logger.info(f"df.index.name: {df.index.name}")
         # # logger.info(f"df.index == selected_ids[selection_id]: {df.index == selected_ids[selection_id]}")
         # logger.info(f"selected_ids[selection_id]: {selected_ids[selection_id]}")
         # logger.info(f"df.index: {df.index}")
+        return df.index == selected_ids[selection_id]
+    
+    logger.info(f"dataframe selected from: {df}")
+    return df[selection_id] == selected_ids[selection_id]
+
+def get_selected(df: pd.DataFrame, selection_id: str, selected_ids: [str, str]):
+    """
+        Adding support to select multiple points
+    """
+    logger.info(f"df.index.name: {df.index.name}")
+    if df.index.name == selection_id:
+        logger.info(f"df.index.name: {df.index.name}")
+        logger.info(f"selected_ids[selection_id]: {selected_ids[selection_id]}")
+        logger.info(f"df.index: {df.index}")
+        logger.info(f"df.index == selected_ids[selection_id]: {df.index == selected_ids[selection_id]}")
         return df.index == selected_ids[selection_id]
     
     logger.info(f"dataframe selected from: {df}")

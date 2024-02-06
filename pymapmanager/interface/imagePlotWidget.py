@@ -97,6 +97,7 @@ class ImagePlotWidget(QtWidgets.QWidget):
                     colorLutDict : dict,
                     displayOptionsDict : dict,
                     stackWidgetParent : "pymapmanager.interface.stackWidget",
+                    stateOptions : "pymapmanager.Options" = None,
                     parent=None):
         super().__init__(parent)
         
@@ -104,7 +105,7 @@ class ImagePlotWidget(QtWidgets.QWidget):
         self._contrastDict = contrastDict
         self._colorLutDict = colorLutDict
         self._displayOptionsDict = displayOptionsDict
-
+        self.stateOptions = stateOptions
         self._stackWidgetParent = stackWidgetParent
         # added to get the current selection
         
@@ -315,13 +316,14 @@ class ImagePlotWidget(QtWidgets.QWidget):
             #self.signalCancelSelection.emit(None, False)  # (selIdx, isAlt)
 
             # two signals, one for each of our plots (point, line)
+            # _pointSelectionEvent = pymapmanager.annotations.SelectionEvent(self._aPointPlot._annotations)
 
-            self._tmp_CancelSelection()
-            # _pointSelectionEvent = pymapmanager.annotations.SelectionEvent(self._aPointPlot._annotations,
-            #                                                           rowIdx=[],
-            #                                                           isAlt=False,
-            #                                                           stack=self._myStack)
-            # self.signalAnnotationSelection2.emit(_pointSelectionEvent)
+            # TODO: CHECK THIS IT MIGHT NOT WORK
+            _pointSelectionEvent = pymapmanager.annotations.SelectionEvent(self._plotLayerWidget.pa,
+                                                                      rowIdx=[],
+                                                                      isAlt=False,
+                                                                      stack=self._myStack)
+            self.signalAnnotationSelection2.emit(_pointSelectionEvent)
 
             # maybe put back in ??? aug 17
             # _segmentSelectionEvent = pymapmanager.annotations.SelectionEvent(self._aLinePlot._annotations)
@@ -615,7 +617,7 @@ class ImagePlotWidget(QtWidgets.QWidget):
     def slot_deletedAnnotation(self, delDict : dict):
         """On delete, cancel spine selection.
         """
-        _pointSelectionEvent = pymapmanager.annotations.SelectionEvent(self._aPointPlot._annotations,
+        _pointSelectionEvent = pymapmanager.annotations.SelectionEvent(self._plotLayerWidget.pa,
                                                                     rowIdx=[],
                                                                     isAlt=False,
                                                                     stack=self._myStack)
@@ -834,8 +836,9 @@ class ImagePlotWidget(QtWidgets.QWidget):
     def toggleTracingView(self):
         """Show/hide tracing.
         """
-        self._aPointPlot.toggleScatterPlot()
-        self._aLinePlot.toggleScatterPlot()
+        # self._aPointPlot.toggleScatterPlot()
+        # self._aLinePlot.toggleScatterPlot()
+        self._plotLayerWidget.toggleScatterPlot()
 
     def slot_updateLineRadius(self, radius):
         """ Called whenever radius is updated
@@ -915,33 +918,42 @@ class ImagePlotWidget(QtWidgets.QWidget):
         self._plotWidget.scene().sigMouseClicked.connect(self._onMouseClick_scene)
 
         # add point plot of pointAnnotations
-        pointAnnotations = self._myStack.getPointAnnotations()
-        lineAnnotations = self._myStack.getLineAnnotations()
+        # pointAnnotations = self._myStack.getPointAnnotations()
+        # lineAnnotations = self._myStack.getLineAnnotations()
+        # _displayOptions = self._displayOptionsDict['pointDisplay']
+        # _displayOptionsLine = self._displayOptionsDict['spineLineDisplay']
+        # self._aPointPlot = pymapmanager.interface.pointPlotWidget(pointAnnotations,
+        #                                                         self._plotWidget,
+        #                                                         _displayOptions,
+        #                                                         _displayOptionsLine,
+        #                                                         lineAnnotations,
+        #                                                         stack=self._myStack,
+        #                                                         )
+        # self._aPointPlot.signalAnnotationClicked2.connect(self.slot_selectAnnotation2)
+        # self.signalAnnotationSelection2.connect(self._aPointPlot.slot_selectAnnotation2)
+        # self.signalUpdateSlice.connect(self._aPointPlot.slot_setSlice)
+
+
+        # # add line plot of lineAnnotations
+        # lineAnnotations = self._myStack.getLineAnnotations()
+        # _displayOptions = self._displayOptionsDict['lineDisplay']
+        # self._aLinePlot = pymapmanager.interface.linePlotWidget(lineAnnotations,
+        #                                                         self._plotWidget,
+        #                                                         _displayOptions,
+        #                                                         stack=self._myStack)
+
+        # self._aLinePlot.signalAnnotationClicked2.connect(self.slot_selectAnnotation2)
+        # self.signalAnnotationSelection2.connect(self._aLinePlot.slot_selectAnnotation2)
+        # self.signalUpdateSlice.connect(self._aLinePlot.slot_setSlice)
+        
         _displayOptions = self._displayOptionsDict['pointDisplay']
-        _displayOptionsLine = self._displayOptionsDict['spineLineDisplay']
-        self._aPointPlot = pymapmanager.interface.pointPlotWidget(pointAnnotations,
-                                                                self._plotWidget,
-                                                                _displayOptions,
-                                                                _displayOptionsLine,
-                                                                lineAnnotations,
-                                                                stack=self._myStack,
-                                                                )
-        self._aPointPlot.signalAnnotationClicked2.connect(self.slot_selectAnnotation2)
-        self.signalAnnotationSelection2.connect(self._aPointPlot.slot_selectAnnotation2)
-        self.signalUpdateSlice.connect(self._aPointPlot.slot_setSlice)
-
-
-        # add line plot of lineAnnotations
-        lineAnnotations = self._myStack.getLineAnnotations()
-        _displayOptions = self._displayOptionsDict['lineDisplay']
-        self._aLinePlot = pymapmanager.interface.linePlotWidget(lineAnnotations,
-                                                                self._plotWidget,
-                                                                _displayOptions,
-                                                                stack=self._myStack)
-
-        self._aLinePlot.signalAnnotationClicked2.connect(self.slot_selectAnnotation2)
-        self.signalAnnotationSelection2.connect(self._aLinePlot.slot_selectAnnotation2)
-        self.signalUpdateSlice.connect(self._aLinePlot.slot_setSlice)
+        self._plotLayerWidget = pymapmanager.interface.plotLayerWidget(pgView = self._plotWidget,
+                                                                        displayOptions=_displayOptions,
+                                                                        stack=self._myStack,
+                                                                        stateOptions=self.stateOptions)
+        self._plotLayerWidget.signalAnnotationClicked2.connect(self.slot_selectAnnotation2)
+        self.signalAnnotationSelection2.connect(self._plotLayerWidget.slot_selectAnnotation2)
+        self.signalUpdateSlice.connect(self._plotLayerWidget.slot_setSlice)
 
         # connect mouse clicks in annotation view to proper table
         # self._aLinePlot.signalAnnotationClicked.connect()

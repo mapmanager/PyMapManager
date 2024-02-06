@@ -594,6 +594,7 @@ if __name__ == "__main__":
                "annotationSelections": { # Note this requires the values to be strings
                     'segmentID': '1',
                     'spineID': '33'},
+                    # 'spineID': ['33', '34']},
             #    "annotationSelections": [33],
                "showLineSegmentsRadius": 3,
                "showSpines": True,
@@ -616,6 +617,7 @@ if __name__ == "__main__":
     app = QtWidgets.QApplication([])
     main = MainWindow()
     lineDF = test[0]
+    # print("lineDF", lineDF)
     main.plotLeftRadiusLine(lineDF)
     lineDF1 = test[1]
     main.plotRightRadiusLine(lineDF1)
