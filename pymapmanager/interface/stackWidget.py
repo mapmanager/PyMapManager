@@ -245,7 +245,7 @@ class stackWidget(QtWidgets.QMainWindow):
 
         self.stateOptions = Options()
 
-        self._currentSelection = pymapmanager.annotations.SelectionEvent()
+        self._currentSelection = pymapmanager.annotations.SelectionEvent(stack=self.myStack)
         """Keep track of the current selection"""
 
         self._buildUI()
@@ -1479,7 +1479,7 @@ class stackWidget(QtWidgets.QMainWindow):
         
         _selectionEvent = pymapmanager.annotations.SelectionEvent(la,
                                                             rowIdx=None,
-                                                            mmstackMap=self.myStack)
+                                                            stack=self.myStack)
         # Update all Rows in table
         self.signalPointChanged.emit(_selectionEvent)
 
