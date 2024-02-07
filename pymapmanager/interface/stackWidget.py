@@ -1533,7 +1533,7 @@ class stackWidget(QtWidgets.QMainWindow):
 
         # logger.info(f'slot_updateNote ----> self._currentSelection.getRows(): {self._currentSelection.getRows()}')
 
-        if self._currentSelection.getRows() == None:
+        if self._currentSelection.getRows() is None:
             return
         
         currentRowIdx = self._currentSelection.getRows()[0]

@@ -353,7 +353,9 @@ class plotLayerWidget(PlotLayers):
         #     self.blockSlots = False
         #     return
         
-        rowIdx = selectionEvent.getRows()[0]
+        # rowIdx = selectionEvent.getRows()[0]
+        rowIdx = selectionEvent.getPointSelection()[0]
+
         logger.info(f'slot_selectionAnnotation2 rowIdx: {rowIdx}')
         self._currentRowIdx = rowIdx
         self._currentSlice = self.pa.getValue("z", rowIdx)
