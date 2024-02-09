@@ -490,9 +490,30 @@ class mmWidget2(QtWidgets.QMainWindow):
         # order between calling self and next emit matters
         # if we are parent and we modify the backend, we need to do that first
         
+        # logger.info(f'   <<< "{self.getClassName()}" event type does not match: {event.type == pmmEventType.selection}')
+        
+        # logger.info(f"name: {event.type.name} value: {event.type.value}")
+
+        # logger.info(f'   <<< " {event.type == pmmEventType.selection.name}')
+        # logger.info(f'   <<< " {event.type == pmmEventType.selection.value}')
+
+        # logger.info(f'   <<<  {event.type.name}')
+        # logger.info(f'   <<<  {event.type.value}')
+        # logger.info(f'   <<<  {pmmEventType.selection.name}')
+        # logger.info(f'   <<<  {pmmEventType.selection.value}')
+
+        # logger.info(f"event.type: {type(event.type)}")
+        # logger.info(f"event.type: {event.type}")
+        # logger.info(f"event.val: {event.type.value}")
+                    
+        # logger.info(f"selection val: {pmmEventType.selection.value}")
+        
         acceptEvent = True  # if False then do not propogate
         
-        if event.type == pmmEventType.selection:
+        logger.info(f"event.type: {event.type.name} pmmEventType.selection.name: {pmmEventType.selection.name}")
+
+        if event.type.name == pmmEventType.selection.name:
+            # logger.info(f'   <<< "{self.getClassName()}"')
             acceptEvent = self.selectedEvent(event)
         elif event.type == pmmEventType.add:
             acceptEvent = self.addedEvent(event)

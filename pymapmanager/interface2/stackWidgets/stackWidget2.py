@@ -609,6 +609,7 @@ class stackWidget2(mmWidget2):
             select: if True then select the point
         """
 
+        logger.info(f"stackWiget2 zoomToPointAnnotation idx: {idx}")
         _pointAnnotations = self._stack.getPointAnnotations()
         
         if _pointAnnotations.numAnnotations == 0:

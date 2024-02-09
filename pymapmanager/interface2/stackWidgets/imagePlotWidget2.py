@@ -11,7 +11,8 @@ import pymapmanager.interface2
 
 from .mmWidget2 import mmWidget2, pmmEventType, pmmEvent, pmmStates
 # from mmWidget2 import mmWidget2, pmmEventType, pmmEvent, pmmStates
-from .annotationPlotWidget2 import pointPlotWidget, linePlotWidget
+# from .annotationPlotWidget2 import pointPlotWidget, linePlotWidget, annotationPlotWidget
+from .annotationPlotWidget2 import annotationPlotWidget
 
 from pymapmanager._logger import logger
 
@@ -394,7 +395,7 @@ class ImagePlotWidget(mmWidget2):
         ----------
         event: pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent
         """
-        # logger.info(f'event:{type(event)}')
+        # logger.info(f'mouse click event:{type(event)}')
         
         modifiers = QtWidgets.QApplication.queryKeyboardModifiers()
         isShift = modifiers == QtCore.Qt.ShiftModifier
@@ -813,6 +814,7 @@ class ImagePlotWidget(mmWidget2):
 
         self._stackSlider.setValue(self._currentSlice)
 
+        # return
         # removed aug 31
         if doEmit:
             # # self._blockSlots = True
@@ -913,35 +915,54 @@ class ImagePlotWidget(mmWidget2):
         # works but confusing coordinates
         self._plotWidget.scene().sigMouseClicked.connect(self._onMouseClick_scene)
 
-        # add point plot of pointAnnotations
+
+        # add a plotwidgets that does both points and lines
         pointAnnotations = self._myStack.getPointAnnotations()
         lineAnnotations = self._myStack.getLineAnnotations()
         _displayOptions = self._displayOptionsDict['pointDisplay']
         _displayOptionsLine = self._displayOptionsDict['spineLineDisplay']
-        self._aPointPlot = pointPlotWidget(self.getStackWidget(),
+        self._allPointPlot = annotationPlotWidget(self.getStackWidget(),
                                             pointAnnotations,
                                             self._plotWidget,
                                             _displayOptions,
-                                            _displayOptionsLine,
-                                            lineAnnotations,
+                                            # _displayOptionsLine,
+                                            # lineAnnotations,
                                             )
         # self._aPointPlot.signalAnnotationClicked2.connect(self.slot_selectAnnotation2)
         # self.signalAnnotationSelection2.connect(self._aPointPlot.slot_selectAnnotation2)
-        self.signalUpdateSlice.connect(self._aPointPlot.slot_setSlice)
+        self.signalUpdateSlice.connect(self._allPointPlot.slot_setSlice)
+
+
+
+        # add point plot of pointAnnotations
+        # pointAnnotations = self._myStack.getPointAnnotations()
+        # lineAnnotations = self._myStack.getLineAnnotations()
+        # _displayOptions = self._displayOptionsDict['pointDisplay']
+        # _displayOptionsLine = self._displayOptionsDict['spineLineDisplay']
+        # self._aPointPlot = pointPlotWidget(self.getStackWidget(),
+        #                                     pointAnnotations,
+        #                                     self._plotWidget,
+        #                                     _displayOptions,
+        #                                     _displayOptionsLine,
+        #                                     lineAnnotations,
+        #                                     )
+        # # self._aPointPlot.signalAnnotationClicked2.connect(self.slot_selectAnnotation2)
+        # # self.signalAnnotationSelection2.connect(self._aPointPlot.slot_selectAnnotation2)
+        # self.signalUpdateSlice.connect(self._aPointPlot.slot_setSlice)
 
 
         # add line plot of lineAnnotations
-        lineAnnotations = self._myStack.getLineAnnotations()
-        _displayOptions = self._displayOptionsDict['lineDisplay']
-        self._aLinePlot = linePlotWidget(self.getStackWidget(),
-                                            lineAnnotations,
-                                            self._plotWidget,
-                                            _displayOptions,
-                                            )
+        # lineAnnotations = self._myStack.getLineAnnotations()
+        # _displayOptions = self._displayOptionsDict['lineDisplay']
+        # self._aLinePlot = linePlotWidget(self.getStackWidget(),
+        #                                     lineAnnotations,
+        #                                     self._plotWidget,
+        #                                     _displayOptions,
+        #                                     )
 
-        # self._aLinePlot.signalAnnotationClicked2.connect(self.slot_selectAnnotation2)
-        # self.signalAnnotationSelection2.connect(self._aLinePlot.slot_selectAnnotation2)
-        self.signalUpdateSlice.connect(self._aLinePlot.slot_setSlice)
+        # # self._aLinePlot.signalAnnotationClicked2.connect(self.slot_selectAnnotation2)
+        # # self.signalAnnotationSelection2.connect(self._aLinePlot.slot_selectAnnotation2)
+        # self.signalUpdateSlice.connect(self._aLinePlot.slot_setSlice)
 
         # connect mouse clicks in annotation view to proper table
         # self._aLinePlot.signalAnnotationClicked.connect()
@@ -1018,6 +1039,7 @@ class ImagePlotWidget(mmWidget2):
         self._setSlice(z, doEmit=doEmit)
 
         if event.isAlt():
+            logger.info(f"zoom to coordinates x: {x} y: {y}")
             self._zoomToPoint(x, y)
 
     def setSliceEvent(self, event):

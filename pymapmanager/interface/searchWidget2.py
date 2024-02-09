@@ -76,8 +76,8 @@ class myQSortFilterProxyModel(QSortFilterProxyModel):
         val = self.sourceModel().data(valIndex, role)
         # year = self.sourceModel().data(yearIndex)
 
-        logger.info(f'self.nameRegExp pattern: {self.nameRegExp.pattern()}, valIndex: {valIndex}, val: {val}')
-        logger.info(f'ComparisonValue: {self.currentComparisonValue}, ComparisonSymbol : {self.currentComparisonSymbol}')
+        # logger.info(f'self.nameRegExp pattern: {self.nameRegExp.pattern()}, valIndex: {valIndex}, val: {val}')
+        # logger.info(f'ComparisonValue: {self.currentComparisonValue}, ComparisonSymbol : {self.currentComparisonSymbol}')
 
         checkPattern = self.nameRegExp.pattern() in val
         checkComparisonVal = self.currentComparisonValue != ""
