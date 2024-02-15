@@ -278,6 +278,11 @@ class annotationPlotWidget(mmWidget2):
                 return
 
             event.setAlt(isAlt)
+
+            # 2/9/24 - adding slice number (always want to remain on the same slice when clicking within plotWidget)
+            # TODO: need to account for when slice does not contain selected point
+            event.setSliceNumber(self._currentSlice)
+            logger.info(f'emitting current slice {self._currentSlice}')
             
             logger.info(f'emitting "{_plotType}" event for dbIdx:{dbIdx}')
             
@@ -332,10 +337,12 @@ class annotationPlotWidget(mmWidget2):
         rowIdx = _stackSelection.getPointSelection()   
         # TODO: change this to support multiple selections after changing layer logic
         rowIdx = rowIdx[0]
-        # IMPORTANT: state tracking does not currently have slice. Need to add it in
-        # slice = event.getSliceNumber() 
         self._currentRowIdx = rowIdx
-        slice = self.pa.getValue("z", rowIdx)
+        # IMPORTANT: state tracking does not currently have slice. Need to add it in
+
+        logger.info(f"slice number after selected event {event.getSliceNumber() }") 
+        slice = event.getSliceNumber() 
+        # slice = self.pa.getValue("z", rowIdx)
         self._currentSlice = slice
         
         print('xxx:', _stackSelection.hasPointSelection())
@@ -371,7 +378,7 @@ class annotationPlotWidget(mmWidget2):
 
     def _refreshSlice(self):
         # I don't think that the current slice is being updated, it will always pass in 0?
-        # logger.info(f'_currentSlice: {self._currentSlice}')
+        logger.info(f'calling _refreshslice _currentSlice: {self._currentSlice}')
         self.slot_setSlice(self._currentSlice)
 
         
@@ -398,7 +405,7 @@ class annotationPlotWidget(mmWidget2):
             # self.plotLayer(layer)
             self._plotLayers2.plotLayer(layer)
             if layer.name == "Spine Points":
-                logger.info(f'(Spine Layer: {layer})')
+                # logger.info(f'(Spine Layer: {layer})')
                 self.spineLayer = layer # reset spine layer for mouse click detection
 
         # self.resetSpineSelectionPlot() # only needs to be done on slice refresh
@@ -467,6 +474,8 @@ class annotationPlotWidget(mmWidget2):
 
     def setSliceEvent(self, event):
         sliceNumber = event.getSliceNumber()
+        logger.warning(f'setSliceEvent sliceNumbers {sliceNumber}')
+
         self.slot_setSlice(sliceNumber)
 
 # class pointPlotWidget(annotationPlotWidget):

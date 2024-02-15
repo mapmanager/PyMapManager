@@ -618,6 +618,11 @@ class stackWidget2(mmWidget2):
         
         event = pmmEvent(pmmEventType.selection, self)
         event.getStackSelection().setPointSelection([idx])
+
+        # 2/9/24 Set slice number for plotting
+        sliceNum = self.getStack().getPointAnnotations().getValue("z", idx)
+        event.setSliceNumber(sliceNum)
+
         event.setAlt(True)
         self.slot_pmmEvent(event)
         #self.emitEvent(event, blockSlots=False)

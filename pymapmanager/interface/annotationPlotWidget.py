@@ -415,7 +415,7 @@ class plotLayerWidget(PlotLayers):
         for i, layer in enumerate(test):
             self.plotLayer(layer)
             if layer.name == "Spine Points":
-                logger.info(f'(Spine Layer: {layer})')
+                # logger.info(f'(Spine Layer: {layer})')
                 self.spineLayer = layer # reset spine layer for mouse click detection
 
         # self.resetSpineSelectionPlot() # only needs to be done on slice refresh

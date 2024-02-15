@@ -824,6 +824,8 @@ class ImagePlotWidget(mmWidget2):
             # without this, point and line plots do not update???
             _pmmEvent = pmmEvent(pmmEventType.setSlice, self)
             _pmmEvent.setSliceNumber(self._currentSlice)
+
+            logger.info(f'  -->> emit signalUpdateSlice() _currentSlice:{self._currentSlice}')
             self.emitEvent(_pmmEvent, blockSlots=True)
 
     def toggleImageView(self):
@@ -1033,14 +1035,27 @@ class ImagePlotWidget(mmWidget2):
         _pointAnnotations = self.getStackWidget().getStack().getPointAnnotations()
         x = _pointAnnotations.getValue('x', oneItem)
         y = _pointAnnotations.getValue('y', oneItem)
-        z = _pointAnnotations.getValue('z', oneItem)
-        
-        doEmit = True
-        self._setSlice(z, doEmit=doEmit)
+
+        # 2/9/24 - Changed to maintain slice
+        # z = _pointAnnotations.getValue('z', oneItem)
+
 
         if event.isAlt():
+
+            # When zooming to point, set the slice to be that of the current selection
+            z = _pointAnnotations.getValue('z', oneItem)
             logger.info(f"zoom to coordinates x: {x} y: {y}")
             self._zoomToPoint(x, y)
+
+            # need to set the new slice number inside the stack!
+
+        else:
+            z = event.getSliceNumber()
+        
+        self._currentSlice = z
+        logger.info(f"current slice {z}")
+        doEmit = True
+        self._setSlice(z, doEmit=doEmit)
 
     def setSliceEvent(self, event):
         # logger.info(event)
