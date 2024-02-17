@@ -151,7 +151,13 @@ class ImagePlotWidget(mmWidget2):
         - If no selection then gray out 'Delete'
         """
 
-        self._aPointPlot.contextMenuEvent(event)
+        # self._aPointPlot.contextMenuEvent(event)
+
+        logger.info(f"event {event}")
+        # TODO: Fix context menu. Currently not showing when right clicking
+        # Need to add contextMenuEvent function inside new annotationPlotWidget.py
+        
+        self._allPointPlot.contextMenuEvent(event)
         return
 
         # activate menus if we have a point selection
