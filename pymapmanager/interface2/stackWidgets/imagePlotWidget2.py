@@ -11,7 +11,8 @@ import pymapmanager.interface2
 
 from .mmWidget2 import mmWidget2, pmmEventType, pmmEvent, pmmStates
 # from mmWidget2 import mmWidget2, pmmEventType, pmmEvent, pmmStates
-from .annotationPlotWidget2 import pointPlotWidget, linePlotWidget
+# from .annotationPlotWidget2 import pointPlotWidget, linePlotWidget, annotationPlotWidget
+from .annotationPlotWidget2 import annotationPlotWidget
 
 from pymapmanager._logger import logger
 
@@ -150,7 +151,13 @@ class ImagePlotWidget(mmWidget2):
         - If no selection then gray out 'Delete'
         """
 
-        self._aPointPlot.contextMenuEvent(event)
+        # self._aPointPlot.contextMenuEvent(event)
+
+        logger.info(f"event {event}")
+        # TODO: Fix context menu. Currently not showing when right clicking
+        # Need to add contextMenuEvent function inside new annotationPlotWidget.py
+        
+        self._allPointPlot.contextMenuEvent(event)
         return
 
         # activate menus if we have a point selection
@@ -394,7 +401,7 @@ class ImagePlotWidget(mmWidget2):
         ----------
         event: pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent
         """
-        # logger.info(f'event:{type(event)}')
+        # logger.info(f'mouse click event:{type(event)}')
         
         modifiers = QtWidgets.QApplication.queryKeyboardModifiers()
         isShift = modifiers == QtCore.Qt.ShiftModifier
@@ -813,6 +820,7 @@ class ImagePlotWidget(mmWidget2):
 
         self._stackSlider.setValue(self._currentSlice)
 
+        # return
         # removed aug 31
         if doEmit:
             # # self._blockSlots = True
@@ -822,6 +830,8 @@ class ImagePlotWidget(mmWidget2):
             # without this, point and line plots do not update???
             _pmmEvent = pmmEvent(pmmEventType.setSlice, self)
             _pmmEvent.setSliceNumber(self._currentSlice)
+
+            logger.info(f'  -->> emit signalUpdateSlice() _currentSlice:{self._currentSlice}')
             self.emitEvent(_pmmEvent, blockSlots=True)
 
     def toggleImageView(self):
@@ -913,35 +923,54 @@ class ImagePlotWidget(mmWidget2):
         # works but confusing coordinates
         self._plotWidget.scene().sigMouseClicked.connect(self._onMouseClick_scene)
 
-        # add point plot of pointAnnotations
+
+        # add a plotwidgets that does both points and lines
         pointAnnotations = self._myStack.getPointAnnotations()
         lineAnnotations = self._myStack.getLineAnnotations()
         _displayOptions = self._displayOptionsDict['pointDisplay']
         _displayOptionsLine = self._displayOptionsDict['spineLineDisplay']
-        self._aPointPlot = pointPlotWidget(self.getStackWidget(),
+        self._allPointPlot = annotationPlotWidget(self.getStackWidget(),
                                             pointAnnotations,
                                             self._plotWidget,
                                             _displayOptions,
-                                            _displayOptionsLine,
-                                            lineAnnotations,
+                                            # _displayOptionsLine,
+                                            # lineAnnotations,
                                             )
         # self._aPointPlot.signalAnnotationClicked2.connect(self.slot_selectAnnotation2)
         # self.signalAnnotationSelection2.connect(self._aPointPlot.slot_selectAnnotation2)
-        self.signalUpdateSlice.connect(self._aPointPlot.slot_setSlice)
+        self.signalUpdateSlice.connect(self._allPointPlot.slot_setSlice)
+
+
+
+        # add point plot of pointAnnotations
+        # pointAnnotations = self._myStack.getPointAnnotations()
+        # lineAnnotations = self._myStack.getLineAnnotations()
+        # _displayOptions = self._displayOptionsDict['pointDisplay']
+        # _displayOptionsLine = self._displayOptionsDict['spineLineDisplay']
+        # self._aPointPlot = pointPlotWidget(self.getStackWidget(),
+        #                                     pointAnnotations,
+        #                                     self._plotWidget,
+        #                                     _displayOptions,
+        #                                     _displayOptionsLine,
+        #                                     lineAnnotations,
+        #                                     )
+        # # self._aPointPlot.signalAnnotationClicked2.connect(self.slot_selectAnnotation2)
+        # # self.signalAnnotationSelection2.connect(self._aPointPlot.slot_selectAnnotation2)
+        # self.signalUpdateSlice.connect(self._aPointPlot.slot_setSlice)
 
 
         # add line plot of lineAnnotations
-        lineAnnotations = self._myStack.getLineAnnotations()
-        _displayOptions = self._displayOptionsDict['lineDisplay']
-        self._aLinePlot = linePlotWidget(self.getStackWidget(),
-                                            lineAnnotations,
-                                            self._plotWidget,
-                                            _displayOptions,
-                                            )
+        # lineAnnotations = self._myStack.getLineAnnotations()
+        # _displayOptions = self._displayOptionsDict['lineDisplay']
+        # self._aLinePlot = linePlotWidget(self.getStackWidget(),
+        #                                     lineAnnotations,
+        #                                     self._plotWidget,
+        #                                     _displayOptions,
+        #                                     )
 
-        # self._aLinePlot.signalAnnotationClicked2.connect(self.slot_selectAnnotation2)
-        # self.signalAnnotationSelection2.connect(self._aLinePlot.slot_selectAnnotation2)
-        self.signalUpdateSlice.connect(self._aLinePlot.slot_setSlice)
+        # # self._aLinePlot.signalAnnotationClicked2.connect(self.slot_selectAnnotation2)
+        # # self.signalAnnotationSelection2.connect(self._aLinePlot.slot_selectAnnotation2)
+        # self.signalUpdateSlice.connect(self._aLinePlot.slot_setSlice)
 
         # connect mouse clicks in annotation view to proper table
         # self._aLinePlot.signalAnnotationClicked.connect()
@@ -1012,13 +1041,27 @@ class ImagePlotWidget(mmWidget2):
         _pointAnnotations = self.getStackWidget().getStack().getPointAnnotations()
         x = _pointAnnotations.getValue('x', oneItem)
         y = _pointAnnotations.getValue('y', oneItem)
-        z = _pointAnnotations.getValue('z', oneItem)
-        
-        doEmit = True
-        self._setSlice(z, doEmit=doEmit)
+
+        # 2/9/24 - Changed to maintain slice
+        # z = _pointAnnotations.getValue('z', oneItem)
+
 
         if event.isAlt():
+
+            # When zooming to point, set the slice to be that of the current selection
+            z = _pointAnnotations.getValue('z', oneItem)
+            logger.info(f"zoom to coordinates x: {x} y: {y}")
             self._zoomToPoint(x, y)
+
+            # need to set the new slice number inside the stack!
+
+        else:
+            z = event.getSliceNumber()
+        
+        self._currentSlice = z
+        logger.info(f"current slice {z}")
+        doEmit = True
+        self._setSlice(z, doEmit=doEmit)
 
     def setSliceEvent(self, event):
         # logger.info(event)

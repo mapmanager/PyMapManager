@@ -206,6 +206,7 @@ class SelectionEvent():
         return self._selDict['isShift']
 
     def getCurrentSlice(self) -> int:
+        logger.info(f"getting current slice {self._selDict['slice']}")
         return self._selDict['slice']
 
     def setCurrentSlice(self, currentSlice : int):

@@ -15,8 +15,9 @@ from pymapmanager.options import Options
 import pymapmanager.stack
 import pymapmanager.annotations
 import time
+from .mmWidget2 import mmWidget2, pmmEventType, pmmEvent, pmmStates
 
-class plotLayerWidget(PlotLayers):
+class plotLayerWidget(mmWidget2, PlotLayers):
     """Base class to plot annotations in a pg view.
     
     Used to plot point and line annotations.
@@ -354,12 +355,10 @@ class plotLayerWidget(PlotLayers):
         #     return
         
         # Old Selection Code
-        rowIdx = selectionEvent.getRows()[0]
+        # rowIdx = selectionEvent.getRows()[0]
 
         # New Selection code
-        # rowIdx = selectionEvent.getPointSelection()[0]
-
-        # rowIdx, rowDict = selectionEvent.getPointSelection()
+        rowIdx = selectionEvent.getPointSelection()[0]
 
         logger.info(f'slot_selectionAnnotation2 rowIdx: {rowIdx}')
         self._currentRowIdx = rowIdx
@@ -415,7 +414,7 @@ class plotLayerWidget(PlotLayers):
         for i, layer in enumerate(test):
             self.plotLayer(layer)
             if layer.name == "Spine Points":
-                # logger.info(f'(Spine Layer: {layer})')
+                logger.info(f'(Spine Layer: {layer})')
                 self.spineLayer = layer # reset spine layer for mouse click detection
 
         # self.resetSpineSelectionPlot() # only needs to be done on slice refresh

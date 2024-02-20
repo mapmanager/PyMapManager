@@ -1454,7 +1454,7 @@ class stackWidget(QtWidgets.QMainWindow):
         #                                                         rowIdx=idx,
         #                                                         isAlt=isAlt,
         #                                                         stack=self.myStack)
-        
+        logger.info(f"idx is: {idx}")
         self.currentSelection.setPointSelection(idx)
         self.currentSelection.isAlt = isAlt
 

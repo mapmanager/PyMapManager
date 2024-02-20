@@ -352,6 +352,7 @@ class pointListWidget(annotationListWidget):
 
         # self._setModel()
         #self.setDisplayPointType(pymapmanager.annotations.pointTypes.spineROI)
+        self.currentSlice = 0
 
     def setDisplayPointType(self, pointType : pymapmanager.annotations.pointTypes):
         """Displaly just one pointType(s) in the table.
@@ -383,14 +384,24 @@ class pointListWidget(annotationListWidget):
         event = pmmEvent(eventType, self)
         event.getStackSelection().setPointSelection(itemList)
         event.setAlt(isAlt)
+
+        # 2/9/24 - added slice to maintain slice while plotting
+        # Might be easier to get slice directly from stack
+        event.setSliceNumber(self.currentSlice)
+
         self.emitEvent(event, blockSlots=False)
 
     def selectedEvent(self, event):
         # logger.info(event)
         
+        self.currentSlice = event.getSliceNumber() 
+        logger.info(f"pointListWidget current slice after selected event {self.currentSlice}")
+
         itemList = event.getStackSelection().getPointSelection()        
         if itemList is not None:
+
             self._myTableView.mySelectRows(itemList)
+            
 
     def deleteSelected(self):
         """Delete currently selected annotations.
