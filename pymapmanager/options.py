@@ -6,6 +6,7 @@ A state class that keeps track of everything to make displaying objects in the G
 
 import pandas as pd
 from pymapmanager._logger import logger
+from typing import Tuple
 
 class Options():
 
@@ -64,7 +65,11 @@ class Options():
         # self._addOption("showAnchors", True)
         # self._addOption("showLabels", True)
 
-        self._addOption("sliceRange", [])
+        self._addOption("sliceRange", []) # No longer in use
+
+        
+        self._addOption("selection", {'z' : Tuple[int, int]})
+
         self._addOption("annotationSelections", {
                             'segmentID': '',
                             'spineID': ''})
@@ -121,6 +126,22 @@ class Options():
             sliceRange: [startInteger, endInteger] 
         """
         self.setCurrentValue("sliceRange", sliceRange)
+
+    def setSelectionZ(self, zValue, zAdjust):
+        """Set an Slice range
+
+        Args:
+            zValue: value of current slice
+        """
+        # self.setCurrentValue("selection", {'z': str(zValue)})
+
+        # self.setCurrentValue("selection", {'z': Tuple[zValue - zAdjust, zValue + zAdjust]})
+
+        startRange = zValue - zAdjust
+        endRange = zValue + zAdjust
+        self.setCurrentValue("selection", {'z': (startRange, endRange)})
+
+
 
     def setSelection(self, segmentID, spineID):
         """Set an Options parameter's current value.

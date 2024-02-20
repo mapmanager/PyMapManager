@@ -392,8 +392,12 @@ class annotationPlotWidget(mmWidget2):
 
         currentSlice = slice
 
+        # TODO: retrieve this from stack interface
+        zAdjust = 2
+
         logger.info(f'currentSlice: {currentSlice}')
-        self.stateOptions.setSliceRange([currentSlice-2, currentSlice+2])
+        # self.stateOptions.setSliceRange([currentSlice-2, currentSlice+2])
+        self.stateOptions.setSelectionZ(currentSlice, zAdjust)
 
         segmentID = self.pa.getValue("segmentID", rowIdx)
 
@@ -404,9 +408,12 @@ class annotationPlotWidget(mmWidget2):
         for i, layer in enumerate(test):
             # self.plotLayer(layer)
             self._plotLayers2.plotLayer(layer)
-            if layer.name == "Spine Points":
-                # logger.info(f'(Spine Layer: {layer})')
-                self.spineLayer = layer # reset spine layer for mouse click detection
+            # if layer.name == "Spine Points":
+
+            # logger.info(f'(layer.id: {layer.id})')
+            # if layer.id == "spine":
+            #     # logger.info(f'(Spine Layer: {layer})')
+            #     self.spineLayer = layer # reset spine layer for mouse click detection
 
         # self.resetSpineSelectionPlot() # only needs to be done on slice refresh
         end = time.time()
