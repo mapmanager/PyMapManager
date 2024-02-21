@@ -20,7 +20,9 @@ from .searchWidget2 import SearchWidget2
 class stackWidget2(mmWidget2):
     _widgetName = 'Stack Widget 2'
 
-    def __init__(self, path):
+    def __init__(self,
+                 path,
+                 stack : pymapmanager.stack = None):
         """Just make two point list widgets and debug the connections for:
         - select
         - delete
@@ -28,7 +30,12 @@ class stackWidget2(mmWidget2):
         
         super().__init__(None)
 
-        self._stack = pymapmanager.stack(path)
+        if stack is not None:
+            # existing stack
+            self._stack = stack
+        else:
+            # load from path
+            self._stack = pymapmanager.stack(path)
 
         self._stackSelection = StackSelection(self._stack)
 
@@ -114,7 +121,18 @@ class stackWidget2(mmWidget2):
 
     def _toggleWidget(self, name : str, visible : bool):
         logger.info(f'{name} {visible}')
-        self._widgetDict[name].setVisible(visible)
+        try:
+            self._widgetDict[name].setVisible(visible)
+        except (KeyError):
+            logger.warning(f'did not find key {name}')
+            logger.warning(f'available keys are: {self._widgetDict.keys()}')
+    
+    def _getNamedWidget(self, name):
+        try:
+            return self._widgetDict[name]
+        except (KeyError):
+            logger.warning(f'did not find key {name}')
+            logger.warning(f'available keys are: {self._widgetDict.keys()}')
 
     def _buildMenus(self) -> QtWidgets.QMenuBar:
         mainMenu = self.menuBar()
@@ -626,3 +644,9 @@ class stackWidget2(mmWidget2):
         event.setAlt(True)
         self.slot_pmmEvent(event)
         #self.emitEvent(event, blockSlots=False)
+
+    def setPosition(self, left : int, top : int, width : int, height : int):
+        """Set the position of the widget on the screen.
+        """
+        self.move(left,top)
+        self.resize(width, height)

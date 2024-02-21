@@ -218,7 +218,8 @@ class mmMap():
             objMapFile = self._folder + self.name + '_objMap.txt'
             if not os.path.isfile(objMapFile):
                 raise IOError(ENOENT, 'mmMap did not find objMapFile:', objMapFile)
-            with open(objMapFile, 'rU') as f:
+            # with open(objMapFile, 'rU') as f:
+            with open(objMapFile, 'r') as f:
                 header = f.readline().rstrip()
             self.objMap = np.loadtxt(objMapFile, skiprows=1)
         else:
@@ -243,7 +244,8 @@ class mmMap():
         if doFile:
             segMapFile = self._folder + self.name + '_segMap.txt'
             if os.path.isfile(segMapFile):
-                with open(segMapFile, 'rU') as f:
+                # with open(segMapFile, 'rU') as f:
+                with open(segMapFile, 'r') as f:
                     header = f.readline().rstrip()
                 self.segMap = np.loadtxt(segMapFile, skiprows=1)
             else:
