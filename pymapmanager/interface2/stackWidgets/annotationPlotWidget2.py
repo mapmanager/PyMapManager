@@ -90,6 +90,8 @@ class annotationPlotWidget(mmWidget2):
         self._myStack = self.getStack()
         self.pa = self._myStack.getPointAnnotations()
         self.la = self._myStack.getLineAnnotations()
+
+        # TODO: make self.layers update with signal slots?
         self.layers = PmmLayers(self.pa, self.la)
 
         self.stackWidget = stackWidget
@@ -333,12 +335,17 @@ class annotationPlotWidget(mmWidget2):
         print('xxx:', _stackSelection.hasPointSelection())
         # if not _stackSelection.hasPointSelection():  # False on (None, [])
         #     return
-            
-        rowIdx = _stackSelection.getPointSelection()   
-        # TODO: change this to support multiple selections after changing layer logic
-        rowIdx = rowIdx[0]
-        self._currentRowIdx = rowIdx
-        # IMPORTANT: state tracking does not currently have slice. Need to add it in
+        
+        if len(_stackSelection.getPointSelection()) > 0:
+            rowIdx = _stackSelection.getPointSelection()   
+            # TODO: change this to support multiple selections after changing layer logic
+            rowIdx = rowIdx[0]
+            self._currentRowIdx = rowIdx
+            # IMPORTANT: state tracking does not currently have slice. Need to add it in
+        
+        else:
+            rowIdx =None
+            self._currentRowIdx = rowIdx
 
         logger.info(f"slice number after selected event {event.getSliceNumber() }") 
         slice = event.getSliceNumber() 
@@ -388,7 +395,7 @@ class annotationPlotWidget(mmWidget2):
         # options = Options()
         # TODO: need to update options (state tracking within stackwidget)
         start = time.time()
-        rowIdx = rowIdx
+        # rowIdx = rowIdx
 
         currentSlice = slice
 
@@ -399,7 +406,13 @@ class annotationPlotWidget(mmWidget2):
         # self.stateOptions.setSliceRange([currentSlice-2, currentSlice+2])
         self.stateOptions.setSelectionZ(currentSlice, zAdjust)
 
-        segmentID = self.pa.getValue("segmentID", rowIdx)
+        if rowIdx is not None:
+            segmentID = self.pa.getValue("segmentID", rowIdx)
+        else:
+
+            # MAYBE: Need to change to empty string rather than None to use layer backend
+            segmentID = None
+            # rowIdx = ""
 
         self.stateOptions.setSelection(segmentID=segmentID, spineID=rowIdx)
 
@@ -437,7 +450,14 @@ class annotationPlotWidget(mmWidget2):
 
         stackSelection = self.stackWidget.getStackSelection()
 
-        self._currentRowIdx = stackSelection.getPointSelection()[0]
+
+        # Check if we list contains anythings
+        if len(stackSelection.getPointSelection()) > 0:
+            self._currentRowIdx = stackSelection.getPointSelection()[0]
+        
+        else:
+            self._currentRowIdx = None
+       
 
         # self._currentSlice = sliceNumber
         # self._currentRowIdx = self.stack

@@ -3,6 +3,7 @@ import geopandas as gp
 import shapely
 from typing import Callable, Literal, Tuple, Union
 from ..benchmark import timer
+from pymapmanager._logger import logger
 
 EventIDs = Literal["edit", "select"]
 Color = Tuple[int, int, int, int]
@@ -18,6 +19,72 @@ class Layer:
         self.series.index.name = "id"
         self.properties = {}
 
+    # ABJ 
+    def getSeries(self):
+        return self.series 
+
+    # ABJ
+    def getID(self):
+        return self.properties["id"] 
+    
+    # ABJ
+    def getStroke(self, layerID):
+
+        if "stroke" not in self.properties:
+            return None
+        
+        value = self.properties["stroke"] 
+        logger.info(f"intermediate stroke value before ID {value}")
+
+        # depending on ID stroke is either a function or the color (rgb digits)
+
+        if type(value) == list:
+            return value
+        else:
+            return value(layerID)
+    
+    #ABJ
+    def getFill(self, layerID):
+
+        if "fill" not in self.properties:
+            logger.info(f"no fill in properties")
+            return None
+        
+        value = self.properties["fill"]
+        # logger.info(f"getFill value {value}")
+        if type(value) == list:
+
+            logger.info(f"getFill list {value}")
+            return value
+        else:
+            temp = value(layerID)
+            logger.info(f"getFill actual value {temp}")
+            return value(layerID)
+
+    # ABJ
+    def getProperties(self):
+        return self.properties
+    
+    def checkOpacity(self):
+        # if self.properties["opacity"] is not None:
+        #     return True
+        # else:
+        #     return False
+
+        if "opacity" in self.properties:
+            return True
+        else:
+            return False
+
+    # ABJ 
+    def getOpacity(self):
+        opacity = self.properties["opacity"]
+        # Note: pyqt using different scaling (0/0 - 1.0)
+        # compared to 0-250
+        convertedOpacity = opacity/250
+        return convertedOpacity
+
+    
     def on(self, event: EventIDs, key: str):
         self.properties[event] = key
         return self
@@ -37,6 +104,11 @@ class Layer:
     def setProperty(func):
         def wrapped(self, value=True):
             key = func.__name__
+            # value = func.
+            # logger.info(f"key: {key} value: {value(key)}")
+            # logger.info(f"key: {key} value: {value()}")
+            # ABJ: value is returning lambda function
+            # Ex: 'stroke': <function AnnotationsLayers._getSegments.<locals>.<lambda> at 0x00000277D5621360>
             self.properties[key] = value
             return self
         return wrapped

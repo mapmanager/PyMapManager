@@ -38,8 +38,8 @@ class AnnotationsLayers(AnnotationsInteractions):
                 layers.extend(self._getSegments(
                     zRange, options["annotationSelections"]["segmentID"], options["showLineSegmentsRadius"]))
 
-            if options["showSpines"]:
-                layers.extend(self._getSpines(options))
+            # if options["showSpines"]:
+            #     layers.extend(self._getSpines(options))
 
             return layers
 
@@ -57,14 +57,23 @@ class AnnotationsLayers(AnnotationsInteractions):
 
         # for i, k, in enumerate(self._points):
         #     logger.info(f"i: {i} k: {k}")
-       
+
+        logger.info(f"selections: {selections}")
+        logger.info(f"selectedSpine: {selectedSpine}")
+        logger.info(f"editingSegmentId: {editingSegmentId} type: {type(editingSegmentId)}")
+        logger.info(f"editing: {editing}")
+
+        temp = self._points["segmentID"]
+        logger.info(f"self._points[segmentID]: {temp}")
+                    
         logger.info(f"zRange[0]: {zRange[0]} zRange[1]: {zRange[1]}")
 
         # NOTE:
         # editingSegmentId is a str
         # self._points["segmentID"] are floats within the original dataframe
         # for desktop version we are converting values to match
-        # editingSegmentId = float(editingSegmentId)
+        if editingSegmentId is not None:
+            editingSegmentId = float(editingSegmentId)
         
         layers = []
         if editing:
@@ -80,6 +89,9 @@ class AnnotationsLayers(AnnotationsInteractions):
 
             # logger.info(f"visible_mask within segmentID {visible_mask}")
             
+            # for i, val in enumerate(self._points["segmentID"]):
+            #     logger.info(f"i: {i} val: {type(val)}")
+
             # for i, val in enumerate(visible_mask):
             #     if val is True:
             #         logger.info(f"index of true is: {i}")
@@ -95,7 +107,7 @@ class AnnotationsLayers(AnnotationsInteractions):
             not_faded = None
             # logger.info(f"not editing visible_mask {visible_mask}")
 
-        # logger.info(f"visible_mask {visible_mask}")
+        logger.info(f"visible_mask {visible_mask}")
 
         points = self._points[visible_mask]
 
@@ -129,6 +141,7 @@ class AnnotationsLayers(AnnotationsInteractions):
 
         anchorLines = None
         if options["showAnchors"] or options["showLabels"]:
+            # logger.info("showing anchor lines!")
             anchorLines = (spines
                            .copy(id="anchorLine")
                            .toLine(points["anchor"])
@@ -247,12 +260,18 @@ class AnnotationsLayers(AnnotationsInteractions):
                                layers, segment, boarderWidth, offset)
 
         if showLineSegmentsRadius:
+         
+
             # Left line
             left = (segment.copy(id="left")
                     .strokeWidth(boarderWidth)
                     .offset(lambda id: -offset(id)))
 
             layers.append(left)
+
+            # logger.info(f"segment {segment}")
+            # logger.info(f"left {left}")
+
 
             # Right line
             right = (segment.copy(id="right")

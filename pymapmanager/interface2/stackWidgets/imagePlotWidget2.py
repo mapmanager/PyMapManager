@@ -151,7 +151,8 @@ class ImagePlotWidget(mmWidget2):
         - If no selection then gray out 'Delete'
         """
 
-        self._aPointPlot.contextMenuEvent(event)
+        # TODO: 2/22 need to implement context menu in allPointPlot
+        # self._aPointPlot.contextMenuEvent(event)
         return
 
         # activate menus if we have a point selection

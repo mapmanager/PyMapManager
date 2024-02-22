@@ -151,6 +151,7 @@ def clipLine(line: LineString, zRange: Tuple[int, int]):
     if not lines:
         return None
 
+    # ABJ
     if len(lines) == 1:
         return LineString(lines[0])
 

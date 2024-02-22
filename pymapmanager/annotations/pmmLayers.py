@@ -22,7 +22,7 @@ from shapely.ops import nearest_points
 from shapely.geometry import LineString, Point, MultiLineString, Polygon
 
 from pymapmanager.annotations.pixelSource import PixelSource
-from pymapmanager.layers import Layer, MultiLineLayer, LineLayer, PointLayer, PolygonLayer
+# from pymapmanager.layers import Layer, MultiLineLayer, LineLayer, PointLayer, PolygonLayer
 
 from pymapmanager.coreMapManager.sharedAnnotations.base import AnnotationsLayers
 
@@ -65,6 +65,9 @@ class PmmLayers:
 
         points_gdf["anchor"] = anchor # Brightest points are called anchors
         points_gdf = points_gdf.set_index('spineID')
+
+        # 2/21 new column for calculating values
+        points_gdf["roiExtend"] = 4
         return points_gdf
 
     def createLineGeoPandas(self):
@@ -82,8 +85,12 @@ class PmmLayers:
         line_gdf = gpd.GeoDataFrame(line_gdf, geometry='geometry')
         line_gdf.rename_geometry("segment", inplace=True)
 
+        # 2/21 new column for calculating left and right radius lines
+        # TODO: need to get current radius from stack
+        line_gdf["radius"] = 4
+
         # logger.info(f"gdf: {gdf}")
-        # logger.info(f"line_gdf: {line_gdf}")
+        logger.info(f"line_gdf: {line_gdf}")
         return line_gdf
 
     def newPixelSource(self):
@@ -121,7 +128,7 @@ class PmmLayers:
         # frames =  self.pixelSource.getLayers(options)
         frames = self.pixelSource.getAnnotations(options)
 
-        logger.info(f"frames {frames}")
+        # logger.info(f"frames {frames}")
 
         # Frames are currently in different geopandas frames
         # need to convert to geoseries and create a corresponding layer object

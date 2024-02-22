@@ -10,7 +10,8 @@ import geopandas as gpd
 
 import pyqtgraph as pg
 from PyQt5 import QtWidgets
-from pymapmanager.layers import MultiLineLayer, PointLayer, LineLayer, PolygonLayer
+from pymapmanager.coreMapManager.layers import MultiLineLayer, PointLayer, LineLayer, PolygonLayer
+# from pymapmanager.layers import MultiLineLayer, PointLayer, LineLayer, PolygonLayer
 from .mmWidget2 import mmWidget2
 
 class PlotLayers2(QtWidgets.QWidget):
@@ -68,32 +69,65 @@ class PlotLayers2(QtWidgets.QWidget):
     def getView(self):
         return self.view
     
-    def defineNewMultiLinePlot(self, plotName, color):
+    def defineNewMultiLinePlot(self, plotName, color, alpha = 1.0):
         newPlot = self.view.plot([],[],
                                 pen=color,
                                 # brush = pg.mkBrush(color=(255,0,0))
                                 )
         newPlot.getViewBox().invertY(True)
         newPlot.setZValue(1) 
+        # newPlot.setAlpha(alpha, False)
         self.plotDict[plotName] = newPlot
 
     def plotLayer(self, layer):
-        # logger.info(f"type layer: {layer}")
+        logger.info(f"layer {layer} type: {type(layer)}")
         # logger.info(f"name: {layer.getName()} layer: {layer.getSeries()}")
 
+        tempID = layer.getID()
+        logger.info(f"layer ID: {tempID}")
+        logger.info(f"getting layer stroke: {layer.getStroke(tempID)}")
+        
+        if layer.checkOpacity():    
+            opacity = layer.getOpacity()
+        else:
+            opacity = 1.0
+
+        # logger.info(f"layer opacity: {opacity}")
+
         if type(layer) == MultiLineLayer:
-            self.plotMultiLineLayer(layer.getSeries(), layer.getName(), layer.getColor())
+            logger.info(f"Plotting multiline layer!")
+            # tempID = layer.getID()
+            logger.info(f"getting layer id: {layer.getID()}")
+            logger.info(f"getting layer stroke: {layer.getStroke(tempID)}")
+            # logger.info(f"getting layer properties: {layer.getProperties()}")
+            # self.plotMultiLineLayer(layer.getSeries(), layer.getName(), layer.getColor())
+            self.plotMultiLineLayer(layer.getSeries(), layer.getID(), layer.getStroke(tempID), opacity)
 
         elif type(layer) == LineLayer:
-            self.plotLineLayer(layer.getSeries(), layer.getName(), layer.getColor())
+            logger.info(f"Plotting Line layer!")
+            # logger.info(f"layer {layer} type: {type(layer)}")
+            # logger.info(f"getting layer stroke: {layer.getStroke(tempID)}")
+            self.plotLineLayer(layer.getSeries(), layer.getID(), layer.getStroke(tempID))
         
         elif type(layer) == PointLayer:
-            # TODO: Figure out how to get unique color
+            # TODO: Figure out how to get unique color (HIGHLIGHTED POINT NOT SHOWING)
             # Get x and y directly from series within layer class
-            self.plotPointLayer(layer.getSeries(), layer.getName(), layer.getColor())
+            # logger.info(f"layer is  {layer} type: {type(layer)}")
+
+            fill = layer.getFill(tempID)
+
+            logger.info(f"layer is: {layer} fill: {fill}")
+            if fill != None and len(fill) == 3: # it is an rgb value
+                fill = (int(fill[0]), int(fill[1]), int(fill[2]))
+                logger.info(f"converted fill: {fill}")
+
+        
+
+   
+            self.plotPointLayer(layer.getSeries(), layer.getID(), layer.getStroke(tempID), fill)
         
         elif type(layer) == PolygonLayer:
-            self.plotPolygonLayer(layer.getSeries(), layer.getName())
+            self.plotPolygonLayer(layer.getSeries(), layer.getID())
 
     def defineNewPolygonPlot(self, plotName):
         newPolyLayer = self.view.plot([],[])
@@ -136,55 +170,73 @@ class PlotLayers2(QtWidgets.QWidget):
         else:
             self.plotDict[plotName].setData(xPoints, yPoints)
 
-    def defineNewPointPlot(self, plotName, color, zValue = 1):
+    def defineNewPointPlot(self, plotName, stroke, fill, zValue = 1):
         newPointPlot = self.view.plot([],[],
-                                    pen=None,
+                                    # pen=stroke,
+                                    pen = None,
                                     symbol = 'o',
                                     symbolPen=None,
                                     fillOutline=False,
                                     markeredgewidth=0.0,
-                                    symbolBrush = color)
+                                    symbolBrush = fill)
+                                    # symbolBrush = (0, 0, 255)) # brush does the fill
         newPointPlot.getViewBox().invertY(True)
         # newPointPlot.setZValue(1) 
         newPointPlot.setZValue(zValue) 
         self.plotDict[plotName] = newPointPlot
 
-    def plotPointLayer(self, pointDF, plotName, color):
+    def plotPointLayer(self, pointDF, plotName, stroke, fill):
 
         # xPoints = np.array([np.nan]*len(pointDF.index))
         # yPoints = np.array([np.nan]*len(pointDF.index))
-        # xPoints = np.array([])
-        # yPoints = np.array([])
+        xPoints = np.array([])
+        yPoints = np.array([])
         
+        # logger.info(f"pointDF: {pointDF}")
         logger.info(f"len(pointDF.index): {len(pointDF.index)}")
         
-        xPoints = np.zeros(len(pointDF.index))
-        yPoints = np.zeros(len(pointDF.index))
+        # xPoints = np.zeros(len(pointDF.index))
+        # yPoints = np.zeros(len(pointDF.index))
+
+        # xPoints = np.array([])
+        # yPoints = np.array([])
         # try to pre Allocate x points rather than append
         # TODO: Look into alternative to for loop
         # logger.info(f"pointDF.xy: {pointDF.xy}")
 
         for i in pointDF.index:
             x,y = pointDF[i].xy
+     
+            # logger.info(f"type of i: {type(i)}")
+            # temp =  xPoints[i]
+            # logger.info(f"pointDF.xy: {temp}")
             # print("X: ", x)
             # print("Y: ", y)
             # xPoints = np.append(xPoints, x)
             # yPoints = np.append(yPoints, y)
-            # logger.info(f"i: {i} x: {x[0]} y: {y}")
-            # import sys
-            # sys.exit()
-            xPoints[i] = x[0]
-            yPoints[i] = y[0]
+            # logger.info(f"i: {i} x: {x[0]} y: {y[0]}")
+            # # import sys
+            # # sys.exit()
+            # i = int(i)
+            # xPoints[i] = x[0]
+            # yPoints[i] = y[0]
             # xPoints = np.append(xPoints, np.nan)
             # yPoints = np.append(yPoints, np.nan)
 
-        if plotName not in self.plotDict:
-            self.defineNewPointPlot(plotName, color) 
-            self.plotDict[plotName].setData(xPoints, yPoints)
-        else:
-            # Check if Points have changed and only update when they have
-            logger.info(f"Updating {plotName}")
-            self.plotDict[plotName].setData(xPoints, yPoints)
+            xPoints = np.append(xPoints, x)
+            yPoints = np.append(yPoints, y)
+
+
+        self.defineNewPointPlot(plotName, stroke, fill) 
+        self.plotDict[plotName].setData(xPoints, yPoints)
+
+        # if plotName not in self.plotDict:
+        #     self.defineNewPointPlot(plotName, stroke, fill) 
+        #     self.plotDict[plotName].setData(xPoints, yPoints)
+        # else:
+        #     # Check if Points have changed and only update when they have
+        #     logger.info(f"Updating {plotName}")
+        #     self.plotDict[plotName].setData(xPoints, yPoints)
 
     def defineNewLinePlot(self, plotName, color):
         newLinePlot = self.view.plot([],[],
@@ -211,7 +263,7 @@ class PlotLayers2(QtWidgets.QWidget):
         else:
             self.plotDict[plotName].setData(xPoints, yPoints)
 
-    def plotMultiLineLayer(self, lineDF, plotName, color):
+    def plotMultiLineLayer(self, lineDF, plotName, color, alpha):
         multiLineStrings = lineDF
 
         explodedLineStrings = multiLineStrings.explode()
@@ -238,8 +290,14 @@ class PlotLayers2(QtWidgets.QWidget):
 
         # self.segmentLine.setData(xPoints, yPoints)
         if plotName not in self.plotDict:
-            self.defineNewMultiLinePlot(plotName, color) 
+            
+            logger.info("creating new multiline plot!")
+            # Check if alpha exists
+            # if 
+            self.defineNewMultiLinePlot(plotName, color, alpha) 
             self.plotDict[plotName].setData(xPoints, yPoints)
         
         else:
+
+            logger.info("updating old multiline plot!")
             self.plotDict[plotName].setData(xPoints, yPoints)
