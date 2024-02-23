@@ -4,6 +4,7 @@ from .layer import Layer
 from .utils import dropZ, getCoords
 from shapely.geometry import LineString, MultiLineString, Point
 from shapely.ops import substring, clip_by_rect
+from shapely import offset_curve
 import shapely
 import geopandas as gp
 from ..benchmark import timer
@@ -25,6 +26,17 @@ class MultiLineLayer(Layer):
     def outline(self, outline: Union[int, Callable[[str], int]]):
         ("implemented by decorator", outline)
         return self
+
+    def normalize(self):
+        if "outline" in self.properties:
+            ne = self.buffer(distance=self.properties["outline"])
+            self.properties["outline"] = None;
+            return ne
+        if "offset" in self.properties:
+            self.series = offset_curve(self.series, distance=self.properties["offset"]);
+            self.properties["offset"] = None;
+        return self
+
 
     def _encodeBin(self):
         coords = self.series.apply(getCoords)

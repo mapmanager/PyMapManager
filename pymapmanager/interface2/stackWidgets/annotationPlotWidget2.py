@@ -420,6 +420,7 @@ class annotationPlotWidget(mmWidget2):
 
         for i, layer in enumerate(test):
             # self.plotLayer(layer)
+            print(layer.toFrame())
             self._plotLayers2.plotLayer(layer)
             # if layer.name == "Spine Points":
 

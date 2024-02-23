@@ -1,7 +1,10 @@
 import warnings
 import geopandas as gp
+import pandas as pd
 import shapely
-from typing import Callable, Literal, Tuple, Union
+from typing import Callable, List, Literal, Tuple, Union
+
+from pymapmanager.layers.utils import getCoords
 from ..benchmark import timer
 from pymapmanager._logger import logger
 
@@ -143,6 +146,50 @@ class Layer:
 
     def _encodeBin(self):
         "abstract"
+
+    def normalize(self):
+        return self
+
+    def _toBaseFrames(self) -> List[pd.DataFrame]:
+        frames = []
+        for idx, shape in  self.series.items():
+            coords = getCoords(shape)
+            for coord in coords:
+                x, y = zip(*coord)
+                frames.append(pd.DataFrame({
+                    "x": x,
+                    "y": y,
+                    }, index = [idx] * len(x)))
+        
+        return frames
+
+
+    def toFrame(self) -> List[pd.DataFrame]:
+        norm = self.normalize()
+        base = norm._toBaseFrames()
+        # add props (get fill, stroke,...)
+        COLORS_PROPS = ["fill", "stroke"];
+        for frame in base: 
+            for property, propValue in norm.properties.items():
+                if not property in COLORS_PROPS: 
+                    # if : Is a prop that is a value not mut and not opacity
+                    # frame[property] = frame.index.apply(lambda id: propValue if not callable(propValue) else propValue(id))
+                    continue
+            
+                opacity = 255
+                if "opacity" in norm.properties:
+                    opacity = norm.properties["opacity"]
+
+                def withOpacity(id): 
+                    color = propValue if not callable(propValue) else propValue(id);
+                    if len(color) == 3:
+                        color.append(opacity)
+                    else:
+                        color[3] = opacity
+                    return color
+                frame[property] = frame.index.map(withOpacity)
+
+        return base;
 
     def encodeBin(self):
         if len(self.series) == 0:

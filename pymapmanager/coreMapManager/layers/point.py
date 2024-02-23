@@ -1,5 +1,6 @@
 from typing import Callable, Tuple, Union
 import numpy as np
+import pandas as pd
 from .layer import Layer
 from .utils import getCoords, inRange, dropZ
 from .line import LineLayer
@@ -30,6 +31,12 @@ class PointLayer(Layer):
     def label(self, show=True):
         ("implemented by decorator", show)
         return self
+
+    def _toBaseFrames(self):
+        return [pd.DataFrame({
+          "x": self.series.x,
+          "y": self.series.y,
+        }, index = self.series.index)]
 
     def _encodeBin(self):
         coords = self.series.apply(getCoords)
