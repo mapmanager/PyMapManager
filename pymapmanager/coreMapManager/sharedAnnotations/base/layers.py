@@ -38,8 +38,8 @@ class AnnotationsLayers(AnnotationsInteractions):
                 layers.extend(self._getSegments(
                     zRange, options["annotationSelections"]["segmentID"], options["showLineSegmentsRadius"]))
 
-            # if options["showSpines"]:
-            #     layers.extend(self._getSpines(options))
+            if options["showSpines"]:
+                layers.extend(self._getSpines(options))
 
             return layers
 
@@ -54,19 +54,18 @@ class AnnotationsLayers(AnnotationsInteractions):
         editing = editingSegmentId is not None
         # index_filter = options["filters"]
 
-
         # for i, k, in enumerate(self._points):
         #     logger.info(f"i: {i} k: {k}")
 
-        logger.info(f"selections: {selections}")
-        logger.info(f"selectedSpine: {selectedSpine}")
-        logger.info(f"editingSegmentId: {editingSegmentId} type: {type(editingSegmentId)}")
-        logger.info(f"editing: {editing}")
+        # logger.info(f"selections: {selections}")
+        # logger.info(f"selectedSpine: {selectedSpine}")
+        # logger.info(f"editingSegmentId: {editingSegmentId} type: {type(editingSegmentId)}")
+        # logger.info(f"editing: {editing}")
 
-        temp = self._points["segmentID"]
-        logger.info(f"self._points[segmentID]: {temp}")
+        # temp = self._points["segmentID"]
+        # logger.info(f"self._points[segmentID]: {temp}")
                     
-        logger.info(f"zRange[0]: {zRange[0]} zRange[1]: {zRange[1]}")
+        # logger.info(f"zRange[0]: {zRange[0]} zRange[1]: {zRange[1]}")
 
         # NOTE:
         # editingSegmentId is a str
@@ -107,7 +106,7 @@ class AnnotationsLayers(AnnotationsInteractions):
             not_faded = None
             # logger.info(f"not editing visible_mask {visible_mask}")
 
-        logger.info(f"visible_mask {visible_mask}")
+        # logger.info(f"visible_mask {visible_mask}")
 
         points = self._points[visible_mask]
 
@@ -128,7 +127,7 @@ class AnnotationsLayers(AnnotationsInteractions):
                 self._points.loc[[selectedSpine]], editing, layers)
 
 
-        logger.info(f"spine Layers {layers}")
+        # logger.info(f"spine Layers {layers}")
         return layers
 
     def _appendPointLayers(self, options: AnnotationsOptions, points: gp.GeoDataFrame, editing=False):
@@ -243,7 +242,7 @@ class AnnotationsLayers(AnnotationsInteractions):
         layers = []
 
 
-        logger.info(f"self._lineSegments: {self._lineSegments}")
+        # logger.info(f"self._lineSegments: {self._lineSegments}")
         segment = (LineLayer(self._lineSegments["segment"])
                    .id("segment")
                    .clipZ(zRange)

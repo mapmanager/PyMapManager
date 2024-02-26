@@ -150,25 +150,42 @@ class Layer:
     def normalize(self):
         return self
 
-    def _toBaseFrames(self) -> List[pd.DataFrame]:
-        frames = []
-        for idx, shape in  self.series.items():
-            coords = getCoords(shape)
-            for coord in coords:
-                x, y = zip(*coord)
-                frames.append(pd.DataFrame({
-                    "x": x,
-                    "y": y,
-                    }, index = [idx] * len(x)))
-        
-        return frames
+    # def _toBaseFrames(self) -> List[pd.DataFrame]:
+    #     frames = []
+    #     for idx, shape in  self.series.items():
+
+    #         # logger.info(f"idx of frame {idx}")
+    #         coords = getCoords(shape)
+
+    #         # logger.info(f"gotCoords {coords}")
+    #         for coord in coords:
+    #             # logger.info(f"coord in coords: {coord}")
+    #             # logger.info(f"len of coords: {len(coord)}")
+
+    #             if len(coord) >= 1:
+    #                 # x, y = zip(*coord)
+    #                 x = coord[0]
+    #                 y = coord[1]
+
+    #                 logger.info(f"coord tuple x {x} y {y}")
+    #                 frames.append(pd.DataFrame({
+    #                     "x": x,
+    #                     "y": y,
+    #                     }, index = [idx] * len(x)))
+            
+    #     return frames
 
 
     def toFrame(self) -> List[pd.DataFrame]:
         norm = self.normalize()
-        base = norm._toBaseFrames()
+
+        # Polygon might have an issue since there is no normalize for it?
+        if norm is None:
+            logger.info(f"self.series name {self.getID()}")
+            return
+        base = norm._toBaseFrames() # this needs to be fixed
         # add props (get fill, stroke,...)
-        COLORS_PROPS = ["fill", "stroke"];
+        COLORS_PROPS = ["fill", "stroke"]
         for frame in base: 
             for property, propValue in norm.properties.items():
                 if not property in COLORS_PROPS: 
@@ -184,12 +201,15 @@ class Layer:
                     color = propValue if not callable(propValue) else propValue(id);
                     if len(color) == 3:
                         color.append(opacity)
+                        # return color
                     else:
                         color[3] = opacity
                     return color
+                
                 frame[property] = frame.index.map(withOpacity)
 
-        return base;
+        # logger.info(f"returning base {base}")
+        return base
 
     def encodeBin(self):
         if len(self.series) == 0:

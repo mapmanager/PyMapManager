@@ -7,7 +7,7 @@ import numpy as np
 from shapely.geometry import Polygon
 import matplotlib.pyplot as plt
 import geopandas as gpd
-
+from qtpy import QtCore
 import pyqtgraph as pg
 from PyQt5 import QtWidgets
 from pymapmanager.coreMapManager.layers import MultiLineLayer, PointLayer, LineLayer, PolygonLayer
@@ -17,6 +17,7 @@ from .mmWidget2 import mmWidget2
 class PlotLayers2(QtWidgets.QWidget):
 # class PlotLayers2(mmWidget2):
     """
+    view = pg.PlotWidget
         
     """
     # def __init__(self, stackWidget, view):
@@ -37,34 +38,58 @@ class PlotLayers2(QtWidgets.QWidget):
         self.plot.getViewBox().invertY(True)
         self.plot.setZValue(1) 
 
+        self.labelList = []
+
         # self.setCentralWidget(self.view)
         # self.plot_graph.plot([],[])
 
-    def createScatterLayer(self):
-        """ Pre definingspecific plots that need to be tracked in the widget"""
+    # def createScatterLayer(self):
+    #     """ Pre definingspecific plots that need to be tracked in the widget"""
 
-        self.defineNewPointPlot("Spine Points", "Green", 2)
-        self.defineNewPointPlot("Selected Spines", "Yellow", 2)
+    #     self.defineNewPointPlot("Spine Points", "Green", 2)
+    #     self.defineNewPointPlot("Selected Spines", "Yellow", 2)
 
+    # def getScatterLayer(self):
+        
+    #     # for keys in self.plotDict.keys():
+    #     #     logger.info(f"creating spine points {keys}")
+
+    #     logger.info(f"self.plotDict.keys() {self.plotDict.keys()}")
+
+    #     if 'Spine Points' not in self.plotDict.keys():
+    #         logger.info(f"creating spine points")
+    #         self.createScatterLayer()
+    #         logger.info(f"self.plotDict.keys() {self.plotDict.keys()}")
+    #     else:
+    #         logger.info(f"spine points already created")
+        
+    #     temp = self.plotDict["Spine Points"]
+    #     logger.info(f"getting spine point Layer: {temp}")
+
+
+    #     return self.plotDict["Spine Points"]
+        
+    
     def getScatterLayer(self):
         
-        # for keys in self.plotDict.keys():
-        #     logger.info(f"creating spine points {keys}")
 
         logger.info(f"self.plotDict.keys() {self.plotDict.keys()}")
 
-        if 'Spine Points' not in self.plotDict.keys():
-            logger.info(f"creating spine points")
-            self.createScatterLayer()
-            logger.info(f"self.plotDict.keys() {self.plotDict.keys()}")
-        else:
-            logger.info(f"spine points already created")
+        # if 'spine' not in self.plotDict.keys():
+        #     logger.info(f"creating spine points")
+        #     self.createScatterLayer()
+        #     logger.info(f"self.plotDict.keys() {self.plotDict.keys()}")
+        # else:
+        #     logger.info(f"spine points already created")
         
-        temp = self.plotDict["Spine Points"]
-        logger.info(f"getting spine point Layer: {temp}")
+        # temp = self.plotDict["spine"]
+        # logger.info(f"getting spine point Layer: {temp}")
 
-
-        return self.plotDict["Spine Points"]
+        if "spine" in self.plotDict:
+            return self.plotDict["spine"]
+        else:
+            self.defineNewPointPlot("spine", None, None, zValue=10)
+            return self.plotDict["spine"]
 
     def getView(self):
         return self.view
@@ -79,55 +104,236 @@ class PlotLayers2(QtWidgets.QWidget):
         # newPlot.setAlpha(alpha, False)
         self.plotDict[plotName] = newPlot
 
+
+    # def definePlotLayer(self, plotName, stroke = None, fill = None, alpha = 1.0):
+    def definePlotLayer(self, plotName):
+
+        # logger.info(f"plotting stroke{stroke} plotting fill{fill}")
+        # if stroke is None:
+        #     newPlot = self.view.plot([],[],
+        #                 # pen=stroke,
+        #                 symbolBrush = fill
+        #                 # brush = pg.mkBrush(color=(255,0,0))
+        #                 )
+        # elif fill is None:
+        #     newPlot = self.view.plot([],[],
+        #         pen=stroke,
+                # symbolBrush = fill
+                # brush = pg.mkBrush(color=(255,0,0))
+            # )
+
+        # newPlot = self.view.plot([],[],
+        #         pen=stroke,
+        #         symbolBrush = fill)
+
+        newPlot = self.view.plot([],[])
+          
+        newPlot.getViewBox().invertY(True)
+        newPlot.setZValue(1) 
+        # newPlot.setAlpha(alpha, False)
+        self.plotDict[plotName] = newPlot
+
+    # def updatePlotLayer(self, plotName, stroke = None, fill = None, alpha = 1.0):
+    #     if stroke is None:
+    #         newPlot = self.view.plot([],[],
+    #                     # pen=stroke,
+    #                     symbolBrush = fill
+    #                     # brush = pg.mkBrush(color=(255,0,0))
+    #                     )
+    #     elif fill is None:
+    #         newPlot = self.view.plot([],[],
+    #             pen=stroke,
+    #         )
+   
+    #     newPlot.getViewBox().invertY(True)
+    #     newPlot.setZValue(1) 
+    #     self.plotDict[plotName] = newPlot
+
     def plotLayer(self, layer):
-        logger.info(f"layer {layer} type: {type(layer)}")
+        # logger.info(f"layer {layer} type: {type(layer)}")
         # logger.info(f"name: {layer.getName()} layer: {layer.getSeries()}")
+    
+        layerName = layer.getID()
+        # logger.info(f"layer ID: {layerName}")
+        # logger.info(f"getting layer stroke: {layer.getStroke(layerName)}")
+        frames = layer.toFrame()
 
-        tempID = layer.getID()
-        logger.info(f"layer ID: {tempID}")
-        logger.info(f"getting layer stroke: {layer.getStroke(tempID)}")
+        # logger.info(f"length of frames: {len(frames)}")
+        # frame = frame[0]
+
+        # NOTE: IMPORTANT: need to see why stroke and fill are None for segment-ghost-left-ghost
+        xVals = []
+        yVals = []
+        stroke = []
+        fill = []
+
+        if frames is None:
+            return
         
-        if layer.checkOpacity():    
-            opacity = layer.getOpacity()
+        for frame in frames:
+            # logger.info(f"frame is  {frame}")
+
+
+            # for points we have to add nans inside the normalize 
+
+            # get all x and y values of each frame
+            # add a np.nan in between each to separate them
+            xVals.extend(frame["x"].tolist())
+            yVals.extend(frame["y"].tolist())
+          
+            xVals.append(np.nan) 
+            yVals.append(np.nan)
+
+            if "stroke" in frame:
+                
+                # import sys
+                strokeList = frame["stroke"].tolist()
+                # tupledStroke = tuple(strokeList)
+     
+                tupledStroke = [tuple(x) for x in strokeList]
+                # logger.info(f"tupledStroke {tupledStroke}")
+                # sys.exit()
+
+                # stroke.extend(tuple(frame["stroke"].tolist()))
+                # stroke.extend(tupledStroke)
+                stroke.extend(strokeList)
+
+                # logger.info(f"stroke before append {stroke}")
+                # sys.exit()
+            
+                
+                stroke.append([0,0,0,0])  # no color for every empty point (np.nan)
+                # logger.info(f"stroke after {stroke}")
+            else:
+                # stroke.append(None)
+                stroke = None
+
+            if "fill" in frame:
+                fillList = frame["fill"].tolist()
+                # tupledFill = tuple(fillList)
+
+                tupledFill = [tuple(x) for x in fillList]
+                # fill.extend(tupledFill)
+
+                fill.extend(fillList)
+                fill.append([0,0,0,0])
+            else:
+                fill = None
+        
+        # logger.info(f"layer ID: {layerName}")
+
+        # logger.info(f"symbolPen: {stroke} symbolBrush: {fill}")
+        # Problem not sure if stroke and fill are being set properly
+        if layerName not in self.plotDict:
+            # self.definePlotLayer(plotName=layerName, stroke=stroke, fill=fill) 
+            self.definePlotLayer(plotName=layerName) 
+
+            # self.plotDict[layerName].setData(xVals, yVals)
+            # Problem with this:
+            # Each plot needs different conditions
+            # IMPORTANT: line plots need pen and no symbol pen
+            # point plots do not
+            # self.plotDict[layerName].setData(xVals, yVals, pen = None, symbolPen=stroke, symbolBrush=fill)
+            self.plotConditional(layer, xVals, yVals, stroke, fill)
+            # self.plotDict[plotName].setData(yPoints, xPoints) # Note: x and y are swapped for polygons
         else:
-            opacity = 1.0
+            # logger.info(f"updating old plot: {layerName}")
+            self.plotConditional(layer, xVals, yVals, stroke, fill)
 
-        # logger.info(f"layer opacity: {opacity}")
+            # self.plotDict[layerName].setData(xVals, yVals, symbolPen = stroke, symbolBrush=fill)
+            # self.plotDict[layerName].setData(xVals, yVals)
 
+    def plotConditional(self, layer, xVals, yVals, stroke, fill):
+
+        layerName = layer.getID()
+        # logger.info(f"layer type {type(layer)}")
         if type(layer) == MultiLineLayer:
-            logger.info(f"Plotting multiline layer!")
-            # tempID = layer.getID()
-            logger.info(f"getting layer id: {layer.getID()}")
-            logger.info(f"getting layer stroke: {layer.getStroke(tempID)}")
-            # logger.info(f"getting layer properties: {layer.getProperties()}")
-            # self.plotMultiLineLayer(layer.getSeries(), layer.getName(), layer.getColor())
-            self.plotMultiLineLayer(layer.getSeries(), layer.getID(), layer.getStroke(tempID), opacity)
-
+   
+            self.plotDict[layerName].setData(xVals, yVals, pen = stroke[0])
         elif type(layer) == LineLayer:
-            logger.info(f"Plotting Line layer!")
-            # logger.info(f"layer {layer} type: {type(layer)}")
-            # logger.info(f"getting layer stroke: {layer.getStroke(tempID)}")
-            self.plotLineLayer(layer.getSeries(), layer.getID(), layer.getStroke(tempID))
-        
+
+            self.plotDict[layerName].setData(xVals, yVals, pen = stroke[0])
+    
         elif type(layer) == PointLayer:
-            # TODO: Figure out how to get unique color (HIGHLIGHTED POINT NOT SHOWING)
-            # Get x and y directly from series within layer class
-            # logger.info(f"layer is  {layer} type: {type(layer)}")
+            
+            if layerName == "spine-anchorLine-label":
 
-            fill = layer.getFill(tempID)
+                for label in self.labelList:
+                    self.view.removeItem(label)
+                # need to plot labels with values of IDs
+                frame = layer.toFrame()[0]
 
-            logger.info(f"layer is: {layer} fill: {fill}")
-            if fill != None and len(fill) == 3: # it is an rgb value
-                fill = (int(fill[0]), int(fill[1]), int(fill[2]))
-                logger.info(f"converted fill: {fill}")
+                xVals = frame["x"].tolist()
+                yVals = frame["y"].tolist()
+                indexList = frame.index.to_list()
+                
+                for index, val in enumerate(xVals):
+                    label = pg.LabelItem('', **{'color': '#FFF','size': '2pt'})
+                    # logger.info(f"adding new label at x:{xVals[index]} y:{yVals[index]}")
+                    label.setPos(QtCore.QPointF(xVals[index]-6, yVals[index]-6))
+                    label.setText(str(indexList[index]))
+                    # label.setAlignment(QtCore.Qt.AlignCenter)
+                    # label.setAlignment(QtCore.Qt.AlignCenter)
+                    self.view.addItem(label)
+                    self.labelList.append(label)
+
+            else:
+                self.plotDict[layerName].setData(xVals, yVals, pen=None, symbolBrush=fill)
+        
+        elif type(layer) == PolygonLayer:
+            self.plotDict[layerName].setData(xVals, yVals, pen = stroke[0])
+        
+
+
+    # def plotLayer(self, layer):
+    #     logger.info(f"layer {layer} type: {type(layer)}")
+    #     # logger.info(f"name: {layer.getName()} layer: {layer.getSeries()}")
+
+    #     tempID = layer.getID()
+    #     logger.info(f"layer ID: {tempID}")
+    #     logger.info(f"getting layer stroke: {layer.getStroke(tempID)}")
+        
+    #     if layer.checkOpacity():    
+    #         opacity = layer.getOpacity()
+    #     else:
+    #         opacity = 1.0
+
+    #     # logger.info(f"layer opacity: {opacity}")
+
+    #     if type(layer) == MultiLineLayer:
+    #         logger.info(f"Plotting multiline layer!")
+    #         # tempID = layer.getID()
+    #         logger.info(f"getting layer id: {layer.getID()}")
+    #         logger.info(f"getting layer stroke: {layer.getStroke(tempID)}")
+    #         # logger.info(f"getting layer properties: {layer.getProperties()}")
+    #         # self.plotMultiLineLayer(layer.getSeries(), layer.getName(), layer.getColor())
+    #         self.plotMultiLineLayer(layer.getSeries(), layer.getID(), layer.getStroke(tempID), opacity)
+
+    #     elif type(layer) == LineLayer:
+    #         logger.info(f"Plotting Line layer!")
+    #         # logger.info(f"layer {layer} type: {type(layer)}")
+    #         # logger.info(f"getting layer stroke: {layer.getStroke(tempID)}")
+    #         self.plotLineLayer(layer.getSeries(), layer.getID(), layer.getStroke(tempID))
+        
+    #     elif type(layer) == PointLayer:
+    #         # TODO: Figure out how to get unique color (HIGHLIGHTED POINT NOT SHOWING)
+    #         # Get x and y directly from series within layer class
+    #         # logger.info(f"layer is  {layer} type: {type(layer)}")
+
+    #         fill = layer.getFill(tempID)
+
+    #         logger.info(f"layer is: {layer} fill: {fill}")
+    #         if fill != None and len(fill) == 3: # it is an rgb value
+    #             fill = (int(fill[0]), int(fill[1]), int(fill[2]))
+    #             logger.info(f"converted fill: {fill}")
 
         
 
    
-            self.plotPointLayer(layer.getSeries(), layer.getID(), layer.getStroke(tempID), fill)
+    #         self.plotPointLayer(layer.getSeries(), layer.getID(), layer.getStroke(tempID), fill)
         
-        elif type(layer) == PolygonLayer:
-            self.plotPolygonLayer(layer.getSeries(), layer.getID())
+    #     elif type(layer) == PolygonLayer:
+    #         self.plotPolygonLayer(layer.getSeries(), layer.getID())
 
     def defineNewPolygonPlot(self, plotName):
         newPolyLayer = self.view.plot([],[])
@@ -251,6 +457,7 @@ class PlotLayers2(QtWidgets.QWidget):
 
         for i in layerDF.index:
 
+            # logger.info(f"line layerDF {layerDF}")
             x,y = layerDF[i].xy
             xPoints = np.append(xPoints, x)
             yPoints = np.append(yPoints, y)

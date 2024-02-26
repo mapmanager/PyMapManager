@@ -6,7 +6,7 @@ from .utils import getCoords, inRange, dropZ
 from .line import LineLayer
 import geopandas as gp
 from shapely.geometry import LineString, Point
-
+from pymapmanager._logger import logger
 
 class PointLayer(Layer):
     # clip the shapes z axis
@@ -19,6 +19,19 @@ class PointLayer(Layer):
         self.series = points.combine(
             self.series, lambda x, x1: LineString([x, x1]))
         return LineLayer(self)
+
+    # ABJ
+    def getSpineID(self, relativeIndex):
+        """
+            Args:
+                relative Index: index when clicking inside GUI
+            
+            Returns: Actual spine ID within dataframe that corresponds to GUI id
+        """
+        # return self.spineIDList[relativeIndex]
+        indexList = self.series.index.tolist()
+        logger.info(f"indexList {indexList}")
+        return indexList[relativeIndex]
 
     @Layer.setProperty
     def radius(self, radius: Union[int, Callable[[str], int]]):
@@ -33,10 +46,37 @@ class PointLayer(Layer):
         return self
 
     def _toBaseFrames(self):
+
+        # logger.info(f"self.series {self.series}")
+        # temp = type(self.series)
+        # temp = gp.GeoSeries(self.series)
+        self.series = gp.GeoSeries(self.series)
+        # # logger.info(f"self.series. geo {temp}")
+        # # logger.info(f"self.series. geo {type(temp)}")
         return [pd.DataFrame({
           "x": self.series.x,
           "y": self.series.y,
         }, index = self.series.index)]
+
+        # pointDF = self.series
+        # xPoints = np.array([])
+        # yPoints = np.array([])
+        
+
+        # # either pack with np and ruin indexing
+        # for i in pointDF.index:
+        #     x,y = pointDF[i].xy
+        #     # xPoints = np.append(xPoints, np.nan)
+        #     # yPoints = np.append(yPoints, np.nan)
+
+        #     xPoints = np.append(xPoints, x)
+        #     yPoints = np.append(yPoints, y)
+
+        # return [pd.DataFrame({
+        #   "x": xPoints,
+        #   "y": yPoints,
+        # })]
+
 
     def _encodeBin(self):
         coords = self.series.apply(getCoords)

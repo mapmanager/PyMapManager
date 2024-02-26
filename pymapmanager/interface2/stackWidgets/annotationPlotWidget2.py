@@ -256,9 +256,14 @@ class annotationPlotWidget(mmWidget2):
             # self._selectAnnotation(dbIdx, isAlt)
 
 
-            # New layer code
+            # New layer code (OLD)
             plotIdx = oneEvent.index()
+            logger.info(f'plot index: {plotIdx}')
             dbIdx = int(self.spineLayer.getSpineID(plotIdx))
+
+
+            # 2/23 refactored layer code
+
             # logger.info(f'plot index: {plotIdx}')
             logger.info(f'dbIdx: {dbIdx}')
 
@@ -414,20 +419,24 @@ class annotationPlotWidget(mmWidget2):
             segmentID = None
             # rowIdx = ""
 
-        self.stateOptions.setSelection(segmentID=segmentID, spineID=rowIdx)
 
+
+        # NOTE: only select segmentID when entering edit mode
+        # self.stateOptions.setSelection(segmentID=segmentID, spineID=rowIdx)
+        self.stateOptions.setSelection(segmentID=None, spineID=rowIdx) 
         test = self.layers.getLayers(self.stateOptions)
 
         for i, layer in enumerate(test):
             # self.plotLayer(layer)
-            print(layer.toFrame())
+            # logger.info(f'(layer.id: {layer.id})')
+            # print(layer.toFrame())
             self._plotLayers2.plotLayer(layer)
             # if layer.name == "Spine Points":
 
             # logger.info(f'(layer.id: {layer.id})')
-            # if layer.id == "spine":
-            #     # logger.info(f'(Spine Layer: {layer})')
-            #     self.spineLayer = layer # reset spine layer for mouse click detection
+            if layer.getID()== "spine":
+                # logger.info(f'(Spine Layer: {layer})')
+                self.spineLayer = layer # reset spine layer for mouse click detection
 
         # self.resetSpineSelectionPlot() # only needs to be done on slice refresh
         end = time.time()

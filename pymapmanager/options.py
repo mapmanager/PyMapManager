@@ -152,11 +152,13 @@ class Options():
                             'spineID': ''})
         """
 
-        if spineID != None:
+        if segmentID != None:
             self.setCurrentValue("annotationSelections", {'segmentID': str(segmentID),
                                 'spineID': str(spineID)})
         else:
-            self.setCurrentValue("annotationSelections", None)
+            # self.setCurrentValue("annotationSelections", None)
+            self.setCurrentValue("annotationSelections", {'segmentID': None,
+                                'spineID': str(spineID)})
 
     def setMultipleSelection(self, segmentIDs, spineIDs):
         """Set an Options parameter's current value.

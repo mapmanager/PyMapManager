@@ -1,5 +1,6 @@
-from typing import Callable, Tuple, Union
+from typing import Callable, List, Tuple, Union
 import numpy as np
+import pandas as pd
 from .layer import Layer
 from .utils import dropZ, getCoords
 from shapely.geometry import LineString, MultiLineString, Point
@@ -9,13 +10,17 @@ import shapely
 import geopandas as gp
 from ..benchmark import timer
 from .polygon import PolygonLayer
-
+from pymapmanager._logger import logger
 
 class MultiLineLayer(Layer):
     @timer
     def buffer(self, *args, **kwargs):
         self.series = self.series.apply(lambda x: x.buffer(*args, **kwargs))
         return PolygonLayer(self)
+    
+    # def offseting(self, *args, **kwargs):
+    #     self.series = self.series.apply(lambda x: x.buffer(*args, **kwargs))
+    #     return PolygonLayer(self)
 
     @Layer.setProperty
     def offset(self, offset: Union[int, Callable[[str], int]]):
@@ -29,13 +34,70 @@ class MultiLineLayer(Layer):
 
     def normalize(self):
         if "outline" in self.properties:
+            # what is outline?
+            # makes line into polygon layer (this should be the ROIs)
+            # NOTE: This might not work since all the polygons will be plotted on same layer rather than separate ones
+            outline = self.properties["outline"]
+            if outline is None:
+                return
+            logger.info (f"outline {outline}")
             ne = self.buffer(distance=self.properties["outline"])
-            self.properties["outline"] = None;
+            self.properties["outline"] = None
             return ne
         if "offset" in self.properties:
-            self.series = offset_curve(self.series, distance=self.properties["offset"]);
-            self.properties["offset"] = None;
+            # Issue offset is returning lambda rather than value
+            # idTemp = self.getID()
+
+            # need to get list of id within series
+            if len(self.series.index)  <= 0:
+                return 
+            
+            idList = self.series.index[0]
+
+            # logger.info(f"idList  {idList}")
+            offsetTemp = self.properties["offset"]
+            distance = offsetTemp(idList)
+
+            # either need one index or list of all indexes
+            # logger.info(f"offsetTemp is  {offsetTemp(idTemp)}")
+
+            # logger.info(f"self.series {self.series}")
+
+            # self.series = offset_curve(self.series, distance=self.properties["offset"])
+            # Distance is one value or a list of values
+            self.series = offset_curve(self.series, distance=distance)
+            self.properties["offset"] = None
         return self
+
+    def _toBaseFrames(self) -> List[pd.DataFrame]:
+        explodedLineStrings = self.series.explode()
+        # logger.info(f"multiLineStrings: {multiLineStrings}")
+        # logger.info(f"explodedLineStrings: {explodedLineStrings}")
+        xPoints = np.array([])
+        yPoints = np.array([])
+        currentIndex = 0
+        for i in explodedLineStrings.index:
+            
+            """
+            ExplodedLineStrings index are tuples:
+            example: i:  (2, 2)
+            """
+            tupleIndex = i[0]
+            if currentIndex != tupleIndex:
+                # print("currentIndex:", currentIndex, ", i[0]:", i[0], ", i:", i, ", segmentID:", segmentID)
+                xPoints = np.append(xPoints, np.nan)
+                yPoints = np.append(yPoints, np.nan)
+                currentIndex = tupleIndex
+            x,y = explodedLineStrings[i].xy
+            xPoints = np.append(xPoints, x)
+            yPoints = np.append(yPoints, y)
+
+            # logger.info(f"index {i}")
+
+        return [pd.DataFrame({
+          "x": xPoints,
+          "y": yPoints,
+        })]
 
 
     def _encodeBin(self):
@@ -60,6 +122,28 @@ class LineLayer(MultiLineLayer):
         self.series = self.series.apply(clipLine, zRange=zRange)
         self.series.dropna(inplace=True)
         return MultiLineLayer(self)
+
+
+    def _toBaseFrames(self) -> List[pd.DataFrame]:
+        layerDF = self.series
+
+        xPoints = np.array([])
+        yPoints = np.array([])
+
+        for i in layerDF.index:
+
+            # logger.info(f"line layerDF {layerDF}")
+            x,y = layerDF[i].xy
+            xPoints = np.append(xPoints, x)
+            yPoints = np.append(yPoints, y)
+            xPoints = np.append(xPoints, np.nan)
+            yPoints = np.append(yPoints, np.nan)
+
+        return [pd.DataFrame({
+          "x": xPoints,
+          "y": yPoints,
+        })]
+
 
     @timer
     def createSubLine(df: gp.GeoDataFrame, distance: int, linc: str, originc: str):
