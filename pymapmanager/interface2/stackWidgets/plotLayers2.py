@@ -149,7 +149,22 @@ class PlotLayers2(QtWidgets.QWidget):
     #     newPlot.setZValue(1) 
     #     self.plotDict[plotName] = newPlot
 
+    def resetROILayers(self):
+        # Roi selection plot not resetting properly
+        # quick fix is to set all layers to 0
+        hideList = ["roi-head-background", "roi-head", "roi-base-background", "roi-base"]
+        for plotName in hideList:
+            self.plotDict[plotName].setData([],[])
+
+    def resetAllLayers(self):
+        # Roi selection plot not resetting properly
+        # quick fix is to set all layers to 0
+        # hideList = ["roi-head-background", "roi-head", "roi-base-background", "roi-base"]
+        for plotName in self.plotDict:
+            self.plotDict[plotName].setData([],[])
+
     def plotLayer(self, layer):
+
         # logger.info(f"layer {layer} type: {type(layer)}")
         # logger.info(f"name: {layer.getName()} layer: {layer.getSeries()}")
     
@@ -248,14 +263,17 @@ class PlotLayers2(QtWidgets.QWidget):
         layerName = layer.getID()
         # logger.info(f"layer type {type(layer)}")
         if type(layer) == MultiLineLayer:
-   
+            # logger.info(f"replotting multiline layer")
+            # self.plotDict[layerName].setData([],[])
             self.plotDict[layerName].setData(xVals, yVals, pen = stroke[0])
         elif type(layer) == LineLayer:
-
+            # logger.info(f"replotting line layer")
+            # self.plotDict[layerName].setData([],[])
             self.plotDict[layerName].setData(xVals, yVals, pen = stroke[0])
     
         elif type(layer) == PointLayer:
-            
+            # logger.info(f"replotting point layer")
+            # self.plotDict[layerName].setData([],[])
             if layerName == "spine-anchorLine-label":
 
                 for label in self.labelList:
@@ -281,6 +299,8 @@ class PlotLayers2(QtWidgets.QWidget):
                 self.plotDict[layerName].setData(xVals, yVals, pen=None, symbolBrush=fill)
         
         elif type(layer) == PolygonLayer:
+            # logger.info(f"replotting polygon layer")
+            # self.plotDict[layerName].setData([],[])
             self.plotDict[layerName].setData(xVals, yVals, pen = stroke[0])
         
 

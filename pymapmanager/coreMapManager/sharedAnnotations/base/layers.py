@@ -57,8 +57,8 @@ class AnnotationsLayers(AnnotationsInteractions):
         # for i, k, in enumerate(self._points):
         #     logger.info(f"i: {i} k: {k}")
 
-        # logger.info(f"selections: {selections}")
-        # logger.info(f"selectedSpine: {selectedSpine}")
+        logger.info(f"selections: {selections}")
+        logger.info(f"selectedSpine: {selectedSpine}")
         # logger.info(f"editingSegmentId: {editingSegmentId} type: {type(editingSegmentId)}")
         # logger.info(f"editing: {editing}")
 
@@ -123,6 +123,7 @@ class AnnotationsLayers(AnnotationsInteractions):
                 layers.append(layer.opacity(255*0.5).copy(id="ghost"))
 
         if selectedSpine in self._points.index:
+            logger.info(f"spine Layers appending ROI")
             self._appendRois(
                 self._points.loc[[selectedSpine]], editing, layers)
 

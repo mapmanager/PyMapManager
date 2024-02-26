@@ -70,7 +70,7 @@ class stackWidget2(mmWidget2):
             event.setStateChange(pmmStates.edit)
             self.slot_pmmEvent(event)
             # self.emitEvent(event)
-            self.slot_pmmEvent(event)
+            # self.slot_pmmEvent(event)
 
         elif _selection.getPointSelection() is not None:
             items = _selection.getPointSelection()
@@ -80,6 +80,12 @@ class stackWidget2(mmWidget2):
             items = []
             event = pmmEvent(pmmEventType.selection, self)
             event.getStackSelection().setPointSelection(items)
+
+            # 2/26 getting slice
+            # logger.info(f"selected point items: {items}")
+            # sliceNum = self.getStack().getPointAnnotations().getValue("z", items[0])
+            # event.setSliceNumber(sliceNum)
+
             # self.emitEvent(event)
             self.slot_pmmEvent(event)
 
