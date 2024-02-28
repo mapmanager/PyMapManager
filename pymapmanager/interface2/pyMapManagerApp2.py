@@ -1,6 +1,7 @@
 import os
 import sys
 import math
+from functools import partial
 from typing import List, Union  # , Callable, Iterator, Optional
 
 # import pathlib
@@ -27,7 +28,7 @@ from pymapmanager._logger import logger
 from pymapmanager.pmmUtils import getBundledDir
 
 def loadPlugins(verbose=True) -> dict:
-    """Load plugins from both:
+    """Load stack plugins from both:
         - Package: sanpy.interface.plugins
         - Folder: <user>/sanpy_plugins
 
@@ -107,6 +108,143 @@ def loadPlugins(verbose=True) -> dict:
 #     def __init__(self, path : str):
 #         pass
 
+class PyMapManagerMenus:
+    """Main app menus including loaded map and stack widgets.
+    
+    Widgets need to call _buildMenus(mainMenu).
+    """
+    def __init__(self, app):
+        self._app = app
+
+    def getApp(self):
+        return self._app
+    
+    def _buildMenus(self, mainMenu):
+        
+        #
+        # file
+        fileMenu = mainMenu.addMenu("&File")
+
+        loadFileAction = QtWidgets.QAction("Open...", self.getApp())
+        loadFileAction.setCheckable(False)  # setChecked is True by default?
+        loadFileAction.setShortcut("Ctrl+O")
+        loadFileAction.triggered.connect(self.getApp().openFile)
+        fileMenu.addAction(loadFileAction)
+        
+        loadFolderAction = QtWidgets.QAction("Open Time-Series...", self.getApp())
+        loadFolderAction.setCheckable(False)  # setChecked is True by default?
+        loadFolderAction.triggered.connect(self.getApp().openTimeSeries)
+        fileMenu.addAction(loadFolderAction)
+
+        #
+        # edit
+        editMenu = mainMenu.addMenu("&Edit")
+
+        undoAction = QtWidgets.QAction("Undo", self.getApp())
+        undoAction.setCheckable(False)  # setChecked is True by default?
+        undoAction.setShortcut("Ctrl+Z")
+        # loadFileAction.triggered.connect(self.getApp().openFile)
+        editMenu.addAction(undoAction)
+
+        redoAction = QtWidgets.QAction("Redo", self.getApp())
+        redoAction.setCheckable(False)  # setChecked is True by default?
+        redoAction.setShortcut("Shift+Ctrl+Z")
+        # loadFileAction.triggered.connect(self.getApp().openFile)
+        editMenu.addAction(redoAction)
+
+        #
+        # view
+        
+        #
+        # maps
+        self.mapsMenu = mainMenu.addMenu("Maps")
+        _emptyAction = QtWidgets.QAction("None", self.getApp())
+        self.mapsMenu.addAction(_emptyAction)
+        self.mapsMenu.aboutToShow.connect(self._refreshMapsMenu)
+
+        #
+        # stacks
+        self.stacksMenu = mainMenu.addMenu("Stacks")
+        _emptyAction = QtWidgets.QAction("None", self.getApp())
+        self.stacksMenu.addAction(_emptyAction)
+        self.stacksMenu.aboutToShow.connect(self._refreshStacksMenu)
+
+        # help menu
+        self.helpMenu = mainMenu.addMenu("Help")
+
+        name = "PyMapManager Help (Opens In Browser)"
+        action = QtWidgets.QAction(name, self.getApp())
+        action.triggered.connect(partial(self._onHelpMenuAction, name))
+        self.helpMenu.addAction(action)
+
+        # this actually does not show up in the help menu!
+        # On macOS PyQt reroutes it to the main python/SanPy menu
+        name = "About PyMapManager"
+        action = QtWidgets.QAction(name, self.getApp())
+        action.triggered.connect(self._onAboutMenuAction)
+        self.helpMenu.addAction(action)
+
+        # like the help menu, this gets rerouted to the main python/sanp menu
+        name = "Preferences ..."
+        action = QtWidgets.QAction(name, self.getApp())
+        action.triggered.connect(self._onPreferencesMenuAction)
+        self.helpMenu.addAction(action)
+    
+        # get help menu as action so other windows can insert their menus before it
+        # e.g. SanPyWindow inserts (View, Windows) menus
+        logger.info('mainMenu is now')
+        self._helpMenuAction = None
+        for _action in mainMenu.actions():
+            actionText = _action.text()
+            # print('   ', _action.menu(), actionText, _action)
+            if actionText == 'Help':
+                self._helpMenuAction = _action
+
+        return self._helpMenuAction
+    
+    def _refreshMapsMenu(self):
+        """Dynamically refresh the stacks maps.
+        """
+        logger.info('')
+        self.mapsMenu.clear()
+        self._getMapsMenu(self.mapsMenu)
+    
+    def _refreshStacksMenu(self):
+        """Dynamically refresh the stacks menu.
+        """
+        logger.info('')
+        self.stacksMenu.clear()
+        self._getStacksMenu(self.stacksMenu)
+
+    def _getMapsMenu(self, aWindowsMenu):
+        logger.info('')
+        for _path, _mapWidget in self.getApp().getMapWidgetsDict().items():
+            # path = _mapWidget.getPath()
+            action = QtWidgets.QAction(_path, self.getApp(), checkable=True)
+            # action.setChecked(_sanPyWindow.isActiveWindow())
+            # action.triggered.connect(partial(self._windowsMenuAction, _sanPyWindow, path))
+            aWindowsMenu.addAction(action)
+        return aWindowsMenu
+    
+    def _getStacksMenu(self, aWindowsMenu):
+        logger.info('')
+        for _path, _stackWidget in self.getApp().getStackWidgetsDict().items():
+            # path = _stackWidget.getPath()
+            action = QtWidgets.QAction(_path, self.getApp(), checkable=True)
+            # action.setChecked(_sanPyWindow.isActiveWindow())
+            # action.triggered.connect(partial(self._windowsMenuAction, _sanPyWindow, path))
+            aWindowsMenu.addAction(action)
+        return aWindowsMenu
+    
+    def _onHelpMenuAction(self, name):
+        logger.info(name)
+        
+    def _onAboutMenuAction(self, name):
+        logger.info(name)
+        
+    def _onPreferencesMenuAction(self, name):
+        logger.info(name)
+        
 class PyMapManagerApp(QtWidgets.QApplication):
     def __init__(self, argv=['']):
         super().__init__(argv)
@@ -114,7 +252,6 @@ class PyMapManagerApp(QtWidgets.QApplication):
         qdarktheme.setup_theme()
 
         appIconPath = os.path.join(getBundledDir(), 'interface', 'icons', 'mapmanager-icon.png')
-        # logger.info(f'appIconPath:{appIconPath}')
         self.setWindowIcon(QtGui.QIcon(appIconPath))
 
         self._blockSlots = False
@@ -122,274 +259,62 @@ class PyMapManagerApp(QtWidgets.QApplication):
         # abb put this back in
         # self._appDisplayOptions : pymapmanager.interface.AppDisplayOptions = pymapmanager.interface2.AppDisplayOptions()
 
-        self._mapList : pmm.mmMap = []
-        
-        self._stackWidgetList : pmm.interface2.stackWidget = []
+        self._mapWidgetDict = {}
+        # dictionary of open map widgets
+        # keys are full path to map
+
+        self._stackWidgetDict = {}
+        # dictionary of open stack widgets
+        # keys are full path to stack
 
         self._stackWidgetPluginsDict = loadPlugins()
+        # application wide stack widgets
+        
+        self._mainMenu = PyMapManagerMenus(self)
 
-    def loadMap(self, path):
-        _map = self._findMap(path)
-        if _map is None:
-            _map = pmm.mmMap(path)
-            self._mapList.append(_map)
-        return _map
+    def getMapWidgetsDict(self):
+        return self._mapWidgetDict
     
-    def _findMap(self, path) -> pmm.mmMap:
-        """Find an opened mmMap."""
-        for _map in self._mapList:
-            if _map.filePath == path:
-                return _map
-        return None
-
-    def _findMap2(self, thisMap : pymapmanager.mmMap) -> pmm.mmMap:
-        """Find an opened mmMap."""
-        for _map in self._mapList:
-            if _map == thisMap:
-                return _map
-        return None
+    def getStackWidgetsDict(self):
+        return self._stackWidgetDict
     
-    def _findStackWidget(self, path):
-        """Find an open stack widget.
-        """
-        for stackWidget in self._stackWidgetList:
-            tifPath = stackWidget.getStack().getTifPath()
-            if tifPath == path:
-                return stackWidget
-        return None
+    def getMainMenu(self):
+        return self._mainMenu
     
-    def _findStackWidget2(self, thisStack : pymapmanager.stack):
-        """Find an open stack widget.
-        """
-        for stackWidget in self._stackWidgetList:
-            stack = stackWidget.getStack()
-            if stack == thisStack:
-                return stackWidget
-        return None
-    
-    def openStackRun(self, mmMap : pmm.mmMap,
-                     timepoint,
-                     plusMinus,
-                     spineRun : List[int] = None):
-        """Open a run of stack widgets.
-        """
-        # _map = self._findMap(mapPath)
-        # if _map is None:
-        #     logger.error(f'did not find open map.')
-        #     return
-        
-        firstTp = timepoint-plusMinus
-        if firstTp < 0:
-            firstTp = 0
-        lastTp = timepoint + plusMinus + 1
-        if lastTp > mmMap.numSessions-1:
-            lastTp = mmMap.numSessions
-
-        numCols = 3
-        numSessions = mmMap.numSessions
-        screenGrid = self.getScreenGrid(numSessions, numCols)
-        
-        for tp in range(firstTp, lastTp):
-            stack = mmMap.stacks[tp]
-            # tifPath = stack.getTifPath()
-            posRect = screenGrid[tp]
-            bsw = self.openStack(stack=stack, posRect=posRect)
-
-            # toggle interface
-            # ['top toolbar', 'point list', 'line list', 'tracing widget qqq', 'image plot', 'Search Widget xxx']
-            bsw._toggleWidget("top toolbar", False)
-            bsw._toggleWidget("point list", False)
-            bsw._toggleWidget("line list", False)
-            bsw._toggleWidget("tracing widget qqq", False)
-            bsw._toggleWidget("Search Widget xxx", False)
-            # bsw._toggleWidget("Status Bar", False)
-
-            # select a point and zoom
-            if spineRun is not None:
-                spineIdx = spineRun[tp]
-                if ~np.isnan(spineIdx):
-                    spineIdx = int(spineIdx)
-                    bsw.zoomToPointAnnotation(spineIdx, isAlt=True, select=True)
-
-        self.linkOpenPlots(link=True)
-
-    def openStack2(self, mmMap : pymapmanager.mmMap, session : int) -> "pmm.interface2.stackWidget":
-        """Open a stackWidget for map session.
-        """
-        logger.info(f'session:{session} mmMap: {mmMap}')
-        _map = self._findMap2(mmMap)
-        if _map is not None:
-            stack = _map.stacks[session]
-            bsw = self.openStack(stack=stack)
-            return bsw
-        else:
-            logger.warning(f'did not find map session {session}')
-            logger.warning(f'  for map: {mmMap}')
-
-    def openStack(self,
-                  path = None,
-                  stack : pymapmanager.stack = None,
-                  posRect : List[int] = None,
-                  ) -> "pmm.interface2.stackWidget":
-        """Open a stack widget given the tif path.
-        
-        Parameters
-        ==========
-        path : str
-        postRect : List[int]
-            Position for the window [l, t, w, h]
-        """
-        
-        if path is not None:
-            bsw = self._findStackWidget(path)
-        elif stack is not None:
-            bsw = self._findStackWidget2(stack)
-        # !!!!!!!!!!!!!!!!!!!!!
-        if bsw is None:
-            logger.info(f'opening stack widget from scratch with path:{path}')
-            defaultChannel = 2
-            if stack.getImageChannel(channel=defaultChannel) is None:
-                stack.loadImages(channel=defaultChannel)
-
-            bsw = pmm.interface2.stackWidgets.stackWidget2(path=path, stack=stack)
-            # ,
-            #                                 stack=stack,
-            #                                 appDisplayOptions=self._appDisplayOptions,
-            #                                 defaultChannel=defaultChannel,
-            #                                 show=False,
-            #                                 )
-
-            # bsw.signalSelectAnnotation2.connect(self.slot_selectAnnotation)
-            # logger.warning('todo: remove this deep reference of selection signal')
-            # bsw._imagePlotWidget._aPointPlot.signalAnnotationClicked2.connect(self.slot_selectAnnotation)
-
-            # to link widnows, 20230706
-            logger.warning('put back in 202402')
-            #bsw._imagePlotWidget.signalMouseEvent.connect(self.slot_MouseMoveEvent)
-
-            self._stackWidgetList.append(bsw)
-        else:
-            logger.info('recycling existing stack widget')
-        
-        logger.info(f'  path: {path}')
-
-        if posRect is not None:
-            bsw.setPosition(posRect[0], posRect[1], posRect[2], posRect[3])
-
-        bsw.show()
-        # bsw.raise_()
-        # bsw.activateWindow()
-
-        return bsw
-
-    def linkOpenPlot_slice(self, slice):
-        if self._blockSlots:
-            return
-        self._blockSlots = True
-        for idx, widget in enumerate(self._stackWidgetList):
-            _imagePlotWidget = widget._getNamedWidget('image plot')
-            _imagePlotWidget.slot_setSlice(slice)
-        self._blockSlots = False
-
-    def linkOpenPlots(self, link=True):
-        """Link all open plots so they drag together.
-        """
-        prevPlotWidget = None
-        for idx, widget in enumerate(self._stackWidgetList):
-            _imagePlotWidget = widget._getNamedWidget('image plot')
-            if link and prevPlotWidget is not None:
-                # widget._imagePlotWidget._plotWidget.setYLink(prevPlotWidget)
-                # widget._imagePlotWidget._plotWidget.setXLink(prevPlotWidget)
-                _imagePlotWidget._plotWidget.setYLink(prevPlotWidget)
-                _imagePlotWidget._plotWidget.setXLink(prevPlotWidget)
-            elif not link:
-                # widget._imagePlotWidget._plotWidget.setYLink(None)
-                # widget._imagePlotWidget._plotWidget.setXLink(None)
-                _imagePlotWidget._plotWidget.setYLink(None)
-                _imagePlotWidget._plotWidget.setXLink(None)
-            # prevPlotWidget = widget._imagePlotWidget._plotWidget
-            prevPlotWidget = _imagePlotWidget._plotWidget
-
-            # this works but we get recursion
-            if link:
-                # widget._imagePlotWidget.signalUpdateSlice.connect(self.linkOpenPlot_slice)
-                _imagePlotWidget.signalUpdateSlice.connect(self.linkOpenPlot_slice)
-            else:
-                # widget._imagePlotWidget.signalUpdateSlice.disconnect()
-                _imagePlotWidget.signalUpdateSlice.disconnect()
-
-    def slot_MouseMoveEvent(self, event):
+    def openFile(self):
         return
-        logger.info(f'button: {event.button()}')
-        for widget in self._stackWidgetList:
-            pass
-            # logger.info('  calling monkeyPatchMouseMove')
-            # widget._imagePlotWidget.monkeyPatchMouseMove(event, emit=False)
-            
-            # HOLY CRAP, THIS WORKS !!!!!!!!!!
-            #widget._imagePlotWidget._plotWidget.setYLink(self._stackWidgetList[0]._imagePlotWidget._plotWidget)
 
-    def slot_selectAnnotation(self, selectionEvent, plusMinus=2):
-        """Respond to annotation selections.
-        
-        For spineRoi (if alt) then select and zoom a spine run for all open windows!.
+    def openTimeSeries(self):
+        pass
+
+    def toggleMapWidget(self, path : str, visible : bool):
+        """Show/hide a map widget.
         """
-
-        if self._blockSlots:
+        if path not in self._mapWidgetDict.keys():
+            logger.warning(f'did not find in keys')
             return
-        
-        stack = selectionEvent.getStack()
-        
-        mmMap = stack.getMap()
-        if mmMap is None:
-            logger.warning('did not find a map parent for stack')
-            logger.warning(f'  stack is {stack}')
-            return
-        
-        isAlt = selectionEvent.isAlt
-        if not isAlt:
-            return
-        
-        spineIndex = selectionEvent.getRows()
-        if len(spineIndex) == 0:
-            return
-        
-        logger.info('')
+        self._mapWidgetDict[path].setVisible(visible)
 
-        spineIndex = spineIndex[0]
-        spineIndex = float(spineIndex)
-
-        tp = mmMap.getStackTimepoint(stack)
-
-        pd = mmMap.getMapValues2('index')  # [68. 69. 43. 94. 39. 35. 30. 30. 44.]
-        
-        rowIdx = np.where(pd[:,tp] == spineIndex)
-        if len(rowIdx[0])==0:
-            logger.warning(f'  did not find spine {spineIndex} in timepoint {tp}')
-            return
-        
-        rowIdx = rowIdx[0][0]
-
-        spineRun = pd[rowIdx]
-
-        self._blockSlots = True
-        self.openStackRun(mmMap, timepoint=tp, plusMinus=plusMinus, spineRun=spineRun)
-        self._blockSlots = False
-
-    def openMapWidget(self, idx : int):
-        """Open a map widget using index into list of open maps
-        Arguments
-        =========
-        path : str
-            path to map
+    def loadMapWidget(self, path):
+        """Load a map widget from a path.
         """
-        logger.info('')
-        _map = self._mapList[idx]
-        self._mapTableWidget = pymapmanager.interface.mmMapTable(_map, self)
-        self._mapTableWidget.signalOpenStack.connect(self.openStack2)
-        self._mapTableWidget.signalOpenRun.connect(self.openStackRun)
-        self._mapTableWidget.show()
-        self._mapTableWidget.activateWindow()
+        if path in self._mapWidgetDict.keys():
+            self._mapWidgetDict[path].show()
+        else:
+            # load map and make widget
+            _map = pmm.mmMap(path)
+            _mapWidget = pmm.interface2.mmMapWidget(_map)
+            self._mapWidgetDict[path] = _mapWidget
+
+    def loadStackWidget(self, path):
+        if path in self._stackWidgetDict.keys():
+            self._stackWidgetDict[path].show()
+        else:
+            # load stack and make widget
+            # _stack = pmm.stack(path)
+            _stackWidget = pmm.interface2.stackWidgets.stackWidget2(path)
+            _stackWidget.show()
+            self._stackWidgetDict[path] = _stackWidget
 
     def getScreenGrid(self, numItems : int, itemsPerRow : int) -> List[List[int]]:
         """Get screen coordiates for a grid of windows.

@@ -11,10 +11,14 @@ def run():
         return
     
     app = PyMapManagerApp()
-    _map = app.loadMap(mapPath)
+    app.loadMapWidget(mapPath)
     
     # open a timepoint
-    app.openMapWidget(0)
+    app.toggleMapWidget(mapPath, True)
+
+    # open a stack
+    stackPath = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
+    app.loadStackWidget(stackPath)
 
     # open a timepoint and select a spine
     # timepoint = 1
@@ -22,7 +26,7 @@ def run():
     # bsw.zoomToPointAnnotation(120, isAlt=True, select=True)
 
     # open a stack run
-    app.openStackRun(_map, 3, 1)
+    #app.openStackRun(_map, 3, 1)
     
     sys.exit(app.exec_())
 

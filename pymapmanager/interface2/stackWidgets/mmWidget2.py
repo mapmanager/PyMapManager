@@ -171,7 +171,7 @@ class StackSelection:
 class pmmEvent():
     def __init__(self,
                     theType : pmmEventType,
-                    thePmmWidget : "mmWidget"
+                    thePmmWidget : "mmWidget2"
                 ):        
         """
         theType : pmmEventType
@@ -340,7 +340,7 @@ class mmWidget2(QtWidgets.QMainWindow):
     _signalPmmEvent = QtCore.Signal(object)  # pmmEvent
     # 
 
-    def __init__(self, stackWidget : "StackWidget2"):
+    def __init__(self, stackWidget : "pymapmanager.interface2.StackWidget2"):
         """
         Parameters
         ----------
@@ -401,7 +401,7 @@ class mmWidget2(QtWidgets.QMainWindow):
         self.addDockWidget(position, dockWIdget)
         return dockWIdget
     
-    def getStackWidget(self) -> "StackWidget":
+    def getStackWidget(self) -> "pymapmanager.interface2.StackWidget":
         return self._stackWidget
     
     def getStack(self):

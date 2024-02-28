@@ -8,18 +8,18 @@ from pymapmanager.interface import myTableView
 from pymapmanager.interface._data_model import pandasModel
 from pymapmanager._logger import logger
 
-class mmMapListWidgter(QtWidgets.QWidget):
-    def __init__(self, path, pmmApp=None):
-        """Show a list of maps in a folder.
+# class mmMapListWidgter(QtWidgets.QWidget):
+#     def __init__(self, path, pmmApp=None):
+#         """Show a list of maps in a folder.
 
-        Arguments
-        =========
-        path : str
-            path to folder to open.
-        """
-        super().__init__(None)
+#         Arguments
+#         =========
+#         path : str
+#             path to folder to open.
+#         """
+#         super().__init__(None)
 
-        # look for maps like rr30a/rr30a.txt
+#         # look for maps like rr30a/rr30a.txt
 
 class mmMapTable(QtWidgets.QWidget):
     """A widget to show an mmMap as a table.

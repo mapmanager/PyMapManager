@@ -1,7 +1,10 @@
 from __future__ import print_function
 
 import sys
-import os, io, time, math
+import os
+import io
+import time
+import math
 from errno import ENOENT
 import pandas as pd
 import numpy as np
@@ -119,6 +122,58 @@ class mmMap():
         pDist_values = myMap.getMapValues2('pDist', segmentID=[3])
     """
 
+    def getNextPoint(self, sessionIndex, stackDbIdx, leftRightStr):
+        """Given a point, get the next/prev along a segment
+        """
+
+        pa = self.stacks[sessionIndex].getPointAnnotations().getDataFrame()
+        la = self.stacks[sessionIndex].getLineAnnotations().getFullDataFrame()
+
+        # check the point has a brightestIndex
+        print('stackDbIdx:', stackDbIdx, type(stackDbIdx))
+        
+        brightestIndex = pa['brightestIndex'].iloc[stackDbIdx]
+        if np.isnan(brightestIndex):
+            logger.warning(f'point was not connected to a brightestIndex')
+            return
+        
+        segmentID = pa['segmentID'].iloc[stackDbIdx]
+        
+        dfSegment = pa[ pa['segmentID'] == segmentID]
+
+        brightestIndex = int(brightestIndex)
+        startDist = la['aDist'].iloc[brightestIndex]
+
+        nextIdx = None
+        if leftRightStr == 'left':
+            nextDist = 0
+            doRight = False
+        else:
+            nextDist = 2**16
+            doRight = True
+
+        for idx, rowDict in dfSegment.iterrows():
+            # print('idx:', idx, 'rowDict:', rowDict.keys())
+            
+            currBrightestIndex = rowDict['brightestIndex']
+            if np.isnan(currBrightestIndex):
+                continue
+            currBrightestIndex = int(currBrightestIndex)
+            currDist = la['aDist'].iloc[currBrightestIndex]
+            if doRight:
+                if (currDist > startDist) and (currDist < nextDist):
+                    nextIdx = idx
+                    nextDist = currDist
+            else:
+                if (currDist < startDist) and (currDist > nextDist):
+                    nextIdx = idx
+                    nextDist = currDist
+
+        logger.info(f'stackDbIdx is {stackDbIdx} startDist:{startDist}!!!')
+        logger.info(f'   nextIdx is {nextIdx} nextDist:{nextDist}!!!')
+
+        return nextIdx
+    
     def getStackPath(self, sessionIdx : int):
         _folder, _file = os.path.split(self.filePath)
         defaultChannel = 2
@@ -301,6 +356,11 @@ class mmMap():
         else:
             raise StopIteration
 
+    # def __iter__(self):
+    #     i = 0
+    #     while i < len(self.stacks):
+    #         yield self.stacks[i]
+    #         i += 1
 
     @property
     def numChannels(self):
@@ -376,12 +436,6 @@ class mmMap():
             + ' stacks:' + str(self.numSessions)
             + ' total object:' + str(objCount))
         return retStr
-
-    def __iter__(self):
-        i = 0
-        while i < len(self.stacks):
-            yield self.stacks[i]
-            i += 1
 
     def getDataFrame(self):
         df = pd.DataFrame()
@@ -732,7 +786,7 @@ class mmMap():
 
             # 20230523
             _days = self.getValue('days', j)  # _days is a str
-            print('runMap_idx:', runMap_idx)
+            # logger.info(f'runMap_idx: {runMap_idx}')
             final_df.loc[runMap_idx, 'days'] = _days
 
             finalIndexList = final_df.index.tolist()
@@ -753,10 +807,10 @@ class mmMap():
                     pd['y'][finalRows, j] = final_df[pd['ystat']].values
                 if pd['zstat']:
                     pd['z'][finalRows, j] = final_df[pd['zstat']].values
-            except (KeyError, e):
-                print('getMapValues3() KeyError - reason ', str(e))
-            except:
-                print('getMapValues3() error in assignment')
+            except (KeyError) as e:
+                logger.error(f'getMapValues3() KeyError - {e}')
+            # except:
+            #     print('getMapValues3() error in assignment')
 
             # keep track of stack centric spine idx
             yIdx[finalRows, j] = final_df.index.values
@@ -818,7 +872,7 @@ class mmMap():
             pd = self.getMapDynamics(pd, thisMatrix=pd['stackidx'])
 
         stopTime = time.time()
-        print('mmMap.getMapValues3() took', round(stopTime - startTime, 2), 'seconds')
+        logger.info(f'   took:{round(stopTime - startTime, 2)} seconds')
 
         return pd
 
@@ -852,7 +906,9 @@ class mmMap():
         return plotDict['x']
 
     def _buildRunMap(self, theMap, roiTypeID=None):
-        """Internal function. Converts 3D objMap into a 2D run map. A run map must be float as it uses np.NaN
+        """Internal function.
+            Converts 3D objMap into a 2D run map.
+            A run map must be float as it uses np.NaN
 
         Args:
             theMap: Either self.objMap or self.segMap
@@ -951,8 +1007,8 @@ class mmMap():
         return retRunMap
 
     def _getStackSegmentID(self, mapSegmentNumber, sessIdx):
-        """
-        Given a map centric segment index (row in segRunMap), tell us the stack centric segmentID for session sessIdx
+        """Given a map centric segment index (row in segRunMap),
+            return the stack centric segmentID for session sessIdx
 
         Args:
             mapSegmentNumber (int): Map centric segment index, row in segRunMap

@@ -71,7 +71,8 @@ class stack():
 
     def __init__(self, path : str,
                 loadImageData : bool = True,
-                mmMap : "pymapmanager.mmMap" = None):
+                mmMap : "pymapmanager.mmMap" = None,
+                mmMapSession : int = None):
         """Create a stack from .tif file.
         
         Args:
@@ -90,7 +91,8 @@ class stack():
             raise OSError(errno.ENOENT, os.strerror(errno.ENOENT), path)
 
         self._mmMap = mmMap
-
+        self._mmMapSession = mmMapSession
+        
         self._tifPath = path
         """Full path to .tif we were created with"""
         
