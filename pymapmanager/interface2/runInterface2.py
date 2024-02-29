@@ -14,7 +14,7 @@ def run():
     sw2 = stackWidget2(path)
     sw2.show()	
 
-    sw2.zoomToPointAnnotation(120, isAlt=True)
+    # sw2.zoomToPointAnnotation(120, isAlt=True)
 
     sys.exit(app.exec_())
 
