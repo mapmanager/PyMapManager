@@ -60,6 +60,7 @@ setup(
         "scikit-image",
         "tifffile",
         "geopandas",
+        "shapely",
         "brightest-path-lib",
     ],
 	extras_require={

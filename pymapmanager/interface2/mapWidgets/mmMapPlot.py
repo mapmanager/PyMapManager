@@ -521,6 +521,8 @@ class mmMapPlot():
         if pointSelDict is None:
             return
         
+        print('pointSelDict:', pointSelDict)
+        
         sessionIndex = pointSelDict['sessionIndex']
         stackDbIdx = pointSelDict['stackDbIdx']
         # runRow = pointSelDict['runRow']
