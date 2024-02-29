@@ -90,6 +90,8 @@ class annotationPlotWidget(mmWidget2):
         self._myStack = self.getStack()
         self.pa = self._myStack.getPointAnnotations()
         self.la = self._myStack.getLineAnnotations()
+
+        # TODO: make self.layers update with signal slots?
         self.layers = PmmLayers(self.pa, self.la)
 
         self.stackWidget = stackWidget
@@ -254,9 +256,14 @@ class annotationPlotWidget(mmWidget2):
             # self._selectAnnotation(dbIdx, isAlt)
 
 
-            # New layer code
+            # New layer code (OLD)
             plotIdx = oneEvent.index()
+            logger.info(f'plot index: {plotIdx}')
             dbIdx = int(self.spineLayer.getSpineID(plotIdx))
+
+
+            # 2/23 refactored layer code
+
             # logger.info(f'plot index: {plotIdx}')
             logger.info(f'dbIdx: {dbIdx}')
 
@@ -333,27 +340,37 @@ class annotationPlotWidget(mmWidget2):
         print('xxx:', _stackSelection.hasPointSelection())
         # if not _stackSelection.hasPointSelection():  # False on (None, [])
         #     return
-            
-        rowIdx = _stackSelection.getPointSelection()   
-        # TODO: change this to support multiple selections after changing layer logic
-        rowIdx = rowIdx[0]
-        self._currentRowIdx = rowIdx
-        # IMPORTANT: state tracking does not currently have slice. Need to add it in
+        
+        if _stackSelection.getPointSelection() is not None and len(_stackSelection.getPointSelection()) > 0:
+            rowIdx = _stackSelection.getPointSelection()   
+            # TODO: change this to support multiple selections after changing layer logic
+            rowIdx = rowIdx[0]
+            self._currentRowIdx = rowIdx
+            # IMPORTANT: state tracking does not currently have slice. Need to add it in
+        
+        else:
+            rowIdx = None
+            self._currentRowIdx = rowIdx
 
         logger.info(f"slice number after selected event {event.getSliceNumber() }") 
-        slice = event.getSliceNumber() 
-        # slice = self.pa.getValue("z", rowIdx)
-        self._currentSlice = slice
-        
+        # Account for unselected event -> slice = 0
+        if event.getSliceNumber() != 0:
+            slice = event.getSliceNumber() 
+            # slice = self.pa.getValue("z", rowIdx)
+            self._currentSlice = slice
+        else:
+            logger.info(f"self._currentSlice: when unselected {self._currentSlice}") 
+ 
         print('xxx:', _stackSelection.hasPointSelection())
         print('xxx rowIdx:', rowIdx)
-        
-        
-        if rowIdx is None:
-            return
+         
+        # if rowIdx is None:
+        #     return
         isAlt = event.isAlt()
         # self._selectAnnotation(itemList, isAlt)
-        self.refreshLayers(rowIdx, slice)
+        # self.refreshLayers(rowIdx, slice)
+        self.refreshLayers(rowIdx, self._currentSlice)
+
 
     def slot_setDisplayType(self, roiTypeList : List[pymapmanager.annotations.pointTypes]):
         """Set the roiTypes to display in the plot.
@@ -388,23 +405,51 @@ class annotationPlotWidget(mmWidget2):
         # options = Options()
         # TODO: need to update options (state tracking within stackwidget)
         start = time.time()
-        rowIdx = rowIdx
+        # rowIdx = rowIdx
 
         currentSlice = slice
 
+        # TODO: retrieve this from stack interface
+        zAdjust = 2
+
         logger.info(f'currentSlice: {currentSlice}')
-        self.stateOptions.setSliceRange([currentSlice-2, currentSlice+2])
+        # self.stateOptions.setSliceRange([currentSlice-2, currentSlice+2])
+        self.stateOptions.setSelectionZ(currentSlice, zAdjust)
 
-        segmentID = self.pa.getValue("segmentID", rowIdx)
+        if rowIdx is not None:
+            segmentID = self.pa.getValue("segmentID", rowIdx)
+        else:
 
-        self.stateOptions.setSelection(segmentID=segmentID, spineID=rowIdx)
+            # MAYBE: Need to change to empty string rather than None to use layer backend
+            segmentID = None
+            # rowIdx = ""
 
+
+
+        # NOTE: only select segmentID when entering edit mode
+        # self.stateOptions.setSelection(segmentID=segmentID, spineID=rowIdx)
+            
+        logger.info(f'refreshing layers with rowIdx: {rowIdx}')
+        self.stateOptions.setSelection(segmentID=None, spineID=rowIdx) 
         test = self.layers.getLayers(self.stateOptions)
+
+        # 2/26 added to accommodate for roi not resetting
+        if rowIdx is None:
+            # Resetting ROI layers
+            # self._plotLayers2.resetROILayers()
+            self._plotLayers2.resetAllLayers()
+
 
         for i, layer in enumerate(test):
             # self.plotLayer(layer)
+            # logger.info(f'(layer.id: {layer.id})')
+            # print(layer.toFrame())
+            logger.info(f'(layer.id: {layer.getID()})')
             self._plotLayers2.plotLayer(layer)
-            if layer.name == "Spine Points":
+            # if layer.name == "Spine Points":
+
+            # logger.info(f'(layer.id: {layer.id})')
+            if layer.getID()== "spine":
                 # logger.info(f'(Spine Layer: {layer})')
                 self.spineLayer = layer # reset spine layer for mouse click detection
 
@@ -430,7 +475,14 @@ class annotationPlotWidget(mmWidget2):
 
         stackSelection = self.stackWidget.getStackSelection()
 
-        self._currentRowIdx = stackSelection.getPointSelection()[0]
+
+        # Check if we list contains anythings
+        if stackSelection.getPointSelection() is not None and len(stackSelection.getPointSelection()) > 0 :
+            self._currentRowIdx = stackSelection.getPointSelection()[0]
+        
+        else:
+            self._currentRowIdx = None
+       
 
         # self._currentSlice = sliceNumber
         # self._currentRowIdx = self.stack

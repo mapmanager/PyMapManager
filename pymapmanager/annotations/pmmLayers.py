@@ -22,7 +22,9 @@ from shapely.ops import nearest_points
 from shapely.geometry import LineString, Point, MultiLineString, Polygon
 
 from pymapmanager.annotations.pixelSource import PixelSource
-from pymapmanager.layers import Layer, MultiLineLayer, LineLayer, PointLayer, PolygonLayer
+# from pymapmanager.layers import Layer, MultiLineLayer, LineLayer, PointLayer, PolygonLayer
+
+from pymapmanager.coreMapManager.sharedAnnotations.base import AnnotationsLayers
 
 class PmmLayers:
     def __init__(self, pointAnnotations, lineAnnotations):
@@ -43,7 +45,9 @@ class PmmLayers:
 
         pointsGeometry = gpd.points_from_xy(paDF.x, paDF.y, paDF.z)
         # logger.info(f"pointsGeometry {pointsGeometry}")
-        newDF = paDF[["index", "segmentID", "xBackgroundOffset", "yBackgroundOffset"]].copy()
+
+        # 2/16/24 added z for more support
+        newDF = paDF[["index", "segmentID", "xBackgroundOffset", "yBackgroundOffset", "z"]].copy()
         newDF.rename(columns={"index": "spineID"}, inplace=True)
         newDF['spineID'] = newDF['spineID'].astype(str)
 
@@ -59,8 +63,11 @@ class PmmLayers:
             anchorPoint = Point(xBrightestIndex, yBrightestIndex, zBrightestIndex)
             anchor.append(anchorPoint)
 
-        points_gdf["anchor"] = anchor
+        points_gdf["anchor"] = anchor # Brightest points are called anchors
         points_gdf = points_gdf.set_index('spineID')
+
+        # 2/21 new column for calculating values
+        points_gdf["roiExtend"] = 4
         return points_gdf
 
     def createLineGeoPandas(self):
@@ -78,20 +85,26 @@ class PmmLayers:
         line_gdf = gpd.GeoDataFrame(line_gdf, geometry='geometry')
         line_gdf.rename_geometry("segment", inplace=True)
 
+        # 2/21 new column for calculating left and right radius lines
+        # TODO: need to get current radius from stack
+        line_gdf["radius"] = 4
+
         # logger.info(f"gdf: {gdf}")
-        # logger.info(f"line_gdf: {line_gdf}")
+        logger.info(f"line_gdf: {line_gdf}")
         return line_gdf
 
     def newPixelSource(self):
 
         line_segments = self.createLineGeoPandas()
    
-        # logger.info(f"line_segments: {line_segments}")
+        logger.info(f"line_segments: {line_segments}")
 
         points = self.createSpinePointGeoPandas()
 
         # logger.info(f"points: {points}")
-        return PixelSource(line_segments, points)
+        # return PixelSource(line_segments, points)
+
+        return AnnotationsLayers(loader=None, points=points, lineSegments=line_segments)
     
     def getLayers(self, options):
         """ Call function within pixelSource class to retrieve all the layers
@@ -112,35 +125,43 @@ class PmmLayers:
                     "showLabels": True
                     }
         """
-        frames =  self.pixelSource.getLayers(options)
+        # frames =  self.pixelSource.getLayers(options)
+        frames = self.pixelSource.getAnnotations(options)
+
+        # logger.info(f"frames {frames}")
 
         # Frames are currently in different geopandas frames
         # need to convert to geoseries and create a corresponding layer object
-        finalLayers = []
-        for frame in frames:
-            # logger.info(f"frame, {frame.geometry} type, {type(frame.geometry)}")
-            geometrySeries = frame.geometry
-            geometryType = geometrySeries.geom_type[0]
-            frameName = frame.name
-            frameColor = frame["color"][0]
-            # logger.info(f"geometryType, {geometryType}, type is  {type(geometryType)}")
-            if geometryType == "Polygon":
-                # print("This is a Polygon")
-                finalLayers.append(PolygonLayer(geometrySeries, frameName, frameColor))
-            elif geometryType == "MultiLineString":
-                finalLayers.append(MultiLineLayer(geometrySeries, frameName, frameColor))
-            elif geometryType == "LineString":
-                finalLayers.append(LineLayer(geometrySeries, frameName, frameColor))
-            elif geometryType == "Point":
-                # logger.info(f"point frame.id, {frame.id}")
-                # logger.info(f"point frame {frame}")
-                # logger.info(f"point frame {frame}")
-                spineIDs = frame["spineID"]
-                # logger.info(f"spineIDs {spineIDs}")
-                # TODO: need to pass in entire frame rather than series to retain spineID
-                finalLayers.append(PointLayer(geometrySeries, frameName, frameColor, spineIDs))
-            # break
-        return finalLayers
+        # finalLayers = []
+        # for frame in frames:
+
+        #     logger.info(f"frame {frame}")
+        #     logger.info(f"frame, {frame.geometry} type, {type(frame.geometry)}")
+        #     geometrySeries = frame.geometry
+        #     geometryType = geometrySeries.geom_type[0]
+        #     frameName = frame.name
+        #     frameColor = frame["color"][0]
+        #     # logger.info(f"geometryType, {geometryType}, type is  {type(geometryType)}")
+        #     if geometryType == "Polygon":
+        #         # print("This is a Polygon")
+        #         finalLayers.append(PolygonLayer(geometrySeries, frameName, frameColor))
+        #     elif geometryType == "MultiLineString":
+        #         finalLayers.append(MultiLineLayer(geometrySeries, frameName, frameColor))
+        #     elif geometryType == "LineString":
+        #         finalLayers.append(LineLayer(geometrySeries, frameName, frameColor))
+        #     elif geometryType == "Point":
+        #         # logger.info(f"point frame.id, {frame.id}")
+        #         # logger.info(f"point frame {frame}")
+        #         # logger.info(f"point frame {frame}")
+        #         spineIDs = frame["spineID"]
+        #         # logger.info(f"spineIDs {spineIDs}")
+        #         # TODO: need to pass in entire frame rather than series to retain spineID
+        #         finalLayers.append(PointLayer(geometrySeries, frameName, frameColor, spineIDs))
+        #     # break
+
+        #     # finalLayers.append(frame)
+        # # return finalLayers
+        return frames
 
     # Might be better to figure out how to calculate frames one at a time
 
