@@ -83,7 +83,7 @@ class annotationPlotWidget(mmWidget2):
         ==========
         event : QtGui.QKeyEvent
         """
-        logger.info('This should never be called')
+        logger.error('This should never be called')
 
     def _buildUI(self):
         
@@ -369,47 +369,6 @@ class annotationPlotWidget(mmWidget2):
         self._scatterUserSelection.setData(x, y)
         # set data calls this?
         # self._view.update()
-
-    # 2/8/24 added from pointplotWidget
-    def selectedEvent(self, event : pmmEvent):        
-        logger.info(f"event {event}")
-        
-        _stackSelection = event.getStackSelection()
-
-        print('xxx:', _stackSelection.hasPointSelection())
-        # if not _stackSelection.hasPointSelection():  # False on (None, [])
-        #     return
-        
-        if _stackSelection.getPointSelection() is not None and len(_stackSelection.getPointSelection()) > 0:
-            rowIdx = _stackSelection.getPointSelection()   
-            # TODO: change this to support multiple selections after changing layer logic
-            rowIdx = rowIdx[0]
-            self._currentRowIdx = rowIdx
-            # IMPORTANT: state tracking does not currently have slice. Need to add it in
-        
-        else:
-            rowIdx = None
-            self._currentRowIdx = rowIdx
-
-        logger.info(f"slice number after selected event {event.getSliceNumber() }") 
-        # Account for unselected event -> slice = 0
-        if event.getSliceNumber() != 0:
-            slice = event.getSliceNumber() 
-            # slice = self.pa.getValue("z", rowIdx)
-            self._currentSlice = slice
-        else:
-            logger.info(f"self._currentSlice: when unselected {self._currentSlice}") 
- 
-        print('xxx:', _stackSelection.hasPointSelection())
-        print('xxx rowIdx:', rowIdx)
-         
-        # if rowIdx is None:
-        #     return
-        isAlt = event.isAlt()
-        # self._selectAnnotation(itemList, isAlt)
-        # self.refreshLayers(rowIdx, slice)
-        self.refreshLayers(rowIdx, self._currentSlice)
-
 
     def slot_setDisplayType(self, roiTypeList : List[pymapmanager.annotations.pointTypes]):
         """Set the roiTypes to display in the plot.

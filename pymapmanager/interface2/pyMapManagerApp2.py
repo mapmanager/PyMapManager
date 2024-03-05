@@ -254,7 +254,8 @@ class PyMapManagerApp(QtWidgets.QApplication):
         appIconPath = os.path.join(getBundledDir(), 'interface', 'icons', 'mapmanager-icon.png')
         self.setWindowIcon(QtGui.QIcon(appIconPath))
 
-        self.setQuitOnLastWindowClosed(False)
+        # self.setQuitOnLastWindowClosed(False)
+        self.setQuitOnLastWindowClosed(True)
 
         self._blockSlots = False
         

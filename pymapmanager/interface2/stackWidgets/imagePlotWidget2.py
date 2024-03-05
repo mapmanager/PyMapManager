@@ -168,7 +168,21 @@ class ImagePlotWidget(mmWidget2):
         # isPointSelection = currentSelection.isPointSelection()
         # _selectedRows = currentSelection.getRows()
 
-        _annotations = self.getAnnotations()
+        # _annotations = self.getAnnotations()
+
+        stackSelection = self.getStackWidget().getStackSelection()
+        
+        hasPointSelection = stackSelection.hasPointSelection()
+
+        if not hasPointSelection:
+            logger.warning('no selection -> no context menu')
+            return
+        
+        firstPointSelection = stackSelection.firstPointSelection()
+        firstRoiType = stackSelection.getFirstPointRoiType()
+
+
+        _annotations = self.getStackWidget().getAnnotations()
         _selectedRows = self._aPointPlot.getSelectedAnnotations()
         _noSelection = len(_selectedRows) == 0
         if _noSelection:
@@ -250,7 +264,7 @@ class ImagePlotWidget(mmWidget2):
         elif action == deleteAction:
             logger.warning('deleting the selected annotation')
             # self._deleteAnnotation()
-            self._aPointPlot._deleteSelection()
+            self._aPointPlot._deleteSelection() # aPointPlot emits delete signal
 
         else:
             logger.info('No action?')

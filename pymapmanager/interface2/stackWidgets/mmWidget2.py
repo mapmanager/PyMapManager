@@ -106,6 +106,12 @@ class StackSelection:
         _pointSelection = self._getValue('pointSelectionList')
         return _pointSelection[0]
 
+    def getFirstPointRoiType(self):
+        if self.hasPointSelection() is None:
+            return
+        firstPoint = self.firstPointSelection()
+        firstRoiType = self.stack.getPointAnnotations().getValue()('roiType', firstPoint)
+        return firstRoiType
     #
     # segment selection
     #
