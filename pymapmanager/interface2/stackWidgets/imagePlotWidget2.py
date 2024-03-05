@@ -11,8 +11,8 @@ import pymapmanager.interface2
 
 from .mmWidget2 import mmWidget2, pmmEventType, pmmEvent, pmmStates
 # from mmWidget2 import mmWidget2, pmmEventType, pmmEvent, pmmStates
-# from .annotationPlotWidget2 import pointPlotWidget, linePlotWidget, annotationPlotWidget
-from .annotationPlotWidget2 import annotationPlotWidget
+from .annotationPlotWidget2 import pointPlotWidget, linePlotWidget, annotationPlotWidget
+# from .annotationPlotWidget2 import annotationPlotWidget
 
 from pymapmanager._logger import logger
 
@@ -153,6 +153,12 @@ class ImagePlotWidget(mmWidget2):
 
         # TODO: 2/22 need to implement context menu in allPointPlot
         # self._aPointPlot.contextMenuEvent(event)
+
+        logger.info(f"event {event}")
+        # TODO: Fix context menu. Currently not showing when right clicking
+        # Need to add contextMenuEvent function inside new annotationPlotWidget.py
+        
+        # self._allPointPlot.contextMenuEvent(event)
         return
 
         # activate menus if we have a point selection
@@ -920,52 +926,52 @@ class ImagePlotWidget(mmWidget2):
 
 
         # add a plotwidgets that does both points and lines
-        pointAnnotations = self._myStack.getPointAnnotations()
-        lineAnnotations = self._myStack.getLineAnnotations()
-        _displayOptions = self._displayOptionsDict['pointDisplay']
-        _displayOptionsLine = self._displayOptionsDict['spineLineDisplay']
-        self._allPointPlot = annotationPlotWidget(self.getStackWidget(),
-                                            pointAnnotations,
-                                            self._plotWidget,
-                                            _displayOptions,
-                                            # _displayOptionsLine,
-                                            # lineAnnotations,
-                                            )
-        # self._aPointPlot.signalAnnotationClicked2.connect(self.slot_selectAnnotation2)
-        # self.signalAnnotationSelection2.connect(self._aPointPlot.slot_selectAnnotation2)
-        self.signalUpdateSlice.connect(self._allPointPlot.slot_setSlice)
-
-
-
-        # add point plot of pointAnnotations
         # pointAnnotations = self._myStack.getPointAnnotations()
         # lineAnnotations = self._myStack.getLineAnnotations()
         # _displayOptions = self._displayOptionsDict['pointDisplay']
         # _displayOptionsLine = self._displayOptionsDict['spineLineDisplay']
-        # self._aPointPlot = pointPlotWidget(self.getStackWidget(),
+        # self._allPointPlot = annotationPlotWidget(self.getStackWidget(),
         #                                     pointAnnotations,
         #                                     self._plotWidget,
         #                                     _displayOptions,
-        #                                     _displayOptionsLine,
-        #                                     lineAnnotations,
+        #                                     # _displayOptionsLine,
+        #                                     # lineAnnotations,
         #                                     )
         # # self._aPointPlot.signalAnnotationClicked2.connect(self.slot_selectAnnotation2)
         # # self.signalAnnotationSelection2.connect(self._aPointPlot.slot_selectAnnotation2)
-        # self.signalUpdateSlice.connect(self._aPointPlot.slot_setSlice)
+        # self.signalUpdateSlice.connect(self._allPointPlot.slot_setSlice)
+
+
+
+        # add point plot of pointAnnotations
+        pointAnnotations = self._myStack.getPointAnnotations()
+        lineAnnotations = self._myStack.getLineAnnotations()
+        _displayOptions = self._displayOptionsDict['pointDisplay']
+        _displayOptionsLine = self._displayOptionsDict['spineLineDisplay']
+        self._aPointPlot = pointPlotWidget(self.getStackWidget(),
+                                            pointAnnotations,
+                                            self._plotWidget,
+                                            _displayOptions,
+                                            _displayOptionsLine,
+                                            lineAnnotations,
+                                            )
+        # self._aPointPlot.signalAnnotationClicked2.connect(self.slot_selectAnnotation2)
+        # self.signalAnnotationSelection2.connect(self._aPointPlot.slot_selectAnnotation2)
+        self.signalUpdateSlice.connect(self._aPointPlot.slot_setSlice)
 
 
         # add line plot of lineAnnotations
-        # lineAnnotations = self._myStack.getLineAnnotations()
-        # _displayOptions = self._displayOptionsDict['lineDisplay']
-        # self._aLinePlot = linePlotWidget(self.getStackWidget(),
-        #                                     lineAnnotations,
-        #                                     self._plotWidget,
-        #                                     _displayOptions,
-        #                                     )
+        lineAnnotations = self._myStack.getLineAnnotations()
+        _displayOptions = self._displayOptionsDict['lineDisplay']
+        self._aLinePlot = linePlotWidget(self.getStackWidget(),
+                                            lineAnnotations,
+                                            self._plotWidget,
+                                            _displayOptions,
+                                            )
 
-        # # self._aLinePlot.signalAnnotationClicked2.connect(self.slot_selectAnnotation2)
-        # # self.signalAnnotationSelection2.connect(self._aLinePlot.slot_selectAnnotation2)
-        # self.signalUpdateSlice.connect(self._aLinePlot.slot_setSlice)
+        # self._aLinePlot.signalAnnotationClicked2.connect(self.slot_selectAnnotation2)
+        # self.signalAnnotationSelection2.connect(self._aLinePlot.slot_selectAnnotation2)
+        self.signalUpdateSlice.connect(self._aLinePlot.slot_setSlice)
 
         # connect mouse clicks in annotation view to proper table
         # self._aLinePlot.signalAnnotationClicked.connect()

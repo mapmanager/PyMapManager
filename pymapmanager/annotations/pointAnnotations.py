@@ -1118,11 +1118,17 @@ class pointAnnotations(baseAnnotations):
         finalSetOfCoords = segmentROIpointsWithinMask.tolist()
         # logger.info(f"finalSetOfCoords before top two rect: {finalSetOfCoords}")
 
-        finalSetOfCoords.insert(0,topTwoRectCoords[1])
-        finalSetOfCoords.append(topTwoRectCoords[0])
+
+        # Original order 2/28/24
+        # finalSetOfCoords.insert(0,topTwoRectCoords[1])
+        # finalSetOfCoords.append(topTwoRectCoords[0])
+        # finalSetOfCoords.append(topTwoRectCoords[1])
+
+        finalSetOfCoords.insert(0,topTwoRectCoords[0])
         finalSetOfCoords.append(topTwoRectCoords[1])
+        finalSetOfCoords.append(topTwoRectCoords[0])
         finalSetOfCoords = np.array(finalSetOfCoords)
-        # logger.info(f"finalSetOfCoords: {finalSetOfCoords}")
+        logger.info(f"finalSetOfCoords: {finalSetOfCoords}")
 
         # xe = finalSetOfCoords[:,1]
         # ye = finalSetOfCoords[:,0]
