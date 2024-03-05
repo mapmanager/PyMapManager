@@ -63,7 +63,17 @@ class StackSelection:
 
     def setState(self, state : pmmStates):
         self._dict['state'] = state
+    
+    # ABJ
+    def getCurrentStackSlice(self):
+        pointSelections = self.getPointSelection()
+        if len(pointSelections) > 0:
+            spineIdx = pointSelections[0]
 
+        sliceNum = self.stack.getPointAnnotations().getValue("z", spineIdx)
+
+        logger.info("current stack selection slice is: {sliceNum}")
+        return sliceNum
     #
     # point selection
     #
@@ -286,7 +296,7 @@ class pmmEvent():
     #         itemList = [itemList]
     #     self._dict['listOfItems'] = itemList
     #     self._dict['alt'] = alt
-
+    
     def setSliceNumber(self, sliceNumber : int):
         self._dict['sliceNumber'] = sliceNumber
 

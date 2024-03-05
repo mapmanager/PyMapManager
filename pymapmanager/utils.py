@@ -562,6 +562,7 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations, forFinalMask):
     # Convert to list to use append
 
     if not forFinalMask:
+        logger.info("calculating line coords for final mask")
         coordinateList = coordinateList.tolist()
         xLeft = coordinateList[0][0]
         # print("xLeft", xLeft)
