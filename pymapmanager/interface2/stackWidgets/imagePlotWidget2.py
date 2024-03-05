@@ -1022,45 +1022,38 @@ class ImagePlotWidget(mmWidget2):
         self.signalUpdateSlice.connect(self._aLinePlot_tmp.slot_setSlice)
 
     def selectedEvent(self, event : pmmEvent):
-        """One selection
-            - set slice
-            - if isAlt then zoom annotation.
+        """Snap and optionally zoom to point and line  annotations.
+        
+            Notes
+            -----
+            Point annotations
+             - always set slice to first point annotation
+             - if isAlt then zoom annotation.
+
+            Line annotations
+             - TODO: For segment selection,
+                select the median z value of the first selected segment
         """
         # logger.info(event)
         
         if not event.getStackSelection().hasPointSelection():  # False on (None, [])
             return
 
-        # _pointItems = event.getStackSelection().getPointSelection()
-        # if len(_pointItems) == 0:
-        #     return
-
-        # oneItem = _pointItems[0]
         oneItem = event.getStackSelection().firstPointSelection()
 
         # get z and set slice
         _pointAnnotations = self.getStackWidget().getStack().getPointAnnotations()
         x = _pointAnnotations.getValue('x', oneItem)
         y = _pointAnnotations.getValue('y', oneItem)
-
-        # 2/9/24 - Changed to maintain slice
-        # z = _pointAnnotations.getValue('z', oneItem)
-
+        z = _pointAnnotations.getValue('z', oneItem)
 
         if event.isAlt():
-
             # When zooming to point, set the slice to be that of the current selection
-            z = _pointAnnotations.getValue('z', oneItem)
             logger.info(f"zoom to coordinates x: {x} y: {y}")
             self._zoomToPoint(x, y)
-
-            # need to set the new slice number inside the stack!
-
-        else:
-            z = event.getSliceNumber()
         
         self._currentSlice = z
-        logger.info(f"current slice {z}")
+
         doEmit = True
         self._setSlice(z, doEmit=doEmit)
 

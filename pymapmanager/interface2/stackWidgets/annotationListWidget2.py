@@ -224,7 +224,7 @@ class pointListWidget(annotationListWidget):
 
         # self._setModel()
         #self.setDisplayPointType(pymapmanager.annotations.pointTypes.spineROI)
-        self.currentSlice = 0
+        # self.currentSlice = 0
 
     def setDisplayPointType(self, pointType : pymapmanager.annotations.pointTypes):
         """Displaly just one pointType(s) in the table.
@@ -259,7 +259,7 @@ class pointListWidget(annotationListWidget):
 
         # 2/9/24 - added slice to maintain slice while plotting
         # Might be easier to get slice directly from stack
-        event.setSliceNumber(self.currentSlice)
+        # event.setSliceNumber(self.currentSlice)
 
         self.emitEvent(event, blockSlots=False)
 
@@ -274,22 +274,22 @@ class pointListWidget(annotationListWidget):
         IDEAS
         """
         
-        _stackTimePoint = self.getStackWidget().getTimepoint()
-        _eventTimePoint = event.getMapSessionSelection()
-        if isinstance(_eventTimePoint, list):
-            _eventTimePoint = _eventTimePoint[0]
-        print(f'   _stackTimePoint:{_stackTimePoint} _eventTimePoint:{_eventTimePoint}')
-        if _stackTimePoint == _eventTimePoint:
-            print('      YES, SELECT')
-        else:
-            print('      NO, DO NOT SELECT')
+        # _stackTimePoint = self.getStackWidget().getTimepoint()
+        # _eventTimePoint = event.getMapSessionSelection()
+        # if isinstance(_eventTimePoint, list):
+        #     _eventTimePoint = _eventTimePoint[0]
+        # print(f'   _stackTimePoint:{_stackTimePoint} _eventTimePoint:{_eventTimePoint}')
+        # if _stackTimePoint == _eventTimePoint:
+        #     print('      YES, SELECT')
+        # else:
+        #     print('      NO, DO NOT SELECT')
 
         """
         END IDEAS
         """
         
-        self.currentSlice = event.getSliceNumber() 
-        logger.info(f"pointListWidget current slice after selected event {self.currentSlice}")
+        # self.currentSlice = event.getSliceNumber() 
+        # logger.info(f"pointListWidget current slice after selected event {self.currentSlice}")
 
         itemList = event.getStackSelection().getPointSelection()        
         if itemList is not None:

@@ -890,12 +890,6 @@ class pointPlotWidget(annotationPlotWidget):
         # order matters
         super().slot_addedAnnotation(addAnnotationEvent)
 
-    def selectedEvent(self, event):
-        # logger.info(event)
-        
-        if not event.hasPointSelection():
-            self._cancelSpineRoiSelection()
-
     def _deleteSelection(self):
         _selection = self.getStackWidget().getStackSelection()
         if _selection.hasPointSelection():
@@ -1089,25 +1083,10 @@ class pointPlotWidget(annotationPlotWidget):
     def selectedEvent(self, event : pmmEvent):        
         # logger.info(event)
         
-        _stackSelection = event.getStackSelection()
-
-        # print('xxx:', _stackSelection.hasPointSelection())
-        # if not _stackSelection.hasPointSelection():  # False on (None, [])
-        #     return
-            
-        itemList = _stackSelection.getPointSelection()        
-        if itemList is None:
-            return
+        _stackSelection = event.getStackSelection()            
+        itemList = _stackSelection.getPointSelection()  # might be []  
         isAlt = event.isAlt()
         self._selectAnnotation(itemList, isAlt)
-
-        # didSelect = super().selectedEvent(event)  # set selection if event is same type of annotation
-        
-        # if didSelect:
-        #     itemList = self.getSelectedAnnotations()
-        
-        #     isAlt = event.isAlt()
-        #     self._selectAnnotation(itemList, isAlt)
 
     def _old_slot_selectAnnotation2(self, selectionEvent : "pymapmanager.annotations.SelectionEvent"):
         super().slot_selectAnnotation2(selectionEvent)
