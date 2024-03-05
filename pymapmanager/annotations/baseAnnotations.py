@@ -407,6 +407,11 @@ class baseAnnotations():
             theDict[column.getName()] = None
         return theDict
 
+    # @property
+    # def _df(self):
+    #     return layerBackend.getPointDataFrame()
+    #     #return layerBackend.getLineDataFrame()
+    
     def __init__(self, path : Union[str, None] = None, analysisParams = None):
         """Base class for annotations.
 
@@ -959,7 +964,7 @@ class baseAnnotations():
         """
         self._dataModified = True
         self._df.loc[row, 'mSeconds'] = time.time()  # modification time
-
+    
     def setValue(self, colName : str, row : int, value):
         """Set a single value in a row and column.
         
@@ -976,7 +981,12 @@ class baseAnnotations():
         try:
             # logger.warning(f'value {value}')
             # logger.warning(f'colName {colName}')
+            
+            # old
             self._df.at[row, colName] = value
+            # new
+            #self.layerBackend.setValue('pointAnnotation', colName, row, value)
+
             # logger.warning(f'type of self._df.at[row, colName]  {type(self._df.at[row, colName])}')
             # logger.warning(f'self._df.at[row, colName]  {self._df.at[row, colName] }')
 
@@ -1058,6 +1068,11 @@ class baseAnnotations():
 
         rowIdx = self.numAnnotations
 
+        # new
+        # self.layerBackend.addAnnotation('pointAnnotation', x, y, z)
+        # self.layerBackend.addAnnotation('lineAnnotation', x, y, z)
+
+        # old
         self._df.loc[rowIdx] = self._getDefaultRow()
 
         self._df.loc[rowIdx, 'cSeconds'] = time.time()  # creation time
@@ -1087,6 +1102,11 @@ class baseAnnotations():
         Args:
             rowIdx: Either a single row or a list of rows.
         """
+
+        # new
+        # self.layerBackend.deleteAnnotation('pointAnnotation', rowIdx)
+        # self.layerBackend.deleteAnnotation('lineAnnotation', rowIdx)
+
         if not isinstance(rowIdx, list):
             rowIdx = [rowIdx]
         self._df.drop(labels=rowIdx, axis=0, inplace=True)

@@ -28,8 +28,7 @@ from pymapmanager import mmMap
 from pymapmanager._logger import logger
 
 def getPlotDict():
-    """
-    Get a new default plot dictionary.
+    """Get a new default plot dictionary.
 
     The plot dictionary is used to tell plot functions what to plot (e.g. ['xtat'] and ['ystat']).
     
@@ -114,7 +113,12 @@ def printPlotDict(pd, printValues=False):
             print(v)
 
 class mmMapPlot():
-    def __init__(self, map : mmMap,
+    """Plot a scatter plot or dendrogram for a map.
+
+    Pure matplotlib, no PyQt
+    """
+    def __init__(self,
+                 map : mmMap,
                  plotDict,
                  fig = None):
         """
@@ -290,6 +294,9 @@ class mmMapPlot():
         self.mySelectedRows.set_xdata([])
         self.mySelectedRows.set_ydata([])
         
+        if isinstance(runs, int):
+            runs = [runs]
+            
         for run in runs:
             xRun = self.pd['x'][run,:]
             yRun = self.pd['y'][run,:]
@@ -426,8 +433,12 @@ class mmMapPlot():
             for i in range(m):
                 for j in range(n):
                     currColor = cNone
-                    currDynamics = self.pd['dynamics'][i][j].astype(int)
+                    
+                    # currDynamics = self.pd['dynamics'][i][j].astype(int)
+                    currDynamics = self.pd['dynamics'][i][j]
+                    
                     if currDynamics > 0:
+                        currDynamics = int(currDynamics)
                         currColor = colorList[currDynamics]
                     # bad
                     if self.pd['plotbad']:
@@ -436,9 +447,12 @@ class mmMapPlot():
                             #print(i, j, 'is bad')
                             currColor = cBad
                     
+                    # abb 2024 02/29 this is not true?
                     # nan values (no spine) in our scatter don't get plotted by matplotlib
-                    if self.pd['dynamics'][i][j] >= 0:
-                        cMatrix.append(currColor)
+                    #if 1 or self.pd['dynamics'][i][j] >= 0:
+                    
+                    cMatrix.append(currColor)
+                    
         else:
             if self.pd['doDark']:
                 cMatrix = 'w'

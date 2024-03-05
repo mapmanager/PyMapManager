@@ -3,18 +3,22 @@
 
 import sys
 
-from qtpy import QtWidgets
+# from qtpy import QtWidgets
 
+from pymapmanager.interface2 import PyMapManagerApp
 from stackWidgets import stackWidget2
 
 def run():
-    app = QtWidgets.QApplication([''])
+    app = PyMapManagerApp()
 
     path = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
-    sw2 = stackWidget2(path)
-    sw2.show()	
+    
+    sw2 = app.loadStackWidget(path)
+    
+    # sw2 = stackWidget2(path, app=app)
+    # sw2.show()	
 
-    # sw2.zoomToPointAnnotation(120, isAlt=True)
+    sw2.zoomToPointAnnotation(120, isAlt=True)
 
     sys.exit(app.exec_())
 

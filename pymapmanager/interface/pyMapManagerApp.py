@@ -363,6 +363,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
         self._mapTableWidget = pymapmanager.interface.mmMapTable(_map, self)
         self._mapTableWidget.signalOpenStack.connect(self.openStack2)
         self._mapTableWidget.signalOpenRun.connect(self.openStackRun)
+        
         self._mapTableWidget.show()
         self._mapTableWidget.activateWindow()
 

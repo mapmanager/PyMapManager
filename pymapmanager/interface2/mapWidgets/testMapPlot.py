@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 
 import pymapmanager as pmm
 
-from mmMapPlot import mmMapPlot
-from mmMapPlot import getPlotDict
+from .mmMapPlot import mmMapPlot
+from .mmMapPlot import getPlotDict
 
 def testPlot1(map : pmm.mmMap):
     

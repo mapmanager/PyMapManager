@@ -47,6 +47,7 @@ setup(
                             'pymapmanager.interface',
                             'pymapmanager.interface2',
                             'pymapmanager.interface2.stackWidgets',
+                            'pymapmanager.interface2.mapWidgets',
                             ]),
     #packages = find_packages(exclude=['version']),
     #packages=[
@@ -54,7 +55,7 @@ setup(
     #    'pymapmanager.mmio'
     #],
     install_requires=[
-        "numpy",
+        "numpy==1.23.4",
         "pandas",
         "scipy",
         "scikit-image",

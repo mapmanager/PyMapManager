@@ -179,7 +179,10 @@ class pmmEvent():
         thePmmWidget : pmmWidget2
             The widget sending/emitting the event
         """
-            
+        
+        self.reEmitMapAsPoint = False
+        self.reEmitPointAsMap = False
+        
         self._dict = {
             'sender': thePmmWidget,
             'senderName': thePmmWidget.getName(),
@@ -199,9 +202,19 @@ class pmmEvent():
             'segmentSelection': [],  # segmentID
             'segmentPointSelection': [],
 
-            'stackSelection': StackSelection()
+            'stackSelection': StackSelection(),
+
+            # implementing map/timeseries
+            'mapSessionSelection': [],
         }
 
+        print('thePmmWidget:', thePmmWidget)
+        _stackWidget = thePmmWidget.getStackWidget()
+        if _stackWidget is not None:
+            timepoint = _stackWidget.getTimepoint()
+            print('!!!!!!!!!!!!!!!! timepoint:', timepoint)
+            if timepoint is not None:
+                self._dict['mapSessionSelection'] = [timepoint]
     ##
     # start final version aug 31
     ##
@@ -308,6 +321,14 @@ class pmmEvent():
     # def getListOfItems(self):
     #     return self._dict['listOfItems']
 
+    def getMapSessionSelection(self) -> List[int]:
+        return self._dict['mapSessionSelection']
+
+    def setMapSessionSelection(self, sessionIdx : int):
+        if isinstance(sessionIdx, int):
+            sessionIdx = [sessionIdx]
+        self._dict['mapSessionSelection'] = sessionIdx
+
     def isAlt(self):
         return self._dict['alt']
 
@@ -340,7 +361,11 @@ class mmWidget2(QtWidgets.QMainWindow):
     _signalPmmEvent = QtCore.Signal(object)  # pmmEvent
     # 
 
-    def __init__(self, stackWidget : "pymapmanager.interface2.StackWidget2"):
+    def __init__(self,
+                 stackWidget : "pymapmanager.interface2.stackWidgets.StackWidget2" = None,
+                 mapWidget : "pymapmanager.interface2.mapWidgets.mapWidget" = None,
+                 iAmStackWidget = False,
+                 iAmMapWidget = False):
         """
         Parameters
         ----------
@@ -353,16 +378,66 @@ class mmWidget2(QtWidgets.QMainWindow):
         """
         super().__init__()
 
-        self._stackWidget = stackWidget  # parent stack
+        self._iAmStackWidget = iAmStackWidget
+        self._iAmMapWidget = iAmMapWidget
         
+        # logger.info(f'self._iAmStackWidget:{self._iAmStackWidget}')
+
+        self._stackWidget = stackWidget  # parent stack widget
+        self._mapWidget = mapWidget  # parent map widget
+
+        # to show as a widget
+        self._showSelf: bool = True
+
         self._blockSlots = False
 
+        # (1) this is the original and it works, connects stackwidget
         # bi-directional signal/slot between self and parent
-        if stackWidget is not None:
-            self._signalPmmEvent.connect(stackWidget.slot_pmmEvent)
-            stackWidget._signalPmmEvent.connect(self.slot_pmmEvent)
+        # if stackWidget is not None:
+        if not iAmStackWidget:
+            if stackWidget is not None:
+                self._signalPmmEvent.connect(stackWidget.slot_pmmEvent)
+                stackWidget._signalPmmEvent.connect(self.slot_pmmEvent)
+
+        #(2) new for mapWidgets that need to
+        # (i) communicate with stack widgets
+        # (ii) communicate with mapWidgets
+        # stack will only signal back to main iAmMapWidget!!!
+        if 0 and iAmStackWidget and iAmMapWidget:
+            if stackWidget is not None and mapWidget is not None:
+                # signal/slot between maps and stacks
+                self._signalPmmEvent.connect(stackWidget.slot_pmmEvent)
+                stackWidget._signalPmmEvent.connect(self.slot_pmmEvent)
+
+        # connect mapWidgets (Derived) back to main mapWidget
+        if not iAmMapWidget:
+            if mapWidget is not None:
+                # signal/slot between map widget
+                self._signalPmmEvent.connect(mapWidget.slot_pmmEvent)
+                mapWidget._signalPmmEvent.connect(self.slot_pmmEvent)
+
         # else:
         #     self._signalPmmEvent.connect(self.slot_pmmEvent)
+
+    # def getMap(self):
+    #     if self._mapWidget is None:
+    #         return
+    #     else:
+    #         self._mapWidget.getMap()
+
+    def getInitError(self):
+        # TODO: implement this
+        return False
+    
+    def getShowSelf(self):
+        return self._showSelf
+    
+    def getWidget(self):
+        """Over-ride if plugin makes its own PyQt widget.
+
+        By default, all plugins inherit from PyQt.QWidgets.QWidget
+        """
+        return self
 
     def _makeCentralWidget(self, layout):
         """To build a visual widget, call this function with a Qt layout like QVBoxLayout.
@@ -373,7 +448,7 @@ class mmWidget2(QtWidgets.QMainWindow):
 
     def _addDockWidget(self, widget : "mmWidget2", position : str, name : str = '') -> QtWidgets.QDockWidget:
         """
-        PArameters
+        Parameters
         ----------
         widget : mmWidget2
             The mmWidget2 to add as a dock
@@ -401,7 +476,7 @@ class mmWidget2(QtWidgets.QMainWindow):
         self.addDockWidget(position, dockWIdget)
         return dockWIdget
     
-    def getStackWidget(self) -> "pymapmanager.interface2.StackWidget":
+    def getStackWidget(self) -> "StackWidget2":
         return self._stackWidget
     
     def getStack(self):
@@ -541,10 +616,36 @@ class mmWidget2(QtWidgets.QMainWindow):
             logger.warning(f'halting propogation --- acceptEvent is {acceptEvent}')
             return
         
-        if self.getStackWidget() is None:
-            logger.warning(f're-emit event when pmmParent is None "{self.getName()}"================================')
+        # if self.getStackWidget() is None:
+        if self._iAmStackWidget:
+            logger.warning(f'stackWidget re-emit "{self.getName()}"================================')
             # logger.warning(f'event is: {event}')
-            self.emitEvent(event)
+            
+            logger.info(f'sender: {event.getSenderObject()}')
+            senderObject = event.getSenderObject()
+            
+            if event.reEmitPointAsMap:
+                pass
+            else:
+                # to break recursion
+                event.reEmitMapAsPoint = senderObject._mapWidget is not None          
+
+                self.emitEvent(event)
+
+        elif self._iAmMapWidget:
+            logger.warning(f'mapWidget re-emit "{self.getName()}"================================')
+            
+            logger.info(f'sender: {event.getSenderObject()}')
+            senderObject = event.getSenderObject()
+            
+            if event.reEmitMapAsPoint:
+                pass
+            else:
+                # to break recursion
+                # to break recursion
+                event.reEmitPointAsMap = senderObject._stackWidget is not None          
+                
+                self.emitEvent(event)
 
             # # handled in stack widget deletedEvent()
             # if event.type == pmmEventType.delete:
@@ -561,7 +662,7 @@ class mmWidget2(QtWidgets.QMainWindow):
             #     self.emitEvent(selectEvent, blockSlots=True)
 
             # transform move event to 'update' with new values
-            
+
     def selectedEvent(self, event : pmmEvent):
         """Derived classes need to perform action of selection event.
         

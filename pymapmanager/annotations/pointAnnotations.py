@@ -290,6 +290,10 @@ class pointAnnotations(baseAnnotations):
                 stack : "pymapmanager.stack"
                 ):
         
+        # new
+        # self.layerBackend.addSpine(x, y, z, segmentID)
+        
+        #old
         newRow = super().addAnnotation(x, y, z)
 
         logger.info(f'making new spine: newRow:{newRow} x:{x}, y:{y}, z:{z}, segmentID:{segmentID}')

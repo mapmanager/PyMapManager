@@ -2,16 +2,11 @@ import os
 import sys
 import math
 from functools import partial
-from typing import List, Union  # , Callable, Iterator, Optional
+from typing import List  # , Union  # , Callable, Iterator, Optional
 
-# import pathlib
-# import glob
-# import importlib
 import inspect
 
-import numpy as np
-
-from qtpy import QtGui, QtCore, QtWidgets
+from qtpy import QtGui, QtWidgets  # QtCore
 
 import qdarktheme
 
@@ -22,7 +17,8 @@ import pymapmanager as pmm
 
 import pymapmanager.interface2
 
-# from stackWidgets import stackWidget2
+import pymapmanager.interface2.stackWidgets
+import pymapmanager.interface2.mapWidgets
 
 from pymapmanager._logger import logger
 from pymapmanager.pmmUtils import getBundledDir
@@ -34,7 +30,6 @@ def loadPlugins(verbose=True) -> dict:
 
     See: sanpy.fileLoaders.fileLoader_base.getFileLoader()
     """
-    import pymapmanager.interface2.stackWidgets
 
     pluginDict = {}
 
@@ -102,11 +97,6 @@ def loadPlugins(verbose=True) -> dict:
 
     return pluginDict
 
-# class pmmMapWidget(QtWidgets.QMainWindow):
-#     """Base class to derive all map widgets from.
-#     """
-#     def __init__(self, path : str):
-#         pass
 
 class PyMapManagerMenus:
     """Main app menus including loaded map and stack widgets.
@@ -154,6 +144,10 @@ class PyMapManagerMenus:
 
         #
         # view
+        self.viewMenu = mainMenu.addMenu("View")
+        _emptyAction = QtWidgets.QAction("None", self.getApp())
+        self.viewMenu.addAction(_emptyAction)
+        # self.mapsMenu.aboutToShow.connect(self._refreshMapsMenu)
         
         #
         # maps
@@ -164,10 +158,12 @@ class PyMapManagerMenus:
 
         #
         # stacks
-        self.stacksMenu = mainMenu.addMenu("Stacks")
+        name = "Stacks"
+        self.stacksMenu = mainMenu.addMenu(name)
         _emptyAction = QtWidgets.QAction("None", self.getApp())
         self.stacksMenu.addAction(_emptyAction)
         self.stacksMenu.aboutToShow.connect(self._refreshStacksMenu)
+        # self.stacksMenu.triggered.connect(partial(self._onStacksMenuAction, name))
 
         # help menu
         self.helpMenu = mainMenu.addMenu("Help")
@@ -232,10 +228,14 @@ class PyMapManagerMenus:
             # path = _stackWidget.getPath()
             action = QtWidgets.QAction(_path, self.getApp(), checkable=True)
             # action.setChecked(_sanPyWindow.isActiveWindow())
-            # action.triggered.connect(partial(self._windowsMenuAction, _sanPyWindow, path))
+            action.triggered.connect(partial(self._onStacksMenuAction, _path))
             aWindowsMenu.addAction(action)
         return aWindowsMenu
     
+    def _onStacksMenuAction(self, name):
+        logger.info(f'{name}')
+        self.getApp().loadStackWidget(name)
+
     def _onHelpMenuAction(self, name):
         logger.info(name)
         
@@ -253,6 +253,8 @@ class PyMapManagerApp(QtWidgets.QApplication):
 
         appIconPath = os.path.join(getBundledDir(), 'interface', 'icons', 'mapmanager-icon.png')
         self.setWindowIcon(QtGui.QIcon(appIconPath))
+
+        self.setQuitOnLastWindowClosed(False)
 
         self._blockSlots = False
         
@@ -272,6 +274,9 @@ class PyMapManagerApp(QtWidgets.QApplication):
         
         self._mainMenu = PyMapManagerMenus(self)
 
+    def getStackPluginDict(self):
+        return self._stackWidgetPluginsDict
+    
     def getMapWidgetsDict(self):
         return self._mapWidgetDict
     
@@ -296,16 +301,19 @@ class PyMapManagerApp(QtWidgets.QApplication):
         self._mapWidgetDict[path].setVisible(visible)
 
     def loadMapWidget(self, path):
-        """Load a map widget from a path.
+        """Load the main map widget from a path.
         """
         if path in self._mapWidgetDict.keys():
             self._mapWidgetDict[path].show()
         else:
             # load map and make widget
+            logger.info(f'loading mmMap from path: {path}')
             _map = pmm.mmMap(path)
-            _mapWidget = pmm.interface2.mmMapWidget(_map)
+            _mapWidget = pmm.interface2.mapWidgets.mapWidget(_map)
             self._mapWidgetDict[path] = _mapWidget
 
+        return self._mapWidgetDict[path]
+    
     def loadStackWidget(self, path):
         if path in self._stackWidgetDict.keys():
             self._stackWidgetDict[path].show()
@@ -316,6 +324,8 @@ class PyMapManagerApp(QtWidgets.QApplication):
             _stackWidget.show()
             self._stackWidgetDict[path] = _stackWidget
 
+        return self._stackWidgetDict[path]
+    
     def getScreenGrid(self, numItems : int, itemsPerRow : int) -> List[List[int]]:
         """Get screen coordiates for a grid of windows.
         """

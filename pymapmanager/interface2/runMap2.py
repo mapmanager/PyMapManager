@@ -11,18 +11,24 @@ def run():
         return
     
     app = PyMapManagerApp()
-    app.loadMapWidget(mapPath)
+
+    _mapWidget = app.loadMapWidget(mapPath)
     
     # open a timepoint
-    app.toggleMapWidget(mapPath, True)
+    # app.toggleMapWidget(mapPath, True)
 
     # open a stack
-    stackPath = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
-    app.loadStackWidget(stackPath)
+    # stackPath = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
+    # app.loadStackWidget(stackPath)
 
     # open a timepoint and select a spine
-    # timepoint = 1
-    # bsw = app.openStack2(_map, timepoint)
+    timepoint = 1
+    bsw = _mapWidget.openStack2(timepoint)
+    # bsw.zoomToPointAnnotation(120, isAlt=True, select=True)
+
+    # open a timepoint and select a spine
+    timepoint = 3
+    bsw = _mapWidget.openStack2(timepoint)
     # bsw.zoomToPointAnnotation(120, isAlt=True, select=True)
 
     # open a stack run

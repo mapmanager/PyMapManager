@@ -342,6 +342,11 @@ class mmMap():
         stopTime = time.time()
         print('map', self.name, 'loaded in', round(stopTime-startTime,2), 'seconds.')
 
+        # 202402 need to add some columns to stack db
+        logger.warning('REMOVE THIS INGEST !!!!!!!!!')
+        from pymapmanager.interface2.mapWidgets._mapIngest import addDistance
+        addDistance(self)
+
     def __iter__(self):
         # this along with __next__ allow mmMap to iterate over stacks
         self._iterIdx = 0
@@ -557,10 +562,15 @@ class mmMap():
             pd = self.getMapValues3(pd)
             thisMatrix = pd['stackidx']
 
-        m = thisMatrix.shape[0]
-        n = thisMatrix.shape[1]
+        # print(thisMatrix)
+        # _val = thisMatrix[0, 3]
+        # print(_val, type(_val), _val>0, _val.astype(int))
+        # sys.exit(1)
 
-        pd['dynamics'] = np.empty([m,n])
+        nSpineRun = thisMatrix.shape[0]
+        nSessions = thisMatrix.shape[1]
+
+        pd['dynamics'] = np.empty([nSpineRun,nSessions])
         pd['dynamics'][:] = np.NAN
 
         # 1:add, 2:sub, 3:transient, 4:persisten
@@ -569,23 +579,26 @@ class mmMap():
         kTransient = 3
         kPersistent = 4
 
-        for i in range(m):
-            for j in range(n):
+        for i in range(nSpineRun):
+            for j in range(nSessions):
                 if not thisMatrix[i,j]>=0:
                     continue
-                if j==0:
+                if j == 0:
+                    # first session
                     if thisMatrix[i,j+1]>=0:
                         pd['dynamics'][i,j] = kPersistent
                     else:
                         pd['dynamics'][i,j] = kSubtract
-                elif j==n-1:
+                elif j == nSessions - 1:
+                    # last session
                     if thisMatrix[i,j-1]>=0:
                         pd['dynamics'][i,j] = kPersistent
                     else:
                         pd['dynamics'][i,j] = kAdd
                 else:
-                    added = not thisMatrix[i,j-1]>=0
-                    subtracted = not thisMatrix[i,j+1]>=0
+                    # middle session (not first or last)
+                    added = not thisMatrix[i,j-1] >= 0
+                    subtracted = not thisMatrix[i,j+1] >= 0
                     if added and subtracted:
                         pd['dynamics'][i,j] = kTransient
                     elif added:
@@ -594,6 +607,9 @@ class mmMap():
                         pd['dynamics'][i,j] = kSubtract
                     else:
                         pd['dynamics'][i,j] = kPersistent
+
+        # print(pd['dynamics'])
+        # sys.exit(1)
 
         return pd
 

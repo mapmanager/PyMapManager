@@ -1,3 +1,5 @@
+from typing import List, Union, Optional, Tuple
+
 import numpy as np
 
 from qtpy import QtGui, QtCore, QtWidgets
@@ -5,42 +7,67 @@ import pyqtgraph as pg
 
 import pymapmanager
 
-from pymapmanager._logger import logger
+# from pymapmanager.interface2 import PyMapManagerApp
 
 from .mmWidget2 import mmWidget2, pmmEventType, pmmStates, pmmEvent, StackSelection
-from .annotationListWidget2 import pointListWidget, lineListWidget
-from .tracingWidget import tracingWidget
-from .imagePlotWidget2 import ImagePlotWidget
 from .stackToolbar import StackToolBar
 from .stackStatusbar import StatusToolbar
-from .histogramWidget2 import HistogramWidget
+from .stackPluginWidget import stackPluginDock
+from .annotationListWidget2 import pointListWidget, lineListWidget
+from .imagePlotWidget2 import ImagePlotWidget
 
-from .searchWidget2 import SearchWidget2
+# from .tracingWidget import tracingWidget
+# from .histogramWidget2 import HistogramWidget
+# from .searchWidget2 import SearchWidget2
+
+from pymapmanager._logger import logger
 
 class stackWidget2(mmWidget2):
     _widgetName = 'Stack Widget 2'
 
     def __init__(self,
                  path,
-                 stack : pymapmanager.stack = None):
-        """Just make two point list widgets and debug the connections for:
-        - select
-        - delete
-        """
+                 stack : pymapmanager.stack = None,
+                 mapWidget : "pymapmanager.interface2.mapWidget.mapWidget" = None,
+                 timePoint : int = None,
+    ):
+        """Main stack widget that is parent to all other mmWidget2 widgets.
         
-        super().__init__(None)
+        Parameters
+        ----------
+        path : str
+            Full path to tif image.
+        stack : pymapmanager.stack
+            Optional existing stack (used in maps.
+        mapWidget
+            Used in maps
+        timepoint : int
+            Used in maps
+        """
+        iAmMapWidget = False
+
+        super().__init__(stackWidget=self,
+                         mapWidget=mapWidget,
+                         iAmStackWidget=True,
+                         iAmMapWidget=iAmMapWidget)
 
         if stack is not None:
-            # existing stack
             self._stack = stack
         else:
             # load from path
             self._stack = pymapmanager.stack(path)
 
-        self._stackSelection = StackSelection(self._stack)
+        # add 2/24 when implementing map/timeseries GUI
+        self._mapWidget : Optional["pymapmanager.interface2.mapWidgets.mapWidget"] = mapWidget
+        self._timePoint : Optional[int] = timePoint
 
-        self._channelColor = ['g', 'r', 'b']
+        self._openPluginSet = set()
+        """Set of open plugins."""
+
+        self._stackSelection = StackSelection(self._stack)
+        """One stack selection (state) shared by all children mmWidget2."""
         
+        self._channelColor = ['g', 'r', 'b']
         self._buildColorLut()
         
         self._contrastDict = {}
@@ -56,17 +83,40 @@ class stackWidget2(mmWidget2):
         # self._currentSelection.setImageChannel(_channel)
         """Keep track of the current selection"""
 
+        self.setWindowTitle(path)
+
         self._buildUI()
         self._buildMenus()
 
+    def getTimepoint(self) -> int:
+        """Get the timepoint in the map. Will be None for singleton stacks.
+        """
+        return self._timePoint
+    
+    def getPyMapManagerApp(self) -> Optional["PyMapManagerApp"]:
+        """Get the running PyMapManagerApp(QApplication).
+        
+        If not PyMapManagerApp, will return None.
+        """
+        
+        # the running QApplication
+        app = QtWidgets.QApplication.instance()
+        
+        if isinstance(app, pymapmanager.interface2.PyMapManagerApp):
+            return app
+    
     def getStack(self) -> pymapmanager.stack:
+        """Get the backend stack.
+        """
         return self._stack
     
     def _cancelSelection(self):
-        """Cancel one selection in this order
-            - state is not edit -> return to edit
-            - spine selection
-            -segment selection
+        """Cancel the current stack selection.
+
+            Order matters:
+             - state is not edit -> return to edit
+             - spine selection
+             - segment selection
         """
         _selection = self.getStackSelection()
         logger.info(_selection)
@@ -100,6 +150,8 @@ class stackWidget2(mmWidget2):
             # self.selectedEvent(event)
 
     def _deleteSelection(self):
+        """Delete the current point selection.
+        """
         _selection = self.getStackSelection()
         logger.info(_selection)
         
@@ -113,27 +165,33 @@ class stackWidget2(mmWidget2):
 
     def keyPressEvent(self, event : QtGui.QKeyEvent):
         logger.info(event.text())
-        if 0:
-            pass
-        
-        elif event.key() == QtCore.Qt.Key_Escape:
+
+        if event.key() == QtCore.Qt.Key_Escape:
             self._cancelSelection()
             
         elif event.key() in [QtCore.Qt.Key_Delete, QtCore.Qt.Key_Backspace]:
             self._deleteSelection()
    
     def getStackSelection(self) -> StackSelection:
+        """Get the current stack selection.
+        """
         return self._stackSelection
 
     def _toggleWidget(self, name : str, visible : bool):
+        """Toggle a named mmWidget visibility.
+        """
         logger.info(f'{name} {visible}')
         try:
             self._widgetDict[name].setVisible(visible)
         except (KeyError):
-            logger.warning(f'did not find key {name}')
-            logger.warning(f'available keys are: {self._widgetDict.keys()}')
+            logger.warning(f'did not find key {name}, available keys are:')
+            logger.warning(f'{self._widgetDict.keys()}')
     
     def _getNamedWidget(self, name):
+        """Get a named widget.
+        
+        Returns None if widget not found.
+        """
         try:
             return self._widgetDict[name]
         except (KeyError):
@@ -147,8 +205,15 @@ class stackWidget2(mmWidget2):
         self.closeShortcut = QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+W"), self)
         self.closeShortcut.activated.connect(self._on_user_close)
 
-        widgetMenu = mainMenu.addMenu('&View')
+        # PyMapManagerMenus
+        if self.getPyMapManagerApp() is not None:
+            self.getPyMapManagerApp().getMainMenu()._buildMenus(mainMenu)
+            # we will append to this
+            viewMenu = self.getPyMapManagerApp().getMainMenu().viewMenu
+        else:
+            viewMenu = mainMenu.addMenu('&View')
 
+        # append each child mmWidget to "View" menu.
         for _name,_shortcut in self._widgetDict.items():
             aAction = QtWidgets.QAction(_name, self)
             aAction.setCheckable(True)
@@ -156,7 +221,51 @@ class stackWidget2(mmWidget2):
             aAction.setChecked(_visible)
             _lambda = lambda val, name=_name: self._toggleWidget(name, val)
             aAction.triggered.connect(_lambda)
-            widgetMenu.addAction(aAction)
+            viewMenu.addAction(aAction)
+
+    def runPlugin(self, pluginName: str, show: bool = True):
+        """Run one stack plugin.
+
+        Args:
+            pluginName : str
+                Name of the plugin,, defined as static member vraible in mmWidget
+            show: bool
+                If True then immediately show the widget
+        """
+        if self.getPyMapManagerApp() is None:
+            return
+        
+        pluginDict = self.getPyMapManagerApp().getStackPluginDict()
+        if pluginName not in pluginDict.keys():
+            logger.error(f'Did not find plugin: "{pluginName}"')
+            return
+        else:
+            humanName = pluginDict[pluginName]["constructor"]._widgetName
+
+            logger.info("Running plugin:")
+            logger.info(f"  pluginName:{pluginName}")
+            logger.info(f"  humanName:{humanName}")
+
+            # TODO: to open PyQt windows, we need to keep a local (persistent) variable
+            newPlugin = pluginDict[pluginName]["constructor"](
+                stackWidget=self,
+            )
+
+            # if not newPlugin.getInitError() and show:
+            if  show:
+                newPlugin.getWidget().show()
+                newPlugin.getWidget().setVisible(True)
+                # newPlugin.getWidget().raise_()  # bring to front, raise is a python keyword
+                # newPlugin.getWidget().activateWindow()  # bring to front
+
+            else:
+                newPlugin.getWidget().hide()
+                newPlugin.getWidget().setVisible(False)
+
+            if not newPlugin.getInitError():
+                self._openPluginSet.add(newPlugin)
+
+            return newPlugin
 
     def _buildUI(self):
 
@@ -190,29 +299,11 @@ class stackWidget2(mmWidget2):
         lineListDock = self._addDockWidget(llw, 'left', 'Lines')
         self._widgetDict[lineListName] = lineListDock  # the dock, not the widget ???
 
-        #tracing
-        tracingWidgetName = tracingWidget._widgetName
-        tw = tracingWidget(self)
-        tracingWidgetDock = self._addDockWidget(tw, 'left', 'Tracing')
-        self._widgetDict[tracingWidgetName] = tracingWidgetDock  # the dock, not the widget ???
-
         #
         imagePlotName = ImagePlotWidget._widgetName
         _imagePlotWidget = ImagePlotWidget(self)
         hBoxLayout_main.addWidget(_imagePlotWidget)
         self._widgetDict[imagePlotName] = _imagePlotWidget  # the dock, not the widget ???
-
-        #
-        searchWidgetName = SearchWidget2._widgetName
-        searchWidget = SearchWidget2(self)
-        searchWidgetDock = self._addDockWidget(searchWidget, 'left', 'Point Search')
-        self._widgetDict[searchWidgetName] = searchWidgetDock
-
-        # this works
-        # histogramWidgetName = HistogramWidget._widgetName
-        # histogramWidget = HistogramWidget(self)
-        # histogramWidgetDock = self._addDockWidget(histogramWidget, 'bottom', 'Histogram')
-        # self._widgetDict[histogramWidgetName] = histogramWidgetDock
 
         # status toolbar (bottom)
         numSlices = self._stack.numSlices
@@ -225,7 +316,15 @@ class stackWidget2(mmWidget2):
 
         self._topToolbar.signalChannelChange.connect(self.slot_setChannel)
 
+        # plugin panel with tabs
+        self.pluginDock1 = stackPluginDock(self)
+        self.addDockWidget(QtCore.Qt.RightDockWidgetArea, self.pluginDock1.getPluginDock())
+
     def _on_user_close(self):
+        """Called when user closes window.
+        
+        Assigned in _buildUI.
+        """
         logger.info('')
         self.close()
 
@@ -294,12 +393,20 @@ class stackWidget2(mmWidget2):
         return True
 
     def addedEvent(self, event : "pmmEvent") -> bool:
-        logger.warning('===   STACK WIDGET PERFORMING ADD   ===')
+        """Add to backend.
+        
+        Currently only allows adding a spine annotation.
+
+        Returns
+        -------
+        True if added, False otherwise
+        """
+        logger.warning('=== ===   STACK WIDGET PERFORMING ADD   === ===')
         
         # check if we have a segment selection, if not then veto add
         _stackSelection = self.getStackSelection()
         if not _stackSelection.hasSegmentSelection():
-            logger.warning(f'   Rejecting new point, segmentid selection is required')
+            logger.warning('   Rejecting new point, segmentid selection is required')
             self.slot_setStatus('Please select a segment before adding a point annotation')
             return False
         
@@ -317,22 +424,21 @@ class stackWidget2(mmWidget2):
 
         return True
 
-        # transform add event into selection
-        # selectEvent = event.getCopy()
-        # selectEvent.setType(pmmEventType.selection)
-        # self.emitEvent(selectEvent, blockSlots=True)
-
-    def deletedEvent(self, event : "pmmEvent"):
+    def deletedEvent(self, event : "pmmEvent") -> bool:
         """Delete items from backend.
+        
+        Returns
+        -------
+        True if deleted, False otherwise
         """
-        logger.warning(f'=== ===   STACK WIDGET PERFORMING DELETE   === ===')
+        logger.warning('=== ===   STACK WIDGET PERFORMING DELETE   === ===')
         _selection = event.getStackSelection()
         
         # delete points
         _pointSelection = _selection.getPointSelection()
         if _pointSelection is not None:
             if len(_pointSelection) > 0:
-                logger.warning(f'  deleting {_pointSelection}')
+                logger.info(f'  deleting {_pointSelection}')
                 _pointSelection = _pointSelection[0]
                 self.getStack().getPointAnnotations().deleteAnnotation(_pointSelection)
                 return True
@@ -346,24 +452,8 @@ class stackWidget2(mmWidget2):
                 #self.getStack().getLineAnnotations().deleteAnnotation(_pointSelection)
                 return True
 
-        # annotations = event.getAnnotation()
-        # if annotations is None:
-        #     logger.error(f'  annotations is None ???')
-        #     logger.error(event)
-        #     return
-        # itemList = event.getListOfItems()
-        # if len(itemList) > 0:
-        #     item = itemList[0]
-        #     logger.info(f'deleting {item} from {annotations}')
-        #     annotations.deleteAnnotation(item)
-        #     logger.info(f'  after delete {annotations}')
-
-        # emit select [] event
-        # selectEvent = event.getCopy()
-        # selectEvent.setType(pmmEventType.selection)
-        # selectEvent.setSelection(itemList=[])
-        # self.emitEvent(selectEvent, blockSlots=True)
-
+        return False
+    
     def stateChangedEvent(self, event : pmmEvent):
         _state = event.getStateChange()
         logger.info(f' ======================= {_state}')
@@ -393,7 +483,9 @@ class stackWidget2(mmWidget2):
         return True
     
     def _afterEdit(self, event):
-        """Update interface by emitting events.
+        """Set the state after an edit event
+
+        Currently (move, manual connect)
         
         IMPORTANT: event must be a point selection
         """
@@ -435,10 +527,10 @@ class stackWidget2(mmWidget2):
     def moveAnnotationEvent(self, event : "pmmEvent"):
         _eventSelection = event.getStackSelection()
         if not _eventSelection.hasPointSelection():
-            logger.warning(f'only works for single item selection')
+            logger.warning('only works for single item selection')
             return
         
-        logger.warning(f'===   STACK WIDGET PERFORMING Move   ===')
+        logger.info('=== ===   STACK WIDGET PERFORMING Move   === ===')
         itemList = _eventSelection.getPointSelection()
         item = itemList[0]
         x, y, z = event.getAddMovePosition()
@@ -478,23 +570,23 @@ class stackWidget2(mmWidget2):
         # item = item[0]
 
         _stackSelection = self.getStackSelection()
+        
         manuallyConnectSpine = _stackSelection.getManualConnectSpine()
         if manuallyConnectSpine is None or manuallyConnectSpine == []:
             errStr = 'Did not get spine selection - can not make manual connection'
             logger.error(f'{errStr} manuallyConnectSpine:{manuallyConnectSpine}')
             self.slot_setStatus(errStr)
-            print(_selection)
+            logger.info(f'_stackSelection: {_stackSelection}')
             return
         
         # user selected brightest index
-        _selection = event.getStackSelection()
-        if not _selection.hasSegmentPointSelection():
+        if not _stackSelection.hasSegmentPointSelection():
             logger.error('got bad brightestIndex')
             return
         
-        brightestIndex = _selection.getSegmentPointSelection()
+        brightestIndex = _stackSelection.getSegmentPointSelection()
         
-        logger.warning(f'=== ===   STACK WIDGET PERFORMING MANUAL CONNECT   === ===')
+        logger.info('=== ===   STACK WIDGET PERFORMING MANUAL CONNECT   === ===')
         logger.info(f'   manuallyConnectSpine:{manuallyConnectSpine} to brightestIndex:{brightestIndex}')
 
         # set backend
@@ -516,18 +608,21 @@ class stackWidget2(mmWidget2):
         """Auto connect the currently selected spine.
         """
         _stackSelection = self.getStackSelection()
+        
         if not _stackSelection.hasPointSelection():
             errStr = 'Did not auto connect, need spine selection'
             logger.error(errStr)
             self.slot_setStatus(errStr)
             return
+        
         items = _stackSelection.getPointSelection()
         spineIndex = items[0]
 
-        logger.warning(f'=== ===   STACK WIDGET PERFORMING AUTO CONNECT   === ===')
-        _pointAnnotations = self.getStack().getPointAnnotations()
-        _pointAnnotations.setValue('brightestIndex', spineIndex, np.nan)
-        _pointAnnotations.updateSpineInt2(spineIndex, self.getStack())
+        logger.warning('=== ===   STACK WIDGET PERFORMING AUTO CONNECT   === ===')
+        logger.error('TODO (Cudmore) need to implement auto connect')
+        # _pointAnnotations = self.getStack().getPointAnnotations()
+        # _pointAnnotations.setValue('brightestIndex', spineIndex, np.nan)
+        # _pointAnnotations.updateSpineInt2(spineIndex, self.getStack())
         
         newEvent = pmmEvent(pmmEventType.selection, self)
         newEvent.getStackSelection().setPointSelection(items)
@@ -625,7 +720,8 @@ class stackWidget2(mmWidget2):
                               select : bool = False):
         """Zoom to a point annotation.
         
-        This should be called externally. For example, when selecting a point in a stackMap.
+        This should be called externally. For example,
+            when selecting a point in a map of stacks.
 
         Args:
             idx: point annotation to zoom to
@@ -633,7 +729,7 @@ class stackWidget2(mmWidget2):
             select: if True then select the point
         """
 
-        logger.info(f"stackWiget2 zoomToPointAnnotation idx: {idx}")
+        logger.info(f'stackWiget2 zoomToPointAnnotation idx:{idx} isAlt:{isAlt} select:{select}')
         _pointAnnotations = self._stack.getPointAnnotations()
         
         if _pointAnnotations.numAnnotations == 0:

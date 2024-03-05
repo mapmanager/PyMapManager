@@ -1,5 +1,4 @@
-"""
-Widget to display point annotations as a list with small control bar.
+"""Widgets to display lists of point and line annotations.
 """
 
 import sys
@@ -11,8 +10,14 @@ from pymapmanager._logger import logger
 
 import pymapmanager.annotations
 
+# 3/5/2024, swapping in new filterable tableview
+# old
 from pymapmanager.interface import myTableView
+# new
+# from pymapmanager.interface.searchWidget2 import myQTableView as myTableView
+
 from pymapmanager.interface._data_model import pandasModel
+
 
 from .mmWidget2 import mmWidget2
 from .mmWidget2 import pmmEventType, pmmEvent, pmmStates
@@ -30,26 +35,11 @@ class annotationListWidget(mmWidget2):
         """
         super().__init__(stackWidget)
 
-        # logger.info(f'{title} {type(annotations)}')
-
-        # self._stackWidget = theStackWidget
         self._annotations : pymapmanager.annotations.baseAnnotations = annotations
         
-        # use static self._widgetName
-        # self._title : str = title
-        
-        # refactor aug 24
-        # self._displayOptionsDict = displayOptionsDict
-
-        # self._blockSlots : bool = False
-        #Set to true on emit() signal so corresponding slot is not called.
-
         self._buildGui()
         self._setModel()
 
-    def _v2_select_row(self, rowList : List[int], isAlt : bool = False):
-        pass
-        
     def deletedEvent(self, event):
         # logger.info('')
         self._setModel()
@@ -88,6 +78,8 @@ class annotationListWidget(mmWidget2):
         #     logger.warning(f'did not understand state "{_state}"')
 
     def deleteSelected(self):
+        """Derived classes must implement this.
+        """
         pass
 
     def keyPressEvent(self, event : QtGui.QKeyEvent):
@@ -109,7 +101,7 @@ class annotationListWidget(mmWidget2):
             self._myTableView.mySelectRows(None)
     
         elif event.key() == QtCore.Qt.Key_N:
-            logger.info('open note setting dialog for selected annotation')
+            logger.info('TODO: open note setting dialog for selected annotation')
 
         else:
             super().keyPressEvent(event)
@@ -125,6 +117,8 @@ class annotationListWidget(mmWidget2):
         """Set model of tabel view to full pandas dataframe of underlying annotations.
         
         TODO: we need to limit this to roiType like (spineRoi, controlPnt)
+
+        See derived pointListWidget for some example filtering
         """
         dfPoints = self._annotations.getDataFrame()
         myModel = pandasModel(dfPoints)
@@ -164,6 +158,10 @@ class annotationListWidget(mmWidget2):
         vLayout.addLayout(vControlLayout)
 
         #  table/list view
+        # new
+        # _df = self._annotations.getDataFrame()
+        # self._myTableView = myTableView(_df)
+        # old
         self._myTableView = myTableView()
         
         # TODO (Cudmore) Figure out how to set font of (cell, row/vert header, col/horz header)
@@ -180,13 +178,15 @@ class annotationListWidget(mmWidget2):
         #self._myTableView.horizontalHeader().setMaximumSectionSize(_fontSize)
         self._myTableView.resizeRowsToContents()
 
+        # abb removed 3/2024
         self._myTableView.signalSelectionChanged.connect(self.on_table_selection)
+        
         vLayout.addWidget(self._myTableView)
 
     def on_table_selection(self, itemList : List[int], isAlt : bool = False):
         """Respond to user selection in table (myTableView).
         
-        This is called when user selects a row(s) in underlying myTableView.
+        Derived classes must define this.
 
         Args:
             rowList: List of rows that were selected
@@ -201,134 +201,6 @@ class annotationListWidget(mmWidget2):
         # event.setSelection(itemList, alt=isAlt)
         event.getStackSelection().setPointSelection(itemList)
         self.emitEvent(event, blockSlots=False)
-
-    def _old_slot_selectAnnotation(self, rows : List[int], setSlice : bool = False, doZoom : bool = False):
-        """Select annotation at index.
-        
-        This is called when user selects point in (for example)
-        a pyqtgraph plot.
-
-        Args:
-            rows: annotation(s) index to select
-            isAlt: if Alt key was down on selection (not used here)
-        """
-        logger.info(f'annotationListWidget() rows:{rows}')
-        
-        if self._blockSlots:
-            # blocks recursion
-            return
-        
-        if isinstance(rows, int):
-            rows = [rows]
-        
-        # select in table
-        self._myTableView.mySelectRows(rows)
-
-        #logger.warning(f'todo: need to set the table row')
-
-        # update our 'trace' button
-        #self._updateTracingButton()
-
-    def _old_slot_selectAnnotation2(self, selectionEvent : pymapmanager.annotations.SelectionEvent):
-        """
-        TODO: check that selectionEvent.type == type(self._annotation)
-        """
-        if self._blockSlots:
-            # blocks recursion
-            return
-
-        # logger.info('')
-        # print(selectionEvent)
-
-        if selectionEvent.type == type(self._annotations):
-            rows = selectionEvent.getRows()
-            self._myTableView.mySelectRows(rows)
-
-    def _old_slot_addAnnotation(self, rows : List[int], dictList : List[dict]):
-        """Add annotations from list.
-        
-        This is called when user adds points in (for example)
-        a pyqtgraph plot.
-
-        Args:
-            rows: annotation(s) index to delete
-            dictList: List of dict with new annotation values
-        """
-        logger.info(f'rows:{rows}')
-
-        # make df from dictList
-        # df = 
-        #self.getMyModel().myAppendRow(df)
-
-    def _old_slot_addedAnnotation(self, addAnnotationEvent : pymapmanager.annotations.AddAnnotationEvent):
-        """Called after user creates a new annotation in parent stack window.
-        """
-        logger.info(f'')
-        
-        # TODO (cudmore): we need to implement finer grained updates like just updating what was added
-
-        self._setModel()
-
-        # TODO: set the selection to newAnnotationRow
-        #newAnnotationRow = addDict['newAnnotationRow']
-        newAnnotationRow = addAnnotationEvent.getAddedRow()
-        self.slot_selectAnnotation(newAnnotationRow)
-        
-    def _old_slot_deletedAnnotation(self, delDict : dict):
-        """Slot called after annotation have been deleted (by parent stack widget)
-        
-        Note:
-            I can't get the data model to update (see comments below)
-            Instead, I am just setting the model from the modified annotation df
-                This probably refreshes the entire table?
-                This might get slow?
-        """
-        logger.info(f'delDict:{delDict}')
-
-        annotationIndex = delDict['annotationIndex']
-
-        # want this
-        # self.beginRemoveRows(QtCore.QModelIndex(), minRow, maxRow)
-        #self.getMyModel().beginResetModel()
-
-        # removes values but leaves empy row
-        # for item in annotationIndex:
-        #    logger.info(f'removing row: {item}')
-        #    self.getMyModel().removeRows(item, 1)  # QtCore.QModelIndex()
-
-        #self.getMyModel().endResetModel()
-
-        self._setModel()
-
-    def _old_slot_deleteAnnotation(self, rows : List[int]):
-        """Delete annotations from list.
-        
-        This is called when user deletes points in (for example)
-        a pyqtgraph plot.
-
-        Args:
-            rows: annotation(s) index to delete
-        """
-        logger.info(f'rows:{rows}')
-        self.getMyModel().myDeleteRows(rows)
-
-    # def slot_editAnnotations(self, rows : Union[List[int], int], dictList : List[dict]):
-    def _old_slot_editAnnotations(self, selectionEvent: pymapmanager.annotations.SelectionEvent):
-        """Modify values in rows(s).
-        
-        This is called when user:
-            - moves points in a pyqtgraph plot.
-            - modifies an annotation value like 'isBad'
-
-        Args:
-            rows: Annotation rows to edit
-            dictList: List of dict with new annotation values
-        """
-        logger.info(f'selectionEvent:{selectionEvent}')
-        self._setModel()
-        # make df from dictList
-        # df = 
-        # self.getMyModel().mySetRow(rows, df)
 
 class pointListWidget(annotationListWidget):
 
@@ -394,12 +266,33 @@ class pointListWidget(annotationListWidget):
     def selectedEvent(self, event):
         # logger.info(event)
         
+        logger.warning('')
+        logger.warning('TODO (cudmore): need to determine if selection is in the timepoint (map session) we are displaying!!!!!!)')
+        logger.warning('   SEE CODE FOR IDEAS !!!')
+        
+        """
+        IDEAS
+        """
+        
+        _stackTimePoint = self.getStackWidget().getTimepoint()
+        _eventTimePoint = event.getMapSessionSelection()
+        if isinstance(_eventTimePoint, list):
+            _eventTimePoint = _eventTimePoint[0]
+        print(f'   _stackTimePoint:{_stackTimePoint} _eventTimePoint:{_eventTimePoint}')
+        if _stackTimePoint == _eventTimePoint:
+            print('      YES, SELECT')
+        else:
+            print('      NO, DO NOT SELECT')
+
+        """
+        END IDEAS
+        """
+        
         self.currentSlice = event.getSliceNumber() 
         logger.info(f"pointListWidget current slice after selected event {self.currentSlice}")
 
         itemList = event.getStackSelection().getPointSelection()        
         if itemList is not None:
-
             self._myTableView.mySelectRows(itemList)
             
 
@@ -423,83 +316,6 @@ class pointListWidget(annotationListWidget):
         event = pmmEvent(eventType, self)
         event.getStackSelection().setPointSelection(deletedRows)
         self.emitEvent(event)
-
-    def _old_initToolbar(self) -> QtWidgets.QVBoxLayout:
-        """Initialize the toolbar with controls.
-
-        Returns:
-            vLayout: VBoxLayout
-        """
-        _alignLeft = QtCore.Qt.AlignLeft
-
-        # get the default v layout for controls
-        vControlLayout = super()._initToolbar()
-
-        # add popup with new roiType
-        newRoiType_hBoxLayout = QtWidgets.QHBoxLayout()
-        aLabel = QtWidgets.QLabel('New')
-        newRoiType_hBoxLayout.addWidget(aLabel, alignment=_alignLeft)
-
-        # popup with point types
-        pointTypes = pymapmanager.annotations.pointTypes
-        self._newRoiTypeComboBox = QtWidgets.QComboBox()
-        for _item in pointTypes:
-            self._newRoiTypeComboBox.addItem(_item.value)
-        self._newRoiTypeComboBox.currentTextChanged.connect(self.on_new_roitype_popup)
-        newRoiType_hBoxLayout.addWidget(self._newRoiTypeComboBox, alignment=_alignLeft)
-
-        newRoiType_hBoxLayout.addStretch()  # required for alignment=_alignLeft 
-
-        vControlLayout.addLayout(newRoiType_hBoxLayout)
-
-        # add popup with display roiType
-        displayRoiType_hBoxLayout = QtWidgets.QHBoxLayout()
-        aLabel = QtWidgets.QLabel('Display')
-        displayRoiType_hBoxLayout.addWidget(aLabel, alignment=_alignLeft)
-
-        pointTypes = pymapmanager.annotations.pointTypes
-        self._displayRoiTypeComboBox = QtWidgets.QComboBox()
-        self._displayRoiTypeComboBox.addItem('All')
-        for _item in pointTypes:
-            self._displayRoiTypeComboBox.addItem(_item.value)
-        self._displayRoiTypeComboBox.currentTextChanged.connect(self.on_display_roitype_popup)
-        displayRoiType_hBoxLayout.addWidget(self._displayRoiTypeComboBox, alignment=_alignLeft)
-
-        displayRoiType_hBoxLayout.addStretch()  # required for alignment=_alignLeft 
-
-        vControlLayout.addLayout(displayRoiType_hBoxLayout)
-
-        return vControlLayout
-
-    def _old_on_new_roitype_popup(self, roiType : str):
-        """User selected item in new item popup.
-        """
-        logger.info(f'roiType: {roiType}')
-        roiTypeEnum = pymapmanager.annotations.pointTypes[roiType]
-
-        logger.info(f'  -->> emit signalNewRoiType() roiTypeEnum:{roiTypeEnum}')
-        self.signalNewRoiType.emit(roiTypeEnum)
-
-    def _old_on_display_roitype_popup(self, roiType : str):
-        """User selected item in roi types to display.
-        Notes:
-            roiType can be 'all'
-        """
-        logger.info(f'roiType: {roiType}')
-        if roiType == 'All':
-            roiTypeEnumList = []
-            for item in pymapmanager.annotations.pointTypes:
-                roiTypeEnumList.append(item)
-        else:
-            # one roi type
-            roiTypeEnumList = [pymapmanager.annotations.pointTypes[roiType]]
-        
-        logger.info(f'  -->> emit signalDisplayRoiType() roiTypeEnumList:{roiTypeEnumList}')
-        self.signalDisplayRoiType.emit(roiTypeEnumList)
-
-        # TODO (cudmore) update our list by limiting it to roiType
-        #   Our backend model does not really have a filter function?
-        #   Maybe implement that? Or just refresh the entire backend model.
 
 class lineListWidget(annotationListWidget):
 
