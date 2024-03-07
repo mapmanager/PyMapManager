@@ -313,3 +313,14 @@ class mapWidget(mmWidget2):
 
     def setSliceEvent(self, event):
         logger.info('&&&&&&&&&&&&')
+    
+    def closeEvent(self, event):
+        """Called when user closes main window or selects quit.
+
+        Parameters
+        ----------
+        event : PyQt5.QtGui.QCloseEvent
+        """
+        logger.warning('NEED TO CHECK IF DIRTY AND PROMPT TO SAVE')
+        
+        self.getApp().closeMapWindow(self)

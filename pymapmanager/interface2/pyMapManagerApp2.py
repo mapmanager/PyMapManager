@@ -20,6 +20,8 @@ import pymapmanager.interface2
 import pymapmanager.interface2.stackWidgets
 import pymapmanager.interface2.mapWidgets
 
+from pymapmanager.interface2.openFirstWindow import OpenFirstWindow
+
 from pymapmanager._logger import logger
 from pymapmanager.pmmUtils import getBundledDir
 
@@ -188,7 +190,7 @@ class PyMapManagerMenus:
     
         # get help menu as action so other windows can insert their menus before it
         # e.g. SanPyWindow inserts (View, Windows) menus
-        logger.info('mainMenu is now')
+        # logger.info('mainMenu is now')
         self._helpMenuAction = None
         for _action in mainMenu.actions():
             actionText = _action.text()
@@ -244,14 +246,28 @@ class PyMapManagerMenus:
         
     def _onPreferencesMenuAction(self, name):
         logger.info(name)
-        
+
+class pmmAppPreferences:
+    """Application preferences.
+    
+    This is saved and loaded into a user folder.
+    """
+    def __init__(self):
+        pass
+
+    def getRecentFiles(self) -> List[str]:
+        return []
+      
+    def getRecentFolders(self) -> List[str]:
+        return []
+      
 class PyMapManagerApp(QtWidgets.QApplication):
     def __init__(self, argv=['']):
         super().__init__(argv)
 
         qdarktheme.setup_theme()
 
-        appIconPath = os.path.join(getBundledDir(), 'interface', 'icons', 'mapmanager-icon.png')
+        appIconPath = self.getAppIconPath()
         self.setWindowIcon(QtGui.QIcon(appIconPath))
 
         # self.setQuitOnLastWindowClosed(False)
@@ -270,10 +286,48 @@ class PyMapManagerApp(QtWidgets.QApplication):
         # dictionary of open stack widgets
         # keys are full path to stack
 
+        self._config = pmmAppPreferences()
+        # util class to save/load app preferences including recent paths
+
         self._stackWidgetPluginsDict = loadPlugins()
         # application wide stack widgets
         
         self._mainMenu = PyMapManagerMenus(self)
+
+        self.openFirstWindow()
+
+    def closeStackWindow(self, theWindow : "stackWidget2"):
+        """Remove theWindow from self._windowList.
+        """
+        logger.info('  remove stackwidget window from app list of windows')
+        stackPath = theWindow.getStack().getTifPath()
+        popThisKey = None
+        for pathKey in self._stackWidgetDict.keys():
+            if pathKey == stackPath:
+                popThisKey = pathKey
+        
+        if popThisKey is not None:
+            self._stackWidgetDict.pop(popThisKey, None)
+
+        # check if there are any more windows and show load window
+        # activeWindow = self.activeWindow()
+        # logger.info(f'activeWindow:{activeWindow}')
+        # if activeWindow is None:
+        #     self._openFirstWindow.show()
+
+        if len(self._stackWidgetDict.keys()) == 0 and \
+                            len(self._mapWidgetDict.keys()) == 0:
+            self._openFirstWindow.show()
+
+    def openFirstWindow(self):
+        self._openFirstWindow = OpenFirstWindow(self)        
+        self._openFirstWindow.show()
+        
+    def getAppIconPath(Self):
+        return os.path.join(getBundledDir(), 'interface', 'icons', 'mapmanager-icon.png')
+    
+    def getConfigDict(self) -> pmmAppPreferences:
+        return self._config
 
     def getStackPluginDict(self):
         return self._stackWidgetPluginsDict
@@ -301,6 +355,29 @@ class PyMapManagerApp(QtWidgets.QApplication):
             return
         self._mapWidgetDict[path].setVisible(visible)
 
+    def closeMapWindow(self, theWindow : "mapWidget"):
+        """Remove theWindow from self._windowList.
+        """
+        logger.info('  remove _mapWidgetDict window from app list of windows')
+        mapPath = theWindow.getMap().filePath
+        popThisKey = None
+        for pathKey in self._mapWidgetDict.keys():
+            if pathKey == mapPath:
+                popThisKey = pathKey
+        
+        if popThisKey is not None:
+            self._mapWidgetDict.pop(popThisKey, None)
+
+        # check if there are any more windows and show load window
+        # activeWindow = self.activeWindow()
+        # logger.info(f'activeWindow:{activeWindow}')
+        # if activeWindow is None:
+        #     self._openFirstWindow.show()
+
+        if len(self._stackWidgetDict.keys()) == 0 and \
+                            len(self._mapWidgetDict.keys()) == 0:
+            self._openFirstWindow.show()
+
     def loadMapWidget(self, path):
         """Load the main map widget from a path.
         """
@@ -313,6 +390,8 @@ class PyMapManagerApp(QtWidgets.QApplication):
             _mapWidget = pmm.interface2.mapWidgets.mapWidget(_map)
             self._mapWidgetDict[path] = _mapWidget
 
+        self._openFirstWindow.hide()
+
         return self._mapWidgetDict[path]
     
     def loadStackWidget(self, path):
@@ -324,6 +403,8 @@ class PyMapManagerApp(QtWidgets.QApplication):
             _stackWidget = pmm.interface2.stackWidgets.stackWidget2(path)
             _stackWidget.show()
             self._stackWidgetDict[path] = _stackWidget
+
+        self._openFirstWindow.hide()
 
         return self._stackWidgetDict[path]
     

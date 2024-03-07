@@ -88,6 +88,17 @@ class stackWidget2(mmWidget2):
         self._buildUI()
         self._buildMenus()
 
+    def closeEvent(self, event):
+        """Called when user closes main window or selects quit.
+
+        Parameters
+        ----------
+        event : PyQt5.QtGui.QCloseEvent
+        """
+        logger.warning('NEED TO CHECK IF DIRTY AND PROMPT TO SAVE')
+        
+        self.getPyMapManagerApp().closeStackWindow(self)
+
     def getTimepoint(self) -> int:
         """Get the timepoint in the map. Will be None for singleton stacks.
         """
