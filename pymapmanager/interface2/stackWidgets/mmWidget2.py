@@ -17,7 +17,7 @@ class pmmStates(Enum):
     edit = auto()
     movingPnt = auto()
     manualConnectSpine = auto()
-    # autoConnectSpine = auto()
+    autoConnectSpine = auto()
     editSegment = auto()
 
 class pmmEventType(Enum):
@@ -67,13 +67,18 @@ class StackSelection:
     # ABJ
     def getCurrentStackSlice(self):
         pointSelections = self.getPointSelection()
-        if len(pointSelections) > 0:
-            spineIdx = pointSelections[0]
 
-        sliceNum = self.stack.getPointAnnotations().getValue("z", spineIdx)
+        if pointSelections is None:
+            return
 
-        logger.info("current stack selection slice is: {sliceNum}")
-        return sliceNum
+        if self.hasPointSelection:
+            spineIdx = self.firstPointSelection()
+            logger.info(f"spineIdx of currentslice: {spineIdx}")
+
+            sliceNum = self.stack.getPointAnnotations().getValue("z", spineIdx)
+
+            logger.info(f"current stack selection slice is: {sliceNum}")
+            return sliceNum
     #
     # point selection
     #
@@ -103,6 +108,7 @@ class StackSelection:
     def firstPointSelection(self) -> Optional[int]:
         if self.hasPointSelection() is None:
             return
+        logger.info(f"getPointSelection: {self.getPointSelection()}")
         _pointSelection = self._getValue('pointSelectionList')
         return _pointSelection[0]
 
@@ -110,7 +116,7 @@ class StackSelection:
         if self.hasPointSelection() is None:
             return
         firstPoint = self.firstPointSelection()
-        firstRoiType = self.stack.getPointAnnotations().getValue()('roiType', firstPoint)
+        firstRoiType = self.stack.getPointAnnotations().getValue('roiType', firstPoint)
         return firstRoiType
     #
     # segment selection

@@ -544,8 +544,9 @@ class pointAnnotations(baseAnnotations):
             self.setIntValue(spineIdx, 'segmentBackground', channelNumber, segmentBackgroundIntDict)
 
         # abb 20230810
-        self.storeJaggedPolygon(la, spineIdx, verbose)
-        self.storeSegmentPolygon(spineIdx, la, forFinalMask = False)
+        # No longer storing polygons - 3/5
+        # self.storeJaggedPolygon(la, spineIdx, verbose)
+        # self.storeSegmentPolygon(spineIdx, la, forFinalMask = False)
 
     def updateSpineInt(self,
                         newZYXValues: None,
