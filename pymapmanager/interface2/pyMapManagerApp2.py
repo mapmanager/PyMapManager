@@ -151,21 +151,28 @@ class PyMapManagerMenus:
         self.viewMenu.addAction(_emptyAction)
         # self.mapsMenu.aboutToShow.connect(self._refreshMapsMenu)
         
-        #
-        # maps
-        self.mapsMenu = mainMenu.addMenu("Maps")
-        _emptyAction = QtWidgets.QAction("None", self.getApp())
-        self.mapsMenu.addAction(_emptyAction)
-        self.mapsMenu.aboutToShow.connect(self._refreshMapsMenu)
+        # #
+        # # stacks
+        # name = "Stacks"
+        # self.stacksMenu = mainMenu.addMenu(name)
+        # _emptyAction = QtWidgets.QAction("None", self.getApp())
+        # self.stacksMenu.addAction(_emptyAction)
+        # self.stacksMenu.aboutToShow.connect(self._refreshStacksMenu)
+        # # self.stacksMenu.triggered.connect(partial(self._onStacksMenuAction, name))
 
-        #
-        # stacks
-        name = "Stacks"
-        self.stacksMenu = mainMenu.addMenu(name)
+        # #
+        # # maps
+        # self.mapsMenu = mainMenu.addMenu("Maps")
+        # _emptyAction = QtWidgets.QAction("None", self.getApp())
+        # self.mapsMenu.addAction(_emptyAction)
+        # self.mapsMenu.aboutToShow.connect(self._refreshMapsMenu)
+
+        # windows
+        name = "Windows"
+        self.windowsMenu = mainMenu.addMenu(name)
         _emptyAction = QtWidgets.QAction("None", self.getApp())
-        self.stacksMenu.addAction(_emptyAction)
-        self.stacksMenu.aboutToShow.connect(self._refreshStacksMenu)
-        # self.stacksMenu.triggered.connect(partial(self._onStacksMenuAction, name))
+        self.windowsMenu.addAction(_emptyAction)
+        self.windowsMenu.aboutToShow.connect(self._refreshWindowsMenu)
 
         # help menu
         self.helpMenu = mainMenu.addMenu("Help")
@@ -200,43 +207,68 @@ class PyMapManagerMenus:
 
         return self._helpMenuAction
     
-    def _refreshMapsMenu(self):
-        """Dynamically refresh the stacks maps.
+    def _refreshWindowsMenu(self):
+        """A menu with stack then maps
         """
         logger.info('')
-        self.mapsMenu.clear()
-        self._getMapsMenu(self.mapsMenu)
-    
-    def _refreshStacksMenu(self):
-        """Dynamically refresh the stacks menu.
-        """
-        logger.info('')
-        self.stacksMenu.clear()
-        self._getStacksMenu(self.stacksMenu)
+        self.windowsMenu.clear()
 
-    def _getMapsMenu(self, aWindowsMenu):
-        logger.info('')
-        for _path, _mapWidget in self.getApp().getMapWidgetsDict().items():
-            # path = _mapWidget.getPath()
-            action = QtWidgets.QAction(_path, self.getApp(), checkable=True)
-            # action.setChecked(_sanPyWindow.isActiveWindow())
-            # action.triggered.connect(partial(self._windowsMenuAction, _sanPyWindow, path))
-            aWindowsMenu.addAction(action)
-        return aWindowsMenu
-    
-    def _getStacksMenu(self, aWindowsMenu):
-        logger.info('')
         for _path, _stackWidget in self.getApp().getStackWidgetsDict().items():
+            logger.info(f'adding to stack window:{_path}')
             # path = _stackWidget.getPath()
             action = QtWidgets.QAction(_path, self.getApp(), checkable=True)
             # action.setChecked(_sanPyWindow.isActiveWindow())
-            action.triggered.connect(partial(self._onStacksMenuAction, _path))
-            aWindowsMenu.addAction(action)
-        return aWindowsMenu
+            action.triggered.connect(partial(self._onWindowsMenuAction, _path))
+            self.windowsMenu.addAction(action)
+
+        if len(self.getApp().getMapWidgetsDict().items()) > 0:
+            self.windowsMenu.addSeparator()
+
+        for _path, _mapWidget in self.getApp().getMapWidgetsDict().items():
+            logger.info(f'adding to map window:{_path}')
+            action = QtWidgets.QAction(_path, self.getApp(), checkable=True)
+            # action.setChecked(_sanPyWindow.isActiveWindow())
+            action.triggered.connect(partial(self._onWindowsMenuAction, _path))
+            self.windowsMenu.addAction(action)
+
+    # def _refreshMapsMenu(self):
+    #     """Dynamically refresh the stacks maps.
+    #     """
+    #     logger.info('')
+    #     self.mapsMenu.clear()
+    #     self._getMapsMenu(self.mapsMenu)
     
-    def _onStacksMenuAction(self, name):
+    # def _refreshStacksMenu(self):
+    #     """Dynamically refresh the stacks menu.
+    #     """
+    #     logger.info('')
+    #     self.stacksMenu.clear()
+    #     self._getStacksMenu(self.stacksMenu)
+
+    # def _getMapsMenu(self, aWindowsMenu):
+    #     logger.info('')
+    #     for _path, _mapWidget in self.getApp().getMapWidgetsDict().items():
+    #         # path = _mapWidget.getPath()
+    #         action = QtWidgets.QAction(_path, self.getApp(), checkable=True)
+    #         # action.setChecked(_sanPyWindow.isActiveWindow())
+    #         # action.triggered.connect(partial(self._windowsMenuAction, _sanPyWindow, path))
+    #         aWindowsMenu.addAction(action)
+    #     return aWindowsMenu
+    
+    # def _getStacksMenu(self, aWindowsMenu):
+    #     logger.info('')
+    #     for _path, _stackWidget in self.getApp().getStackWidgetsDict().items():
+    #         # path = _stackWidget.getPath()
+    #         action = QtWidgets.QAction(_path, self.getApp(), checkable=True)
+    #         # action.setChecked(_sanPyWindow.isActiveWindow())
+    #         action.triggered.connect(partial(self._onStacksMenuAction, _path))
+    #         aWindowsMenu.addAction(action)
+    #     return aWindowsMenu
+    
+    def _onWindowsMenuAction(self, name):
         logger.info(f'{name}')
-        self.getApp().loadStackWidget(name)
+        
+        self.getApp().showMapOrStack(name)
 
     def _onHelpMenuAction(self, name):
         logger.info(name)
@@ -323,6 +355,9 @@ class PyMapManagerApp(QtWidgets.QApplication):
         self._openFirstWindow = OpenFirstWindow(self)        
         self._openFirstWindow.show()
         
+        self._openFirstWindow.raise_()
+        self._openFirstWindow.activateWindow()  # bring to front
+
     def getAppIconPath(Self):
         return os.path.join(getBundledDir(), 'interface', 'icons', 'mapmanager-icon.png')
     
@@ -408,6 +443,22 @@ class PyMapManagerApp(QtWidgets.QApplication):
 
         return self._stackWidgetDict[path]
     
+    def showMapOrStack(self, path):
+        """Show an already opened map or stack widget.
+        """
+        logger.info(path)
+        if path in self._stackWidgetDict.keys():
+            self._stackWidgetDict[path].show()
+            self._stackWidgetDict[path].raise_()
+            self._stackWidgetDict[path].activateWindow()
+        elif path in self._mapWidgetDict.keys():
+            self._mapWidgetDict[path].show()
+            self._mapWidgetDict[path].raise_()
+            self._mapWidgetDict[path].activateWindow()
+        else:
+            logger.warning('did not find opened map or stack with path')
+            logger.warning(f'   {path}')
+
     def getScreenGrid(self, numItems : int, itemsPerRow : int) -> List[List[int]]:
         """Get screen coordiates for a grid of windows.
         """

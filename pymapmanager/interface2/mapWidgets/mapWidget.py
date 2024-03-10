@@ -304,7 +304,7 @@ class mapWidget(mmWidget2):
         dendrogramDock = self._addDockWidget(dendrogramWidget, 'right', '')
         self._widgetDict[dendrogramWidgetName] = dendrogramDock  # the dock, not the widget ???
 
-    def contextManu(self):
+    def contextMenu(self):
         logger.info('')
 
     def selectedEvent(self, event):
