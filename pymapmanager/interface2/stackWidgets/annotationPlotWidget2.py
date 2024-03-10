@@ -312,12 +312,14 @@ class annotationPlotWidget(mmWidget2):
             if isinstance(self._annotations, pymapmanager.annotations.pointAnnotations):
                 event.getStackSelection().setPointSelection(dbIdx)
                 _plotType = 'points'
+                sliceNum = self.getStack().getPointAnnotations().getValue("z", dbIdx)
             elif isinstance(self._annotations, pymapmanager.annotations.lineAnnotations):
 
                 logger.info(f'line segment selected')
                 # used to manually connect a spine to segment
                 event.getStackSelection().setSegmentPointSelection(dbIdx)
                 _plotType = 'lines'
+                sliceNum = self.getStackWidget().getStackSelection().getCurrentStackSlice() # gets current stacks slice selection
             else:
                 logger.error(f'did not understand type of annotations {type(self._annotations)}')
                 return
@@ -327,7 +329,8 @@ class annotationPlotWidget(mmWidget2):
             logger.info(f'emitting "{_plotType}" event for dbIdx:{dbIdx}')
             
             # 3/1/24 Added slice number to maintain proper selection
-            sliceNum = self.getStack().getPointAnnotations().getValue("z", dbIdx)
+            # sliceNum = self.getStack().getPointAnnotations().getValue("z", dbIdx)
+        
 
             logger.info(f'emitting "{_plotType}" event for sliceNum:{sliceNum}')
             event.setSliceNumber(sliceNum)
@@ -346,7 +349,7 @@ class annotationPlotWidget(mmWidget2):
             isAlt: If True then snap z
         """
         # logger.info(f'annotationPlotWidget dbIdx:{dbIdx}')
-        if len(dbIdx)==0:
+        if dbIdx is None or len(dbIdx)==0:
             #self._selectedAnnotation = None
             x = []
             y = []
@@ -1395,6 +1398,11 @@ class linePlotWidget(annotationPlotWidget):
         # setData calls this ???
         # self._view.update()
 
+    def _unselectSegment(self):
+        x = []
+        y = []
+        self._scatterUserSelection.setData(x, y)
+
     def selectedEvent(self, event : pmmEvent):
         """If in manualConnectSpine state and got a point selection on the line
         that is the new connection point   !!!
@@ -1406,6 +1414,10 @@ class linePlotWidget(annotationPlotWidget):
         if _stackSelection.hasSegmentSelection():
             _selectedItems = _stackSelection.getSegmentSelection()
             self._selectSegment(_selectedItems)
+        # else:
+        #     # abj: cancel selection of segment
+        #     logger.info("unselect segment")
+        #     self._unselectSegment()
 
         _state = event.getStackSelection().getState()
         _stackSelection = self.getStackWidget().getStackSelection()

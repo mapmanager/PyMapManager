@@ -150,16 +150,8 @@ class ImagePlotWidget(mmWidget2):
         - If a spine is selected, menu should be 'Delete Spine'
         - If no selection then gray out 'Delete'
         """
-
-        # TODO: 2/22 need to implement context menu in allPointPlot
-        # self._aPointPlot.contextMenuEvent(event)
-
         logger.info(f"event {event}")
-        # TODO: Fix context menu. Currently not showing when right clicking
-        # Need to add contextMenuEvent function inside new annotationPlotWidget.py
-        
-        # self._allPointPlot.contextMenuEvent(event)
-        return
+        # return
 
         # activate menus if we have a point selection
         # get the current selection from the parent stack widget
@@ -181,40 +173,47 @@ class ImagePlotWidget(mmWidget2):
         firstPointSelection = stackSelection.firstPointSelection()
         firstRoiType = stackSelection.getFirstPointRoiType()
 
+        point_roiType = ' ' + str(firstPointSelection)
+        isSpineSelection = firstRoiType == 'spineROI'
 
-        _annotations = self.getStackWidget().getAnnotations()
-        _selectedRows = self._aPointPlot.getSelectedAnnotations()
-        _noSelection = len(_selectedRows) == 0
-        if _noSelection:
-            logger.warning('no selection -> no context menu')
-            return
-        isPointSelection = True
 
-        # some menus require just one selection
-        isOneRowSelection = len(_selectedRows) == 1
+        # _annotations = self.getStackWidget().getAnnotations()
+        # _selectedRows = self._aPointPlot.getSelectedAnnotations()
+        # _noSelection = len(_selectedRows) == 0
+        # if _noSelection:
+        #     logger.warning('no selection -> no context menu')
+        #     return
+        # isPointSelection = True
+
+        # # some menus require just one selection
+        # isOneRowSelection = len(_selectedRows) == 1
         
-        if isOneRowSelection:
-            firstRow = _selectedRows[0]
-            point_roiType = _annotations.getValue('roiType', firstRow)
-            isSpineSelection = point_roiType == 'spineROI'
-            point_roiType += ' ' + str(_selectedRows[0])
-        else:
-            isSpineSelection = False
-            point_roiType = ''
+        # if isOneRowSelection:
+        #     firstRow = _selectedRows[0]
+        #     point_roiType = _annotations.getValue('roiType', firstRow)
+        #     isSpineSelection = point_roiType == 'spineROI'
+        #     point_roiType += ' ' + str(_selectedRows[0])
+        # else:
+        #     isSpineSelection = False
+            # point_roiType = ''
 
         _menu = QtWidgets.QMenu(self)
 
         # only allowed to move spine roi
         moveAction = _menu.addAction(f'Move {point_roiType}')
-        moveAction.setEnabled(isSpineSelection and isOneRowSelection)
+        moveAction.setEnabled(isSpineSelection)
         
         # only allowed to manually connect spine roi
         manualConnectAction = _menu.addAction(f'Manually Connect {point_roiType}')
-        manualConnectAction.setEnabled(isSpineSelection and isOneRowSelection)
+        manualConnectAction.setEnabled(isSpineSelection)
+
+        # only allowed to auto connect spine roi
+        autoConnectAction = _menu.addAction(f'Auto Connect {point_roiType}')
+        autoConnectAction.setEnabled(isSpineSelection)
 
         # only allowed to reanalyze spine
         reanalyzeAction = _menu.addAction(f'Reanalyze {point_roiType}')
-        reanalyzeAction.setEnabled(isSpineSelection and isOneRowSelection)
+        reanalyzeAction.setEnabled(isSpineSelection)
 
         # For testing purposes: testing analysis params
         # testSingleSpineAction = _menu.addAction(f'test update {point_roiType}')
@@ -224,7 +223,9 @@ class ImagePlotWidget(mmWidget2):
         
         # allowed to delete any point annotation
         deleteAction = _menu.addAction(f'Delete {point_roiType}')
-        deleteAction.setEnabled(isPointSelection and isOneRowSelection)
+        # deleteAction.setEnabled(isPointSelection and isOneRowSelection)
+        deleteAction.setEnabled(isSpineSelection)
+
 
         action = _menu.exec_(self.mapToGlobal(event.pos()))
         
@@ -232,18 +233,31 @@ class ImagePlotWidget(mmWidget2):
 
         if action == moveAction:
             logger.warning('TODO: moveAction')
-            self._mouseMovedState = True 
+            # self._mouseMovedState = True 
             
-            # Currently using slot_MovingSpineROI within stackWidget to do the logic 
+            # TODO: emit a signal
+            # moveAnnotationEvent in stackWidget will respond
 
-            # annotationPlot Widget has a signal signalMovingAnnotation (not currently used?)
+            event = pmmEvent(pmmEventType.stateChange, self)
+            event.setStateChange(pmmStates.movingPnt)
+            self.emitEvent(event)
 
         elif action == manualConnectAction:
             logger.warning('TODO: manualConnect')
 
             # Detect on mouse click but ensure that it is part of the line
-            self._mouseConnectState = True 
-        
+            # self._mouseConnectState = True 
+            event = pmmEvent(pmmEventType.stateChange, self)
+            event.setStateChange(pmmStates.manualConnectSpine)
+            self.emitEvent(event)
+
+        elif action == autoConnectAction:
+            logger.warning('Auto Connecting Spine')
+            # Dont need to acquire any new data, everything should be known because of the current selection
+            eventType = pmmEventType.autoConnectSpine
+            event = pmmEvent(eventType, self)
+            self.emitEvent(event, blockSlots=True)
+
         elif action == reanalyzeAction:
 
             # currentSelection = self._stackWidgetParent.getCurrentSelection()
@@ -449,40 +463,26 @@ class ImagePlotWidget(mmWidget2):
                 event.getStackSelection().setPointSelection(items)
                 self.emitEvent(event, blockSlots=True)
 
-            # tempLinePointIndex = 150
-            # logger.error(f'we are debugging with hard coded tempLinePointIndex:{tempLinePointIndex}')
-            # _selectionEvent = pymapmanager.annotations.SelectionEvent(pymapmanager.annotations.lineAnnotations, 
-            #                                                           rowIdx = addedRowIdx,
-            #                                                           lineIdx = tempLinePointIndex)
-            # logger.info(f'-->> signalMouseClickConnect.emit _selectionEvent: {_selectionEvent}')
-            
-            # logger.info(f'-->> ENTERING CONNECT STATE')
-            # self.signalMouseClickConnect.emit(_selectionEvent)
-            # self._mouseConnectState = False
-
         elif _state == pmmStates.manualConnectSpine:
 
-            logger.warning('todo: need to wait for user clicking on line annotation plot.')
+            # logger.warning('todo: need to wait for user clicking on line annotation plot.')
+            logger.info("Manual connect emit is done with AnnotationPlotWidget2")
 
+            # _stackSelection = self.getStackWidget().getStackSelection()
+            # # Check for selection on segment point
+            # if _stackSelection.hasSegmentPointSelection():
+            #     # items = _stackSelection.getPointSelection()
+            #     eventType = pmmEventType.manualConnectSpine
+            #     event = pmmEvent(eventType, self)
 
-            # logger.info(f'-->> ENTERING MOVE STATE')
-            # logger.info(f'-->> signalMouseClick.emit {_addAnnotationEvent}')
-            # # get the current selection from the parent stack widget (can be none)
-            # currentSelection = self._stackWidgetParent.getCurrentSelection()
-            # _selectedRows = currentSelection.getRows()
-            # # if _selectedRows is not None:
-            # if len(_selectedRows) > 0:
-            #     addedRowIdx =_selectedRows[0]
-            # else:
-            #     addedRowIdx = None
+            #     # retrieve current spine
+            #     spineSelection = _stackSelection.getManualConnectSpine()
+            #     logger.info(f"manual spine: {spineSelection}")
+            #     # set it within new event that is to be emitted
+            #     # event.getStackSelection().setManualConnectSpine(spineSelection)
+            #     # # event.getStackSelection().setPointSelection(items)
+            #     # self.emitEvent(event, blockSlots=True)
 
-            # _addAnnotationEvent = pymapmanager.annotations.AddAnnotationEvent(z, y, x)
-            # _addAnnotationEvent.setAddedRow(addedRowIdx)            # Either set backend or send signal to set backend?
-            # self.signalMouseClick.emit(_addAnnotationEvent)
-            # self._mouseMovedState = False
-
-        # we always make pointAnnotation
-        #   never make lineAnnotation, this comes in after fitting controlPnt
         elif isShift:
             # if self._displayOptionsDict['windowState']['doEditSegments']:
             #     roiType = pymapmanager.annotations.pointTypes.controlPnt

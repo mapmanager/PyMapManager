@@ -134,6 +134,7 @@ class stackWidget2(mmWidget2):
         
         state = _selection.getState()
         if state != pmmStates.edit:
+            logger.info("not edit")
             event = pmmEvent(pmmEventType.stateChange, self)
             event.setStateChange(pmmStates.edit)
             self.slot_pmmEvent(event)
@@ -141,6 +142,7 @@ class stackWidget2(mmWidget2):
             # self.slot_pmmEvent(event)
 
         elif _selection.getPointSelection() is not None:
+            logger.info("not point selection")
             items = _selection.getPointSelection()
             if len(items) == 0:
                 # no slection
@@ -611,7 +613,9 @@ class stackWidget2(mmWidget2):
         newEvent = pmmEvent(eventType, self)
         newEvent.getStackSelection().setPointSelection(manuallyConnectSpine)
         # self.emitEvent(event, blockSlots=False)
-        self.slot_pmmEvent(newEvent)
+
+        # Removed 3/6 since it causes looping of calls
+        # self.slot_pmmEvent(newEvent)
 
         self._afterEdit(newEvent)
 
