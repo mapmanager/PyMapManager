@@ -25,7 +25,7 @@ from pymapmanager.interface2.openFirstWindow import OpenFirstWindow
 from pymapmanager._logger import logger
 from pymapmanager.pmmUtils import getBundledDir
 
-def loadPlugins(verbose=True) -> dict:
+def loadPlugins(verbose=False) -> dict:
     """Load stack plugins from both:
         - Package: sanpy.interface.plugins
         - Folder: <user>/sanpy_plugins
@@ -89,9 +89,8 @@ def loadPlugins(verbose=True) -> dict:
     pluginDict = dict(sorted(pluginDict.items()))
 
     # print the loaded plugins
+    logger.info(f'app loadPlugins loaded {len(pluginDict.keys())} plugins:')
     if verbose:
-        logger.info(f'app loadPlugins loaded {len(pluginDict.keys())} plugins:')
-
         for k,v in pluginDict.items():
             logger.info(f'   {k}')
             for k2, v2 in v.items():
@@ -329,17 +328,31 @@ class PyMapManagerApp(QtWidgets.QApplication):
         self.openFirstWindow()
 
     def closeStackWindow(self, theWindow : "stackWidget2"):
-        """Remove theWindow from self._windowList.
+        """Remove theWindow from self._stackWidgetDict.
+        
         """
         logger.info('  remove stackwidget window from app list of windows')
+        
+        # if theWindow.getMap() is not None:
+        #     theWindow.closeStackWindow()
+        #     return
+        
         stackPath = theWindow.getStack().getTifPath()
+        logger.info(f'   {stackPath}')
         popThisKey = None
         for pathKey in self._stackWidgetDict.keys():
             if pathKey == stackPath:
                 popThisKey = pathKey
-        
+                break
+
         if popThisKey is not None:
-            self._stackWidgetDict.pop(popThisKey, None)
+            _theWindow = self._stackWidgetDict.pop(popThisKey, None)
+            logger.info(f'popped {_theWindow}')
+            # _theWindow.close()
+        else:
+            logger.error(f'did not find stack widget in app {theWindow}')
+            logger.error('available keys are')
+            logger.error(self._stackWidgetDict.keys())
 
         # check if there are any more windows and show load window
         # activeWindow = self.activeWindow()
@@ -422,6 +435,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
             # load map and make widget
             logger.info(f'loading mmMap from path: {path}')
             _map = pmm.mmMap(path)
+            logger.info(f'   {_map}')
             _mapWidget = pmm.interface2.mapWidgets.mapWidget(_map)
             self._mapWidgetDict[path] = _mapWidget
 
@@ -430,7 +444,12 @@ class PyMapManagerApp(QtWidgets.QApplication):
         return self._mapWidgetDict[path]
     
     def loadStackWidget(self, path):
+        """Load a stack from a path.
+        
+        No concept of map.
+        """
         if path in self._stackWidgetDict.keys():
+            logger.info('showing already create stack widget')
             self._stackWidgetDict[path].show()
         else:
             # load stack and make widget
@@ -445,6 +464,8 @@ class PyMapManagerApp(QtWidgets.QApplication):
     
     def showMapOrStack(self, path):
         """Show an already opened map or stack widget.
+
+        Stack widgets here are standalone, no map.
         """
         logger.info(path)
         if path in self._stackWidgetDict.keys():

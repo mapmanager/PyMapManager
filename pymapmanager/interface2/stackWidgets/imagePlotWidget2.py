@@ -1048,8 +1048,11 @@ class ImagePlotWidget(mmWidget2):
              - TODO: For segment selection,
                 select the median z value of the first selected segment
         """
-        # logger.info(event)
-        
+        logger.info('!!!!!! imagePlotWidget received event.getStackSelection()')
+        print(event.getStackSelection())
+        # print('   event session number:', event.getStackSelection().stack.getMapSession())
+        print('   imagePlotWidget session number:', self.getStack().getMapSession())
+
         if not event.getStackSelection().hasPointSelection():  # False on (None, [])
             return
 

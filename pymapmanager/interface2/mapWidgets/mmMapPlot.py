@@ -94,7 +94,7 @@ def getSelectionDict():
     """
     retDict = {
         'sessionIdx': None,     # int
-        'stackdbIdx': None,     # int
+        'stackDbIdx': None,     # int
         'x': None,              # Union(float,int) the plotted x coord
         'y': None,              # Union(float,int) the plotted y coord
         'isAlt': False,         # bool if alt (option on macOS) key was down
@@ -444,7 +444,7 @@ class mmMapPlot():
         self._on_pick_fn = None
 
         self._pointSelectionDict = {}
-        self._pointSelectionDict['sessionIndex'] = None
+        self._pointSelectionDict['sessionIdx'] = None
         self._pointSelectionDict['stackDbIdx'] = None
         self._pointSelectionDict['runRow'] = None
 
@@ -478,7 +478,7 @@ class mmMapPlot():
     def getPointSelection(self) -> dict:
         """Get the first point selection.
         """
-        if self._pointSelectionDict['sessionIndex'] is None:
+        if self._pointSelectionDict['sessionIdx'] is None:
             return
 
         return self._pointSelectionDict
@@ -544,7 +544,9 @@ class mmMapPlot():
         self.selectPoints()
         self.selectRuns([])
         
-    def selectPoints(self, pnts : List[Tuple[int,int]] = [], doRefresh=True):
+    def selectPoints(self, pnts : List[Tuple[int,int]] = [],
+                     doRefresh=True,
+                     doEmit=False):
         """Select individual point annotations.
         
         Arguments
@@ -554,8 +556,9 @@ class mmMapPlot():
         """
     
         # printPlotDict(self.pd)
+        logger.info(f'pnts: {pnts}')
 
-        self._pointSelectionDict['sessionIndex'] = None
+        self._pointSelectionDict['sessionIdx'] = None
         self._pointSelectionDict['stackDbIdx'] = None
         self._pointSelectionDict['runRow'] = None
         
@@ -575,6 +578,8 @@ class mmMapPlot():
                 logger.error(f'Did not find sess {sessionIndex} stack point index {stackDbIdx}')
                 return
             
+            # logger.info(f'   selIdx:{selIdx} sessionIndex:{sessionIndex} stackDbIdx:{stackDbIdx} runRow:{runRow}')
+
             x = self.pd['x'][runRow,sessionIndex]
             y = self.pd['y'][runRow,sessionIndex]
             xList.append(x)
@@ -582,15 +587,21 @@ class mmMapPlot():
 
             # keep track of selected point
             if selIdx == 0:
-                self._pointSelectionDict['sessionIndex'] = int(sessionIndex)
+                self._pointSelectionDict['sessionIdx'] = int(sessionIndex)
                 self._pointSelectionDict['stackDbIdx'] = int(self.pd['stackidx'][runRow][sessionIndex])
                 self._pointSelectionDict['runRow'] = int(runRow)
+                self._pointSelectionDict['isAlt'] = self._isAlt
 
         self.myPointSelection.set_xdata([xList])
         self.myPointSelection.set_ydata([yList])
 
         if doRefresh:
             self._refreshFigure()
+
+        if doEmit:
+            # emit selection to parent
+            if self._on_pick_fn is not None:
+                self._on_pick_fn(self._pointSelectionDict)
 
     def selectRuns(self, runs : List[int], doRefresh=True):
         """Select a run of point annotations.
@@ -830,7 +841,7 @@ class mmMapPlot():
             self.rebuildPlotDict()  # expensive
             self.replotMap(resetZoom=True)
         
-        elif event.key in ['left', 'right']:
+        elif event.key in ['left', 'right', 'alt+left', 'alt+right']:
             self.iterSpine(event.key)
 
     def iterSpine(self, leftRightStr : str):
@@ -838,22 +849,25 @@ class mmMapPlot():
         
         TODO: put this into mmMap
         """
+        logger.info(leftRightStr)
+        
         pointSelDict = self.getPointSelection()
         if pointSelDict is None:
             return
         
-        print('pointSelDict:', pointSelDict)
+        # print('pointSelDict:', pointSelDict)
         
-        sessionIndex = pointSelDict['sessionIndex']
+        sessionIndex = pointSelDict['sessionIdx']
         stackDbIdx = pointSelDict['stackDbIdx']
         # runRow = pointSelDict['runRow']
 
-        nextPoint = self.map.getNextPoint(sessionIndex, stackDbIdx, leftRightStr)
-        logger.info(f'nextPoint: {nextPoint}')
+        # nextPoint = self.map.getNextPoint(sessionIndex, stackDbIdx, leftRightStr)
+        nextPoint = self.map.stacks[sessionIndex].getNextPoint(stackDbIdx, leftRightStr)
+        # logger.info(f'nextPoint: {nextPoint}')
 
         if nextPoint is not None:
             pnt = [(sessionIndex, nextPoint)]
-            self.selectPoints(pnt)
+            self.selectPoints(pnt, doEmit=True)
 
     def _on_pick(self, event):
         """Respond to user clicking on a point in the scatter.
@@ -871,7 +885,11 @@ class mmMapPlot():
         # only respond to our main scatter, a PathCollection
         if not isinstance(event.artist, matplotlib.collections.PathCollection):
             return
-                
+        
+        # make sure it is the left button (right button is reserved for context menu)
+        if event.mouseevent.button != 1:
+            return
+
         # abs index into plot points
         ind = event.ind
         ind = ind[0]  # ind is always a list
@@ -882,7 +900,7 @@ class mmMapPlot():
         logger.info(clickDict)
 
         sessionIdx = clickDict['sessionIdx']
-        pointIdx = clickDict['stackdbIdx']  # stack centric index
+        pointIdx = clickDict['stackDbIdx']  # stack centric index
 
         self.selectPoints([(sessionIdx, pointIdx)], doRefresh=False)
 
@@ -979,7 +997,8 @@ class mmMapPlot():
         """Used in a dendrogram to draw vertical lines, one line for each session.
         
         TODO: need to refresh on setting mapSegment
-            Put all lines in slef.lineList = [] so we can clear then redraw
+            Put all lines in self.lineList = [] so we can clear then redraw
+            see self.axes.vlines
         """
         
         # printPlotDict(self.pd)
@@ -1021,7 +1040,7 @@ class mmMapPlot():
                 aLine = self.axes.vlines(session, firstDistance, lastDistance,
                                  colors = lineColor,
                                  zorder=0)
-                logger.info(f'aLine: {aLine}')
+                # logger.info(f'aLine: {aLine}')
                 self._segmentLines.append(aLine)
 
             except (KeyError):
@@ -1071,7 +1090,7 @@ class mmMapPlot():
         # selectionDict = getSelectionDict()
         selectionDict = {
             'sessionIdx': sessIdx,
-            'stackdbIdx': stackdbIdx,
+            'stackDbIdx': stackdbIdx,
             'x': x,
             'y': y,
             'isAlt': self._isAlt,

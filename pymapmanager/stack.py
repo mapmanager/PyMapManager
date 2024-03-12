@@ -186,6 +186,11 @@ class stack():
         
         return ' '.join(printList)
 
+    def getMapSession(self):
+        """Get stack session when in a map, otherwise None.
+        """
+        return self._mmMapSession
+    
     def printHeader(self, prefixStr='  '):
         logger.info(f'== header for stack {self._basePath}')
         for k,v in self._header.items():
@@ -597,6 +602,61 @@ class stack():
 
         # self.brightestIndexesAreSet = True
 
+    def getNextPoint(self, stackDbIdx, leftRightStr):
+        """Given a point, get the next/prev along a segment
+        
+        TODO: Move this to stack and implement interface in stackWidget.
+        """
+
+        pa = self.getPointAnnotations().getDataFrame()
+        la = self.getLineAnnotations().getFullDataFrame()
+
+        # check the point has a brightestIndex
+        # print('stackDbIdx:', stackDbIdx, type(stackDbIdx))
+        
+        brightestIndex = pa['brightestIndex'].loc[stackDbIdx]
+        if np.isnan(brightestIndex):
+            roiType = pa['roiType'].loc[stackDbIdx]
+            logger.warning(f'point {stackDbIdx} {roiType} is not connected to a brightestIndex')
+            return
+        
+        segmentID = pa['segmentID'].loc[stackDbIdx]
+        
+        dfSegment = pa[ pa['segmentID'] == segmentID]
+
+        brightestIndex = int(brightestIndex)
+        startDist = la['aDist'].loc[brightestIndex]
+
+        nextIdx = None
+        if leftRightStr == 'left':
+            nextDist = 0
+            doRight = False
+        else:
+            nextDist = 2**16
+            doRight = True
+
+        for idx, rowDict in dfSegment.iterrows():
+            # print('idx:', idx, 'rowDict:', rowDict.keys())
+            
+            currBrightestIndex = rowDict['brightestIndex']
+            if np.isnan(currBrightestIndex):
+                continue
+            currBrightestIndex = int(currBrightestIndex)
+            currDist = la['aDist'].loc[currBrightestIndex]
+            if doRight:
+                if (currDist > startDist) and (currDist < nextDist):
+                    nextIdx = idx
+                    nextDist = currDist
+            else:
+                if (currDist < startDist) and (currDist > nextDist):
+                    nextIdx = idx
+                    nextDist = currDist
+
+        logger.info(f'stackDbIdx is {stackDbIdx} startDist:{startDist}!!!')
+        logger.info(f'   nextIdx is {nextIdx} nextDist:{nextDist}!!!')
+
+        return nextIdx
+    
 def connectSpineToLine():
     """Find the brightest path (in the image) between a spineRoi (x,y,z)
         and a segment ID (list of (x,y,z))

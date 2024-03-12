@@ -36,9 +36,13 @@ class StackSelection:
     def __init__(self, stack : pymapmanager.stack = None):
         self._dict = {
             'stack': stack,
-            'pointSelectionList': None,
+
+            'pointSelectionList': [],
+            'pointSelectionSessionList': [],  # new for maps, None for no map
+
             'segmentSelectionList': None,  # segmentID
             'segmentPointSelectionList': None,
+
             'state': pmmStates.edit,
             'manuallyConnectSpine': None
         }
@@ -46,6 +50,7 @@ class StackSelection:
     def __str__(self):
         retStr = ''
         retStr += f"point:{self._getValue('pointSelectionList')} "
+        retStr += f"session:{self._getValue('pointSelectionSessionList')} "
         retStr += f"segment:{self._getValue('segmentSelectionList')} "
         retStr += f"segmentPoint:{self._getValue('segmentPointSelectionList')} "
         retStr += f"state:{self._getValue('state')} "
@@ -82,42 +87,84 @@ class StackSelection:
     #
     # point selection
     #
-    def setPointSelection(self, items : List[int]):
+    def setPointSelection(self,
+                          items : List[int],
+                          sessions : Optional[List[int]] = None):
         """Set a point selection. If point has segmentID, also set segment selection.
+        
+        Parameters
+        ----------
+        items : List[int]
+            List of point to select
+        sessions : List[int]
+            List of sessions (same length as items).
+            If None then assign all point to self.stack.getMapSession()
         """
-        if items is None:
-            pass
-        elif not isinstance(items, list):
+        if not isinstance(items, list):
             items = [items]
         self._setValue('pointSelectionList', items)
 
-        # set correspond segment id
-        # item0 = self.firstPointSelection()
-        # if item0 is not None:
-        #     if self.stack is not None:
-        #         segmentID = self.stack.getPointAnnotations().getValue('segmentID', item0)  # from backend
-        #         self.setSegmentSelection(segmentID)
+        if sessions is None:
+            # asssign all points to our stack map session (can be none)
+            _sessions = [self.stack.getMapSession()] * len(items)
+            self._setValue('pointSelectionSessionList', _sessions)
+        else:
+            if not isinstance(sessions, list):
+                sessions = [sessions]
+            self._setValue('pointSelectionSessionList', sessions)
+
+        # logger.info('stack selection is now')
+        # logger.info(self)
+        # logger.info('')
     
+    # def getPointSelection(self, mmWidget) -> Optional[List[int]]:
     def getPointSelection(self) -> Optional[List[int]]:
-        return self._getValue('pointSelectionList')
+        """Get list of point selection, will be [] for no selection.
+        
+        Only return points that match our self.stack.getMapSession()
+        """
+        
+        _stackSession = None
+        # new
+        # if mmWidget.stack is not None:
+        #     _stackSession = mmWidget.stack.getMapSession()
+        # old
+        if self.stack is not None:
+            _stackSession = self.stack.getMapSession()
+
+        # if self.stack.getMapSession() is None:
+        points = []
+        # _stack = self.stack  # will be None for mapPlot
+        for _idx, _mapSession in enumerate(self._getValue('pointSelectionSessionList')):
+            if (_stackSession is None) or (_stackSession == _mapSession):
+                # point corresponds to a map session we are displaying
+                # if map session is None, we are a stand alone stack (from a file)
+                points.append(self._getValue('pointSelectionList')[_idx])
+                              
+        return points
+
+    def getSessionSelection(self):
+        """List of session corresponding to point selection
+        
+        Used by map widget
+        """
+        return self._getValue('pointSelectionSessionList')
 
     def hasPointSelection(self) -> bool:
-        pointSelectionList = self._getValue('pointSelectionList')
-        return pointSelectionList is not None and len(pointSelectionList) > 0
+        #pointSelectionList = self._getValue('pointSelectionList')
+        return len(self.getPointSelection()) > 0
 
     def firstPointSelection(self) -> Optional[int]:
-        if self.hasPointSelection() is None:
-            return
-        logger.info(f"getPointSelection: {self.getPointSelection()}")
-        _pointSelection = self._getValue('pointSelectionList')
-        return _pointSelection[0]
+        _points = self.getPointSelection()
+        if len(_points) > 0:
+            return _points[0]
 
     def getFirstPointRoiType(self):
-        if self.hasPointSelection() is None:
-            return
-        firstPoint = self.firstPointSelection()
-        firstRoiType = self.stack.getPointAnnotations().getValue('roiType', firstPoint)
-        return firstRoiType
+        _points = self.getPointSelection()
+        if len(_points) > 0:
+            firstPoint = _points[0]
+            firstRoiType = self.stack.getPointAnnotations().getValue('roiType', firstPoint)
+            return firstRoiType
     #
     # segment selection
     #
@@ -193,7 +240,7 @@ class StackSelection:
 class pmmEvent():
     def __init__(self,
                     theType : pmmEventType,
-                    thePmmWidget : "mmWidget2"
+                    mmWidget : "mmWidget2"
                 ):        
         """
         theType : pmmEventType
@@ -206,8 +253,8 @@ class pmmEvent():
         self.reEmitPointAsMap = False
         
         self._dict = {
-            'sender': thePmmWidget,
-            'senderName': thePmmWidget.getName(),
+            'sender': mmWidget,
+            'senderName': mmWidget.getName(),
             'type': theType,
             #'annotationObject': thePmmWidget.getAnnotations(),
             'listOfItems': [],  # selection
@@ -224,19 +271,23 @@ class pmmEvent():
             'segmentSelection': [],  # segmentID
             'segmentPointSelection': [],
 
-            'stackSelection': StackSelection(),
+            # getStack() will be None for maps, ok but not well designed
+            'stackSelection': StackSelection(mmWidget.getStack()),
+            # 'stackSelection': StackSelection(),
 
             # implementing map/timeseries
-            'mapSessionSelection': [],
+            # 'mapSessionSelection': [],
         }
 
-        print('thePmmWidget:', thePmmWidget)
-        _stackWidget = thePmmWidget.getStackWidget()
-        if _stackWidget is not None:
-            timepoint = _stackWidget.getTimepoint()
-            print('!!!!!!!!!!!!!!!! timepoint:', timepoint)
-            if timepoint is not None:
-                self._dict['mapSessionSelection'] = [timepoint]
+        #TODO: this is redundant, now using stackselection for session ???
+        # print('thePmmWidget:', thePmmWidget)
+        # _stackWidget = thePmmWidget.getStackWidget()
+        # if _stackWidget is not None:
+        #     timepoint = _stackWidget.getTimepoint()
+        #     # print('!!!!!!!!!!!!!!!! timepoint:', timepoint)
+        #     if timepoint is not None:
+        #         self._dict['mapSessionSelection'] = [timepoint]
+
     ##
     # start final version aug 31
     ##
@@ -343,13 +394,13 @@ class pmmEvent():
     # def getListOfItems(self):
     #     return self._dict['listOfItems']
 
-    def getMapSessionSelection(self) -> List[int]:
-        return self._dict['mapSessionSelection']
+    # def getMapSessionSelection(self) -> List[int]:
+    #     return self._dict['mapSessionSelection']
 
-    def setMapSessionSelection(self, sessionIdx : int):
-        if isinstance(sessionIdx, int):
-            sessionIdx = [sessionIdx]
-        self._dict['mapSessionSelection'] = sessionIdx
+    # def setMapSessionSelection(self, sessionIdx : int):
+    #     if isinstance(sessionIdx, int):
+    #         sessionIdx = [sessionIdx]
+    #     self._dict['mapSessionSelection'] = sessionIdx
 
     def isAlt(self):
         return self._dict['alt']
@@ -391,12 +442,14 @@ class mmWidget2(QtWidgets.QMainWindow):
         """
         Parameters
         ----------
-        name : str
-            Name of the widget.
-        annotations : pymapmanager.annotations.baseAnnotations
-            Annotation object to display (either point or lines)
-        pmmParentWidget : mmWidget2
-            If not None then connect self with signals.
+        stackWidget : StackWidget2
+            Parent stack widget, needed to connect signal/slot
+        mapWidget : mapWidget
+            Parent map widget, needed to connect signal/slot
+        iAmStackWidget : bool
+            Needed to differentiate stack versus map for signal/slot termination
+        iAmMapWidget : bool
+            Needed to differentiate stack versus map for signal/slot termination
         """
         super().__init__()
 
@@ -421,16 +474,6 @@ class mmWidget2(QtWidgets.QMainWindow):
                 self._signalPmmEvent.connect(stackWidget.slot_pmmEvent)
                 stackWidget._signalPmmEvent.connect(self.slot_pmmEvent)
 
-        #(2) new for mapWidgets that need to
-        # (i) communicate with stack widgets
-        # (ii) communicate with mapWidgets
-        # stack will only signal back to main iAmMapWidget!!!
-        if 0 and iAmStackWidget and iAmMapWidget:
-            if stackWidget is not None and mapWidget is not None:
-                # signal/slot between maps and stacks
-                self._signalPmmEvent.connect(stackWidget.slot_pmmEvent)
-                stackWidget._signalPmmEvent.connect(self.slot_pmmEvent)
-
         # connect mapWidgets (Derived) back to main mapWidget
         if not iAmMapWidget:
             if mapWidget is not None:
@@ -441,6 +484,29 @@ class mmWidget2(QtWidgets.QMainWindow):
         # else:
         #     self._signalPmmEvent.connect(self.slot_pmmEvent)
 
+    def getMapWidgetParent(self):
+        return self._mapWidget
+    
+    def _disconnectFromMap(self):
+        """On close we need to disconnect from map
+        
+        This should allow proper garbage colection.
+        """
+        if self._mapWidget is not None:
+            logger.info(f'   disconnect signal/slot from map')
+            try:
+                # while True:
+                #     self._signalPmmEvent.disconnect(self._mapWidget.slot_pmmEvent)
+                self._signalPmmEvent.disconnect()
+            except TypeError:
+                pass
+
+            try:
+                self._mapWidget._signalPmmEvent.disconnect(self.slot_pmmEvent)
+                # self._mapWidget._signalPmmEvent.disconnect()
+            except TypeError:
+                pass
+    
     # def getMap(self):
     #     if self._mapWidget is None:
     #         return
@@ -555,16 +621,10 @@ class mmWidget2(QtWidgets.QMainWindow):
         else:
             self.blockSlotsOff()
 
-        _pointSelection = event.getStackSelection().getPointSelection()
-        _segmentSelection = event.getStackSelection().getSegmentSelection()
-        logger.info(f'>>>>>>>>> emit "{self.getName()}" {event.type} points:{_pointSelection} segments:{_segmentSelection}')
-        # logger.info(event)
-        
-        # if self.getName() == 'Stack Widget 2':
-        #     sys.exit(1)
-        #     self.slot_pmmEvent(event)
-        # else:
-        #     self._signalPmmEvent.emit(event)
+        # _pointSelection = event.getStackSelection().getPointSelection()
+        # _segmentSelection = event.getStackSelection().getSegmentSelection()
+        # logger.info(f'>>>>>>>>> emit "{self.getName()}" {event.type} points:{_pointSelection} segments:{_segmentSelection}')
+        logger.info(f'>>>>>>>>> emit "{self.getName()}" {event.type}')
 
         self._signalPmmEvent.emit(event)
 
@@ -640,10 +700,11 @@ class mmWidget2(QtWidgets.QMainWindow):
         
         # if self.getStackWidget() is None:
         if self._iAmStackWidget:
+            print('')
+            print('=================')
             logger.warning(f'stackWidget re-emit "{self.getName()}"================================')
-            # logger.warning(f'event is: {event}')
+            logger.info(f'   sender: {event.getSenderObject()}')
             
-            logger.info(f'sender: {event.getSenderObject()}')
             senderObject = event.getSenderObject()
             
             if event.reEmitPointAsMap:
@@ -655,9 +716,11 @@ class mmWidget2(QtWidgets.QMainWindow):
                 self.emitEvent(event)
 
         elif self._iAmMapWidget:
+            print('')
+            print('=================')
             logger.warning(f'mapWidget re-emit "{self.getName()}"================================')
-            
-            logger.info(f'sender: {event.getSenderObject()}')
+            logger.info(f'   sender: {event.getSenderObject()}')
+
             senderObject = event.getSenderObject()
             
             if event.reEmitMapAsPoint:

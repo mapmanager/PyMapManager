@@ -98,7 +98,7 @@ class annotationListWidget(mmWidget2):
         elif event.key() in [QtCore.Qt.Key_Escape]:
             # cancel all selections
             self.on_table_selection(None)
-            self._myTableView.mySelectRows(None)
+            self._myTableView.mySelectRows([None])
     
         elif event.key() == QtCore.Qt.Key_N:
             logger.info('TODO: open note setting dialog for selected annotation')
@@ -266,33 +266,9 @@ class pointListWidget(annotationListWidget):
     def selectedEvent(self, event):
         # logger.info(event)
         
-        logger.warning('')
-        logger.warning('TODO (cudmore): need to determine if selection is in the timepoint (map session) we are displaying!!!!!!)')
-        logger.warning('   SEE CODE FOR IDEAS !!!')
-        
-        """
-        IDEAS
-        """
-        
-        # _stackTimePoint = self.getStackWidget().getTimepoint()
-        # _eventTimePoint = event.getMapSessionSelection()
-        # if isinstance(_eventTimePoint, list):
-        #     _eventTimePoint = _eventTimePoint[0]
-        # print(f'   _stackTimePoint:{_stackTimePoint} _eventTimePoint:{_eventTimePoint}')
-        # if _stackTimePoint == _eventTimePoint:
-        #     print('      YES, SELECT')
-        # else:
-        #     print('      NO, DO NOT SELECT')
-
-        """
-        END IDEAS
-        """
-        
-        # self.currentSlice = event.getSliceNumber() 
-        # logger.info(f"pointListWidget current slice after selected event {self.currentSlice}")
-
         itemList = event.getStackSelection().getPointSelection()        
-        if itemList is not None:
+        logger.info(f'itemList: {itemList}')
+        if itemList:
             self._myTableView.mySelectRows(itemList)
             
 
