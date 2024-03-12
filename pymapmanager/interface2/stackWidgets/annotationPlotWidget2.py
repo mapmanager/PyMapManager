@@ -207,8 +207,20 @@ class annotationPlotWidget(mmWidget2):
         zorder = self._displayOptions['zorderUserSelection']
 
         # this scatter plot get updated when user click an annotation
-        self._scatterUserSelection = pg.ScatterPlotItem(pen=pg.mkPen(width=width,
-                                            color=color), symbol=symbol, size=size)
+        # self._scatterUserSelection = pg.ScatterPlotItem(pen=pg.mkPen(width=width,
+        #                                     color=color), symbol=symbol, size=size)
+        
+
+        self._scatterUserSelection = self._view.plot([],[],
+                                        # pen=None, # None to not draw lines
+                                        symbol = symbol,
+                                        # symbolColor  = 'red',
+                                        symbolPen=None,
+                                        fillOutline=False,
+                                        markeredgewidth=width,
+                                        symbolBrush = color,
+                                        )
+        
         self._scatterUserSelection.setZValue(zorder)  # put it on top, may need to change '10'
         # logger.info(f'adding _scatterUserSelection to view: {self.__class__.__name__}')
         self._view.addItem(self._scatterUserSelection)
@@ -282,6 +294,8 @@ class annotationPlotWidget(mmWidget2):
             event (List[pyqtgraph.graphicsItems.ScatterPlotItem.SpotItem]):
             """
         # in [pmmStates.movingPnt, pmmStates.manualConnectSpine]
+        # logger.info(f'{self.getClassName()}')
+        
         if not self._allowClick:
             logger.warning(f'{self.getClassName()} rejected click as not _allowClick')
             return
@@ -313,7 +327,22 @@ class annotationPlotWidget(mmWidget2):
                 event.getStackSelection().setPointSelection(dbIdx)
                 _plotType = 'points'
                 sliceNum = self.getStack().getPointAnnotations().getValue("z", dbIdx)
+
+                # 3/11 adding segment selection everytime there is a point selection
+                segmentIndex = [self.getStack().getPointAnnotations().getValue("segmentID", dbIdx)]
+                event.getStackSelection().setSegmentSelection(segmentIndex)
+
+                logger.info(f'point and line selected {segmentIndex}')
+
             elif isinstance(self._annotations, pymapmanager.annotations.lineAnnotations):
+                
+                # abj 3/12
+                # need to check if we are in manual connect, else there will be errors
+                currentState = self.getStackWidget().getStackSelection().getState()
+                # logger.info(f'currentState {currentState}')
+                if currentState.name != pmmEventType.manualConnectSpine.name:
+                    logger.info(f'not manual connect state - returning now, state is: {currentState}')
+                    return
 
                 logger.info(f'line segment selected')
                 # used to manually connect a spine to segment
@@ -327,11 +356,6 @@ class annotationPlotWidget(mmWidget2):
             event.setAlt(isAlt)
             
             logger.info(f'emitting "{_plotType}" event for dbIdx:{dbIdx}')
-            
-            # 3/1/24 Added slice number to maintain proper selection
-            # sliceNum = self.getStack().getPointAnnotations().getValue("z", dbIdx)
-        
-
             logger.info(f'emitting "{_plotType}" event for sliceNum:{sliceNum}')
             event.setSliceNumber(sliceNum)
 
@@ -1394,7 +1418,9 @@ class linePlotWidget(annotationPlotWidget):
             x = dfPlot['x'].tolist()
             y = dfPlot['y'].tolist()
 
-        self._scatterUserSelection.setData(x, y)
+        # TODO: 3/12 Figure out how to click through this data set.
+        # self._scatterUserSelection.setData(x, y)
+
         # setData calls this ???
         # self._view.update()
 
@@ -1409,9 +1435,12 @@ class linePlotWidget(annotationPlotWidget):
         """
 
         # logger.info(event)
+        logger.info("linePlotWidget selectedEvent Called")
         
         _stackSelection = event.getStackSelection()
+        logger.info(f"linePlotWidget _stackSelection: {_stackSelection}")
         if _stackSelection.hasSegmentSelection():
+            logger.info("linePlotWidget has a segment selection")
             _selectedItems = _stackSelection.getSegmentSelection()
             self._selectSegment(_selectedItems)
         # else:

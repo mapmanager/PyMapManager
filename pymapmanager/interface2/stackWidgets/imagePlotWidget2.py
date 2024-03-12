@@ -466,8 +466,20 @@ class ImagePlotWidget(mmWidget2):
         elif _state == pmmStates.manualConnectSpine:
 
             # logger.warning('todo: need to wait for user clicking on line annotation plot.')
+            # NOTE: This is only called when segment is highlighted
             logger.info("Manual connect emit is done with AnnotationPlotWidget2")
-
+            _stackSelection = self.getStackWidget().getStackSelection()
+            items = _stackSelection.getPointSelection()
+            eventType = pmmEventType.manualConnectSpine
+            event = pmmEvent(eventType, self)
+            # event.getStackSelection().setPointSelection(items)
+            event.getStackSelection().setManualConnectSpine(items)
+            brightestIndex = _stackSelection.getSegmentPointSelection()
+            logger.info(f"brightestIndex {brightestIndex}")
+            event.getStackSelection().setSegmentPointSelection(brightestIndex)
+            logger.info(event)
+            self.emitEvent(event, blockSlots=True)
+            
             # _stackSelection = self.getStackWidget().getStackSelection()
             # # Check for selection on segment point
             # if _stackSelection.hasSegmentPointSelection():

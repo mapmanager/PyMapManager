@@ -133,9 +133,25 @@ class stackWidget2(mmWidget2):
         elif _selection.getPointSelection() is not None:
             logger.info("not point selection")
             items = _selection.getPointSelection()
+
+            logger.info(f"point items {items}")
+            logger.info(f"len items {len(items)}")
+
+            # abj
+            if len(_selection.getSegmentSelection()) == 0 and len(items) == 0:
+                logger.info("Cancelling segment Selection")
+                items = []
+                event = pmmEvent(pmmEventType.selection, self)
+                event.getStackSelection().setSegmentSelection(items)
+                self.slot_pmmEvent(event)
+
+                return
+
             if len(items) == 0:
                 # no slection
+                logger.info("0 point selection")
                 return
+            
             items = []
             event = pmmEvent(pmmEventType.selection, self)
             event.getStackSelection().setPointSelection(items)
@@ -150,6 +166,8 @@ class stackWidget2(mmWidget2):
 
             # self is not called in signal slot ???
             # self.selectedEvent(event)
+
+        # elif 
 
     def _deleteSelection(self):
         """Delete the current point selection.
@@ -571,14 +589,15 @@ class stackWidget2(mmWidget2):
         #     return
         # item = item[0]
 
-        _stackSelection = self.getStackSelection()
+        # _stackSelection = self.getStackSelection()
+        _stackSelection = event.getStackSelection()
         
         manuallyConnectSpine = _stackSelection.getManualConnectSpine()
         if manuallyConnectSpine is None or manuallyConnectSpine == []:
             errStr = 'Did not get spine selection - can not make manual connection'
             logger.error(f'{errStr} manuallyConnectSpine:{manuallyConnectSpine}')
             self.slot_setStatus(errStr)
-            logger.info(f'_stackSelection: {_stackSelection}')
+            logger.error(f'_stackSelection: {_stackSelection}')
             return
         
         # user selected brightest index
@@ -742,6 +761,10 @@ class stackWidget2(mmWidget2):
         
         event = pmmEvent(pmmEventType.selection, self)
         event.getStackSelection().setPointSelection([idx])
+
+        # 3/12 Adding segment selection everytime a point is selected
+        segmentIndex = [self.getStack().getPointAnnotations().getValue("segmentID", idx)]
+        event.getStackSelection().setSegmentSelection(segmentIndex)
 
         # 2/9/24 Set slice number for plotting
         sliceNum = self.getStack().getPointAnnotations().getValue("z", idx)
