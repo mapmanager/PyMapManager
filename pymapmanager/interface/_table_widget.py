@@ -118,7 +118,7 @@ class myTableView(QtWidgets.QTableView):
         """Make a new row selection from viewer.
         """
 
-        # logger.info(f'rows:{rows}')
+        logger.info(f'rows:{rows}')
 
         # to stop event recursion
         self.blockUpdate = True
@@ -127,7 +127,7 @@ class myTableView(QtWidgets.QTableView):
         if selectionModel:
             selectionModel.clear()
         
-            if rows:
+            if len(rows) > 0:
                 indexes = [self.myModel.index(r, 0) for r in rows]  # [QModelIndex]
                 visualRows = [self.proxy.mapFromSource(modelIndex) for modelIndex in indexes]
 

@@ -121,58 +121,6 @@ class mmMap():
         # Retrieve annotations (for a given segmentID) across all time-points in the map
         pDist_values = myMap.getMapValues2('pDist', segmentID=[3])
     """
-
-    def getNextPoint(self, sessionIndex, stackDbIdx, leftRightStr):
-        """Given a point, get the next/prev along a segment
-        """
-
-        pa = self.stacks[sessionIndex].getPointAnnotations().getDataFrame()
-        la = self.stacks[sessionIndex].getLineAnnotations().getFullDataFrame()
-
-        # check the point has a brightestIndex
-        print('stackDbIdx:', stackDbIdx, type(stackDbIdx))
-        
-        brightestIndex = pa['brightestIndex'].iloc[stackDbIdx]
-        if np.isnan(brightestIndex):
-            logger.warning(f'point was not connected to a brightestIndex')
-            return
-        
-        segmentID = pa['segmentID'].iloc[stackDbIdx]
-        
-        dfSegment = pa[ pa['segmentID'] == segmentID]
-
-        brightestIndex = int(brightestIndex)
-        startDist = la['aDist'].iloc[brightestIndex]
-
-        nextIdx = None
-        if leftRightStr == 'left':
-            nextDist = 0
-            doRight = False
-        else:
-            nextDist = 2**16
-            doRight = True
-
-        for idx, rowDict in dfSegment.iterrows():
-            # print('idx:', idx, 'rowDict:', rowDict.keys())
-            
-            currBrightestIndex = rowDict['brightestIndex']
-            if np.isnan(currBrightestIndex):
-                continue
-            currBrightestIndex = int(currBrightestIndex)
-            currDist = la['aDist'].iloc[currBrightestIndex]
-            if doRight:
-                if (currDist > startDist) and (currDist < nextDist):
-                    nextIdx = idx
-                    nextDist = currDist
-            else:
-                if (currDist < startDist) and (currDist > nextDist):
-                    nextIdx = idx
-                    nextDist = currDist
-
-        logger.info(f'stackDbIdx is {stackDbIdx} startDist:{startDist}!!!')
-        logger.info(f'   nextIdx is {nextIdx} nextDist:{nextDist}!!!')
-
-        return nextIdx
     
     def getStackPath(self, sessionIdx : int):
         _folder, _file = os.path.split(self.filePath)
@@ -328,9 +276,12 @@ class mmMap():
         #load each stack db
         # this assumes self.objMap has already been loaded
         self._stacks = [] #  A list of mmStack
-        for i in range(0, self.numSessions):
-            stackPath = self.getStackPath(i)
-            stack = pymapmanager.stack(stackPath, loadImageData=False, mmMap=self)
+        for _session in range(0, self.numSessions):
+            stackPath = self.getStackPath(_session)
+            stack = pymapmanager.stack(stackPath,
+                                       loadImageData=False,
+                                       mmMap=self,
+                                       mmMapSession=_session)
             # if doFile:
             #     stack = mmStack(name=self._getStackName(i), numChannels=self.numChannels, \
             #                     map=self, mapSession=i)
@@ -546,7 +497,8 @@ class mmMap():
             m.getValue('voxelx', 5) # get the x voxel size of stack 5 (in um/pixel).
             m.getValue('hsStack',3) # get the name of stack 3.
         """
-        return self.table.loc[name].iloc[sessionNumber] # .loc specifies row, .iloc specifies a column
+        # .loc specifies row, .iloc specifies a column
+        return self.table.loc[name].iloc[sessionNumber]
 
     def _getStackName(self, session : int) -> str:
         """Get the name of the stack at session.

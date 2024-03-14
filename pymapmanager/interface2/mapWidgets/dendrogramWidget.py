@@ -93,13 +93,13 @@ class dendrogramWidget(mmWidget2):
         logger.info(selDict)
 
         sessionIdx = selDict['sessionIdx']
-        stackDbIdx = selDict['stackdbIdx']
+        stackDbIdx = selDict['stackDbIdx']
         isAlt = selDict['isAlt']
 
         eventType = pmmEventType.selection
         event = pmmEvent(eventType, self)
-        event.getStackSelection().setPointSelection(stackDbIdx)
-        event.setMapSessionSelection(sessionIdx)
+        event.getStackSelection().setPointSelection(stackDbIdx, sessions=sessionIdx)
+        # event.setMapSessionSelection(sessionIdx)  # redundant
         event.setAlt(isAlt)
 
         logger.info(f'--->>> emit spine selection')
@@ -110,11 +110,15 @@ class dendrogramWidget(mmWidget2):
     def selectedEvent(self, event : "pymapmanager.interface2.mmWidget2.pmmEvent"):
         """Respond to a user selection.
         """
-        logger.info(f'event:{event}')
+        # logger.info(f'event:{event}')
 
         stackDbIdx = event.getStackSelection().firstPointSelection()
-        mapSessionSelection = event.getValue('mapSessionSelection')
+        mapSessionSelection = event.getStackSelection().getSessionSelection()
 
+        if mapSessionSelection is None:
+            logger.error(f'stackDbIdx:{stackDbIdx} mapSessionSelection:{mapSessionSelection}')
+            return
+        
         # will be None if we are not plotting
         runRow = self.mmmPlot._findRunRow(mapSessionSelection, stackDbIdx)
 

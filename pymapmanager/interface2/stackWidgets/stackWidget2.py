@@ -29,7 +29,7 @@ class stackWidget2(mmWidget2):
                  path,
                  stack : pymapmanager.stack = None,
                  mapWidget : "pymapmanager.interface2.mapWidget.mapWidget" = None,
-                 timePoint : int = None,
+                #  timePoint : int = None,
     ):
         """Main stack widget that is parent to all other mmWidget2 widgets.
         
@@ -59,7 +59,7 @@ class stackWidget2(mmWidget2):
 
         # add 2/24 when implementing map/timeseries GUI
         self._mapWidget : Optional["pymapmanager.interface2.mapWidgets.mapWidget"] = mapWidget
-        self._timePoint : Optional[int] = timePoint
+        # self._timePoint : Optional[int] = timePoint
 
         self._openPluginSet = set()
         """Set of open plugins."""
@@ -88,10 +88,32 @@ class stackWidget2(mmWidget2):
         self._buildUI()
         self._buildMenus()
 
-    def getTimepoint(self) -> int:
-        """Get the timepoint in the map. Will be None for singleton stacks.
+    def closeEvent(self, event):
+        """Called when user closes main window or selects quit.
+
+        Parameters
+        ----------
+        event : PyQt5.QtGui.QCloseEvent
         """
-        return self._timePoint
+        logger.warning('NEED TO CHECK IF DIRTY AND PROMPT TO SAVE')
+        
+        if self.getMapWidgetParent() is not None:
+            self.getMapWidgetParent().closeStackWindow(self)
+            self._disconnectFromMap()
+            
+        else:
+            self.getPyMapManagerApp().closeStackWindow(self)
+
+        self.close()
+
+    def closeStackWindow(self):
+        if self._mapWidget is not None:
+            self._mapWidget.closeStackWindow(self)
+
+    # def getTimepoint(self) -> int:
+    #     """Get the timepoint in the map. Will be None for singleton stacks.
+    #     """
+    #     return self._timePoint
     
     def getPyMapManagerApp(self) -> Optional["PyMapManagerApp"]:
         """Get the running PyMapManagerApp(QApplication).
@@ -388,8 +410,6 @@ class stackWidget2(mmWidget2):
 
             return True
         
-        # logger.info(event)
-
         # TODO: on spine selection, select segment
         if _eventSelection.hasPointSelection():
             _pointSelection = _eventSelection.getPointSelection()

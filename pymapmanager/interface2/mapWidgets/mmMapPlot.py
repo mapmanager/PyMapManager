@@ -23,6 +23,7 @@ import numpy as np
 
 import matplotlib
 import matplotlib.pyplot as plt
+from matplotlib.widgets import RectangleSelector  # To click+drag rectangular selection
 
 from pymapmanager import mmMap
 from pymapmanager._logger import logger
@@ -93,7 +94,7 @@ def getSelectionDict():
     """
     retDict = {
         'sessionIdx': None,     # int
-        'stackdbIdx': None,     # int
+        'stackDbIdx': None,     # int
         'x': None,              # Union(float,int) the plotted x coord
         'y': None,              # Union(float,int) the plotted y coord
         'isAlt': False,         # bool if alt (option on macOS) key was down
@@ -111,6 +112,312 @@ def printPlotDict(pd, printValues=False):
         print(keyStr)
         if printValues:
             print(v)
+
+class Highlighter(object):
+    """
+    See: https://stackoverflow.com/questions/31919765/choosing-a-box-of-data-points-from-a-plot
+    """
+
+    def __init__(self, parentPlot, ax, x, y, plotSpikeNumber):
+        self._parentPlot = parentPlot
+        self.ax = ax
+        self.canvas = ax.figure.canvas
+
+        self.x = None  # these are set in setData
+        self.y = None
+        self._plotSpikeNumber = None
+        #self._plotSpikeNumber = None
+
+        self.setData(x, y, self._plotSpikeNumber)
+
+        # mask will be set in self.setData
+        if x and y:
+            self.mask = np.zeros(x.shape, dtype=bool)
+        else:
+            self.mask = None
+
+        markerSize = 50
+        self._highlight = ax.scatter([], [], s=markerSize, color="yellow", zorder=10)
+
+        # here self is setting the callback and calls __call__
+        # self.selector = RectangleSelector(ax, self, useblit=True, interactive=False)
+        # matplotlib.widgets.RectangleSelector
+        self.selector = RectangleSelector(
+            ax,
+            self._HighlighterReleasedEvent,
+            button=[1],
+            useblit=True,
+            interactive=False,
+        )
+
+        self.mouseDownEvent = None
+        self.keyIsDown = None
+
+        # april 2023, adding ?
+        self._keepPickEvent = self.ax.figure.canvas.mpl_connect("pick_event", self._on_spike_pick_event3)
+
+        self.ax.figure.canvas.mpl_connect("key_press_event", self._keyPressEvent)
+        self.ax.figure.canvas.mpl_connect("key_release_event", self._keyReleaseEvent)
+
+        # remember, sanpyPlugin is installing for key press and on pick
+        self.keepOnMotion = self.ax.figure.canvas.mpl_connect(
+            "motion_notify_event", self.on_mouse_move
+        )
+        self.keepMouseDown = self.ax.figure.canvas.mpl_connect(
+            "button_press_event", self.on_button_press
+        )
+        self._keepMouseDown = self.ax.figure.canvas.mpl_connect(
+            "button_release_event", self.on_button_release
+        )
+
+    def _keyPressEvent(self, event):
+        # logger.info(event)
+        self.keyIsDown = event.key
+
+    def _keyReleaseEvent(self, event):
+        # logger.info(event)
+        self.keyIsDown = None
+
+    def _on_spike_pick_event3(self, event):
+        """
+        
+        Parameters
+        ----------
+        event : matplotlib.backend_bases.PickEvent
+        """
+
+        # ignore when not left mouse button
+        if event.mouseevent.button != 1:
+            return
+
+        # no hits
+        if len(event.ind) < 1:
+            return
+
+        _clickedPlotIdx = event.ind[0]
+        logger.info(f'HighLighter _clickedPlotIdx: {_clickedPlotIdx} keyIsDown:{self.keyIsDown}')
+
+        # convert to what we are actually plotting
+        try:
+            #_realSpikeNumber = self._plotSpikeNumber.index(_clickedPlotIdx)
+            # get real spike number from subset of plotted psikes
+            _realSpikeNumber = self._plotSpikeNumber[_clickedPlotIdx]
+        except (IndexError) as e:
+            logger.warning(f'  xxx we are not plotting _clickedPlotIdx {_clickedPlotIdx}')
+
+        logger.info(f'_realSpikeNumber: {_realSpikeNumber}')
+
+        # xData = self.x[_realSpikeNumber]
+        # yData = self.y[_realSpikeNumber]
+        # self._highlight.set_offsets([xData, yData])
+
+        # if shift then add to mask
+        # self.mask |= _insideMask
+        newMask = np.zeros(self.x.shape, dtype=bool)
+        newMask[_clickedPlotIdx] = True
+        
+        if self.keyIsDown == "shift":
+            # oldMask = np.where(self.mask == True)
+            # oldMask = oldMask[0]  # why does np do this ???
+            # print('oldMask:', oldMask)
+
+            newSelectedSpikes = np.where(newMask == True)
+            newSelectedSpikes = newSelectedSpikes[0]  # why does np do this ???
+            #print('newSelectedSpikes:', newSelectedSpikes)
+
+            # add to mask
+            self.mask |= newMask
+
+            # print('newMask:')
+            # print(newMask)
+            # print('self.mask:')
+            # print(self.mask)
+            
+        else:
+            # replace with new
+            self.mask = newMask
+
+        # newMask = np.where(self.mask == True)
+        # newMask = newMask[0]  # why does np do this ???
+        # print('2) newMask:', newMask)
+
+        xy = np.column_stack([self.x[self.mask], self.y[self.mask]])
+        self._highlight.set_offsets(xy)
+        
+        self._HighlighterReleasedEvent()
+
+        self.canvas.draw()
+
+    def on_button_press(self, event):
+        """
+        Args:
+            event : matplotlib.backend_bases.MouseEvent
+        """
+    
+        # logger.info(f'Highlighter')
+
+        # don't take action on right-click
+        if event.button != 1:
+            # not the left button
+            # print('  rejecting not button 1')
+            return
+
+        # do nothing in zoom or pan/zoom is active
+        # finding documentation on mpl toolbar is near impossible
+        # https://stackoverflow.com/questions/20711148/ignore-matplotlib-cursor-widget-when-toolbar-widget-selected
+        # state = self._parentPlot.static_canvas.manager.toolbar.mode  # manager is coming up None
+        if self._parentPlot.toolbarHasSelection():
+            return
+        # was this
+        # state = self._parentPlot.mplToolbar.mode
+        # if state in ['zoom rect', 'pan/zoom']:
+        #    logger.info(f'Ignoring because tool "{state}" is active')
+        #    return
+
+        self.mouseDownEvent = event
+    
+        # not sure why I was clearing the mask here
+        if self.keyIsDown == "shift":
+            # if shift is down then add to mask
+            pass
+        else:
+            # create a new mask
+            #logger.info('CLEARING MASK')
+            #self.mask = np.zeros(self.x.shape, dtype=bool)
+            pass
+
+    def on_button_release(self, event):
+        logger.info(f'Highlighter')
+
+        # don't take action on right-click
+        if event.button != 1:
+            # not the left button
+            # print('  rejecting not button 1')
+            return
+
+        self.mouseDownEvent = None
+
+    def on_mouse_move(self, event):
+        """When mouse is down, respond to movement and select points.
+
+        Parameters
+        ----------
+        event : matplotlib.backend_bases.MouseEvent
+
+        Notes
+        -----
+        event contains:
+            motion_notify_event: xy=(113, 36)
+            xydata=(None, None)
+            button=None
+            dblclick=False
+            inaxes=None
+        """
+
+        # self.ax is our main scatter plot axes
+        if event.inaxes != self.ax:
+            return
+
+        # mouse is not down
+        if self.mouseDownEvent is None:
+            return
+
+        event1 = self.mouseDownEvent
+        event2 = event
+
+        if event1 is None or event2 is None:
+            return
+
+        _insideMask = self.inside(event1, event2)
+        # print(f'_insideMask: {_insideMask}')
+
+        self.mask |= _insideMask
+        xy = np.column_stack([self.x[self.mask], self.y[self.mask]])
+        self._highlight.set_offsets(xy)
+        self.canvas.draw()
+
+    def setData(self, x, y, plotSpikeNumber : List[int]):
+        """Set underlying highlighter data, call this when we replot() scatter
+        
+        """
+        # convert list to np array
+        xArray = np.array(x)
+        yArray = np.array(y)
+
+        self.mask = np.zeros(xArray.shape, dtype=bool)
+        self.x = xArray
+        self.y = yArray
+        self._plotSpikeNumber = plotSpikeNumber
+
+    def selectSpikeList(self, plotIdxList):
+        """
+        plotIdxList : List[int]
+            List of plot indices to select
+        """
+        self.mask = np.zeros(self.x.shape, dtype=bool)
+        self.mask[plotIdxList] = True
+
+        xy = np.column_stack([self.x[self.mask], self.y[self.mask]])
+        self._highlight.set_offsets(xy)
+        
+        # self._HighlighterReleasedEvent()
+
+        self.canvas.draw()
+
+    # def selectSpikes(self, spikeList):
+        
+    #     self.mask = np.zeros(self.x.shape, dtype=bool)
+        
+    #     # the spike numbers we are plotting self._plotSpikeNumber
+    #     _selectionIdx = []
+    #     for spike in spikeList:
+    #         if spike in self._plotSpikeNumber:
+
+    #     self.mask
+
+    #     xy = np.column_stack([self.x[self.mask], self.y[self.mask]])
+    #     self._highlight.set_offsets(xy)
+        
+    #     self._HighlighterReleasedEvent()
+
+    #     self.canvas.draw()
+
+    # def __call__(self, event1, event2):
+    def _HighlighterReleasedEvent(self, event1=None, event2=None):
+        """RectangleSelector callback when mouse is released
+
+        event1:
+            button_press_event: xy=(87.0, 136.99999999999991) xydata=(27.912559411227885, 538.8555851528383) button=1 dblclick=False inaxes=AxesSubplot(0.1,0.1;0.607046x0.607046)
+        event2:
+            button_release_event: xy=(131.0, 211.99999999999991) xydata=(48.83371692821588, 657.6677439956331) button=1 dblclick=False inaxes=AxesSubplot(0.1,0.1;0.607046x0.607046)
+        """
+
+        self.mouseDownEvent = None
+
+        # emit the selected spikes
+        selectedSpikes = np.where(self.mask == True)
+        selectedSpikes = selectedSpikes[0]  # why does np do this ???
+
+        logger.info(f'selectedSpikes: {selectedSpikes}')
+
+        selectedSpikesList = selectedSpikes.tolist()
+        self._parentPlot.selectSpikesFromHighlighter(selectedSpikesList)
+
+        # we now use self._blockSlots
+        # # clear the selection user just made, will get 'reselected' in signal/slot
+        #self._highlight.set_offsets([np.nan, np.nan])
+
+        return
+
+    def inside(self, event1, event2):
+        """Returns a boolean mask of the points inside the
+        rectangle defined by event1 and event2.
+        """
+        # Note: Could use points_inside_poly, as well
+        x0, x1 = sorted([event1.xdata, event2.xdata])
+        y0, y1 = sorted([event1.ydata, event2.ydata])
+        mask = (self.x > x0) & (self.x < x1) & (self.y > y0) & (self.y < y1)
+        return mask
 
 class mmMapPlot():
     """Plot a scatter plot or dendrogram for a map.
@@ -137,7 +444,7 @@ class mmMapPlot():
         self._on_pick_fn = None
 
         self._pointSelectionDict = {}
-        self._pointSelectionDict['sessionIndex'] = None
+        self._pointSelectionDict['sessionIdx'] = None
         self._pointSelectionDict['stackDbIdx'] = None
         self._pointSelectionDict['runRow'] = None
 
@@ -171,7 +478,7 @@ class mmMapPlot():
     def getPointSelection(self) -> dict:
         """Get the first point selection.
         """
-        if self._pointSelectionDict['sessionIndex'] is None:
+        if self._pointSelectionDict['sessionIdx'] is None:
             return
 
         return self._pointSelectionDict
@@ -237,7 +544,9 @@ class mmMapPlot():
         self.selectPoints()
         self.selectRuns([])
         
-    def selectPoints(self, pnts : List[Tuple[int,int]] = [], doRefresh=True):
+    def selectPoints(self, pnts : List[Tuple[int,int]] = [],
+                     doRefresh=True,
+                     doEmit=False):
         """Select individual point annotations.
         
         Arguments
@@ -247,8 +556,9 @@ class mmMapPlot():
         """
     
         # printPlotDict(self.pd)
+        logger.info(f'pnts: {pnts}')
 
-        self._pointSelectionDict['sessionIndex'] = None
+        self._pointSelectionDict['sessionIdx'] = None
         self._pointSelectionDict['stackDbIdx'] = None
         self._pointSelectionDict['runRow'] = None
         
@@ -268,6 +578,8 @@ class mmMapPlot():
                 logger.error(f'Did not find sess {sessionIndex} stack point index {stackDbIdx}')
                 return
             
+            # logger.info(f'   selIdx:{selIdx} sessionIndex:{sessionIndex} stackDbIdx:{stackDbIdx} runRow:{runRow}')
+
             x = self.pd['x'][runRow,sessionIndex]
             y = self.pd['y'][runRow,sessionIndex]
             xList.append(x)
@@ -275,15 +587,21 @@ class mmMapPlot():
 
             # keep track of selected point
             if selIdx == 0:
-                self._pointSelectionDict['sessionIndex'] = int(sessionIndex)
+                self._pointSelectionDict['sessionIdx'] = int(sessionIndex)
                 self._pointSelectionDict['stackDbIdx'] = int(self.pd['stackidx'][runRow][sessionIndex])
                 self._pointSelectionDict['runRow'] = int(runRow)
+                self._pointSelectionDict['isAlt'] = self._isAlt
 
         self.myPointSelection.set_xdata([xList])
         self.myPointSelection.set_ydata([yList])
 
         if doRefresh:
             self._refreshFigure()
+
+        if doEmit:
+            # emit selection to parent
+            if self._on_pick_fn is not None:
+                self._on_pick_fn(self._pointSelectionDict)
 
     def selectRuns(self, runs : List[int], doRefresh=True):
         """Select a run of point annotations.
@@ -523,7 +841,7 @@ class mmMapPlot():
             self.rebuildPlotDict()  # expensive
             self.replotMap(resetZoom=True)
         
-        elif event.key in ['left', 'right']:
+        elif event.key in ['left', 'right', 'alt+left', 'alt+right']:
             self.iterSpine(event.key)
 
     def iterSpine(self, leftRightStr : str):
@@ -531,22 +849,25 @@ class mmMapPlot():
         
         TODO: put this into mmMap
         """
+        logger.info(leftRightStr)
+        
         pointSelDict = self.getPointSelection()
         if pointSelDict is None:
             return
         
-        print('pointSelDict:', pointSelDict)
+        # print('pointSelDict:', pointSelDict)
         
-        sessionIndex = pointSelDict['sessionIndex']
+        sessionIndex = pointSelDict['sessionIdx']
         stackDbIdx = pointSelDict['stackDbIdx']
         # runRow = pointSelDict['runRow']
 
-        nextPoint = self.map.getNextPoint(sessionIndex, stackDbIdx, leftRightStr)
-        logger.info(f'nextPoint: {nextPoint}')
+        # nextPoint = self.map.getNextPoint(sessionIndex, stackDbIdx, leftRightStr)
+        nextPoint = self.map.stacks[sessionIndex].getNextPoint(stackDbIdx, leftRightStr)
+        # logger.info(f'nextPoint: {nextPoint}')
 
         if nextPoint is not None:
             pnt = [(sessionIndex, nextPoint)]
-            self.selectPoints(pnt)
+            self.selectPoints(pnt, doEmit=True)
 
     def _on_pick(self, event):
         """Respond to user clicking on a point in the scatter.
@@ -564,7 +885,11 @@ class mmMapPlot():
         # only respond to our main scatter, a PathCollection
         if not isinstance(event.artist, matplotlib.collections.PathCollection):
             return
-                
+        
+        # make sure it is the left button (right button is reserved for context menu)
+        if event.mouseevent.button != 1:
+            return
+
         # abs index into plot points
         ind = event.ind
         ind = ind[0]  # ind is always a list
@@ -575,7 +900,7 @@ class mmMapPlot():
         logger.info(clickDict)
 
         sessionIdx = clickDict['sessionIdx']
-        pointIdx = clickDict['stackdbIdx']  # stack centric index
+        pointIdx = clickDict['stackDbIdx']  # stack centric index
 
         self.selectPoints([(sessionIdx, pointIdx)], doRefresh=False)
 
@@ -672,7 +997,8 @@ class mmMapPlot():
         """Used in a dendrogram to draw vertical lines, one line for each session.
         
         TODO: need to refresh on setting mapSegment
-            Put all lines in slef.lineList = [] so we can clear then redraw
+            Put all lines in self.lineList = [] so we can clear then redraw
+            see self.axes.vlines
         """
         
         # printPlotDict(self.pd)
@@ -714,7 +1040,7 @@ class mmMapPlot():
                 aLine = self.axes.vlines(session, firstDistance, lastDistance,
                                  colors = lineColor,
                                  zorder=0)
-                logger.info(f'aLine: {aLine}')
+                # logger.info(f'aLine: {aLine}')
                 self._segmentLines.append(aLine)
 
             except (KeyError):
@@ -764,7 +1090,7 @@ class mmMapPlot():
         # selectionDict = getSelectionDict()
         selectionDict = {
             'sessionIdx': sessIdx,
-            'stackdbIdx': stackdbIdx,
+            'stackDbIdx': stackdbIdx,
             'x': x,
             'y': y,
             'isAlt': self._isAlt,

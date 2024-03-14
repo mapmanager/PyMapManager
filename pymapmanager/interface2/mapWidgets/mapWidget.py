@@ -26,6 +26,8 @@ class mapWidget(mmWidget2):
         self._map = mmMap
 
         self._stackWidgetList = []
+        # dict of open stackWidget children
+        # keys are full path to tif
 
         self._buildMenus()
 
@@ -66,7 +68,7 @@ class mapWidget(mmWidget2):
                 return stackWidget
         return None
     
-    def openStackRun(self, mmMap : pmm.mmMap,
+    def openStackRun(self,
                      timepoint,
                      plusMinus,
                      spineRun : List[int] = None):
@@ -77,19 +79,21 @@ class mapWidget(mmWidget2):
         #     logger.error(f'did not find open map.')
         #     return
         
+        _map = self.getMap()
+        
         firstTp = timepoint-plusMinus
         if firstTp < 0:
             firstTp = 0
         lastTp = timepoint + plusMinus + 1
-        if lastTp > mmMap.numSessions-1:
-            lastTp = mmMap.numSessions
+        if lastTp > _map.numSessions-1:
+            lastTp = _map.numSessions
 
         numCols = 3
-        numSessions = mmMap.numSessions
+        numSessions = _map.numSessions
         screenGrid = self.getApp().getScreenGrid(numSessions, numCols)
         
         for tp in range(firstTp, lastTp):
-            stack = mmMap.stacks[tp]
+            stack = _map.stacks[tp]
             # tifPath = stack.getTifPath()
             posRect = screenGrid[tp]
             bsw = self.openStack(stack=stack, posRect=posRect)
@@ -153,8 +157,8 @@ class mapWidget(mmWidget2):
 
             bsw = pmm.interface2.stackWidgets.stackWidget2(path=path,
                                                            stack=stack,
-                                                           mapWidget = self,
-                                                           timePoint = session)
+                                                           mapWidget = self)
+            
             bsw.setWindowTitle(f'map session {session}')
 
             # bsw.signalSelectAnnotation2.connect(self.slot_selectAnnotation)
@@ -304,7 +308,7 @@ class mapWidget(mmWidget2):
         dendrogramDock = self._addDockWidget(dendrogramWidget, 'right', '')
         self._widgetDict[dendrogramWidgetName] = dendrogramDock  # the dock, not the widget ???
 
-    def contextManu(self):
+    def contextMenu(self):
         logger.info('')
 
     def selectedEvent(self, event):
@@ -313,3 +317,31 @@ class mapWidget(mmWidget2):
 
     def setSliceEvent(self, event):
         logger.info('&&&&&&&&&&&&')
+    
+    def closeEvent(self, event):
+        """Called when user closes main window or selects quit.
+
+        Parameters
+        ----------
+        event : PyQt5.QtGui.QCloseEvent
+        """
+        logger.warning('NEED TO CHECK IF DIRTY AND PROMPT TO SAVE')
+        
+        self.getApp().closeMapWindow(self)
+
+    def closeStackWindow(self, theWindow : "stackWidget2"):
+        """Remove theWindow from self._stackWidgetDict.
+        
+        """
+        logger.info('  remove stackwidget window from map list of stack')
+        
+        _oldWindow = None
+        for _idx, _window in enumerate(self._stackWidgetList):
+            if _window == theWindow:
+                logger.info('removing from list')
+                _oldWindow = self._stackWidgetList.pop(_idx)
+
+        if _oldWindow is None:
+            logger.error(f'did not find stack widget in map widget {theWindow}')
+            logger.error('available windows are')
+            logger.error(self._stackWidgetList)

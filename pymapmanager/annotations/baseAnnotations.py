@@ -1268,7 +1268,7 @@ class baseAnnotations():
             #raise OSError(errno.ENOENT, os.strerror(errno.ENOENT), self.filePath)
             return
 
-        logger.info(f'loading file:{self.filePath}')
+        # logger.info(f'loading file:{self.filePath}')
         
         self.loadHeader()  # load one line header
         
@@ -1280,7 +1280,7 @@ class baseAnnotations():
         dfLoaded = pd.read_csv(self.filePath, header=numHeaderRows, index_col=False)
 
         # if there is no 'index' column, make one. This is critical.
-        if not 'index' in dfLoaded.columns:
+        if 'index' not in dfLoaded.columns:
             dfLoaded['index'] = [idx for idx in range(len(dfLoaded))]
 
         # print("dfLoaded before:", dfLoaded)
@@ -1292,7 +1292,7 @@ class baseAnnotations():
         # actually assign expected columns from loaded
         for columnItem in self.columns:
             columnName = columnItem.getName()
-            if not columnName in loadedColumns:
+            if columnName not in loadedColumns:
                 className = self.__class__.__name__  # name of class, including inherited
                 logger.warning(f'class {className} did not find expected column name "{columnName}"')
                 continue
@@ -1322,7 +1322,7 @@ class baseAnnotations():
                 logger.warning(f'Loaded with unknown column name "{loadedColumnName}" in class "{className}"')
                 # TODO (cudmore) consider adding to columns with type=None ???
 
-        logger.info(f'  loaded df: rows: {len(self._df)} cols {len(self._df.columns)}')
+        #logger.info(f'  loaded df: rows: {len(self._df)} cols {len(self._df.columns)}')
         #pprint(self._df.head())
 
         return True

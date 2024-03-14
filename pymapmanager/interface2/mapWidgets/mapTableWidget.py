@@ -14,8 +14,8 @@ class mapTableWidget(QtWidgets.QWidget):
 
     _widgetName = "Map Table"
     
-    signalOpenStack = QtCore.Signal(object, object)  # mmMap, session
-    signalOpenRun = QtCore.Signal(object, int, int)  # mmMap, start, plusMinus
+    signalOpenStack = QtCore.Signal(object)  # session : int
+    signalOpenRun = QtCore.Signal(int, int)  # start, plusMinus
 
     def __init__(self, mmMap : pmm.mmMap):
         super().__init__(None)
@@ -61,9 +61,9 @@ class mapTableWidget(QtWidgets.QWidget):
         if action == plotStackAction:
             self._on_table_double_click(session)
         elif action == plotPlusMinus1:
-            self.signalOpenRun.emit(self._mmMap, session, 1)
+            self.signalOpenRun.emit(session, 1)
         elif action == plotPlusMinus2:
-            self.signalOpenRun.emit(self._mmMap, session, 2)
+            self.signalOpenRun.emit(session, 2)
 
     def _getToolbar(self) -> QtWidgets.QVBoxLayout:
         hLayout = QtWidgets.QHBoxLayout()
@@ -104,7 +104,7 @@ class mapTableWidget(QtWidgets.QWidget):
         if isinstance(row, list):
             row = row[0]
         logger.info(f'-->> signalOpenStack.emit row:{row} isAlt:{isAlt}')
-        self.signalOpenStack.emit(self._mmMap, row)
+        self.signalOpenStack.emit(row)
 
     def _setModel(self):
         """Set model of tabel view to full pandas dataframe of underlying annotations.
