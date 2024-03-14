@@ -3,10 +3,7 @@
 
 import sys
 
-# from qtpy import QtWidgets
-
 from pymapmanager.interface2 import PyMapManagerApp
-from stackWidgets import stackWidget2
 
 def run():
     app = PyMapManagerApp()
@@ -15,8 +12,7 @@ def run():
     
     sw2 = app.loadStackWidget(path)
     
-    # sw2 = stackWidget2(path, app=app)
-    # sw2.show()	
+    sw2.runPlugin('Selection Widget', inDock=True)
 
     sw2.zoomToPointAnnotation(120, isAlt=True)
 

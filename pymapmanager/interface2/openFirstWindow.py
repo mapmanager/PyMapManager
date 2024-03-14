@@ -5,6 +5,7 @@ from typing import List
 from qtpy import QtCore, QtWidgets, QtGui
 
 # from .pyMapManagerApp2 import PyMapManagerApp
+import pymapmanager
 
 from pymapmanager._logger import logger
 
@@ -40,8 +41,8 @@ class OpenFirstWindow(QtWidgets.QMainWindow):
 
         self.setWindowTitle('MapManager Open Files and Folders')
 
-    def getSanPyApp(self):
-        return self._sanpyApp
+    def getApp(self):
+        return self._app
     
     def _makeRecentTable(self, pathList : List[str], headerStr = ''):
         """Given a list of file/folder path, make a table.
@@ -121,7 +122,9 @@ class OpenFirstWindow(QtWidgets.QMainWindow):
     def _buildMenus(self):
     
         mainMenu = self.menuBar()
-        _helpAction = self._app.getMainMenu()._buildMenus(mainMenu)
+
+        self._mainMenu = pymapmanager.interface2.PyMapManagerMenus(self.getApp())
+        self._mainMenu._buildMenus(mainMenu, self)
 
         # # insert view and plugins menu (deactivated)
         # self.viewMenu = QtWidgets.QMenu('&View')
@@ -142,18 +145,18 @@ class OpenFirstWindow(QtWidgets.QMainWindow):
         # self.windowsMenu.aboutToShow.connect(self._refreshWindowsMenu)
         # mainMenu.insertMenu(_helpAction, self.windowsMenu)
 
-    def _buildWindowMenu(self):
+    # def _buildWindowMenu(self):
         
-        windowsMenu = QtWidgets.QMenu('&Windows')
-        self.getSanPyApp().getWindowsMenu(windowsMenu)
-        windowsMenu.aboutToShow.connect(self._refreshWindowsMenu)
-        return windowsMenu
+    #     windowsMenu = QtWidgets.QMenu('&Windows')
+    #     self.getSanPyApp().getWindowsMenu(windowsMenu)
+    #     windowsMenu.aboutToShow.connect(self._refreshWindowsMenu)
+    #     return windowsMenu
 
-    def _refreshWindowsMenu(self):
+    # def _refreshWindowsMenu(self):
     
-        self.windowsMenu.clear()
+    #     self.windowsMenu.clear()
 
-        self.getSanPyApp().getWindowsMenu(self.windowsMenu)
+    #     self.getSanPyApp().getWindowsMenu(self.windowsMenu)
 
     def _buildUI(self):
         # typical wrapper for PyQt, we can't use setLayout(), we need to use setCentralWidget()

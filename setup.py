@@ -64,6 +64,7 @@ setup(
         "shapely",
         "brightest-path-lib",
     ],
+
 	extras_require={
         'gui': [
 			'matplotlib',
@@ -73,10 +74,20 @@ setup(
             'pyqtgraph',
             'pyqtdarktheme',
 		],
+
         'napari': [
             'napari',
             'napari-layer-table'
         ],
+
+        'docs': [
+			'mkdocs',
+			'mkdocs-material',
+			'mkdocs-jupyter',
+            'mkdocstrings',
+            'mkdocstrings-python', # resolve error as of April 30, 2023
+        ],
+
         'dev': [
 			'mkdocs',
 			'mkdocs-material',
@@ -90,6 +101,7 @@ setup(
             'pytest-qt',
             'flake8'
 		],
+        
         'test': [
             'pytest',
             'pytest-cov',

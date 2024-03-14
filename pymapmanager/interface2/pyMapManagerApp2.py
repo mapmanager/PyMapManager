@@ -102,7 +102,13 @@ def loadPlugins(verbose=False) -> dict:
 class PyMapManagerMenus:
     """Main app menus including loaded map and stack widgets.
     
-    Widgets need to call _buildMenus(mainMenu).
+    QMainWindow widgets need to call _buildMenus(mainMenu, self).
+
+    We have three QMain window
+     - one
+     - stackWIdget
+     - mapWidget
+
     """
     def __init__(self, app):
         self._app = app
@@ -110,7 +116,7 @@ class PyMapManagerMenus:
     def getApp(self):
         return self._app
     
-    def _buildMenus(self, mainMenu):
+    def _buildMenus(self, mainMenu, mainWindow):
         
         #
         # file
@@ -146,8 +152,9 @@ class PyMapManagerMenus:
         #
         # view
         self.viewMenu = mainMenu.addMenu("View")
-        _emptyAction = QtWidgets.QAction("None", self.getApp())
+        _emptyAction = QtWidgets.QAction("None", mainWindow)
         self.viewMenu.addAction(_emptyAction)
+        
         # self.mapsMenu.aboutToShow.connect(self._refreshMapsMenu)
         
         # #
@@ -207,9 +214,10 @@ class PyMapManagerMenus:
         return self._helpMenuAction
     
     def _refreshWindowsMenu(self):
-        """A menu with stack then maps
+        """A menu with stacks then maps
         """
         logger.info('')
+        
         self.windowsMenu.clear()
 
         for _path, _stackWidget in self.getApp().getStackWidgetsDict().items():
@@ -220,15 +228,25 @@ class PyMapManagerMenus:
             action.triggered.connect(partial(self._onWindowsMenuAction, _path))
             self.windowsMenu.addAction(action)
 
+        # add sep if we have at least one map
         if len(self.getApp().getMapWidgetsDict().items()) > 0:
             self.windowsMenu.addSeparator()
 
         for _path, _mapWidget in self.getApp().getMapWidgetsDict().items():
-            logger.info(f'adding to map window:{_path}')
+            logger.info(f'adding map to windows menu:{_path}')
             action = QtWidgets.QAction(_path, self.getApp(), checkable=True)
             # action.setChecked(_sanPyWindow.isActiveWindow())
             action.triggered.connect(partial(self._onWindowsMenuAction, _path))
             self.windowsMenu.addAction(action)
+
+        # add sep if we have at least one stack or map
+        if len(self.getApp().getStackWidgetsDict().items()) > 0 or \
+                len(self.getApp().getMapWidgetsDict().items()) > 0:
+            self.windowsMenu.addSeparator()
+
+        action = QtWidgets.QAction('Open First', self.getApp(), checkable=True)
+        action.triggered.connect(partial(self._onOpenFirstMenuAction))
+        self.windowsMenu.addAction(action)
 
     # def _refreshMapsMenu(self):
     #     """Dynamically refresh the stacks maps.
@@ -264,6 +282,9 @@ class PyMapManagerMenus:
     #         aWindowsMenu.addAction(action)
     #     return aWindowsMenu
     
+    def _onOpenFirstMenuAction(self):
+        self.getApp()._openFirstWindow.show()
+
     def _onWindowsMenuAction(self, name):
         logger.info(f'{name}')
         
@@ -439,6 +460,11 @@ class PyMapManagerApp(QtWidgets.QApplication):
             _mapWidget = pmm.interface2.mapWidgets.mapWidget(_map)
             self._mapWidgetDict[path] = _mapWidget
 
+        self._mapWidgetDict[path].show()
+        self._mapWidgetDict[path].raise_()
+        self._mapWidgetDict[path].activateWindow()
+
+        # always hide the open first window
         self._openFirstWindow.hide()
 
         return self._mapWidgetDict[path]

@@ -419,6 +419,22 @@ class Highlighter(object):
         mask = (self.x > x0) & (self.x < x1) & (self.y > y0) & (self.y < y1)
         return mask
 
+def plotDendrogram(map, fig):
+
+        plotDict = getPlotDict()
+
+        #
+        plotDict['segmentid'] = 0 # only map segment 0
+        plotDict['showlines'] = True
+        plotDict['roitype'] = 'spineROI'
+        plotDict['showdynamics'] = True
+
+        # mmmPlot.plotDendrogram()
+        plotDict['xstat'] = 'mapSession'
+        plotDict['ystat'] = 'pDist'
+
+        mmMapPlot(map, plotDict, fig=fig)
+
 class mmMapPlot():
     """Plot a scatter plot or dendrogram for a map.
 

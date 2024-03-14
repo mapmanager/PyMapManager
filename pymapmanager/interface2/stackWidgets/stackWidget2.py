@@ -9,6 +9,8 @@ import pymapmanager
 
 # from pymapmanager.interface2 import PyMapManagerApp
 
+# from pymapmanager.interface2.pyMapManagerApp2 import PyMapManagerMenus
+
 from .mmWidget2 import mmWidget2, pmmEventType, pmmStates, pmmEvent, StackSelection
 from .stackToolbar import StackToolBar
 from .stackStatusbar import StatusToolbar
@@ -243,29 +245,39 @@ class stackWidget2(mmWidget2):
     def _buildMenus(self) -> QtWidgets.QMenuBar:
         mainMenu = self.menuBar()
 
+        self._mainMenu = pymapmanager.interface2.PyMapManagerMenus(self.getPyMapManagerApp())
+        self._mainMenu._buildMenus(mainMenu, self)
+
         # close
         self.closeShortcut = QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+W"), self)
         self.closeShortcut.activated.connect(self._on_user_close)
 
-        # PyMapManagerMenus
-        if self.getPyMapManagerApp() is not None:
-            self.getPyMapManagerApp().getMainMenu()._buildMenus(mainMenu)
-            # we will append to this
-            viewMenu = self.getPyMapManagerApp().getMainMenu().viewMenu
-        else:
-            viewMenu = mainMenu.addMenu('&View')
+        # # PyMapManagerMenus
+        # if self.getPyMapManagerApp() is None:
+        #     return
+        
+        # self.getPyMapManagerApp().getMainMenu()._buildMenus(mainMenu, self)
 
-        # append each child mmWidget to "View" menu.
+        # we will append to this
+        viewMenu = self._mainMenu.viewMenu
+        viewMenu.aboutToShow.connect(self._refreshViewMenu)
+        
+    def _refreshViewMenu(self):
+        logger.info('')
+        viewMenu = self._mainMenu.viewMenu
+        
+        viewMenu.clear()
         for _name,_shortcut in self._widgetDict.items():
             aAction = QtWidgets.QAction(_name, self)
             aAction.setCheckable(True)
-            _visible = True
+            _visible = self._widgetDict[_name].isVisible()
             aAction.setChecked(_visible)
             _lambda = lambda val, name=_name: self._toggleWidget(name, val)
             aAction.triggered.connect(_lambda)
             viewMenu.addAction(aAction)
 
-    def runPlugin(self, pluginName: str, show: bool = True):
+                         
+    def runPlugin(self, pluginName: str, show: bool = True, inDock=False):
         """Run one stack plugin.
 
         Args:
@@ -277,6 +289,11 @@ class stackWidget2(mmWidget2):
         if self.getPyMapManagerApp() is None:
             return
         
+        if inDock:
+            self.pluginDock1.runPlugin_inDock(pluginName)
+            return
+        
+        # run in seperate window
         pluginDict = self.getPyMapManagerApp().getStackPluginDict()
         if pluginName not in pluginDict.keys():
             logger.error(f'Did not find plugin: "{pluginName}"')

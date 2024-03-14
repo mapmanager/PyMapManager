@@ -2,7 +2,7 @@
 import sys
 import copy
 from enum import Enum, auto
-from typing import List, Union, Optional, Tuple
+from typing import List, Union, Optional, Tuple, TypedDict
 
 import numpy as np
 
@@ -121,11 +121,16 @@ class StackSelection:
     def getPointSelection(self) -> Optional[List[int]]:
         """Get list of point selection, will be [] for no selection.
         
-        Only return points that match our self.stack.getMapSession()
+        not true: Only return points that match our self.stack.getMapSession()
         """
         
+        return self._getValue('pointSelectionList')
+    
+        #
+        # intermediate solution
+        #
         _stackSession = None
-        # new
+        # intermediate
         # if mmWidget.stack is not None:
         #     _stackSession = mmWidget.stack.getMapSession()
         # old
@@ -240,6 +245,15 @@ class StackSelection:
         except (KeyError) as e:
             logger.error(f'did not find key "{key}", available keys are {self._dict.keys()}')
 
+    def getCopy(self):
+        """Shallow copy the selection.
+        
+        Used to generate a new selection to reduce from map to stack.
+        """
+        return copy.deepcopy(self)
+
+        # copy.deepcopy(self._dict)
+
 class pmmEvent():
     def __init__(self,
                     theType : pmmEventType,
@@ -255,8 +269,10 @@ class pmmEvent():
         self.reEmitMapAsPoint = False
         self.reEmitPointAsMap = False
         
+        self._sender = mmWidget
+
         self._dict = {
-            'sender': mmWidget,
+            # 'sender': mmWidget,
             'senderName': mmWidget.getName(),
             'type': theType,
             #'annotationObject': thePmmWidget.getAnnotations(),
@@ -326,10 +342,12 @@ class pmmEvent():
             logger.error(f'did not find key "{key}", available keys are {self._dict.keys()}')
             
     def getSender(self):
+        """Get the _name of the mmWidget sender (object that did emitEvent.
+        """
         return self._dict['senderName']
     
     def getSenderObject(self):
-        return self._dict['sender']
+        return self._sender
     
     @property
     def type(self):
@@ -428,6 +446,16 @@ class pmmEvent():
         """
         return copy.copy(self)
 
+    def getDeepCopy(self):
+        """deep copy the event.
+        
+        Used to generate a new event with a different type.
+        """
+        _copy = copy.copy(self)
+        _copy._dict = copy.deepcopy(self._dict)
+
+        return _copy
+    
 # class mmWidget2(QtWidgets.QWidget):
 class mmWidget2(QtWidgets.QMainWindow):
     """All PyMapManager widgets derive from the base widget.
@@ -580,6 +608,12 @@ class mmWidget2(QtWidgets.QMainWindow):
         else:
             return self.getStackWidget().getStack()
 
+    def getMapSession(self):
+        """Get map session from the stack.
+        """
+        if self.getStack() is not None:
+            return self.getStack().getMapSession()
+        
     def getClassName(self) -> str:
         return self.__class__.__name__
     
@@ -631,7 +665,7 @@ class mmWidget2(QtWidgets.QMainWindow):
         # _pointSelection = event.getStackSelection().getPointSelection()
         # _segmentSelection = event.getStackSelection().getSegmentSelection()
         # logger.info(f'>>>>>>>>> emit "{self.getName()}" {event.type} points:{_pointSelection} segments:{_segmentSelection}')
-        logger.info(f'>>>>>>>>> emit "{self.getName()}" {event.type}')
+        logger.info(f'>>>>>>>>> emit "{self.getName()}" session:{self.getMapSession()} {event.type}')
 
         self._signalPmmEvent.emit(event)
 
@@ -707,20 +741,31 @@ class mmWidget2(QtWidgets.QMainWindow):
         
         # if self.getStackWidget() is None:
         if self._iAmStackWidget:
-            print('')
-            print('=================')
-            logger.warning(f'stackWidget re-emit "{self.getName()}"================================')
-            logger.info(f'   sender: {event.getSenderObject()}')
+            logger.info('===>>> ===>>> iAmStackWidget re-emit')
+            logger.info(f'   {self.getName()} session:{self.getMapSession()} sender:{event.getSender()}')
             
+            # logger.info('original event is:')
+            # print(event)
+
             senderObject = event.getSenderObject()
             
             if event.reEmitPointAsMap:
                 pass
             else:
+                _newEvent = event.getDeepCopy()
+                
                 # to break recursion
-                event.reEmitMapAsPoint = senderObject._mapWidget is not None          
+                _newEvent.reEmitMapAsPoint = senderObject._mapWidget is not None          
 
-                self.emitEvent(event)
+                # 03/12 reduce point selection down to stack
+                _stackSelection = _newEvent.getStackSelection().getCopy()
+                _stackSelection = self._reduceToStackSelection(_stackSelection)
+                _newEvent._dict['stackSelection'] = _stackSelection
+
+                # logger.info('new event is')
+                # print(_newEvent)
+                
+                self.emitEvent(_newEvent)
 
         elif self._iAmMapWidget:
             print('')
@@ -755,6 +800,35 @@ class mmWidget2(QtWidgets.QMainWindow):
 
             # transform move event to 'update' with new values
 
+    def _reduceToStackSelection(self, stackselection : StackSelection):
+        """Reduce map selection down to one stack session.
+        
+        Transform a map selection to a stack selection.
+        """
+        
+        # no setter
+        # stackselection.stack = self.getStack()
+        stackselection._dict['stack'] = self.getStack()
+
+        # coming from map selection, there is no stack
+        _stackSession = self.getStack().getMapSession()
+
+        print('-----------------------------')
+        logger.info(f'reducing stack selection to one session: {_stackSession}')
+
+        points = []
+        # _stack = self.stack  # will be None for mapPlot
+        for _idx, _mapSession in enumerate(stackselection._getValue('pointSelectionSessionList')):
+            # TODO: (_stackSession is None)is not needed
+            if (_stackSession is None) or (_stackSession == _mapSession):
+                # point corresponds to a map session we are displaying
+                # if map session is None, we are a stand alone stack (from a file)
+                points.append(stackselection._getValue('pointSelectionList')[_idx])
+
+        stackselection.setPointSelection(points)
+
+        return stackselection
+    
     def selectedEvent(self, event : pmmEvent):
         """Derived classes need to perform action of selection event.
         

@@ -17,9 +17,13 @@ def run():
     # open a timepoint
     # app.toggleMapWidget(mapPath, True)
 
-    # open a stack
+    # open a stand alone stack
     stackPath = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
     app.loadStackWidget(stackPath)
+
+
+    timepoint = 3
+    bsw = _mapWidget.openStack2(timepoint)
 
     # open a timepoint and select a spine
     timepoint = 1

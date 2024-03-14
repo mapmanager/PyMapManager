@@ -22,7 +22,7 @@ class dendrogramWidget(mmWidget2):
     """A dendrogram widget.
     """
 
-    _widgetName = "Dendrogram Widget"
+    _widgetName = "Map Dendrogram"
 
     def __init__(self, mapWidget : mapWidget):
         # super().__init__(mapWidget = mapWidget)

@@ -1,6 +1,9 @@
 """
-A stack contains a 3D Tiff, a list of 3D annotations,
-and optionally a number of line segment tracings.
+A stack contains a an image and its corrresponding annotation.
+
+ - 3D Tiff
+ - A list of point annotations,
+ - A number of line segment tracings.
 
 A stack can either be a single time-point or be embeded
 into a session (timepoint) of a :class:`pymapmanager.map`.

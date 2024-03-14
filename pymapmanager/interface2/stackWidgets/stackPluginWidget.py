@@ -17,7 +17,7 @@ class stackPluginDock():
         self._stackWidget = stackWidget
 
         self._buildPluginWidgets()
-    
+            
     def getPyMapManagerApp(self):
         return self.parentStackWidget().getPyMapManagerApp()
     
@@ -144,6 +144,23 @@ class stackPluginDock():
             #         newPlugin.getHumanName(), externalWindow=False, ltwhTuple=ltwhTuple
             #     )
         
+    def runPlugin_inDock(self, pluginName : str):
+        """Open a plugin in tab.
+        """
+        
+        self.pluginDock1.show()
+
+        logger.info(pluginName)
+        
+        sender = self.myPluginTab1
+
+        newPlugin = self.parentStackWidget().runPlugin(pluginName, show=False)
+        if newPlugin.getShowSelf():
+            newTabIndex = sender.addTab(
+                newPlugin.getWidget(), pluginName
+            )  # addTab takes ownership
+            sender.setCurrentIndex(newTabIndex)
+
     def _buildPluginWidgets(self):
         parentStackWidget = self.parentStackWidget()
         

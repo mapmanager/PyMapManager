@@ -220,7 +220,10 @@ class annotationPlotWidget(mmWidget2):
                                         markeredgewidth=width,
                                         symbolBrush = color,
                                         )
-        
+
+        # self._scatterUserSelection.scatter.sigClicked.connect(self.scatterClicked)
+        self._scatterUserSelection.scatter.sigClicked.disconnect()
+
         self._scatterUserSelection.setZValue(zorder)  # put it on top, may need to change '10'
         # logger.info(f'adding _scatterUserSelection to view: {self.__class__.__name__}')
         self._view.addItem(self._scatterUserSelection)

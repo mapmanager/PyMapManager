@@ -4,6 +4,7 @@ import numpy as np
 
 from qtpy import QtGui, QtCore, QtWidgets
 
+import pymapmanager
 import pymapmanager as pmm
 # from .mmMapWidget import mmMapWidget
 from pymapmanager.interface2.stackWidgets import mmWidget2
@@ -18,7 +19,7 @@ class mapWidget(mmWidget2):
     Shows a table and a dendrogram
     """
 
-    _widgetName = 'xxx first mapWidget'
+    _widgetName = 'Map Table'
 
     def __init__(self, mmMap : pmm.mmMap):
         super().__init__(mapWidget=self, iAmMapWidget=True)
@@ -35,8 +36,6 @@ class mapWidget(mmWidget2):
 
         self.setWindowTitle(self._map.filePath)
         
-        self.show()
-
     def getMap(self):
         return self._map
     
@@ -45,7 +44,9 @@ class mapWidget(mmWidget2):
     
     def _buildMenus(self):
         mainMenu = self.menuBar()
-        _helpAction = self.getApp().getMainMenu()._buildMenus(mainMenu)
+
+        self._mainMenu = pymapmanager.interface2.PyMapManagerMenus(self.getApp())
+        self._mainMenu._buildMenus(mainMenu, self)
 
     def getApp(self) -> "pmm.interface2.pyMapManagerApp":
         return QtWidgets.QApplication.instance()
@@ -116,6 +117,9 @@ class mapWidget(mmWidget2):
 
         self.linkOpenPlots(link=True)
 
+    def getNumSessions(self):
+        return self.getMap().numSessions
+    
     def openStack2(self, session : int) -> "pmm.interface2.stackWidget":
         """Open a stackWidget for map session.
         
@@ -123,8 +127,13 @@ class mapWidget(mmWidget2):
         ----------
         mmMap not used, use self._map
         """
+        numCols = 3
+        numSessions = self.getNumSessions()
+        screenGrid = self.getApp().getScreenGrid(numSessions, numCols)
+        posRect = screenGrid[session]
+
         stack = self._map.stacks[session]
-        bsw = self.openStack(stack=stack, session=session)
+        bsw = self.openStack(stack=stack, session=session, posRect=posRect)
         return bsw
 
     def openStack(self,
