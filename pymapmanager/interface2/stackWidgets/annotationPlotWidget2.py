@@ -329,7 +329,11 @@ class annotationPlotWidget(mmWidget2):
                 sliceNum = self.getStack().getPointAnnotations().getValue("z", dbIdx)
 
                 # 3/11 adding segment selection everytime there is a point selection
-                segmentIndex = [self.getStack().getPointAnnotations().getValue("segmentID", dbIdx)]
+                # segmentIndex = [self.getStack().getPointAnnotations().getValue("segmentID", dbIdx)]
+                segmentIndex = self.getStack().getPointAnnotations().getValue("segmentID", dbIdx)
+
+                # add this
+                segmentIndex= [int(segmentIndex)]
                 event.getStackSelection().setSegmentSelection(segmentIndex)
 
                 logger.info(f'point and line selected {segmentIndex}')

@@ -227,6 +227,27 @@ class ImagePlotWidget(mmWidget2):
         deleteAction.setEnabled(isSpineSelection)
 
 
+        # TODO: add check mark if isBad is False, otherwise dont show checkmark
+
+        _pointAnnotations = self._myStack.getPointAnnotations()
+        isBad = _pointAnnotations.getValue('isBad', firstPointSelection)
+        logger.info(f"isBad {isBad}")
+        import math
+        if math.isnan(isBad):
+            isBad = False
+
+        if isBad is True:
+            acceptAction = _menu.addAction(f'Accept {point_roiType} ')
+            acceptAction.setCheckable(True)
+            acceptAction.setChecked(False)
+        elif isBad is False:
+            acceptAction = _menu.addAction(f'Accept {point_roiType} ')
+            acceptAction.setCheckable(True)
+            acceptAction.setChecked(True)
+
+        acceptAction.setEnabled(isSpineSelection)
+
+
         action = _menu.exec_(self.mapToGlobal(event.pos()))
         
         #logger.info(f'User selected action: {action}')
@@ -279,6 +300,14 @@ class ImagePlotWidget(mmWidget2):
             logger.warning('deleting the selected annotation')
             # self._deleteAnnotation()
             self._aPointPlot._deleteSelection() # aPointPlot emits delete signal
+
+        elif action == acceptAction:
+            logger.info('Accept Action triggered')
+            # self.emitEvent(event, blockSlots=True)
+
+            eventType = pmmEventType.acceptPoint
+            event = pmmEvent(eventType, self)
+            self.emitEvent(event, blockSlots=True)
 
         else:
             logger.info('No action?')

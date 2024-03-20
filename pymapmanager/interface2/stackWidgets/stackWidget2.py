@@ -651,6 +651,7 @@ class stackWidget2(mmWidget2):
         """Auto connect the currently selected spine.
         """
         _stackSelection = self.getStackSelection()
+        # _stackSelection = event.getStackSelection()
         
         if not _stackSelection.hasPointSelection():
             errStr = 'Did not auto connect, need spine selection'
@@ -663,9 +664,23 @@ class stackWidget2(mmWidget2):
 
         logger.warning('=== ===   STACK WIDGET PERFORMING AUTO CONNECT   === ===')
         logger.error('TODO (Cudmore) need to implement auto connect')
-        # _pointAnnotations = self.getStack().getPointAnnotations()
-        # _pointAnnotations.setValue('brightestIndex', spineIndex, np.nan)
-        # _pointAnnotations.updateSpineInt2(spineIndex, self.getStack())
+
+        # set backend
+
+        # Getting channel and img from stack
+        # channel = self.getStack().getImageChannel()
+
+        # TODO: Need to get color channel from stack
+        channel = 2
+        # channel = event.getColorChannel()
+        logger.info(f"channel {channel}")
+        z = _stackSelection.getCurrentStackSlice() # this might need to be checked, currently getting slice point selected
+        img = self.getStack().getImageSlice(z, channel=channel)
+        _pointAnnotations = self.getStack().getPointAnnotations()
+        _lineAnnotations = self.getStack().getLineAnnotations()
+        autoBrightestIndex = _pointAnnotations.calculateSingleBrightestIndex(channel, spineIndex, _lineAnnotations, img)
+        _pointAnnotations.setValue('brightestIndex', spineIndex, autoBrightestIndex)
+        _pointAnnotations.updateSpineInt2(spineIndex, self.getStack())
         
         newEvent = pmmEvent(pmmEventType.selection, self)
         newEvent.getStackSelection().setPointSelection(items)
@@ -799,3 +814,43 @@ class stackWidget2(mmWidget2):
         """
         self.move(left,top)
         self.resize(width, height)
+
+    # abj
+    def acceptPoint(self, event):
+        """ Changes the value set in the isBad Column of the selected Spine Point
+        
+        """
+
+        logger.info("Now accepting point")
+        _stackSelection = self.getStackSelection()
+        # _stackSelection = event.getStackSelection()
+        
+        if not _stackSelection.hasPointSelection():
+            errStr = 'Did not Accept Point, need spine selection'
+            logger.error(errStr)
+            self.slot_setStatus(errStr)
+            return
+        
+        items = _stackSelection.getPointSelection()
+        spineIndex = items[0]
+
+        _pointAnnotations = self.getStack().getPointAnnotations()
+        # _lineAnnotations = self.getStack().getLineAnnotations()
+
+        # _pointAnnotations
+        currentIsBad = _pointAnnotations.getValue('isBad', spineIndex)
+
+        logger.info(f"CurrentIsBad {currentIsBad}")
+        logger.info(f"Type of CurrentIsBad {type(currentIsBad)}")
+        logger.info(f"Type of CurrentIsBad {currentIsBad == np.nan}")
+        if currentIsBad is False:
+            newIsBad = True
+        else:
+            newIsBad = False
+
+        logger.info(f"newIsBad {newIsBad}")
+        _pointAnnotations.setValue('isBad', spineIndex, newIsBad)
+        
+        newEvent = pmmEvent(pmmEventType.selection, self)
+        newEvent.getStackSelection().setPointSelection(items)
+        self._afterEdit(newEvent)

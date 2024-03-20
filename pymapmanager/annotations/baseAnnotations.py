@@ -436,14 +436,14 @@ class baseAnnotations():
         self._columns = Columns()
 
         # TODO: Test UUID
-        colItem = ColumnItem(
-            name = 'uniqueID',
-            type = str,
-            units = '',
-            humanname = 'uniqueID',
-            description = 'Unique identification'
-        )
-        self.addColumn(colItem)
+        # colItem = ColumnItem(
+        #     name = 'uniqueID',
+        #     type = str,
+        #     units = '',
+        #     humanname = 'uniqueID',
+        #     description = 'Unique identification'
+        # )
+        # self.addColumn(colItem)
 
         # TODO (cudmore) Put all the parameters for these CoumnItem into a globally accessible dict
         # use this dict to create ColumnItem(dict['key']) and seld.addColumn()
@@ -1391,6 +1391,11 @@ class baseAnnotations():
         # logger.info(f'UUID: {self._df["uniqueID"]}')
         # logger.info(f'UUID type: {type(self._df["uniqueID"][0])}')
         # self._df.set_index()
+            
+    def intializeIsBad(self):
+        for row in range(self._df.shape[0]):
+            self.setValue("isBad", row, False)
+
 
 if __name__ == '__main__':
     pass
