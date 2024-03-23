@@ -6,10 +6,11 @@ from qtpy import QtCore, QtWidgets, QtGui
 
 # from .pyMapManagerApp2 import PyMapManagerApp
 import pymapmanager
+from pymapmanager.interface2.mainWindow import MainWindow
 
 from pymapmanager._logger import logger
 
-class OpenFirstWindow(QtWidgets.QMainWindow):
+class OpenFirstWindow(MainWindow):
     """A file/folder loading window.
     
     Open this at app start and close once a file/folder is loaded
@@ -17,12 +18,12 @@ class OpenFirstWindow(QtWidgets.QMainWindow):
     def __init__(self, pyMapManagerApp : "PyMapManagerApp", parent=None):
         super().__init__(parent)
 
-        self._app = pyMapManagerApp
+        # self._app = pyMapManagerApp
 
-        self.recentFileList = self._app.getConfigDict().getRecentFiles()
-        self.recentFolderList = self._app.getConfigDict().getRecentFolders()
+        self.recentStackList = self.getApp().getConfigDict().getRecentStacks()
+        self.recentMapList = self.getApp().getConfigDict().getRecentMaps()
 
-        appIconPath = self._app.getAppIconPath()    
+        appIconPath = self.getApp().getAppIconPath()    
         if os.path.isfile(appIconPath):
             # logger.info(f'  app.setWindowIcon with: "{appIconPath}"')
             # self._appIconPixmap = QtGui.QPixmap(appIconPath)
@@ -31,7 +32,7 @@ class OpenFirstWindow(QtWidgets.QMainWindow):
             logger.warning(f"Did not find appIconPath: {appIconPath}")
 
         self._buildUI()
-        self._buildMenus()
+        # self._buildMenus()
 
         left = 100
         top = 100
@@ -41,8 +42,8 @@ class OpenFirstWindow(QtWidgets.QMainWindow):
 
         self.setWindowTitle('MapManager Open Files and Folders')
 
-    def getApp(self):
-        return self._app
+    # def getApp(self):
+    #     return self._app
     
     def _makeRecentTable(self, pathList : List[str], headerStr = ''):
         """Given a list of file/folder path, make a table.
@@ -88,27 +89,25 @@ class OpenFirstWindow(QtWidgets.QMainWindow):
 
         return myTableWidget
     
-    def _on_recent_file_click(self, rowIdx : int):
+    def _on_recent_stack_click(self, rowIdx : int):
         """On double-click, open a file and close self.
         """
-        path = self.recentFileList[rowIdx]
+        path = self.recentStackList[rowIdx]
         logger.info(f'rowId:{rowIdx} path:{path}')
 
         if os.path.isfile(path):
-            self._sanpyApp.openSanPyWindow(path)
-            # self.close()
+            self.getApp().loadStackWidget(path)
         else:
             logger.error(f'did not find path: {path}')
 
-    def _on_recent_folder_click(self, rowIdx : int):    
+    def _on_recent_map_click(self, rowIdx : int):    
         """On double-click, open a folder and close self.
         """
-        path = self.recentFolderList[rowIdx]
+        path = self.recentMapList[rowIdx]
         logger.info(f'rowId:{rowIdx} path:{path}')
 
         if os.path.isdir(path):
-            self._sanpyApp.openSanPyWindow(path)
-            # self.close()
+            self.getApp().loadMapWidget(path)
         else:
             logger.error(f'did not find path: {path}')
 
@@ -118,45 +117,6 @@ class OpenFirstWindow(QtWidgets.QMainWindow):
             self._app.loadStackWidget()
         elif name == 'Open Folder...':
             self._app.loadMapWidget()
-
-    def _buildMenus(self):
-    
-        mainMenu = self.menuBar()
-
-        self._mainMenu = pymapmanager.interface2.PyMapManagerMenus(self.getApp())
-        self._mainMenu._buildMenus(mainMenu, self)
-
-        # # insert view and plugins menu (deactivated)
-        # self.viewMenu = QtWidgets.QMenu('&View')
-        # # self.viewMenu.setDisabled(True)
-        # noneAction = QtWidgets.QAction('None', self)
-        # noneAction.setEnabled(False)
-        # self.viewMenu.addAction(noneAction)
-        # mainMenu.insertMenu(_helpAction, self.viewMenu)
-
-        # self.pluginsMenu = QtWidgets.QMenu('&Plugins')
-        # self.pluginsMenu.setDisabled(True)
-        # noneAction = QtWidgets.QAction('None', self)
-        # self.pluginsMenu.addAction(noneAction)
-        # mainMenu.insertMenu(_helpAction, self.pluginsMenu)
-
-        # # windows menu for app wide open windows
-        # self.windowsMenu = self._buildWindowMenu()  # open SanPyWindow(s)
-        # self.windowsMenu.aboutToShow.connect(self._refreshWindowsMenu)
-        # mainMenu.insertMenu(_helpAction, self.windowsMenu)
-
-    # def _buildWindowMenu(self):
-        
-    #     windowsMenu = QtWidgets.QMenu('&Windows')
-    #     self.getSanPyApp().getWindowsMenu(windowsMenu)
-    #     windowsMenu.aboutToShow.connect(self._refreshWindowsMenu)
-    #     return windowsMenu
-
-    # def _refreshWindowsMenu(self):
-    
-    #     self.windowsMenu.clear()
-
-    #     self.getSanPyApp().getWindowsMenu(self.windowsMenu)
 
     def _buildUI(self):
         # typical wrapper for PyQt, we can't use setLayout(), we need to use setCentralWidget()
@@ -201,9 +161,9 @@ class OpenFirstWindow(QtWidgets.QMainWindow):
 
         # headerStr='Recent Files (double-click to open)'
         headerStr = ''
-        recentFileTable = self._makeRecentTable(self.recentFileList,
+        recentFileTable = self._makeRecentTable(self.recentStackList,
                                                 headerStr=headerStr)
-        recentFileTable.cellDoubleClicked.connect(self._on_recent_file_click)
+        recentFileTable.cellDoubleClicked.connect(self._on_recent_stack_click)
         recent_vBoxLayout.addWidget(recentFileTable)
 
         aLabel = QtWidgets.QLabel('Recent Folders')
@@ -211,9 +171,9 @@ class OpenFirstWindow(QtWidgets.QMainWindow):
 
         # headerStr='Recent Files (double-click to open)'
         headerStr = ''
-        recentFolderTable = self._makeRecentTable(self.recentFolderList,
+        recentFolderTable = self._makeRecentTable(self.recentMapList,
                                                   headerStr=headerStr)
-        recentFolderTable.cellDoubleClicked.connect(self._on_recent_folder_click)
+        recentFolderTable.cellDoubleClicked.connect(self._on_recent_map_click)
         recent_vBoxLayout.addWidget(recentFolderTable)
 
         _mainVLayout.addLayout(recent_vBoxLayout)

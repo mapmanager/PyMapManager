@@ -1,10 +1,11 @@
 import os
 import sys
 import math
-from functools import partial
 from typing import List  # , Union  # , Callable, Iterator, Optional
 
 import inspect
+
+from platformdirs import user_data_dir
 
 from qtpy import QtGui, QtWidgets  # QtCore
 
@@ -21,11 +22,12 @@ import pymapmanager.interface2.stackWidgets
 import pymapmanager.interface2.mapWidgets
 
 from pymapmanager.interface2.openFirstWindow import OpenFirstWindow
+from pymapmanager.interface2.mainMenus import PyMapManagerMenus
 
-from pymapmanager._logger import logger
+from pymapmanager._logger import logger, setLogLevel
 from pymapmanager.pmmUtils import getBundledDir
 
-def loadPlugins(verbose=False) -> dict:
+def loadPlugins(verbose=False, pluginType='stack') -> dict:
     """Load stack plugins from both:
         - Package: sanpy.interface.plugins
         - Folder: <user>/sanpy_plugins
@@ -51,7 +53,15 @@ def loadPlugins(verbose=False) -> dict:
     # system plugins from sanpy.interface.plugins
     # print('loadPlugins sanpy.interface.plugins:', sanpy.interface.plugins)
     # loadedList = []
-    for moduleName, obj in inspect.getmembers(pymapmanager.interface2.stackWidgets):
+
+    if pluginType == 'stack':
+        members = inspect.getmembers(pymapmanager.interface2.stackWidgets)
+        _rootModuleStr = "pymapmanager.interface2.stackWidgets."
+    else:
+        members = inspect.getmembers(pymapmanager.interface2.mapWidgets)
+        _rootModuleStr = "pymapmanager.interface2.mapWidgets."
+
+    for moduleName, obj in members:
         # logger.info(f'moduleName:{moduleName} obj:{obj}')
         if inspect.isclass(obj):
             # logger.info(f'obj is class moduleName: {moduleName}')
@@ -59,7 +69,7 @@ def loadPlugins(verbose=False) -> dict:
                 # our base plugin class
                 continue
             # loadedList.append(moduleName)
-            fullModuleName = "pymapmanager.interface2.stackWidgets." + moduleName
+            fullModuleName = _rootModuleStr + moduleName
             
             try:
                 _widgetName = obj._widgetName  # myHumanName is a static str
@@ -98,232 +108,26 @@ def loadPlugins(verbose=False) -> dict:
 
     return pluginDict
 
-
-class PyMapManagerMenus:
-    """Main app menus including loaded map and stack widgets.
-    
-    QMainWindow widgets need to call _buildMenus(mainMenu, self).
-
-    We have three QMain window
-     - one
-     - stackWIdget
-     - mapWidget
-
-    """
-    def __init__(self, app):
-        self._app = app
-
-    def getApp(self):
-        return self._app
-    
-    def _buildMenus(self, mainMenu, mainWindow):
-        
-        #
-        # file
-        fileMenu = mainMenu.addMenu("&File")
-
-        loadFileAction = QtWidgets.QAction("Open...", self.getApp())
-        loadFileAction.setCheckable(False)  # setChecked is True by default?
-        loadFileAction.setShortcut("Ctrl+O")
-        loadFileAction.triggered.connect(self.getApp().openFile)
-        fileMenu.addAction(loadFileAction)
-        
-        loadFolderAction = QtWidgets.QAction("Open Time-Series...", self.getApp())
-        loadFolderAction.setCheckable(False)  # setChecked is True by default?
-        loadFolderAction.triggered.connect(self.getApp().openTimeSeries)
-        fileMenu.addAction(loadFolderAction)
-
-        #
-        # edit
-        editMenu = mainMenu.addMenu("&Edit")
-
-        undoAction = QtWidgets.QAction("Undo", self.getApp())
-        undoAction.setCheckable(False)  # setChecked is True by default?
-        undoAction.setShortcut("Ctrl+Z")
-        # loadFileAction.triggered.connect(self.getApp().openFile)
-        editMenu.addAction(undoAction)
-
-        redoAction = QtWidgets.QAction("Redo", self.getApp())
-        redoAction.setCheckable(False)  # setChecked is True by default?
-        redoAction.setShortcut("Shift+Ctrl+Z")
-        # loadFileAction.triggered.connect(self.getApp().openFile)
-        editMenu.addAction(redoAction)
-
-        #
-        # view
-        self.viewMenu = mainMenu.addMenu("View")
-        _emptyAction = QtWidgets.QAction("None", mainWindow)
-        self.viewMenu.addAction(_emptyAction)
-        
-        # self.mapsMenu.aboutToShow.connect(self._refreshMapsMenu)
-        
-        # #
-        # # stacks
-        # name = "Stacks"
-        # self.stacksMenu = mainMenu.addMenu(name)
-        # _emptyAction = QtWidgets.QAction("None", self.getApp())
-        # self.stacksMenu.addAction(_emptyAction)
-        # self.stacksMenu.aboutToShow.connect(self._refreshStacksMenu)
-        # # self.stacksMenu.triggered.connect(partial(self._onStacksMenuAction, name))
-
-        # #
-        # # maps
-        # self.mapsMenu = mainMenu.addMenu("Maps")
-        # _emptyAction = QtWidgets.QAction("None", self.getApp())
-        # self.mapsMenu.addAction(_emptyAction)
-        # self.mapsMenu.aboutToShow.connect(self._refreshMapsMenu)
-
-        # windows
-        name = "Windows"
-        self.windowsMenu = mainMenu.addMenu(name)
-        _emptyAction = QtWidgets.QAction("None", self.getApp())
-        self.windowsMenu.addAction(_emptyAction)
-        self.windowsMenu.aboutToShow.connect(self._refreshWindowsMenu)
-
-        # help menu
-        self.helpMenu = mainMenu.addMenu("Help")
-
-        name = "PyMapManager Help (Opens In Browser)"
-        action = QtWidgets.QAction(name, self.getApp())
-        action.triggered.connect(partial(self._onHelpMenuAction, name))
-        self.helpMenu.addAction(action)
-
-        # this actually does not show up in the help menu!
-        # On macOS PyQt reroutes it to the main python/SanPy menu
-        name = "About PyMapManager"
-        action = QtWidgets.QAction(name, self.getApp())
-        action.triggered.connect(self._onAboutMenuAction)
-        self.helpMenu.addAction(action)
-
-        # like the help menu, this gets rerouted to the main python/sanp menu
-        name = "Preferences ..."
-        action = QtWidgets.QAction(name, self.getApp())
-        action.triggered.connect(self._onPreferencesMenuAction)
-        self.helpMenu.addAction(action)
-    
-        # get help menu as action so other windows can insert their menus before it
-        # e.g. SanPyWindow inserts (View, Windows) menus
-        # logger.info('mainMenu is now')
-        self._helpMenuAction = None
-        for _action in mainMenu.actions():
-            actionText = _action.text()
-            # print('   ', _action.menu(), actionText, _action)
-            if actionText == 'Help':
-                self._helpMenuAction = _action
-
-        return self._helpMenuAction
-    
-    def _refreshWindowsMenu(self):
-        """A menu with stacks then maps
-        """
-        logger.info('')
-        
-        self.windowsMenu.clear()
-
-        for _path, _stackWidget in self.getApp().getStackWidgetsDict().items():
-            logger.info(f'adding to stack window:{_path}')
-            # path = _stackWidget.getPath()
-            action = QtWidgets.QAction(_path, self.getApp(), checkable=True)
-            # action.setChecked(_sanPyWindow.isActiveWindow())
-            action.triggered.connect(partial(self._onWindowsMenuAction, _path))
-            self.windowsMenu.addAction(action)
-
-        # add sep if we have at least one map
-        if len(self.getApp().getMapWidgetsDict().items()) > 0:
-            self.windowsMenu.addSeparator()
-
-        for _path, _mapWidget in self.getApp().getMapWidgetsDict().items():
-            logger.info(f'adding map to windows menu:{_path}')
-            action = QtWidgets.QAction(_path, self.getApp(), checkable=True)
-            # action.setChecked(_sanPyWindow.isActiveWindow())
-            action.triggered.connect(partial(self._onWindowsMenuAction, _path))
-            self.windowsMenu.addAction(action)
-
-        # add sep if we have at least one stack or map
-        if len(self.getApp().getStackWidgetsDict().items()) > 0 or \
-                len(self.getApp().getMapWidgetsDict().items()) > 0:
-            self.windowsMenu.addSeparator()
-
-        action = QtWidgets.QAction('Open First', self.getApp(), checkable=True)
-        action.triggered.connect(partial(self._onOpenFirstMenuAction))
-        self.windowsMenu.addAction(action)
-
-    # def _refreshMapsMenu(self):
-    #     """Dynamically refresh the stacks maps.
-    #     """
-    #     logger.info('')
-    #     self.mapsMenu.clear()
-    #     self._getMapsMenu(self.mapsMenu)
-    
-    # def _refreshStacksMenu(self):
-    #     """Dynamically refresh the stacks menu.
-    #     """
-    #     logger.info('')
-    #     self.stacksMenu.clear()
-    #     self._getStacksMenu(self.stacksMenu)
-
-    # def _getMapsMenu(self, aWindowsMenu):
-    #     logger.info('')
-    #     for _path, _mapWidget in self.getApp().getMapWidgetsDict().items():
-    #         # path = _mapWidget.getPath()
-    #         action = QtWidgets.QAction(_path, self.getApp(), checkable=True)
-    #         # action.setChecked(_sanPyWindow.isActiveWindow())
-    #         # action.triggered.connect(partial(self._windowsMenuAction, _sanPyWindow, path))
-    #         aWindowsMenu.addAction(action)
-    #     return aWindowsMenu
-    
-    # def _getStacksMenu(self, aWindowsMenu):
-    #     logger.info('')
-    #     for _path, _stackWidget in self.getApp().getStackWidgetsDict().items():
-    #         # path = _stackWidget.getPath()
-    #         action = QtWidgets.QAction(_path, self.getApp(), checkable=True)
-    #         # action.setChecked(_sanPyWindow.isActiveWindow())
-    #         action.triggered.connect(partial(self._onStacksMenuAction, _path))
-    #         aWindowsMenu.addAction(action)
-    #     return aWindowsMenu
-    
-    def _onOpenFirstMenuAction(self):
-        self.getApp()._openFirstWindow.show()
-
-    def _onWindowsMenuAction(self, name):
-        logger.info(f'{name}')
-        
-        self.getApp().showMapOrStack(name)
-
-    def _onHelpMenuAction(self, name):
-        logger.info(name)
-        
-    def _onAboutMenuAction(self, name):
-        logger.info(name)
-        
-    def _onPreferencesMenuAction(self, name):
-        logger.info(name)
-
-class pmmAppPreferences:
-    """Application preferences.
-    
-    This is saved and loaded into a user folder.
-    """
-    def __init__(self):
-        pass
-
-    def getRecentFiles(self) -> List[str]:
-        return []
-      
-    def getRecentFolders(self) -> List[str]:
-        return []
-      
 class PyMapManagerApp(QtWidgets.QApplication):
-    def __init__(self, argv=['']):
+    def __init__(self, argv=[''], deferFirstWindow=False):
         super().__init__(argv)
 
-        qdarktheme.setup_theme()
+        self._config = pymapmanager.interface2.Preferences(self)
+        # util class to save/load app preferences including recent paths
+
+        # set the log level
+        logLevel = self.getConfigDict()['logLevel']
+        setLogLevel(logLevel)
+
+        self.setTheme()
+        # set theme to loaded config dict
 
         appIconPath = self.getAppIconPath()
         self.setWindowIcon(QtGui.QIcon(appIconPath))
 
         # self.setQuitOnLastWindowClosed(False)
         self.setQuitOnLastWindowClosed(True)
+        self.lastWindowClosed.connect(self._on_quit)
 
         self._blockSlots = False
         
@@ -338,15 +142,61 @@ class PyMapManagerApp(QtWidgets.QApplication):
         # dictionary of open stack widgets
         # keys are full path to stack
 
-        self._config = pmmAppPreferences()
-        # util class to save/load app preferences including recent paths
-
         self._stackWidgetPluginsDict = loadPlugins()
+        # application wide stack widgets
+        
+        self._mapWidgetPluginsDict = loadPlugins(pluginType='map')
         # application wide stack widgets
         
         self._mainMenu = PyMapManagerMenus(self)
 
+        self._openFirstWindow = None
         self.openFirstWindow()
+
+    def setTheme(self, theme = None):
+        #theme in ['dark', 'light', 'auto']
+        if theme is None:
+            theme = self.getConfigDict()['theme']
+        else:
+            self.getConfigDict()['theme'] = theme
+        # theme = self.getConfigDict()['theme']
+        qdarktheme.setup_theme(theme=theme)
+
+    def _on_quit(self):
+        """App is about to quit.
+        """
+        
+        logger.info('App is about to quit !!!')
+
+        # save preferences
+        self._config.save()
+
+    def getAppDataFolder(self):
+        appName = 'MapManager'
+        appDir = user_data_dir(appName)
+        return appDir
+    
+    def getFrontWindowType(self):
+        """Get the type of the front window.
+        
+        Returns
+        -------
+        str in [stack, stackWithMap, map, None]
+        """
+        activeWindow = self.activeWindow()  # can be 0
+
+        _windowType = None
+        
+        if isinstance(activeWindow, pymapmanager.interface2.stackWidgets.stackWidget2):
+            _hasMap = activeWindow._mapWidget is not None
+            if _hasMap:
+                _windowType = 'stackWithMap'
+            else:
+                _windowType = 'stack'
+        elif isinstance(activeWindow, pymapmanager.interface2.mapWidgets.mapWidget):
+            _windowType = 'map'
+
+        return _windowType
 
     def closeStackWindow(self, theWindow : "stackWidget2"):
         """Remove theWindow from self._stackWidgetDict.
@@ -383,23 +233,30 @@ class PyMapManagerApp(QtWidgets.QApplication):
 
         if len(self._stackWidgetDict.keys()) == 0 and \
                             len(self._mapWidgetDict.keys()) == 0:
-            self._openFirstWindow.show()
+            self.openFirstWindow()
 
     def openFirstWindow(self):
-        self._openFirstWindow = OpenFirstWindow(self)        
-        self._openFirstWindow.show()
-        
-        self._openFirstWindow.raise_()
-        self._openFirstWindow.activateWindow()  # bring to front
+        if self._openFirstWindow is not None:
+            self._openFirstWindow.show()
+            # update recent
+        else:
+            self._openFirstWindow = OpenFirstWindow(self)        
+            self._openFirstWindow.show()
+            
+            self._openFirstWindow.raise_()
+            self._openFirstWindow.activateWindow()  # bring to front
 
     def getAppIconPath(Self):
         return os.path.join(getBundledDir(), 'interface', 'icons', 'mapmanager-icon.png')
     
-    def getConfigDict(self) -> pmmAppPreferences:
+    def getConfigDict(self) -> "pymapmanager.interface2.Preferences":
         return self._config
 
     def getStackPluginDict(self):
         return self._stackWidgetPluginsDict
+    
+    def getMapPluginDict(self):
+        return self._mapWidgetPluginsDict
     
     def getMapWidgetsDict(self):
         return self._mapWidgetDict
@@ -411,9 +268,15 @@ class PyMapManagerApp(QtWidgets.QApplication):
         return self._mainMenu
     
     def openFile(self):
+        """Open single timepoint stack.
+        """
+        logger.info('')
         return
 
     def openTimeSeries(self):
+        """OPen a time-series map.
+        """
+        logger.info('')
         pass
 
     def toggleMapWidget(self, path : str, visible : bool):
@@ -467,6 +330,9 @@ class PyMapManagerApp(QtWidgets.QApplication):
         # always hide the open first window
         self._openFirstWindow.hide()
 
+        # add to recent opened windows
+        self.getConfigDict().addMapPath(path)
+
         return self._mapWidgetDict[path]
     
     def loadStackWidget(self, path):
@@ -481,10 +347,18 @@ class PyMapManagerApp(QtWidgets.QApplication):
             # load stack and make widget
             # _stack = pmm.stack(path)
             _stackWidget = pmm.interface2.stackWidgets.stackWidget2(path)
+
+            geometryRect = self.getConfigDict().getStackWindowGeometry()
+            _stackWidget.setGeometry(geometryRect)
+
             _stackWidget.show()
+            
             self._stackWidgetDict[path] = _stackWidget
 
         self._openFirstWindow.hide()
+
+        # add to recent opened windows
+        self.getConfigDict().addStackPath(path)
 
         return self._stackWidgetDict[path]
     

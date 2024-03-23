@@ -1,2 +1,5 @@
 from .pyMapManagerApp2 import PyMapManagerApp
-from .pyMapManagerApp2 import PyMapManagerMenus
+from .mainMenus import PyMapManagerMenus
+
+from .mainWindow import MainWindow
+from .preferences import Preferences

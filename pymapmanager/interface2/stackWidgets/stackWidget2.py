@@ -99,6 +99,8 @@ class stackWidget2(mmWidget2):
         """
         logger.warning('NEED TO CHECK IF DIRTY AND PROMPT TO SAVE')
         
+        logger.info(self.geometry())
+        
         if self.getMapWidgetParent() is not None:
             self.getMapWidgetParent().closeStackWindow(self)
             self._disconnectFromMap()

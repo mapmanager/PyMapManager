@@ -1,19 +1,48 @@
-from typing import List  #, Union, Callable, Iterator, Optional
+from typing import List, TypedDict  #, Union, Callable, Iterator, Optional
 
 import numpy as np
 
-from qtpy import QtGui, QtCore, QtWidgets
+from qtpy import QtWidgets
 
 import pymapmanager
 import pymapmanager as pmm
-# from .mmMapWidget import mmMapWidget
-from pymapmanager.interface2.stackWidgets import mmWidget2
-# from pymapmanager.interface2.mapWidgets.dendrogramWidget import dendrogramWidget
+from pymapmanager.interface2.mainWindow import MainWindow
 
 from pymapmanager._logger import logger
 
+class MapSelectionDict(TypedDict):
+    pointRuns: list[int]
+    pointSessions: list[int]
+    isAlt: bool
+    runs: list[int]
+
+class MapSelection:
+    def __init__(self, mapWidget):
+        self._mapWidget = mapWidget
+
+        self._mapSelection : MapSelectionDict = MapSelectionDict(pointRuns=[], pointSessions=[], isAlt=False, runs=[])
+ 
+    def setPointSelection(self, pointRuns : list[int], pointSessions : list[int], isAlt : bool = False):
+        
+        if len(pointRuns) != len(pointSessions):
+            logger.error(f'len of points {len(pointRuns)} does not match len of sessions {len(pointSessions)}')
+            return
+        
+        self._mapSelection['pointRuns'] = pointRuns
+        self._mapSelection['pointSessions'] = pointSessions
+        self._mapSelection['isAlt'] = isAlt
+    
+    def getPointSelection(self) -> tuple[int,int]:
+        return (self._mapSelection['pointRuns'], self._mapSelection['pointSessions'])
+    
+    def __str__(self):
+        ret = f'MapSelection:{self._mapWidget}\n'
+        for k,v in self._mapSelection.items():
+            ret += f'  {k}: {v}\n'
+        return ret
+    
 # class mapWidget(mmMapWidget):
-class mapWidget(mmWidget2):
+class mapWidget(MainWindow):
     """Main Map Widget (similar to stackWidget)
 
     Shows a table and a dendrogram
@@ -26,30 +55,40 @@ class mapWidget(mmWidget2):
         
         self._map = mmMap
 
+        # self._mapSelection : MapSelection = MapSelection(self)
+
         self._stackWidgetList = []
         # dict of open stackWidget children
         # keys are full path to tif
 
-        self._buildMenus()
+        # self._buildMenus()
 
         self._buildUI()
 
         self.setWindowTitle(self._map.filePath)
-        
+    
+    # def getMapSelection(self) -> MapSelection:
+    #     return self._mapSelection
+    
+    def runPlugin(self, pluginName : str):
+        """run a map plugin.
+        """
+        logger.info(pluginName)
+
     def getMap(self):
         return self._map
     
     def getPath(self):
         return self._map.filePath
     
-    def _buildMenus(self):
+    def _old__buildMenus(self):
         mainMenu = self.menuBar()
 
         self._mainMenu = pymapmanager.interface2.PyMapManagerMenus(self.getApp())
         self._mainMenu._buildMenus(mainMenu, self)
 
-    def getApp(self) -> "pmm.interface2.pyMapManagerApp":
-        return QtWidgets.QApplication.instance()
+    # def getApp(self) -> "pmm.interface2.pyMapManagerApp":
+    #     return QtWidgets.QApplication.instance()
 
     def _findStackWidget(self, path):
         """Find an open stack widget.
@@ -123,15 +162,23 @@ class mapWidget(mmWidget2):
     def openStack2(self, session : int) -> "pmm.interface2.stackWidget":
         """Open a stackWidget for map session.
         
+        This is triggered on double-click in map table
+
         Parameters
         ----------
         mmMap not used, use self._map
         """
-        numCols = 3
-        numSessions = self.getNumSessions()
-        screenGrid = self.getApp().getScreenGrid(numSessions, numCols)
-        posRect = screenGrid[session]
 
+        # don't use session grid, use single stack geometry
+        # numCols = 3
+        # numSessions = self.getNumSessions()
+        # screenGrid = self.getApp().getScreenGrid(numSessions, numCols)
+        # posRect = screenGrid[session]
+
+        posRect = self.getApp().getConfigDict().getStackWindowGeometry()
+
+        logger.error(f'posRect:{posRect}')
+        
         stack = self._map.stacks[session]
         bsw = self.openStack(stack=stack, session=session, posRect=posRect)
         return bsw
@@ -243,7 +290,8 @@ class mapWidget(mmWidget2):
     def slot_selectAnnotation(self, selectionEvent, plusMinus=2):
         """Respond to annotation selections.
         
-        For spineRoi (if alt) then select and zoom a spine run for all open windows!.
+        For spineRoi (if alt) then
+            select and zoom a spine run for all open windows!
         """
 
         if self._blockSlots:
@@ -321,11 +369,10 @@ class mapWidget(mmWidget2):
         logger.info('')
 
     def selectedEvent(self, event):
-        logger.info('===== MAP WIDGET RECEIVED SELECTION')
-        # logger.info(f'event:{event}')
+        pass
 
     def setSliceEvent(self, event):
-        logger.info('&&&&&&&&&&&&')
+        pass
     
     def closeEvent(self, event):
         """Called when user closes main window or selects quit.
@@ -354,3 +401,12 @@ class mapWidget(mmWidget2):
             logger.error(f'did not find stack widget in map widget {theWindow}')
             logger.error('available windows are')
             logger.error(self._stackWidgetList)
+
+if __name__ == '__main__':
+    ms = MapSelection(None)
+    ms.setPointSelection(pointRuns=[1,2,3], pointSessions=[4,5,6])
+    
+    ps = ms.getPointSelection()
+    print(ps)
+    
+    print(ms)

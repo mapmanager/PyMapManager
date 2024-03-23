@@ -31,7 +31,7 @@ from pymapmanager._logger import logger
 def getPlotDict():
     """Get a new default plot dictionary.
 
-    The plot dictionary is used to tell plot functions what to plot (e.g. ['xtat'] and ['ystat']).
+    The plot dictionary is used to tell plot functions what to plot (e.g. ['xstat'] and ['ystat']).
     
     All plot function return the same plot dictionary with keys filled in with values that were plotted
     (e.g. ['x'] and ['y']).
@@ -419,22 +419,32 @@ class Highlighter(object):
         mask = (self.x > x0) & (self.x < x1) & (self.y > y0) & (self.y < y1)
         return mask
 
-def plotDendrogram(map, fig):
+def plotDendrogram(map, fig=None):
+    """Plot a map dendrogram.
+    
+    Uses matplotlib
+    """
+    plotDict = getPlotDict()
 
-        plotDict = getPlotDict()
+    #
+    plotDict['segmentid'] = 0 # only map segment 0
+    plotDict['showlines'] = True
+    plotDict['roitype'] = 'spineROI'
+    plotDict['showdynamics'] = True
 
-        #
-        plotDict['segmentid'] = 0 # only map segment 0
-        plotDict['showlines'] = True
-        plotDict['roitype'] = 'spineROI'
-        plotDict['showdynamics'] = True
+    # mmmPlot.plotDendrogram()
+    plotDict['xstat'] = 'mapSession'
+    plotDict['ystat'] = 'pDist'
 
-        # mmmPlot.plotDendrogram()
-        plotDict['xstat'] = 'mapSession'
-        plotDict['ystat'] = 'pDist'
+    mmMapPlot(map, plotDict, fig=fig)
 
-        mmMapPlot(map, plotDict, fig=fig)
+def plotMapScatter(map, xStat, yStat, segments=[], fig=None):
+    plotDict = getPlotDict()
+    plotDict['xstat'] = xStat
+    plotDict['ystat'] = yStat
 
+    mmMapPlot(map, plotDict, fig=fig)
+                   
 class mmMapPlot():
     """Plot a scatter plot or dendrogram for a map.
 
@@ -917,12 +927,13 @@ class mmMapPlot():
 
         sessionIdx = clickDict['sessionIdx']
         pointIdx = clickDict['stackDbIdx']  # stack centric index
+        runRow = clickDict['runRow']
 
         self.selectPoints([(sessionIdx, pointIdx)], doRefresh=False)
 
         if clickDict['isAlt']:
             # runRow = clickDict['runRow']
-            runRow = self._findRunRow(sessionIdx, pointIdx)
+            # runRow = self._findRunRow(sessionIdx, pointIdx)
             self.selectRuns([runRow], doRefresh=False)
         else:
             # cancel previous run selection

@@ -62,6 +62,7 @@ setup(
         "tifffile",
         "geopandas",
         "shapely",
+        "platformdirs",
         "brightest-path-lib",
     ],
 

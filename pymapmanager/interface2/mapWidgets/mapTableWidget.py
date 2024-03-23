@@ -43,6 +43,10 @@ class mapTableWidget(QtWidgets.QWidget):
         
         # TODO: this is not respecting sort order
         rowDict = self._myTableView.getSelectedRowDict()
+        
+        if rowDict is None:
+            return
+        
         session = rowDict['Idx']
         # logger.info(f'rowDict: {rowDict}')
 

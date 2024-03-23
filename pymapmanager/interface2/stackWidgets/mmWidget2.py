@@ -519,6 +519,15 @@ class mmWidget2(QtWidgets.QMainWindow):
         # else:
         #     self._signalPmmEvent.connect(self.slot_pmmEvent)
 
+    # def getMapSelection(self):
+    #     if self.getMapWidgetParent() is not None:
+    #         return self.getMapWidgetParent().getMapSelection()
+
+    def getApp(self) -> "pymapmanager.interface2.PyMapManagerApp":
+        """Get running application.
+        """
+        return QtWidgets.QApplication.instance()
+
     def getMapWidgetParent(self):
         return self._mapWidget
     
