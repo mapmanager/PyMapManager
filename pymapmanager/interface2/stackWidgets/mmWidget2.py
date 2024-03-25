@@ -71,7 +71,7 @@ class StackSelection:
         self._dict['state'] = state
     
     # ABJ
-    def getCurrentStackSlice(self):
+    def getCurrentPointSlice(self):
         pointSelections = self.getPointSelection()
 
         if pointSelections is None:
@@ -79,10 +79,11 @@ class StackSelection:
 
         if self.hasPointSelection:
             spineIdx = self.firstPointSelection()
-            logger.info(f"spineIdx of currentslice: {spineIdx}")
+            # logger.info(f"spineIdx of currentslice: {spineIdx}")
 
             sliceNum = self.stack.getPointAnnotations().getValue("z", spineIdx)
 
+            # sliceNum = 
             logger.info(f"current stack selection slice is: {sliceNum}")
             return sliceNum
     #

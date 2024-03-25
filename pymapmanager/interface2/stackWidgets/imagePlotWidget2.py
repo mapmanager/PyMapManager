@@ -277,6 +277,7 @@ class ImagePlotWidget(mmWidget2):
             # Dont need to acquire any new data, everything should be known because of the current selection
             eventType = pmmEventType.autoConnectSpine
             event = pmmEvent(eventType, self)
+            event.setSliceNumber(self._currentSlice)
             self.emitEvent(event, blockSlots=True)
 
         elif action == reanalyzeAction:
@@ -490,6 +491,7 @@ class ImagePlotWidget(mmWidget2):
                 event = pmmEvent(eventType, self)
                 event.setAddMovePosition(x, y, z)
                 event.getStackSelection().setPointSelection(items)
+                event.setSliceNumber(self._currentSlice)
                 self.emitEvent(event, blockSlots=True)
 
         elif _state == pmmStates.manualConnectSpine:
@@ -1103,12 +1105,14 @@ class ImagePlotWidget(mmWidget2):
         _pointAnnotations = self.getStackWidget().getStack().getPointAnnotations()
         x = _pointAnnotations.getValue('x', oneItem)
         y = _pointAnnotations.getValue('y', oneItem)
-        z = _pointAnnotations.getValue('z', oneItem)
+        # z = _pointAnnotations.getValue('z', oneItem)
+        z = event.getSliceNumber()
 
         if event.isAlt():
             # When zooming to point, set the slice to be that of the current selection
             logger.info(f"zoom to coordinates x: {x} y: {y}")
             self._zoomToPoint(x, y)
+            z = _pointAnnotations.getValue('z', oneItem) # zoom to z of current point
         
         self._currentSlice = z
 

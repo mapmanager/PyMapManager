@@ -128,7 +128,9 @@ class myTableView(QtWidgets.QTableView):
             selectionModel.clear()
         
             if len(rows) > 0:
-                indexes = [self.myModel.index(r, 0) for r in rows]  # [QModelIndex]
+                # indexes = [self.myModel.index(r, 0) for r in rows]  # [QModelIndex]
+
+                indexes = [self.myModel.index(int(r), 0) for r in rows]  # [QModelIndex]
                 visualRows = [self.proxy.mapFromSource(modelIndex) for modelIndex in indexes]
 
                 mode = QtCore.QItemSelectionModel.Select | QtCore.QItemSelectionModel.Rows
@@ -137,7 +139,11 @@ class myTableView(QtWidgets.QTableView):
                 # scroll so first row in rows is visible
                 # TODO (cudmore) does not work if list is filtered
                 column = 0
-                row = list(rows)[0]
+                # row = list(rows)[0]
+
+                # 3/25 - type error receiving numpy.float - so we convert int
+                row = int(list(rows)[0])
+
                 index = self.model().index(row, column)
                 self.scrollTo(index, QtWidgets.QAbstractItemView.PositionAtTop)  # EnsureVisible
             else:
