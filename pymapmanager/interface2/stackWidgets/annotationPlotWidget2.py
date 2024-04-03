@@ -255,6 +255,8 @@ class annotationPlotWidget(mmWidget2):
         # logger.info(f'adding _scatterUserSelection to view: {self.__class__.__name__}')
         self._view.addItem(self._scatterUserSelection)
 
+        self._scatterUserSelection.sigPointsClicked.connect(self._on_highlighted_mouse_click) 
+
         # Scatter for connection of lines (segments) and spines
         # width = self._displayOptions['widthUserSelection']
         # color = self._displayOptions['colorUserSelection']
@@ -313,6 +315,57 @@ class annotationPlotWidget(mmWidget2):
 
         self._selectAnnotation(dbIdx=dbIdx)
 
+    def _on_highlighted_mouse_click(self, points, event):
+        """Respond to user click on highlighted scatter plot.
+        This is only used for manual connect on a highlighted segment Point
+        
+        Visually select the annotation and emit signalAnnotationClicked
+        
+        Args:
+            points (pyqtgraph.graphicsItems.PlotDataItem.PlotDataItem)
+            event (List[pyqtgraph.graphicsItems.ScatterPlotItem.SpotItem]):
+            """
+        if not self._allowClick:
+            logger.warning(f'{self.getClassName()} rejected click as not _allowClick')
+            return
+            
+        modifiers = QtWidgets.QApplication.queryKeyboardModifiers()
+        isAlt = modifiers == QtCore.Qt.AltModifier
+
+        logger.info(f'{self.getClassName()}')
+
+        for idx, oneEvent in enumerate(event):
+            if idx > 0:
+                break
+
+            referenceHighlightedPlotIdx = oneEvent.index()
+            # logger.info(f"highlightedPlotIdx {referenceHighlightedPlotIdx}")
+            dbIdx = self._highlightedPlotIndex[referenceHighlightedPlotIdx]
+            # logger.info(f"highlightedPlotIdx {dbIdx}")
+
+            if isinstance(self._annotations, pymapmanager.annotations.lineAnnotations):
+                
+                eventType = pmmEventType.selection
+                event = pmmEvent(eventType, self)
+
+                # need to check if we are in manual connect, else there will be errors
+                currentState = self.getStackWidget().getStackSelection().getState()
+                # logger.info(f'currentState {currentState}')
+                if currentState.name != pmmEventType.manualConnectSpine.name:
+                    logger.info(f'not manual connect state - returning now, state is: {currentState}')
+                    return
+
+                logger.info(f'line segment selected')
+                event.getStackSelection().setSegmentPointSelection(dbIdx)
+                sliceNum = self._currentSlice
+                event.setAlt(isAlt)
+                event.setSliceNumber(sliceNum)
+
+                self.emitEvent(event, blockSlots=False)
+            else:
+                logger.error(f'did not understand type of annotations {type(self._annotations)}')
+                return
+
     def _on_mouse_click(self, points, event):
         """Respond to user click on scatter plot.
 
@@ -358,47 +411,34 @@ class annotationPlotWidget(mmWidget2):
                 pymapmanager.annotations.baseAnnotationsCore.spineAnnotationsCore,
             ):
                 event.getStackSelection().setPointSelection(dbIdx)
-                _plotType = "points"
-
-                # abb 042024
-                # sliceNum = self.getStack().getPointAnnotations().getValue("z", dbIdx)
-                sliceNum = self._annotations.getValue("z", dbIdx)
-
-                # sliceNum = int(sliceNum)
+                _plotType = 'points'
+                sliceNum = self.getStack().getPointAnnotations().getValue("z", dbIdx)
 
                 # 3/11 adding segment selection everytime there is a point selection
                 # segmentIndex = [self.getStack().getPointAnnotations().getValue("segmentID", dbIdx)]
-                # abb 042024
-                # segmentIndex = self.getStack().getPointAnnotations().getValue("segmentID", dbIdx)
-                segmentIndex = self._annotations.getValue("segmentID", dbIdx)
-                segmentIndex = [int(segmentIndex)]
+                segmentIndex = self.getStack().getPointAnnotations().getValue("segmentID", dbIdx)
+
+                # add this
+                segmentIndex= [int(segmentIndex)]
                 event.getStackSelection().setSegmentSelection(segmentIndex)
 
-                logger.info(
-                    f"point and line selected with segmentIndex: {segmentIndex}"
-                )
+                logger.info(f'point and line selected {segmentIndex}')
 
-            elif isinstance(
-                self._annotations, pymapmanager.annotations.lineAnnotations
-            ):
+            elif isinstance(self._annotations, pymapmanager.annotations.lineAnnotations):
+                
                 # abj 3/12
                 # need to check if we are in manual connect, else there will be errors
                 currentState = self.getStackWidget().getStackSelection().getState()
                 # logger.info(f'currentState {currentState}')
                 if currentState.name != pmmEventType.manualConnectSpine.name:
-                    logger.info(
-                        f"not manual connect state - returning now, state is: {currentState}"
-                    )
+                    logger.info(f'not manual connect state - returning now, state is: {currentState}')
                     return
 
-                logger.info(f"line segment selected")
+                logger.info(f'line segment selected')
                 # used to manually connect a spine to segment
                 event.getStackSelection().setSegmentPointSelection(dbIdx)
-                _plotType = "lines"
-                sliceNum = (
-                    self.getStackWidget().getStackSelection().getCurrentStackSlice()
-                )  # gets current stacks slice selection
-
+                _plotType = 'lines'
+                sliceNum = self.getStackWidget().getStackSelection().getCurrentStackSlice() # gets current stacks slice selection
             else:
                 logger.error(
                     f"did not understand type of annotations {type(self._annotations)}"
@@ -512,10 +552,8 @@ class annotationPlotWidget(mmWidget2):
         x = dfPlot["x"].tolist()  # x is pandas.core.series.Series
         y = dfPlot["y"].tolist()
 
-        # TODO: Can get rid of this and just use dfPlot, use dfPlot at index
-        # abb 042024, need to switch event system to str label (not [int])
-        self._currentPlotIndex = dfPlot["index"].tolist()
-        # self._currentPlotIndex = [int(index) for index in dfPlot.index]
+        # TODO: Can get rid of this and just use dfPlot, use dfPlot at index 
+        self._currentPlotIndex = dfPlot['index'].tolist()
 
         # feb 2023, if we are only displaying controlPnt then connect lines in scatter
         if (
@@ -1479,7 +1517,11 @@ class linePlotWidget(annotationPlotWidget):
             y = dfPlot["y"].tolist()
 
         # TODO: 3/12 Figure out how to click through this data set.
-        # self._scatterUserSelection.setData(x, y)
+        self._scatterUserSelection.setData(x, y)
+
+        self._highlightedPlotIndex = self._annotations._df[self._annotations._df['segmentID'].isin(segmentID)]
+        self._highlightedPlotIndex = self._highlightedPlotIndex['index'].tolist()
+        # logger.info(f"full  self._highlightedPlotIndex {self._highlightedPlotIndex}")
 
         # setData calls this ???
         # self._view.update()
@@ -1494,14 +1536,19 @@ class linePlotWidget(annotationPlotWidget):
         that is the new connection point   !!!
         """
 
+        # logger.info(event)
+        logger.info("linePlotWidget selectedEvent Called")
+        
         _stackSelection = event.getStackSelection()
+        logger.info(f"linePlotWidget _stackSelection: {_stackSelection}")
         if _stackSelection.hasSegmentSelection():
             logger.info("linePlotWidget has a segment selection")
-            _selectedItems = _stackSelection.getSegmentSelection()
+            _selectedItems = _eventStackSelection.getSegmentSelection()
             self._selectSegment(_selectedItems)
 
+        _state = event.getStackSelection().getState()
         _stackSelection = self.getStackWidget().getStackSelection()
-
+        
         if _stackSelection.getState() == pmmStates.manualConnectSpine:
             _selectedAnnotations = event.getStackSelection().getSegmentPointSelection()
             logger.info(
@@ -1510,9 +1557,7 @@ class linePlotWidget(annotationPlotWidget):
 
             manualConnectEvent = event.getCopy()
             manualConnectEvent.setType(pmmEventType.manualConnectSpine)
-            manualConnectEvent.getStackSelection().setSegmentPointSelection(
-                _selectedAnnotations
-            )
+            manualConnectEvent.getStackSelection().setSegmentPointSelection(_selectedAnnotations)
             self.emitEvent(manualConnectEvent, blockSlots=True)
 
     def stateChangedEvent(self, event):

@@ -612,6 +612,9 @@ class stackWidget2(mmWidget2):
                         self._stack)
                             
         #
+
+        sliceNum = event.getSliceNumber()
+        logger.info(f"moveAnnotationEvent sliceNum {sliceNum}")
         self._afterEdit(event)
         
     def manualConnectSpineEvent(self, event : pmmEvent):
@@ -659,6 +662,10 @@ class stackWidget2(mmWidget2):
         eventType = pmmEventType.selection
         newEvent = pmmEvent(eventType, self)
         newEvent.getStackSelection().setPointSelection(manuallyConnectSpine)
+        sliceNum = event.getSliceNumber()
+        newEvent.setSliceNumber(sliceNum)
+
+        logger.info(f'manualConnectSpineEvent Slice number emit {sliceNum} ')
         # self.emitEvent(event, blockSlots=False)
 
         # Removed 3/6 since it causes looping of calls
@@ -693,7 +700,7 @@ class stackWidget2(mmWidget2):
         channel = 2
         # channel = event.getColorChannel()
         logger.info(f"channel {channel}")
-        z = _stackSelection.getCurrentStackSlice() # this might need to be checked, currently getting slice point selected
+        z = _stackSelection.getCurrentPointSlice() # this might need to be checked, currently getting slice point selected
         img = self.getStack().getImageSlice(z, channel=channel)
         _pointAnnotations = self.getStack().getPointAnnotations()
         _lineAnnotations = self.getStack().getLineAnnotations()
@@ -703,6 +710,9 @@ class stackWidget2(mmWidget2):
         
         newEvent = pmmEvent(pmmEventType.selection, self)
         newEvent.getStackSelection().setPointSelection(items)
+        sliceNum = event.getSliceNumber()
+        logger.info(f"autoConnect sliceNum {sliceNum}")
+        newEvent.setSliceNumber(sliceNum)
         self._afterEdit(newEvent)
 
     def setSliceEvent(self, event):
