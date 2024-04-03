@@ -179,6 +179,10 @@ class StackSelection:
             pass
         elif not isinstance(items, list):
             items = [items]
+
+        for _idx, item in enumerate(items):
+            items[_idx] = int(item)
+            
         self._setValue('segmentSelectionList', items)
 
     def getSegmentSelection(self) -> Optional[List[int]]:
@@ -686,14 +690,10 @@ class mmWidget2(QtWidgets.QMainWindow):
         
         Derived classes need to define the behavior of slots there are interested in.
         """
+        _doDebug = False
 
-        # removed aug 30
-        # if self.slotsBlocked():
-        #     logger.info(f'SLOTS BLOCKED for {self.getName()} {event}')
-        #     return
-
-        # parent:{self.getStackWidget()} 
-        logger.info(f'   <<< "{self.getClassName()}" "{self.getName()}" received {event.type}')
+        if _doDebug:
+            logger.info(f'   <<< "{self.getClassName()}" "{self.getName()}" received {event.type}')
 
         # order between calling self and next emit matters
         # if we are parent and we modify the backend, we need to do that first
@@ -718,7 +718,8 @@ class mmWidget2(QtWidgets.QMainWindow):
         
         acceptEvent = True  # if False then do not propogate
         
-        logger.info(f"event.type: {event.type.name} pmmEventType.selection.name: {pmmEventType.selection.name}")
+        if _doDebug:
+            logger.info(f"event.type: {event.type.name} pmmEventType.selection.name: {pmmEventType.selection.name}")
 
         if event.type.name == pmmEventType.selection.name:
             # logger.info(f'   <<< "{self.getClassName()}"')
@@ -754,12 +755,10 @@ class mmWidget2(QtWidgets.QMainWindow):
         
         # if self.getStackWidget() is None:
         if self._iAmStackWidget:
-            logger.info('===>>> ===>>> iAmStackWidget re-emit')
-            logger.info(f'   {self.getName()} session:{self.getMapSession()} sender:{event.getSender()}')
+            if _doDebug:
+                logger.info('===>>> ===>>> iAmStackWidget re-emit')
+                logger.info(f'   {self.getName()} session:{self.getMapSession()} sender:{event.getSender()}')
             
-            # logger.info('original event is:')
-            # print(event)
-
             senderObject = event.getSenderObject()
             
             if event.reEmitPointAsMap:
@@ -774,17 +773,13 @@ class mmWidget2(QtWidgets.QMainWindow):
                 _stackSelection = _newEvent.getStackSelection().getCopy()
                 _stackSelection = self._reduceToStackSelection(_stackSelection)
                 _newEvent._dict['stackSelection'] = _stackSelection
-
-                # logger.info('new event is')
-                # print(_newEvent)
                 
                 self.emitEvent(_newEvent)
 
         elif self._iAmMapWidget:
-            print('')
-            print('=================')
-            logger.warning(f'mapWidget re-emit "{self.getName()}"================================')
-            logger.info(f'   sender: {event.getSenderObject()}')
+            if _doDebug:
+                logger.info('===>>> ===>>> iAmMapWidget re-emit')
+                logger.info(f'   sender: {event.getSenderObject()}')
 
             senderObject = event.getSenderObject()
             
@@ -792,26 +787,9 @@ class mmWidget2(QtWidgets.QMainWindow):
                 pass
             else:
                 # to break recursion
-                # to break recursion
                 event.reEmitPointAsMap = senderObject._stackWidget is not None          
                 
                 self.emitEvent(event)
-
-            # # handled in stack widget deletedEvent()
-            # if event.type == pmmEventType.delete:
-            #     logger.warning(f'transform delete event and emit selection []')
-            #     selectEvent = event.getCopy()
-            #     selectEvent.setType(pmmEventType.selection)
-            #     selectEvent.setSelection(itemList=[])
-            #     self.emitEvent(selectEvent, blockSlots=True)
-
-            # if event.type == pmmEventType.add:
-            #     # logger.warning(f'transform add event and emit selection [xxx]')
-            #     selectEvent = event.getCopy()
-            #     selectEvent.setType(pmmEventType.selection)
-            #     self.emitEvent(selectEvent, blockSlots=True)
-
-            # transform move event to 'update' with new values
 
     def _reduceToStackSelection(self, stackselection : StackSelection):
         """Reduce map selection down to one stack session.
@@ -826,8 +804,7 @@ class mmWidget2(QtWidgets.QMainWindow):
         # coming from map selection, there is no stack
         _stackSession = self.getStack().getMapSession()
 
-        print('-----------------------------')
-        logger.info(f'reducing stack selection to one session: {_stackSession}')
+        # logger.info(f'reducing stack selection to one session: {_stackSession}')
 
         points = []
         # _stack = self.stack  # will be None for mapPlot

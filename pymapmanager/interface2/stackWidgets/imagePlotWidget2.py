@@ -1,4 +1,5 @@
 import enum
+import math
 
 import numpy as np
 import pyqtgraph as pg
@@ -232,15 +233,14 @@ class ImagePlotWidget(mmWidget2):
         _pointAnnotations = self._myStack.getPointAnnotations()
         isBad = _pointAnnotations.getValue('isBad', firstPointSelection)
         logger.info(f"isBad {isBad}")
-        import math
         if math.isnan(isBad):
             isBad = False
 
-        if isBad is True:
+        if isBad:
             acceptAction = _menu.addAction(f'Accept {point_roiType} ')
             acceptAction.setCheckable(True)
             acceptAction.setChecked(False)
-        elif isBad is False:
+        else:
             acceptAction = _menu.addAction(f'Accept {point_roiType} ')
             acceptAction.setCheckable(True)
             acceptAction.setChecked(True)
@@ -803,7 +803,7 @@ class ImagePlotWidget(mmWidget2):
         TODO: get rid of doEmit, use _blockSlots
         """
         
-        logger.info(f'sliceNumber:{sliceNumber} doEmit:{doEmit}   ===================================================')
+        # logger.info(f'sliceNumber:{sliceNumber} doEmit:{doEmit}   ===================================================')
         
         if isinstance(sliceNumber, float):
             sliceNumber = int(sliceNumber)
@@ -1089,11 +1089,6 @@ class ImagePlotWidget(mmWidget2):
              - TODO: For segment selection,
                 select the median z value of the first selected segment
         """
-        logger.info('!!!!!! imagePlotWidget received event.getStackSelection()')
-        print(event.getStackSelection())
-        # print('   event session number:', event.getStackSelection().stack.getMapSession())
-        print('   imagePlotWidget session number:', self.getStack().getMapSession())
-
         if not event.getStackSelection().hasPointSelection():  # False on (None, [])
             return
 

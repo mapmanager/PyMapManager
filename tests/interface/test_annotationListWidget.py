@@ -10,7 +10,7 @@ from pymapmanager._logger import logger
 def pointListWidgetObject(qtbot):
     path = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
     
-    # sw = stackWidget(path=path)
+    sw = stackWidget(path=path)
     # sw.showScatterPlot()
     # sw.showAnalysisParams()
 

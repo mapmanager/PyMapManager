@@ -4,8 +4,8 @@ from typing import List, Union  # , Callable, Iterator, Optional
 from qtpy import QtGui, QtCore, QtWidgets
 
 import pymapmanager as pmm
-from pymapmanager.interface import myTableView
-from pymapmanager.interface._data_model import pandasModel
+from pymapmanager.interface2.core.search_widget import myQTableView
+from pymapmanager.interface2.core._data_model import pandasModel
 from pymapmanager._logger import logger
 
 class mapTableWidget(QtWidgets.QWidget):
@@ -92,17 +92,19 @@ class mapTableWidget(QtWidgets.QWidget):
         _toolbarLayout = self._getToolbar()
         vLayout.addLayout(_toolbarLayout)
         
-        self._myTableView = myTableView()
-        self._myTableView.resizeRowsToContents()
+        self._myTableView = myQTableView()
+
+        # self._myTableView.resizeRowsToContents()
+
         self._myTableView.signalSelectionChanged.connect(self._on_table_selection)
         self._myTableView.signalDoubleClick.connect(self._on_table_double_click)
+
         vLayout.addWidget(self._myTableView)
 
         self.setLayout(vLayout)
 
     def _on_table_selection(self, rowList : List[int], isAlt : bool = False):
-        # logger.info(f'rowList:{rowList} isAlt:{isAlt}')
-        pass
+        logger.info(f'rowList:{rowList} isAlt:{isAlt}')
 
     def _on_table_double_click(self, row : int, isAlt : bool = False):
         if isinstance(row, list):
@@ -116,8 +118,10 @@ class mapTableWidget(QtWidgets.QWidget):
         TODO: we need to limit this to roiType like (spineRoi, controlPnt)
         """
         dfPoints = self._mmMap.getDataFrame()
-        myModel = pandasModel(dfPoints)
-        self._myTableView.mySetModel(myModel)
+        # myModel = pandasModel(dfPoints)
+        # self._myTableView.mySetModel(myModel)
+
+        self._myTableView.setDataFrame(dfPoints)
 
 if __name__ == '__main__':
     path = '/Users/cudmore/Sites/PyMapManager-Data/maps/rr30a/rr30a.txt'
@@ -125,7 +129,7 @@ if __name__ == '__main__':
     # print(aMap.getDataFrame())
 
     # creat the main application
-    app = pmm.interface.PyMapManagerApp()
+    app = pmm.interface2.PyMapManagerApp()
 
     mmmt = mapTableWidget(aMap)
     mmmt.show()

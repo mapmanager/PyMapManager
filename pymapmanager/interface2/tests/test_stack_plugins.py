@@ -1,13 +1,16 @@
 import pytest
 
-import pymapmanager.interface.pyMapManagerApp as pyMapManagerApp
+from pymapmanager.interface2 import PyMapManagerApp
 
 from pymapmanager._logger import logger
 
 def test_stack_plugins():
     # logger.info(f'calling pyMapManagerApp.loadPlugins()')
 
-    pluginDict = pyMapManagerApp.loadPlugins(verbose=True)
+    app = PyMapManagerApp()
+
+    _stack = app.getStackPluginDict()
+    _map = app.getMapPluginDict()
 
     # for k,v in pluginDict.items():
     #     logger.info(k)

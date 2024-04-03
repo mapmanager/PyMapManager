@@ -29,7 +29,9 @@ from pymapmanager.pmmUtils import getBundledDir
 
 def loadPlugins(verbose=False, pluginType='stack') -> dict:
     """Load stack plugins from both:
-        - Package: sanpy.interface.plugins
+        - Package: pymapmanager.interface2.stackPlugins
+        - Package: pymapmanager.interface2.mapPlugins
+        
         - Folder: <user>/sanpy_plugins
 
     See: sanpy.fileLoaders.fileLoader_base.getFileLoader()
@@ -247,7 +249,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
             self._openFirstWindow.activateWindow()  # bring to front
 
     def getAppIconPath(Self):
-        return os.path.join(getBundledDir(), 'interface', 'icons', 'mapmanager-icon.png')
+        return os.path.join(getBundledDir(), 'interface2', 'icons', 'mapmanager-icon.png')
     
     def getConfigDict(self) -> "pymapmanager.interface2.Preferences":
         return self._config
@@ -349,7 +351,13 @@ class PyMapManagerApp(QtWidgets.QApplication):
             _stackWidget = pmm.interface2.stackWidgets.stackWidget2(path)
 
             geometryRect = self.getConfigDict().getStackWindowGeometry()
-            _stackWidget.setGeometry(geometryRect)
+            
+            left = geometryRect[0]
+            top = geometryRect[1]
+            width = geometryRect[2]
+            height = geometryRect[3]
+            
+            _stackWidget.setGeometry(left, top, width, height)
 
             _stackWidget.show()
             
@@ -424,7 +432,7 @@ def tstSpineRun():
     
     path = '../PyMapManager-Data/maps/rr30a/rr30a.txt'
 
-    app = pymapmanager.interface.PyMapManagerApp()
+    app = PyMapManagerApp()
     _map = app.loadMap(path)
     
     app.openMapWidget(0)

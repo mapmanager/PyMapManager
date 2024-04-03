@@ -16,7 +16,7 @@ def run():
 
     # sw2 = stackWidget2(path, app=app)
     # sw2.show()	
-    sw2.getStack().getPointAnnotations().intializeIsBad()
+    # sw2.getStack().getPointAnnotations().intializeIsBad()
     
     sw2.zoomToPointAnnotation(120, isAlt=True)
 

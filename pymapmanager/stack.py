@@ -439,12 +439,13 @@ class stack():
     def loadAnnotations(self) -> None:
         """Load point annotations.
         """
-        try:            
-            annotationFilePath = self._enclosingPath + '_pa.txt'
-            # TODO: add detectionParamClass
-            self._annotations = pymapmanager.annotations.pointAnnotations(self, self._lines, annotationFilePath, analysisParams = self._analysisParams)
-        except (FileNotFoundError) as e:
-            self._annotations = None
+
+        logger.error('SWAPPING point annotations to core')
+        from mapmanagercore import MapAnnotations, MMapLoader
+        from pymapmanager.annotations.baseAnnotationsCore import spineAnnotationsCore
+        zarrPath = '../MapManagerCore/data/rr30a_s0us.mmap'
+        map = MapAnnotations(MMapLoader(zarrPath).cached())
+        self._annotations = spineAnnotationsCore(map)
 
     def loadLines(self) -> None:
         """Load line annotations.

@@ -75,7 +75,7 @@ class stackWidget2(mmWidget2):
         self._contrastDict = {}
         self._setDefaultContrastDict()
 
-        self._displayOptionsDict : pymapmanager.interface.AppDisplayOptions = pymapmanager.interface.AppDisplayOptions()
+        self._displayOptionsDict : pymapmanager.interface2.AppDisplayOptions = pymapmanager.interface2.AppDisplayOptions()
 
         # self._currentSelection = pymapmanager.annotations.SelectionEvent(
         #                                                 annotation=self._stack.getPointAnnotations(),
@@ -99,7 +99,7 @@ class stackWidget2(mmWidget2):
         """
         logger.warning('NEED TO CHECK IF DIRTY AND PROMPT TO SAVE')
         
-        logger.info(self.geometry())
+        # logger.info(self.geometry())
         
         if self.getMapWidgetParent() is not None:
             self.getMapWidgetParent().closeStackWindow(self)

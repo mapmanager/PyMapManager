@@ -10,7 +10,7 @@ import pyqtgraph as pg
 
 from pymapmanager._logger import logger
 from pymapmanager.annotations.pmmLayers import PmmLayers
-from pymapmanager.interface.plotLayers import PlotLayers
+from pymapmanager.interface2.plotLayers import PlotLayers
 from pymapmanager.options import Options
 import pymapmanager.stack
 import pymapmanager.annotations

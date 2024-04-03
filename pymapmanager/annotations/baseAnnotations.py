@@ -2,7 +2,7 @@
 We will derive (point, line) annotations from this
 """
 
-from email import header
+# from email import header
 import enum
 import errno
 import os
@@ -575,6 +575,7 @@ class baseAnnotations():
         # classes that derive need to call this
         # self.load()
 
+    # abb not used
     @property
     def header(self) -> dict:
         """Get the file header dicitonary.

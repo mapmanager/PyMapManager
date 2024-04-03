@@ -8,7 +8,6 @@ from qtpy import QtGui, QtCore, QtWidgets
 
 import pymapmanager
 import pymapmanager.annotations
-import pymapmanager.interface
 
 from pymapmanager._logger import logger
 

@@ -1042,12 +1042,14 @@ class pointAnnotations(baseAnnotations):
                 self.calculateSingleBrightestIndex(channel, val, lineAnnotation, img)
 
     def calculateJaggedPolygon(self, lineAnnotations, _selectedRow, _channel, img):
-        """ Return coordinates of polygon connecting spine to line within AnnotationPlotWidget.py.
+        """Return coordinates of polygon connecting spine to line within AnnotationPlotWidget.py.
         
         This will be used to plot whenever we click a new spine on the interface
         """
-        segmentID = self.getValue('segmentID', _selectedRow)
-        zyxList = lineAnnotations.get_zyx_list(segmentID)
+
+        # segmentID = self.getValue('segmentID', _selectedRow)
+        
+        # zyxList = lineAnnotations.get_zyx_list(segmentID)
 
         # Later on retrieve this from the backend
         # startRow, _  = lineAnnotations._segmentStartRow(segmentID)
@@ -1057,7 +1059,7 @@ class pointAnnotations(baseAnnotations):
         brightestIndex = self.getValue('brightestIndex', _selectedRow)
         brightestIndex = int(brightestIndex)
 
-        logger.info(f"_selectedRow: {_selectedRow} segmentID: {segmentID} brightestIndex: {brightestIndex}")
+        # logger.info(f"_selectedRow: {_selectedRow} segmentID: {segmentID} brightestIndex: {brightestIndex}")
 
         segmentDF = lineAnnotations.getSegmentPlot(None, ['linePnt'])
         xLine = segmentDF["x"].tolist()
@@ -1084,9 +1086,9 @@ class pointAnnotations(baseAnnotations):
             logger.warning(e)
             return
         
-        logger.info(f"width:{width}")
-        logger.info(f"extendHead:{extendHead}")
-        logger.info(f"extendTail:{extendTail}")
+        # logger.info(f"width:{width}")
+        # logger.info(f"extendHead:{extendHead}")
+        # logger.info(f"extendTail:{extendTail}")
 
         spinePolyCoords = pymapmanager.utils.calculateRectangleROIcoords(xBrightestLine[0], yBrightestLine[0], _xSpine, _ySpine
                                                                          , width, extendHead, extendTail)
@@ -1129,17 +1131,15 @@ class pointAnnotations(baseAnnotations):
         finalSetOfCoords.append(topTwoRectCoords[1])
         finalSetOfCoords.append(topTwoRectCoords[0])
         finalSetOfCoords = np.array(finalSetOfCoords)
-        logger.info(f"finalSetOfCoords: {finalSetOfCoords}")
+        
+        # logger.info(f"finalSetOfCoords: {finalSetOfCoords}")
 
         # xe = finalSetOfCoords[:,1]
         # ye = finalSetOfCoords[:,0]
 
         # polygon_converted_geom = [[x, y] for x in xe for y in ye]
 
-        # return finalSetOfCoords
-        # finalMaskPolyCoords = np.column_stack(np.where(finalMaskPoly > 0))
         return finalSetOfCoords
-        # return coordsOfMask
 
     # def OLD_def calculateSegmentPolygon(self, spineRowIndex, lineAnnotations, radius, forFinalMask):
     def calculateSegmentPolygon(self, spineRowIndex, lineAnnotations, forFinalMask):

@@ -10,14 +10,8 @@ from pymapmanager._logger import logger
 
 import pymapmanager.annotations
 
-# 3/5/2024, swapping in new filterable tableview
-# old
-from pymapmanager.interface import myTableView
-# new
-# from pymapmanager.interface.searchWidget2 import myQTableView as myTableView
-
-from pymapmanager.interface._data_model import pandasModel
-
+from pymapmanager.interface2.core.search_widget import myQTableView
+from pymapmanager.interface2.core._data_model import pandasModel
 
 from .mmWidget2 import mmWidget2
 from .mmWidget2 import pmmEventType, pmmEvent, pmmStates
@@ -39,7 +33,7 @@ class annotationListWidget(mmWidget2):
         
         self._buildGui()
         self._setModel()
-
+    
     def deletedEvent(self, event):
         # logger.info('')
         self._setModel()
@@ -114,15 +108,14 @@ class annotationListWidget(mmWidget2):
         return self._myTableView.getMyModel()
     
     def _setModel(self):
-        """Set model of tabel view to full pandas dataframe of underlying annotations.
+        """Set model of table view to full pandas dataframe of underlying annotations.
         
         TODO: we need to limit this to roiType like (spineRoi, controlPnt)
 
         See derived pointListWidget for some example filtering
         """
         dfPoints = self._annotations.getDataFrame()
-        myModel = pandasModel(dfPoints)
-        self._myTableView.mySetModel(myModel)
+        self._myTableView.setDataFrame(dfPoints)
 
     def _initToolbar(self) -> QtWidgets.QVBoxLayout:
         """Initialize the toolbar with controls.
@@ -151,19 +144,14 @@ class annotationListWidget(mmWidget2):
         vLayout = QtWidgets.QVBoxLayout()
         self._makeCentralWidget(vLayout)
 
-        # vLayout = QtWidgets.QVBoxLayout(self)
-
         # top control panel
         vControlLayout = self._initToolbar()
         vLayout.addLayout(vControlLayout)
 
-        #  table/list view
-        # new
-        # _df = self._annotations.getDataFrame()
-        # self._myTableView = myTableView(_df)
-        # old
-        self._myTableView = myTableView()
-        
+        #  table view
+        self._myTableView = myQTableView()
+        self._myTableView.signalSelectionChanged.connect(self.on_table_selection)
+
         # TODO (Cudmore) Figure out how to set font of (cell, row/vert header, col/horz header)
         #   and reduce row size to match font
         # _fontSize = 11
@@ -176,10 +164,9 @@ class annotationListWidget(mmWidget2):
         # self._myTableView.verticalHeader().setMaximumSectionSize(_fontSize)
         #self._myTableView.horizontalHeader().setDefaultSectionSize(_fontSize)  # rows
         #self._myTableView.horizontalHeader().setMaximumSectionSize(_fontSize)
-        self._myTableView.resizeRowsToContents()
-
-        # abb removed 3/2024
-        self._myTableView.signalSelectionChanged.connect(self.on_table_selection)
+        
+        # TODO: 3/24, is this necc?
+        # self._myTableView.resizeRowsToContents()
         
         vLayout.addWidget(self._myTableView)
 
@@ -204,27 +191,30 @@ class annotationListWidget(mmWidget2):
 
 class pointListWidget(annotationListWidget):
 
-    _widgetName = 'point list'
+    _widgetName = 'Point List'
 
-    def __init__(self, stackWidget : "StackWidget"):
+    def __init__(self, stackWidget : "pymapmanager.interface2.stackWidget.StackWidget"):
 
         annotations = stackWidget.getStack().getPointAnnotations()
         super().__init__(stackWidget, annotations)
 
-        # TODO (Cudmore) eventually limit this list to one/two pointTypes
-        # first we need to implement selectRow() on user click and programatically.
+        # limit the displayed columns
+        colList = ['z', 'roiType', 'segmentID', 'isBad', 'note']
+        self._myTableView.showTheseColumns(colList)
 
-        # self._displayPointTypeList = [pymapmanager.annotations.pointTypes.spineROI.value]
-        self._displayPointTypeList = None  # for now, all roiType
-        # list of pointType(s) we will display
+        # limit the rows based on roiType
+        self._myTableView.updateCurrentCol('roiType')
+        self._myTableView.doSearch('spineROI')
 
-        # our base class is calling set model, needs to be after we create _displayPointTypeList
-        # annotations = stack.getPointAnnotations()
-        # super().__init__(stackWidget, annotations)
+    def selectedEvent(self, event):
+        # logger.info(event)
+        
+        pointSelection = event.getStackSelection().getPointSelection()        
+        self._myTableView._selectRow(pointSelection)
 
-        # self._setModel()
-        #self.setDisplayPointType(pymapmanager.annotations.pointTypes.spineROI)
-        # self.currentSlice = 0
+        # # logger.info(f'itemList: {itemList}')
+        # if itemList:
+        #     self._myTableView._selectRow(itemList)
 
     def setDisplayPointType(self, pointType : pymapmanager.annotations.pointTypes):
         """Displaly just one pointType(s) in the table.
@@ -261,32 +251,26 @@ class pointListWidget(annotationListWidget):
         # Might be easier to get slice directly from stack
         # event.setSliceNumber(self.currentSlice)
 
-        self.emitEvent(event, blockSlots=False)
-
-    def selectedEvent(self, event):
-        # logger.info(event)
-        
-        itemList = event.getStackSelection().getPointSelection()        
-        logger.info(f'itemList: {itemList}')
-        if itemList:
-            self._myTableView.mySelectRows(itemList)
-            
+        self.emitEvent(event, blockSlots=False)        
 
     def deleteSelected(self):
         """Delete currently selected annotations.
         """
-        # selectedRows is [QtCore.QModelIndex]
-        selectedRows = self._myTableView.selectionModel().selectedRows()
-        deletedRows : List[int] = []
+
+        # # selectedRows is [QtCore.QModelIndex]
+        # selectedRows = self._myTableView.selectionModel().selectedRows()
+        # deletedRows : List[int] = []
         
-        for row in selectedRows:
-            sortedRowItem = self._myTableView.model().mapToSource(row)
-            deletedRows.append(sortedRowItem.row())
+        # for row in selectedRows:
+        #     sortedRowItem = self._myTableView.model().mapToSource(row)
+        #     deletedRows.append(sortedRowItem.row())
 
         # if isinstance(self._annotations, pymapmanager.annotations.pointAnnotations):
         #     annotationType = pymapmanager.annotations.annotationType.point
         # elif isinstance(self._annotations, pymapmanager.annotations.lineAnnotations):
         #     annotationType = pymapmanager.annotations.annotationType.segment
+
+        deletedRows = self._myTableView.getSelectedRows()
 
         eventType = pmmEventType.delete
         event = pmmEvent(eventType, self)
@@ -295,11 +279,21 @@ class pointListWidget(annotationListWidget):
 
 class lineListWidget(annotationListWidget):
 
-    _widgetName = 'line list'
+    _widgetName = 'Line List'
 
     def __init__(self, stackWidget : "StackWidget"):
         annotations = stackWidget.getStack().getLineAnnotations()
         super().__init__(stackWidget, annotations)
+
+    def selectedEvent(self, event):
+        # logger.info(event)
+        
+        segmentSelection = event.getStackSelection().getSegmentSelection()        
+        self._myTableView._selectRow(segmentSelection)
+
+        # # logger.info(f'itemList: {itemList}')
+        # if itemList:
+        #     self._myTableView._selectRow(itemList)
 
     def on_table_selection(self, itemList : List[int], isAlt : bool = False):
         """Respond to user selection in table (myTableView).
@@ -322,7 +316,7 @@ class lineListWidget(annotationListWidget):
         event.setAlt(isAlt)
         self.emitEvent(event, blockSlots=False)
 
-    def selectedEvent(self, event):
+    def _old_selectedEvent(self, event):
         # logger.info(event)
         
         itemList = event.getStackSelection().getSegmentSelection()        

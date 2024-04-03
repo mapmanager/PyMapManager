@@ -15,7 +15,7 @@ from pymapmanager._logger import logger
 class HistogramWidget(mmWidget2):
     signalContrastChange = QtCore.Signal(object) # (contrast dict)
 
-    _widgetName = 'histogram'
+    _widgetName = 'Histogram'
     # Name of the widget (must be unique)
 
     def __init__(self, stackWidget : "StackWidget"):
