@@ -148,6 +148,16 @@ class pointAnnotations(baseAnnotations):
         )
         self.addColumn(colItem)
 
+        #abj
+        colItem = ColumnItem(
+            name = 'userType',
+            type = bool,
+            units = '',
+            humanname = 'UserTypes',
+            description = ''
+        )
+        self.addColumn(colItem)
+
         # add a number of columns for ROI intensity analysis
         numChannels = self._stack.numChannels
 
@@ -1131,7 +1141,6 @@ class pointAnnotations(baseAnnotations):
         finalSetOfCoords.append(topTwoRectCoords[1])
         finalSetOfCoords.append(topTwoRectCoords[0])
         finalSetOfCoords = np.array(finalSetOfCoords)
-        
         # logger.info(f"finalSetOfCoords: {finalSetOfCoords}")
 
         # xe = finalSetOfCoords[:,1]

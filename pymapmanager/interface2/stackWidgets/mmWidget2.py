@@ -28,6 +28,7 @@ class pmmEventType(Enum):
     setSlice = auto()
     setColorChannel = auto()
     acceptPoint = auto() # abj, used for setting isBad boolean
+    changeUserType = auto()
 
 class StackSelection:
     def __init__(self, stack : pymapmanager.stack = None):
@@ -726,6 +727,8 @@ class mmWidget2(QtWidgets.QMainWindow):
         # abj
         elif event.type == pmmEventType.acceptPoint:
             acceptEvent = self.acceptPoint(event)
+        elif event.type == pmmEventType.changeUserType:
+            acceptEvent = self.changeUserType(event)
         else:
             logger.error(f'did not understand event type {event.type}')
 
@@ -863,6 +866,9 @@ class mmWidget2(QtWidgets.QMainWindow):
 
     # abj
     def acceptPoint(self, event : pmmEvent):
+        pass
+    
+    def changeUserType(self, event : pmmEvent):
         pass
     
     # def _deleteSelection(self):
