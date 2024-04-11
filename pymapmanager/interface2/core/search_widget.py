@@ -1,5 +1,5 @@
 import sys
-from typing import List, Union  # , Callable, Iterator, Optional
+from typing import List, Optional
 
 import pandas as pd
 
@@ -251,7 +251,13 @@ class TableModel(QAbstractTableModel):
             colName = self._data.columns[col]
 
             try:
-                returnVal = self._data.at[row, colName]
+                
+                # abb 042024
+                # returnVal = self._data.at[row, colName]
+                returnVal = self._data.loc[row, colName]
+
+                # print('qqq Table model used "at" to get row', row, 'colName', colName, 'returnVal:', returnVal)
+
                 # print(f"row: {row} col: {col} colName: {colName} returnVal: {returnVal} returnVal type: {type(returnVal)}")=
                 # TODO: possible type checking
                 return str(returnVal)
@@ -280,7 +286,7 @@ class TableModel(QAbstractTableModel):
         return len(self._data.columns)
 
     # DEFUNCT
-    def old_update_data(self):
+    def _update_data(self):
         """ Call whenever self.df is updated
 
         # TODO: implement insertRows and removeRows for more efficiency
@@ -296,14 +302,17 @@ class TableModel(QAbstractTableModel):
         self.layoutChanged.emit()
         # print("df after", self._data)
     
-    def updateDF(self, newDF):
+    def updateDF(self, df):
         """ update df
         """
-        # self._data = newDF
-        # self.layoutChanged.emit()
+        n1 = len(self._data)
+
         self.beginResetModel()
-        self._data = newDF
+        self._data = df
         self.endResetModel()
+
+        n2 = len(self._data)
+        logger.info(f'old model n:{n1} new model n {n2}')
 
 class myQTableView(QtWidgets.QTableView):
     """A general purpose QTableView that requires a pd.DataFrame.
@@ -314,8 +323,14 @@ class myQTableView(QtWidgets.QTableView):
 
     signalDoubleClick = QtCore.Signal(int, bool)
 
-    def __init__(self, df : pd.DataFrame = None):
+    def __init__(self, df : pd.DataFrame = None, name : str = None):
+        """A QTable view that is drived by a DataFrame.
+        """
         super().__init__()
+
+        self._myname = name
+        # each tableview needs a name so we can debug which one it is
+        # when there many
 
         self.currentColName = ""
         self.currentSearchStr = ""
@@ -327,12 +342,13 @@ class myQTableView(QtWidgets.QTableView):
         self.df = df
         self.model = None
         self.proxyModel = None
+
         self.mySelectionModel = None
+        # self.mySelectionModel = self.selectionModel()
+        # self.mySelectionModel.selectionChanged.connect(self.on_selectionChanged)
 
         if self.df is not None:
-            # self.setColList()
-            self.setDataFrame(self.df)
-            # self.mySetModel()
+            self._setDataFrame(self.df)
 
         self.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers
                             | QtWidgets.QAbstractItemView.DoubleClicked)
@@ -342,10 +358,15 @@ class myQTableView(QtWidgets.QTableView):
 
         self.setAlternatingRowColors(True)
 
-        # self.setSortingEnabled(True)
+        self.setSortingEnabled(True)
 
         self.doubleClicked.connect(self.on_double_clicked)
 
+    def getMyName(self) -> Optional[str]:
+        """Get unique name of the widget.
+        """
+        return self._myname
+    
     def getProxyModel(self):
         return self.proxyModel
     
@@ -458,23 +479,39 @@ class myQTableView(QtWidgets.QTableView):
     def getColList(self):
         return self.colList
 
-    def setDataFrame(self, newDf):
-        # logger.info('===')
-        # print(newDf.columns)
+    # abb 042024
+    def updateDataFrame(self, df : pd.DataFrame):
+        """Full update of dataframe
+        
+        Note: loses current selection.
+        """
+        
+        self._setDataFrame(df)
+
+        # want this
+        # self.model.updateDF(df)
+
+    def _setDataFrame(self, newDf):
+        """Call this once from init().
+        """
         
         self.df = newDf
-        self.mySetModel()
+        self._mySetModel()
 
-    def mySetModel(self):
+    def _mySetModel(self):
+
+        logger.info(f'{self.getMyName()}')
 
         if self.df is not None:   
+            # abb removed
             self.model = TableModel(self.df)
+            
             # self.proxyModel = QSortFilterProxyModel()
             self.proxyModel = myQSortFilterProxyModel()
             self.proxyModel.setSourceModel(self.model)
             # self.proxyModel.setFilterKeyColumn(-1) # Search all columns.
             self.proxyModel.setFilterKeyColumn(0) # Select first column at the beginning
-            self.setSortingEnabled(True)
+            #self.setSortingEnabled(True)  # abb 042024 removed (in init())
             # self.proxyModel.sort(0, Qt.AscendingOrder)
   
             # self.model.beginResetModel()
@@ -484,11 +521,18 @@ class myQTableView(QtWidgets.QTableView):
 
             # self.selectionChanged.connect(self.on_selectionChanged)
             # if self.selectionModel is None:
-            self.mySelectionModel = self.selectionModel()
-            self.mySelectionModel.selectionChanged.connect(self.on_selectionChanged)
+            # abb 042024 moved to init()
+
+            # selectedItems = self.selectionModel()
+            # logger.info(f'selectedItems:{selectedItems}')
+            
+            # if remakeSelection:
+            if 1 or self.mySelectionModel is None:
+                logger.info(f'{self.getMyName()} remaking selection model')
+                self.mySelectionModel = self.selectionModel()  # QItemSelectionModel
+                self.mySelectionModel.selectionChanged.connect(self.on_selectionChanged)
                 
             self.setColList()
-
 
     def getSelectedRows(self):
         
@@ -527,10 +571,20 @@ class myQTableView(QtWidgets.QTableView):
         
         # PyQt5.QtCore.Qt.KeyboardModifiers
         modifiers = QtWidgets.QApplication.keyboardModifiers()
-        logger.info(f'modifiers:{modifiers}')
-        logger.info(f'   QtCore.Qt.AltModifier:{QtCore.Qt.AltModifier}')
+
+        # debug signals on up/down arrow
+        # logger.info(f'modifiers:{modifiers}')
+        # logger.info(f'   QtCore.Qt.AltModifier:{QtCore.Qt.AltModifier}')
+
         isAlt = modifiers == QtCore.Qt.AltModifier
         
+        # debug
+        logger.info('XXXXXXXX    DEBUG     XXXXXXXXXX')
+        # modelIndex is QtCore.QModelIndex
+        for modelIndex in self.selectedIndexes():
+            # print('   ', modelIndex, type(modelIndex))
+            print(f'   {self.getMyName()} {modelIndex.row()} row:{self.proxyModel.mapToSource(modelIndex).row()}')
+
         # Don't use params, use self.selectedIndexes()
         selectedIndexes = [self.proxyModel.mapToSource(modelIndex).row()
                             for modelIndex in self.selectedIndexes()]
@@ -606,14 +660,14 @@ class myQTableView(QtWidgets.QTableView):
     #     self.update_data()
 
     # DEFUNCT
-    def old_updateModel(self):
+    def _old_updateModel(self):
         """
             called whenever backend DF is updated (ex: value changes, new spine added)
         """
         self.model.layoutChanged.emit()
 
     # DEFUNCT
-    def update_data(self):
+    def _old_update_data(self):
         self.model.update_data()
 
         # self.model.beginResetModel()
@@ -638,6 +692,8 @@ class myQTableView(QtWidgets.QTableView):
         if rowList is None or len(rowList)==0:
             return
         
+        logger.info(f'rowList:{rowList}')
+        
         # 2nd argument is column, here we default to zero since we will select the entire row regardless
         for _idx, rowIdx in enumerate(rowList):
             modelIndex = self.model.index(rowIdx, 0)
@@ -646,12 +702,14 @@ class myQTableView(QtWidgets.QTableView):
             proxyIndex = self.proxyModel.mapFromSource(modelIndex)
 
             mode = QtCore.QItemSelectionModel.Select | QtCore.QItemSelectionModel.Rows
+            # self.selectionMode().select(proxyIndex, mode)
             self.mySelectionModel.select(proxyIndex, mode)
 
             if _idx == 0:
-                logger.info(f"scrollTo proxyIndex {proxyIndex.row()} modelIndex:{modelIndex.row()}")
+                logger.info(f"{self.getMyName()} scrollTo proxyIndex {proxyIndex.row()} modelIndex:{modelIndex.row()}")
+                # logger.info(f'      {type(proxyIndex)} {type(modelIndex)}')
                 # self.scrollTo(proxyIndex, QtWidgets.QAbstractItemView.PositionAtTop) 
-                self.scrollTo(modelIndex, QtWidgets.QAbstractItemView.PositionAtTop) 
+                self.scrollTo(proxyIndex) 
 
         self._blockSignalSelectionChanged = False
 
@@ -673,340 +731,10 @@ class myQTableView(QtWidgets.QTableView):
         logger.info(f"_selectModelRow rowIdx: {rowIdx}")
         self._selectRow(rowIdx)
 
-    def updateDF(self, df):
+    def _old_updateDF(self, df):
         """
             Update the model's df,
             Currently this is being used whenever we add, delete, change underlying data.
             This is a guaranteed way to refresh the data, but might prove slow for large amounts of data
         """
         self.model.updateDF(df)
-
-class SearchController(QtWidgets.QWidget):
-    """ prototype for SearchWidget
-
-    Args: 
-        df: pd.DataFrame
-    """
-    signalSearchUpdate = QtCore.Signal(object)
-    signalColUpdate = QtCore.Signal(object)
-    signalRequestDFUpdate = QtCore.Signal(object)
-    # Signal to update other widgets
-    signalAnnotationSelection2 = QtCore.Signal(object, object)
-    signalComparisonSymbolUpdate = QtCore.Signal(object)
-    signalComparisonValueUpdate = QtCore.Signal(object)
-
-    def __init__(self, df: pd.DataFrame):
-        """
-        """
-        super().__init__(None)
-
-        self._df = df
-
-        self.allColumnNames = []
-        self.colComparisonSymbols = ["None", "=",">", "<","<=",">="]
-
-        # self.colIdxRemoved = []
-        # self.myQTableView = myQTableView(df=df)
-        # a df is passed into myQTableView, since that is the only class that uses it
-        self.myQTableView = myQTableView(df)
-
-        self.signalSearchUpdate.connect(self.myQTableView.doSearch)
-        self.signalColUpdate.connect(self.myQTableView.updateCurrentCol)
-        self.signalComparisonSymbolUpdate.connect(self.myQTableView.updateComparisonSymbol)
-        self.signalComparisonValueUpdate.connect(self.myQTableView.updateComparisonValue)
-        self.myQTableView.signalAnnotationSelection2.connect(self.emitAnnotationSelection)
-        self._buildGUI()
-        self.show()
-    
-    def _buildGUI(self):
-        """ Intermediate call to build a layout that is shown
-        """
-        self.layout = QtWidgets.QVBoxLayout()
-        self.setLayout(self.layout)
-        windowLayout = self.searchUI()
-        self.layout.addLayout(windowLayout)
-
-    def emitAnnotationSelection(self, proxyRowIdx, isAlt):
-        """ Pass along (emit) signal emitted from QTableView to the rest of pymapmanager (stack)
-
-        Args:
-            ProxyRowIdx: Idx of row being selected
-            isAlt: True if alt is pressed, false if alt is not pressed
-        """
-        logger.info(f'Search controller emitting proxyRowIdx: {proxyRowIdx}')
-        self.signalAnnotationSelection2.emit(proxyRowIdx, isAlt)
-
-    def hideColComboBox(self, colNames):
-        """ Hide a given list of columns
-
-        Args:
-            colNames: list of column names to hide
-        """
-
-        for col in colNames:
-            # self.allColumnNames.remove(col)
-            # AllItems = [QComboBoxName.itemText(i) for i in range(QComboBoxName.count())]
-            colIdx = self.myQTableView.getDF().columns.get_loc(col)
-            print("colIdx: ", colIdx)
-            self.colNameComBox.blockSignals(True)
-            self.colNameComBox.removeItem(colIdx)
-            self.colNameComBox.blockSignals(False)
-
-        #     self.colIdxRemoved.append(colIdx)
-        self.myQTableView.hideColumns(colNames)
-
-    def showColComboBox(self, colNames):
-        """ Show a given list of columns
-
-        Args:
-            colNames: list of column names to show
-        """
-        for col in colNames:
-            # self.allColumnNames.insert(idx, colNames)
-            # self.colNameComBox.addItem(col)
-            # TODO: change this to for better encapsulation?
-            colIdx = self.myQTableView.getDF().columns.get_loc(col)
-            self.colNameComBox.insertItem(colIdx, col)
-            self.myQTableView.showColumns(colNames)
-
-
-    def searchUI(self):
-        """
-            Create and fill in the layout that holds everything in the search Widget
-        """
-        # Horizontal Layout
-        horizLayout = QtWidgets.QHBoxLayout()
-        vLayout = QtWidgets.QVBoxLayout()
-
-        vLayout.addStretch()
-
-        colNameHorizLayout = QtWidgets.QHBoxLayout() # Holds col info in left hand side of UI
-
-        # self.columnName = QtWidgets.QLabel()
-        # self.columnName.setFixedWidth(120)
-
-        self.colName = QtWidgets.QLabel("Column Selection")
-        self.colName.setFixedWidth(120)
-
-        self.colNameComBox = QtWidgets.QComboBox()
-        self.colNameComBox.setFixedWidth(120)
-
-
-        # This is counter productive? We send signals to it yet we are also calling functions
-        self.allColumnNames = self.myQTableView.getColList()
-        # print("test types", self.pa.getRoiTypes())
-        for columnName in self.allColumnNames:
-            self.colNameComBox.addItem(str(columnName))
-        
-        # Setting Col Name as first in the list
-        self.colNameComBox.setCurrentText(self.allColumnNames[0])
-        self.colNameComBox.currentTextChanged.connect(self._onNewColumnChoice)
-        # bitDepthComboBox.setCurrentIndex(bitDepthIdx)
-
-        colNameHorizLayout.addWidget(self.colName)
-        colNameHorizLayout.addWidget(self.colNameComBox)
-        vLayout.addLayout(colNameHorizLayout)
-
-
-        searchNameHorizLayout = QtWidgets.QHBoxLayout() # Horizontal layout for search items
-        self.searchName = QtWidgets.QLabel("Search Bar")
-        self.searchName.setFixedWidth(120)
-        searchNameHorizLayout.addWidget(self.searchName)
-
-        self.searchBar = QtWidgets.QLineEdit("")
-        self.searchBar.setFixedWidth(120)
-        self.searchBar.textChanged.connect(self._updateSearch)
-        searchNameHorizLayout.addWidget(self.searchBar)
-        # vLayout.addWidget(self.searchBar)
-        vLayout.addLayout(searchNameHorizLayout)
-
-        comparisonHorizLayout = QtWidgets.QHBoxLayout() # Horizontal layout for comparison items
-        self.comparisonName = QtWidgets.QLabel("Comparison Symbol")
-        self.comparisonName.setFixedWidth(120)
-        comparisonHorizLayout.addWidget(self.comparisonName)
-
-        self.colComparisonComBox = QtWidgets.QComboBox()
-        self.colComparisonComBox.setFixedWidth(120)
-        for symbol in self.colComparisonSymbols:
-            self.colComparisonComBox.addItem(symbol)
-        self.colComparisonComBox.setCurrentText(self.colComparisonSymbols[0])
-        self.colComparisonComBox.currentTextChanged.connect(self._onNewComparisonSymbol)
-        comparisonHorizLayout.addWidget(self.colComparisonComBox)
-        # vLayout.addWidget(self.colComparisonComBox)
-        vLayout.addLayout(comparisonHorizLayout)
-
-        # self.colComparisonComBox.setEnabled(False)
-        # self.colComparisonComBox.setEditable(True)
-
-        comparisonValLayout = QtWidgets.QHBoxLayout() # Horizontal layout for comparison val
-        self.comparisonVal = QtWidgets.QLabel("Comparison Value")
-        self.comparisonVal.setFixedWidth(120)
-        comparisonValLayout.addWidget(self.comparisonVal)
-
-        self.compValLine = QtWidgets.QLineEdit("")
-        self.compValLine.setFixedWidth(120)
-        self.compValLine.textChanged.connect(self._onNewComparisonValue)
-        comparisonValLayout.addWidget(self.compValLine)
-
-        vLayout.addLayout(comparisonValLayout)
-
-        vLayout.addStretch()
-        horizLayout.addLayout(vLayout)
-        # # Right side holds a pointListWidget
-        # # need to update this pointListWidget, by reducing/ filtering whenever search bar is filled
-        horizLayout.addWidget(self.myQTableView)
-
-        return horizLayout
-    
-
-    def inputSearchBar(self, searchStr):
-         """ Call to programmatically input Search string into search bar
-         """
-         self.searchBar.setText(searchStr)
-
-    def inputColumnChoice(self, colName):
-        """ Call to programmatically input new column choice
-        """
-        # logger.info(f' inputColumnChoice, inputted colName: {colName}')
-        if colName in self.allColumnNames:
-            self.colNameComBox.setCurrentText(colName)
-        else:
-            logger.info(f'colName input not in list, inputted colName: {colName}')
-
-    def _updateSearch(self, searchStr):
-        """
-            Emit a signal everytime search string is updated
-        """
-        self.signalSearchUpdate.emit(searchStr)
-
-    def _onNewColumnChoice(self, newColName):
-        """
-            Connected to column name combo box.
-            Emits a signal everytime column name is changed
-        """
-        logger.info(f'_onNewColumnChoice: {newColName}')
-        logger.info(f'type _onNewColumnChoice: {type(newColName)}')
-        
-        self.signalColUpdate.emit(newColName)
-
-        firstVal = self._df[newColName].iloc[0]
-        # logger.info(f'firstVal: {firstVal}')
-        
-        try:
-            int(firstVal) 
-            self.colComparisonComBox.setEnabled(True)
-            self.compValLine.setEnabled(True)
-        except:
-            # If column does not have int like values
-            # Disable newComparisonChoice box and reset current text to None
-            self.colComparisonComBox.setCurrentText(self.colComparisonSymbols[0])
-            self.colComparisonComBox.setEnabled(False)
-
-            # Reset and Disable comparison symbol box
-            # self.colComparisonComBox.setCurrentText(self.colComparisonSymbols[0])
-            # self.colComparisonComBox.setEnabled(False)
-            self.compValLine.setText("")
-            self.compValLine.setEnabled(False)
-
-
-    def _onNewComparisonSymbol(self, newCompSymbol):
-        """
-        """
-        logger.info(f'_onNewColumnChoice: {newCompSymbol}')
-        self.signalComparisonSymbolUpdate.emit(newCompSymbol)
-        
-
-    def _onNewComparisonValue(self, newCompValue):
-        """
-        """
-        logger.info(f'newCompValue: {newCompValue}')
-        self.signalComparisonValueUpdate.emit(newCompValue)
-
-    # DEFUNCT - wrapper class now calls the past tense functions (updated, added, deleted)
-    # def slot_updateRow(self):
-    #     # self.myQTableView.update_data()
-    #     self.signalRequestDFUpdate.emit(None)
-
-    # def slot_addRow(self):
-    #     # logger.info(f'Add Row {_selectionEvent}')
-
-    #     # logger.info(f'slot_addRow self._df: {signalDF}')
-    #     # self.myQTableView.insertRow()
-    #     # self.myQTableView.update_data()
-    #     # self.myQTableView.old_updateModel()
-    #     # TODO: Need to select newly created Row
-    #     # logger.info(f'Select new Row after add')
-    #     self.signalRequestDFUpdate.emit(None)
-    #     self.myQTableView._selectNewRow()
-
-    # def slot_deleteRow(self, rowNum):
-    #     # self.myQTableView.deleteRow(rowNum)
-    #     # self.myQTableView.update_data()
-    #     self.signalRequestDFUpdate.emit(None)
-    #     # self.myQTableView.old_updateModel()
-
-    ### Functions that need to be used by adapted slots
-    def _deletedRow(self, df):
-        self.slot_updateDF(df)
-
-    def _addedRow(self, df):
-        self.slot_updateDF(df)
-        self.myQTableView._selectNewRow()
-    
-    def _updatedRow(self, df, selectionIdx):
-        logger.info(f'updating row')
-        self.slot_updateDF(df)
-        # self.myQTableView._selectNewRow()
-        self.selectRowInView(selectionIdx)
-
-        # rowIdx = selectionEvent.getRows()[0]
-        # self.myQTableView._selectRow(selectionIdx)
-        # self.myQTableView._selectModelRow(selectionIdx)
-        # self.myQTableView._selectNewRow()
-    ###
-
-    def hideColumns(self, hiddenColList):
-        self.myQTableView.hideColumns(hiddenColList)
-
-    def showColumns(self, showColList):
-        self.myQTableView.showColumns(showColList)
-    
-
-    def selectRowInView(self, rowIdx):
-        """
-            Call this function whenever to select a new row in the UI
-        """
-        logger.info(f'selectRowInView')
-        self.myQTableView._selectRow(rowIdx)
-
-    # def selectRowOnStart(self, selectionEvent):
-    #     """
-    #         Call this function whenever searchWidget is instantiated to 
-    #         select the current row in the UI
-    #     """
-    #     rowIdx = selectionEvent.getRows()[0]
-    #     self.myQTableView._selectRow(rowIdx)
-
-    # def selectAction(self):        
-    #     """ Updates selection within QTableView
-    #     """
-    #     logger.info(f"searchWidget2 Select Action")
-    #     selectionEvent = super().selectAction()
-    #     rowIdxList = selectionEvent.getRows()
-    #     logger.info(f"rowIdxList: {rowIdxList}")
-    #     if len(rowIdxList) > 0:
-    #         rowIdx = rowIdxList[0]
-    #         self.myQTableView._selectRow(rowIdx)
-
-        #Check cancel selection
-
-    def slot_updateDF(self, df):
-        """
-        Args:
-            df = dataframe use to update model
-        """
-
-        self.myQTableView.updateDF(df)
-
-    def getMyQTableView(self):
-        return self.myQTableView

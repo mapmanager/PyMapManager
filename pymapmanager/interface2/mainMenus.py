@@ -143,7 +143,7 @@ class PyMapManagerMenus:
         return self._helpMenuAction
     
     def _refreshPluginsMenu(self):
-        logger.info('')
+        logger.info('re-create plugin menu with available pligins')
 
         windowType = self.getApp().getFrontWindowType()
 
@@ -184,7 +184,7 @@ class PyMapManagerMenus:
         mapPluginDict = self.getApp().getMapPluginDict()
 
         for pluginName in mapPluginDict.keys():
-            logger.info(f'{pluginName}')
+            # logger.info(f'{pluginName}')
             action = QtWidgets.QAction(pluginName, self.getApp(), checkable=True)
             action.setEnabled(_activateMapPlugins)
             # action.setChecked(_sanPyWindow.isActiveWindow())

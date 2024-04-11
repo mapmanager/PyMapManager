@@ -1,18 +1,22 @@
 import pytest
 
-# from pymapmanager.interface import PyMapManagerApp
-from pymapmanager.interface import stackWidget
+from pymapmanager.interface2 import PyMapManagerApp
+from pymapmanager.interface2.stackWidgets import stackWidget2
 
-from pymapmanager._logger import logger
+# from pymapmanager._logger import logger
 
+# this makes qapp be our PyMapManagerApp, it is derived from QApplication
+@pytest.fixture(scope="session")
+def qapp_cls():
+    return PyMapManagerApp
 
 @pytest.fixture
-def stackWidgetObject(qtbot):
+def stackWidgetObject(qtbot, qapp):
 	path = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
-	sw = stackWidget(path=path)
+	sw = stackWidget2(path=path)
 
-	sw.showScatterPlot2(show=True)
-	sw.showAnalysisParams()
+	# sw.showScatterPlot2(show=True)
+	# sw.showAnalysisParams()
 
 	return sw
 
@@ -20,7 +24,7 @@ def stackWidgetObject(qtbot):
 # def test_stackWidget(stackWidgetObject):
 #     assert stackWidgetObject is not None
     
-def test_stackWidget_zoomToPointAnnotation(stackWidgetObject):
+def test_stackWidget_zoomToPointAnnotation(stackWidgetObject, qapp):
 
     # figure out how to set log level
     # caplog.set_level(logger.ERROR)

@@ -1,51 +1,99 @@
-from typing import List, Union, Tuple, Optional  # , Callable, Iterator
+import sys
+from typing import List, Union  # , Optional, Tuple
 
 import numpy as np
+import pandas as pd
+
+from mapmanagercore.annotations.layers import AnnotationsLayers
 
 from pymapmanager._logger import logger
 
-from mapmanagercore import MapAnnotations, MMapLoader
-
-class spineAnnotationsCore:
-    def __init__(self, mapAnnotations):
+class AnnotationsCore:
+    def __init__(self,
+                 mapAnnotations : AnnotationsLayers,
+                 analysisParams : "AnalysisParams",
+                 sessionID = 0,
+                 ):
         """
         Parameters
         ----------
         mapAnnotations : AnnotationsLayers, e.g. MapAnnotations
             The object loaded from zarr file.
         """
-        self._mapAnnotations = mapAnnotations
+        self._sessionID = sessionID
+
+        # full map, multiple session ids (timepoint, t)
+        self._fullMap : AnnotationsLayers = mapAnnotations
+
+        #filtered down to just sessionID
+        self._sessionMap : AnnotationsLayers = None
+        self._df = None
+
+        self._analasisParams = analysisParams
 
         self._buildDataFrame()
+    
+    @property
+    def sessionID(self):
+        return self._sessionID
 
     @property
-    def map(self):
-        return self._mapAnnotations
+    def sessionMap(self):
+        """Core map reduced to one session id.
+        """
+        return self._sessionMap
 
     def __len__(self):
         return self.numAnnotations
 
     @property
     def numAnnotations(self):
-        spineIDs = self.map.spineID()
-        return len(spineIDs)
-    
-    def _buildDataFrame(self):
-        map = self.map
-        allSpines = map[map.spineID()]  # mapmanagercore.annotations.base.layers.AnnotationsLayers
-        allSpines = allSpines[:]  # geopandas.geodataframe.GeoDataFrame
-        
-        # abb temporary fix
-        allSpines['roiType'] = 'spineROI'
-        allSpines['index'] = [int(index) for index in allSpines.index]
-        allSpines['isBad'] = False
+        return len(self.getDataFrame())
 
-        self._df = allSpines
-
-    def getDataFrame(self):
+    def getDataFrame(self) -> pd.DataFrame:
         return self._df
     
+    def _buildSummaryDf(self):
+        pass
+
+    def getSummaryDf(self):
+        """By default, summary df is underlying df.
+        
+        This is further defined in LineAnnotationsCore.
+        """
+        return self._df
+    
+    def _buildSessionMap(self):
+        """Reduce full core map to a single session id.
+        """
+        self._sessionMap = self._fullMap[ self._fullMap['t']==self.sessionID ]
+        return self._sessionMap
+    
+    def _buildDataFrame(self):
+        """derived classes define this for (point, line)
+        """
+        logger.error('baseAnnotationCore SHOULD NEVER BE CALLED.')
+
+    def getSegmentPlot(self, segmentID,
+                       roiTypes,
+                       zSlice,
+                       zPlusMinus
+                       ):
+        """Get a spine dataframe based on z
+
+        Used for plotting x/y/z scatter over image
+        """
+        _startSlice = zSlice - zPlusMinus
+        _stopSlice = zSlice + zPlusMinus
+
+        df = self.getDataFrame()
+        df = df[(df['z']>=_startSlice) & (df['z']<=_stopSlice)]
+
+        return df
+    
     def getRow(self, rowIdx : int):
+        """Get columns and values for one row.
+        """
         df = self.getDataFrame()  # geopandas.geodataframe.GeoDataFrame
         rowIdx = str(rowIdx)
         row = df.loc[rowIdx]
@@ -67,7 +115,7 @@ class spineAnnotationsCore:
                     ) -> Union[np.ndarray, None]:
         """Get value(s) from a column or list of columns.
 
-        Arguments
+        Parameters
         ==========
         colName : str | List(str)
             Column(s) to get values from
@@ -79,13 +127,10 @@ class spineAnnotationsCore:
             Annotation values (np.ndarray)
         """
 
-        # df = self._df
+        # logger.info(f'{rowIdx} {type(rowIdx)}')
+
         df = self.getDataFrame()  # geopandas.geodataframe.GeoDataFrame
-
-        # logger.info('df is:')
-        # logger.info(df.index)
-        # logger.info(df)
-
+        
         # TODO: 042024 implement a list of columns
         # if not isinstance(colName, list):
         #     colName = [colName]
@@ -101,17 +146,13 @@ class spineAnnotationsCore:
         elif not isinstance(rowIdx, list):
             rowIdx = [rowIdx]
         
-        rowIdx = [str(_row) for _row in rowIdx]
+        # 20240411 old
+        # rowIdx = [str(_row) for _row in rowIdx]
 
         # logger.info(f'rowIdx:{rowIdx}')
 
         try:
-            # 6/12 - Johnson changed
-            # na_value=np.nan argument causes error for certain columns such as "indexes"
-            # might not be necessary and removed
             ret = df.loc[rowIdx, colName].to_numpy()
-
-            # logger.info(f'ret:{ret}')
 
             # abb removed
             # if ret.shape[1]==1:
@@ -119,10 +160,8 @@ class spineAnnotationsCore:
 
             return ret
         
-        except (KeyError) as e:
+        except (KeyError):
             logger.error(f'bad rowIdx(s) {rowIdx}, colName:{colName} range is 0...{len(self)-1}')
-            # logger.error(f'  _path: {self._path}')
-            #print(traceback.format_exc())
             return None
         
     def setValue(self, colName : str, row : int, value):
@@ -133,31 +172,74 @@ class spineAnnotationsCore:
             row (int)
             value (???)
         """
-        
-        # self._setModTime(row)
+        logger.error(f'   row:{row} colName:{colName}, value:{value}')
 
-        # if not self.columns.columnIsValid(colName):
-        #     logger.warning(f'did not find "{colName}" in columns')
-        #     return
-        
         try:
             newDict = {
                 colName: value,
                 }
             
             try:
-                self.map.updateSpine(spineId=str(row), value=newDict)
+                # (spineID, self.sessionID)
+                self._fullMap.updateSpine((row, self.sessionID), value=newDict)
             except (ValueError) as e:
                 logger.error(e)
                 return
 
+            print('before:', self._df.loc[row, 'userType'])
+            
             self._buildDataFrame()
+            
+            print('after:', self._df.loc[row, 'userType'])
+
 
         except(IndexError):
             logger.error(f'did not set value for col "{colName}" at row {row}')
 
-    def getSegmentPlot(self, segmentID,
-                       roiTypes,
+    def __str__(self):
+        _str = ''
+        _str += f'{self._getClassName()} has {self.numAnnotations} rows'
+        return _str
+    
+    def _getClassName(self) -> str:
+        return self.__class__.__name__
+
+class LineAnnotationsCore(AnnotationsCore):
+    # def __init__(self, mapAnnotations):
+    #     super().__init__(mapAnnotations)
+
+    def getSummaryDf(self):
+        return self._summaryDf
+    
+    def _buildSummaryDf(self) -> pd.DataFrame:
+        """Get a summary dataframe, one segment per row.
+        """
+        self._summaryDf = pd.DataFrame()
+        self._summaryDf['segmentID'] = self._df['segmentID'].unique()
+
+    def _buildDataFrame(self):  
+
+        self._buildSessionMap()
+        df = self._sessionMap.segments["segment"].get_coordinates(include_z=True)
+        
+        df['segmentID'] = [int(index) for index in df.index]
+
+        df.insert(0,'index', np.arange(len(df)))  # index is first column
+
+        # logger.info(f'Line annotation df: {df}')
+        self._df = df
+
+        # summary, one row per segment
+        self._buildSummaryDf()
+
+        # left/right
+        xyLeft = self._sessionMap.segments["segmentLeft"].get_coordinates(include_z=True)
+        self._xyLeftDf = xyLeft
+        
+        xyRight = self._sessionMap.segments["segmentRight"].get_coordinates(include_z=True)
+        self._xyRightDf = xyRight
+
+    def getLeftRadiusPlot(self, segmentID,
                        zSlice,
                        zPlusMinus
                        ):
@@ -168,14 +250,64 @@ class spineAnnotationsCore:
         _startSlice = zSlice - zPlusMinus
         _stopSlice = zSlice + zPlusMinus
 
-        df = self.getDataFrame()
+        # 20240410 left/right radius lines do not have a z ???
+        df = self._xyLeftDf
+                
         df = df[(df['z']>=_startSlice) & (df['z']<=_stopSlice)]
 
         return df
+    
+    def getRightRadiusPlot(self, segmentID,
+                       zSlice,
+                       zPlusMinus
+                       ):
+        """Get a spine dataframe based on z
+
+        Used for plotting x/y/z scatter over image
+        """
+        _startSlice = zSlice - zPlusMinus
+        _stopSlice = zSlice + zPlusMinus
+
+        df = self._xyRightDf
+        df = df[(df['z']>=_startSlice) & (df['z']<=_stopSlice)]
+
+        return df
+    
+    def getLeftRadiusLine(self):
+        return self._xyLeftDf
+    
+    def getRightRadiusLine(self):
+        return self._xyRightDf
+    
+class SpineAnnotationsCore(AnnotationsCore):
+        
+    def _buildDataFrame(self):
+        """Dataframe representing backend spines, one row per spine.
+        
+        Needs to be regenerated on any edit/mutation.
+        """
+        self._buildSessionMap()
+
+        allSpinesDf = self.sessionMap[:]
+
+        # abb temporary fix
+        allSpinesDf['roiType'] = 'spineROI'
+        # allSpinesDf['index'] = [int(index[0]) for index in allSpinesDf.index]
+
+        allSpinesDf.insert(0,'index', allSpinesDf['spineID'])  # index is first column
+        # allSpinesDf['index'] = allSpinesDf['spineID']
+
+        n = len(allSpinesDf)
+        allSpinesDf['isBad'] = np.random.choice([True,False],size=n)
+
+        # logger.info(f'allSpinesDf: {allSpinesDf}')
+        self._df = allSpinesDf
 
     def getSpineLines(self):
-        anchorDf = self.map['anchors'].get_coordinates(include_z=True)
-        """
+        """Get df to plot spine lines from head to tail (anchor).
+        
+        df looks like
+
                     x      y   z
         spineID                  
         0        425.0  225.4 NaN
@@ -183,36 +315,122 @@ class spineAnnotationsCore:
         1        378.0  236.0 NaN
         1        382.0  250.0 NaN
         """
+        anchorDf = self._sessionMap['anchors'].get_coordinates(include_z=True)
         return anchorDf
     
+    # TODO: use this rather than individual functions below
+    def getRoi(self, rowIdx : int, roiType : str) -> pd.DataFrame:
+        """Get one of 4 rois (polygons).
+        
+        Each is a df with (spineID, x, y).
+        """
+        if roiType == 'roiHead':
+            df = self._sessionMap["roiHead"].get_coordinates()
+        elif roiType == 'roiHeadBg':
+            df = self._sessionMap["roiHeadBg"].get_coordinates()
+        elif roiType == 'roiBase':
+            df = self._sessionMap["roiBase"].get_coordinates()
+        elif roiType == 'roiBaseBg':
+            df = self._sessionMap["roiBaseBg"].get_coordinates()
+        else:
+            logger.error(f'did not understand roiType: {roiType}')
+            return
+        
+        # 20240411 old
+        # df = df.loc[str(rowIdx)]
+        df = df.loc[rowIdx]
+        
+        return df
+    
     def getSpineRoi(self, rowIdx):
-        df = self.map["roiHead"].get_coordinates()
-        df = df.loc[str(rowIdx)]
+        df = self._sessionMap["roiHead"].get_coordinates()
+        # df = df.loc[str(rowIdx)]
+        df = df.loc[rowIdx]
         return df
     
     def getSpineBackgroundRoi(self, rowIdx):
-        df = self.map["roiHeadBg"].get_coordinates()
-        df = df.loc[str(rowIdx)]
+        df = self._sessionMap["roiHeadBg"].get_coordinates()
+        # df = df.loc[str(rowIdx)]
+        df = df.loc[rowIdx]
         return df
 
     def getSegmentRoi(self, rowIdx):
-        df = self.map["roiBase"].get_coordinates()
-        df = df.loc[str(rowIdx)]
+        df = self._sessionMap["roiBase"].get_coordinates()
+        # df = df.loc[str(rowIdx)]
+        df = df.loc[rowIdx]
         return df
     
     def getSegmentRoiBackground(self, rowIdx):
-        df = self.map["roiBaseBg"].get_coordinates()
-        df = df.loc[str(rowIdx)]
+        df = self._sessionMap["roiBaseBg"].get_coordinates()
+        # df = df.loc[str(rowIdx)]
+        df = df.loc[rowIdx]
         return df
     
+    def getColumnType(self, col : str):
+        """Get the type of a column.
+        
+        Used to infer making gui controls (checkbox, spinner, dropdown).
+
+        For now, col needs to be in ("roiType", "segmentID", "note", 'isBad', 'userType')
+        """
+        if col in ['roiType', 'note']:
+            return str
+        elif col == 'segmentID':
+            return int
+        elif col == 'isBad':
+            return bool
+        elif col == 'userType':
+            return int
+        else:
+            logger.error(f'did not understand col: {col}')
+            return
+
+    def addAnnotation(self, spineID, x, y, z):
+        pass
+    
+    def deleteAnnotation(self, rowIdx : Union[int, List[int]]) -> None:
+        """Delete an annotation or list of annotations based on the row index.
+        
+        Args:
+            rowIdx: Either a single row or a list of rows.
+        """
+        logger.info(f'rowIdx:{rowIdx}')
+
+        rowIdx = str(rowIdx)
+        self._fullMap.deleteSpine(rowIdx)
+
+        self._buildDataFrame()
+
+        # if not isinstance(rowIdx, list):
+        #     rowIdx = [rowIdx]
+        # self._df.drop(labels=rowIdx, axis=0, inplace=True)
+
+    def editSpine(self, editSpineProperty : "EditSpineProperty"):
+        # spineID:117 col:isBad value:True
+        logger.info(editSpineProperty)
+        for item in editSpineProperty:
+            spineID = item['spineID']
+            col = item['col']
+            value = item['value']
+            
+            self.setValue(col, spineID, value)
+
+        self._buildDataFrame()
+
 if __name__ == '__main__':
     from pymapmanager._logger import setLogLevel
     setLogLevel()
 
+    # _testEditSpineProperty()
+
+    sys.exit(1)
+
     zarrPath = '../MapManagerCore/data/rr30a_s0us.mmap'
     map = MapAnnotations(MMapLoader(zarrPath).cached())
 
-    sac = spineAnnotationsCore(map)
+    sac = SpineAnnotationsCore(map)
+
+    print(sac.getDataFrame().columns)
 
     segmentID = None
     roiTypes = None

@@ -6,11 +6,6 @@ from qtpy import QtGui, QtCore, QtWidgets
 import pyqtgraph as pg
 
 import pymapmanager
-
-# from pymapmanager.interface2 import PyMapManagerApp
-
-# from pymapmanager.interface2.pyMapManagerApp2 import PyMapManagerMenus
-
 from .mmWidget2 import mmWidget2, pmmEventType, pmmStates, pmmEvent, StackSelection
 from .stackToolbar import StackToolBar
 from .stackStatusbar import StatusToolbar
@@ -25,7 +20,7 @@ from .imagePlotWidget2 import ImagePlotWidget
 from pymapmanager._logger import logger
 
 class stackWidget2(mmWidget2):
-    _widgetName = 'Stack Widget 2'
+    _widgetName = 'Stack Widget'
 
     def __init__(self,
                  path,
@@ -56,12 +51,11 @@ class stackWidget2(mmWidget2):
         if stack is not None:
             self._stack = stack
         else:
-            # load from path
+            logger.info(f'loading stack from path: {path}')
             self._stack = pymapmanager.stack(path)
 
         # add 2/24 when implementing map/timeseries GUI
         self._mapWidget : Optional["pymapmanager.interface2.mapWidgets.mapWidget"] = mapWidget
-        # self._timePoint : Optional[int] = timePoint
 
         self._openPluginSet = set()
         """Set of open plugins."""
@@ -301,11 +295,9 @@ class stackWidget2(mmWidget2):
             logger.error(f'Did not find plugin: "{pluginName}"')
             return
         else:
-            humanName = pluginDict[pluginName]["constructor"]._widgetName
+            # humanName = pluginDict[pluginName]["constructor"]._widgetName
 
-            logger.info("Running plugin:")
-            logger.info(f"  pluginName:{pluginName}")
-            logger.info(f"  humanName:{humanName}")
+            logger.info(f'Running plugin: {pluginName}')
 
             # TODO: to open PyQt windows, we need to keep a local (persistent) variable
             newPlugin = pluginDict[pluginName]["constructor"](
@@ -483,6 +475,24 @@ class stackWidget2(mmWidget2):
 
         return True
 
+    def editedEvent(self, event : pmmEvent) -> bool:
+        """A spine has been edited, set it in the backend.
+        
+        This can be an update for the row value of any column (for example)
+         - isBad : bool
+         - userType : int
+         - note : str
+
+        Other edits are
+         - add
+         - delete
+         - move spine
+         - autoconnect and manual connect (tail)
+        """
+        logger.info('=== ===   STACK WIDGET PERFORMING edited   === ===')
+        logger.info(event)
+        self.getStack().getPointAnnotations().editSpine(event)
+
     def deletedEvent(self, event : "pmmEvent") -> bool:
         """Delete items from backend.
         
@@ -490,7 +500,7 @@ class stackWidget2(mmWidget2):
         -------
         True if deleted, False otherwise
         """
-        logger.warning('=== ===   STACK WIDGET PERFORMING DELETE   === ===')
+        logger.info('=== ===   STACK WIDGET PERFORMING DELETE   === ===')
         _selection = event.getStackSelection()
         
         # delete points
@@ -876,6 +886,7 @@ class stackWidget2(mmWidget2):
             newIsBad = True
         else:
             newIsBad = False
+        # newIsBad = not currentIsBad
 
         logger.info(f"newIsBad {newIsBad}")
         _pointAnnotations.setValue('isBad', spineIndex, newIsBad)

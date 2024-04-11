@@ -2,7 +2,7 @@
 """
 
 import sys
-from typing import List, Union  # , Callable, Iterator, Optional
+from typing import List
 
 from qtpy import QtGui, QtCore, QtWidgets
 
@@ -13,14 +13,16 @@ import pymapmanager.annotations
 from pymapmanager.interface2.core.search_widget import myQTableView
 from pymapmanager.interface2.core._data_model import pandasModel
 
-from .mmWidget2 import mmWidget2
-from .mmWidget2 import pmmEventType, pmmEvent, pmmStates
+from pymapmanager.interface2.stackWidgets.mmWidget2  import mmWidget2, pmmEventType, pmmEvent, pmmStates
+
+# from .mmWidget2 import pmmEventType, pmmEvent, pmmStates
 
 class annotationListWidget(mmWidget2):
 
     def __init__(self,
                     stackWidget : "StackWidget",
-                    annotations : pymapmanager.annotations.baseAnnotations):
+                    annotations : pymapmanager.annotations.baseAnnotations,
+                    name : str = None):
         """
         Args:
             annotations:
@@ -31,7 +33,7 @@ class annotationListWidget(mmWidget2):
 
         self._annotations : pymapmanager.annotations.baseAnnotations = annotations
         
-        self._buildGui()
+        self._buildGui(name=name)
         self._setModel()
     
     def deletedEvent(self, event):
@@ -39,8 +41,13 @@ class annotationListWidget(mmWidget2):
         self._setModel()
 
     def editedEvent(self, event):
-        # logger.info(f'{event}')
+        logger.info(f'{event}')
+        
         self._setModel()
+
+        # reselect previous selection
+        spineIDs = event.getSpines()
+        self._myTableView._selectRow(spineIDs)
 
     def addedEvent(self, event):
         # logger.info('')
@@ -48,9 +55,9 @@ class annotationListWidget(mmWidget2):
         # v1
         # itemList = event.getListOfItems()
         # v2
-        itemList = event.getStackSelection().getPointSelection()        
-        if itemList is not None:
-            self._myTableView.mySelectRows(itemList)
+        # self.myQTableView._selectNewRow()
+        spineIDs = event.getSpines()
+        self._myTableView.mySelectRows(spineIDs)
 
     def stateChangedEvent(self, event):
         super().stateChangedEvent(event)
@@ -114,8 +121,9 @@ class annotationListWidget(mmWidget2):
 
         See derived pointListWidget for some example filtering
         """
-        dfPoints = self._annotations.getDataFrame()
-        self._myTableView.setDataFrame(dfPoints)
+        # dfPoints = self._annotations.getDataFrame()
+        dfPoints = self._annotations.getSummaryDf()
+        self._myTableView.updateDataFrame(dfPoints)
 
     def _initToolbar(self) -> QtWidgets.QVBoxLayout:
         """Initialize the toolbar with controls.
@@ -134,7 +142,7 @@ class annotationListWidget(mmWidget2):
         
         return vControlLayout
 
-    def _buildGui(self):
+    def _buildGui(self, name):
         """Initialize the annotation list gui.
         
         All gui will be a vertical layout with:
@@ -149,7 +157,7 @@ class annotationListWidget(mmWidget2):
         vLayout.addLayout(vControlLayout)
 
         #  table view
-        self._myTableView = myQTableView()
+        self._myTableView = myQTableView(df=self._annotations.getSummaryDf(), name=name)
         self._myTableView.signalSelectionChanged.connect(self.on_table_selection)
 
         # TODO (Cudmore) Figure out how to set font of (cell, row/vert header, col/horz header)
@@ -179,6 +187,7 @@ class annotationListWidget(mmWidget2):
             rowList: List of rows that were selected
             isAlt: True if keyboard Alt is down
         """
+        logger.info('BASE CLASS CALLED')
         return
 
         logger.info(f'{self.getClassName()} rowList:{itemList} isAlt:{isAlt}')
@@ -193,13 +202,14 @@ class pointListWidget(annotationListWidget):
 
     _widgetName = 'Point List'
 
-    def __init__(self, stackWidget : "pymapmanager.interface2.stackWidget.StackWidget"):
+    def __init__(self, stackWidget : "pymapmanager.interface2.stackWidget.StackWidget2"):
 
         annotations = stackWidget.getStack().getPointAnnotations()
-        super().__init__(stackWidget, annotations)
+        logger.info(annotations)
+        super().__init__(stackWidget, annotations, name='pointListWidget')
 
         # limit the displayed columns
-        colList = ['z', 'roiType', 'segmentID', 'isBad', 'note']
+        colList = ['index', 'userType', 'z', 'roiType', 'segmentID', 'isBad', 'note']
         self._myTableView.showTheseColumns(colList)
 
         # limit the rows based on roiType
@@ -210,6 +220,9 @@ class pointListWidget(annotationListWidget):
         # logger.info(event)
         
         pointSelection = event.getStackSelection().getPointSelection()        
+
+        logger.info(f'{self.getClassName()} pointSelection:{pointSelection}')
+
         self._myTableView._selectRow(pointSelection)
 
         # # logger.info(f'itemList: {itemList}')
@@ -283,7 +296,7 @@ class lineListWidget(annotationListWidget):
 
     def __init__(self, stackWidget : "StackWidget"):
         annotations = stackWidget.getStack().getLineAnnotations()
-        super().__init__(stackWidget, annotations)
+        super().__init__(stackWidget, annotations, name='lineListWidget')
 
     def selectedEvent(self, event):
         # logger.info(event)
@@ -315,14 +328,6 @@ class lineListWidget(annotationListWidget):
         event.getStackSelection().setSegmentSelection(itemList)
         event.setAlt(isAlt)
         self.emitEvent(event, blockSlots=False)
-
-    def _old_selectedEvent(self, event):
-        # logger.info(event)
-        
-        itemList = event.getStackSelection().getSegmentSelection()        
-        if itemList is not None:
-            logger.info(f'itemList:{itemList}')
-            self._myTableView.mySelectRows(itemList)
 
     def deleteSelected(self):
         """Delete currently selected annotations.

@@ -16,7 +16,8 @@ class Preferences:
         self._app = app
         
         # self._version = 0.1
-        self._version = 0.23  # adding default window size
+        # self._version = 0.23  # adding default window size
+        self._version = 0.24  # upgrade to zar
 
         self._maxRecent = 10
         self._configDict = self.load()

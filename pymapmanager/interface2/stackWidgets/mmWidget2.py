@@ -1,15 +1,11 @@
 
-import sys
 import copy
 from enum import Enum, auto
-from typing import List, Union, Optional, Tuple, TypedDict
-
-import numpy as np
+from typing import List, Optional, Tuple, TypedDict, Self
 
 from qtpy import QtGui, QtCore, QtWidgets
 
 import pymapmanager
-
 from pymapmanager._logger import logger
 
 class pmmStates(Enum):
@@ -24,7 +20,7 @@ class pmmEventType(Enum):
     selection = auto()
     add = auto()
     delete = auto()
-    edit = auto()  # signal there has been a change in an annotation
+    edit = auto()  # signal there has been a change in an annotation (note, isBad, ...)
     stateChange = auto()  # one state from pmmStates    
     moveAnnotation = auto()  # intermediate, normally no need for response
     manualConnectSpine = auto()  # intermediate, normally no need for response
@@ -35,6 +31,7 @@ class pmmEventType(Enum):
 
 class StackSelection:
     def __init__(self, stack : pymapmanager.stack = None):
+        
         self._dict = {
             'stack': stack,
 
@@ -45,7 +42,8 @@ class StackSelection:
             'segmentPointSelectionList': None,
 
             'state': pmmStates.edit,
-            'manuallyConnectSpine': None
+            'manuallyConnectSpine': None,
+
         }
     
     def __str__(self):
@@ -56,7 +54,7 @@ class StackSelection:
         retStr += f"segmentPoint:{self._getValue('segmentPointSelectionList')} "
         retStr += f"state:{self._getValue('state')} "
         return retStr
-
+    
     @property
     def stack(self) -> Optional[pymapmanager.stack]:
         return self._getValue('stack')
@@ -86,6 +84,7 @@ class StackSelection:
             # sliceNum = 
             logger.info(f"current stack selection slice is: {sliceNum}")
             return sliceNum
+        
     #
     # point selection
     #
@@ -277,6 +276,9 @@ class pmmEvent():
         
         self._sender = mmWidget
 
+        self._spineEditList : List[SpineEdit] = []
+        # List of SpineEdit
+
         self._dict = {
             # 'sender': mmWidget,
             'senderName': mmWidget.getName(),
@@ -302,6 +304,9 @@ class pmmEvent():
 
             # implementing map/timeseries
             # 'mapSessionSelection': [],
+
+            'editSpine' : None
+
         }
 
         #TODO: this is redundant, now using stackselection for session ???
@@ -347,7 +352,7 @@ class pmmEvent():
         except (KeyError) as e:
             logger.error(f'did not find key "{key}", available keys are {self._dict.keys()}')
             
-    def getSender(self):
+    def getSender(self) -> "mmWidget2":
         """Get the _name of the mmWidget sender (object that did emitEvent.
         """
         return self._dict['senderName']
@@ -416,23 +421,12 @@ class pmmEvent():
     def getColorChannel(self):
         return self._dict['colorChannel']
 
-    # def getAnnotation(self):
-    #     return self._dict['annotationObject']
+    # def setEditSpine(self, editSpineProperty : "EditSpineProperty"):
+    #     self._dict['editSpine'] = editSpineProperty
 
-    # def getAnnotationType(self):
-    #     return type(self._dict['annotationObject'])
-
-    # def getListOfItems(self):
-    #     return self._dict['listOfItems']
-
-    # def getMapSessionSelection(self) -> List[int]:
-    #     return self._dict['mapSessionSelection']
-
-    # def setMapSessionSelection(self, sessionIdx : int):
-    #     if isinstance(sessionIdx, int):
-    #         sessionIdx = [sessionIdx]
-    #     self._dict['mapSessionSelection'] = sessionIdx
-
+    # def getEditSpine(self):
+    #     return self._dict['editSpine']
+    
     def isAlt(self):
         return self._dict['alt']
 
@@ -469,7 +463,7 @@ class mmWidget2(QtWidgets.QMainWindow):
     Provides a unified signal/slot API for selection and editing.
     """
     
-    # _widgetName = 'not assigned'
+    _widgetName = 'not assigned'
     # Name of the widget (must be unique)
 
     _signalPmmEvent = QtCore.Signal(object)  # pmmEvent
@@ -506,6 +500,13 @@ class mmWidget2(QtWidgets.QMainWindow):
         self._showSelf: bool = True
 
         self._blockSlots = False
+
+        _windowTitle = self._widgetName
+        # TODO: get this working, have inherited classes call this after init() ?
+        # if self.getStackWidget() is not None:
+        #     _windowTitle += f':{self.getStackWidget().getStack().getFileName()}'
+        self.setWindowTitle(_windowTitle)
+        
 
         # (1) this is the original and it works, connects stackwidget
         # bi-directional signal/slot between self and parent
@@ -623,7 +624,7 @@ class mmWidget2(QtWidgets.QMainWindow):
         else:
             return self.getStackWidget().getStack()
 
-    def getMapSession(self):
+    def getMapSession(self) -> Optional[int]:
         """Get map session from the stack.
         """
         if self.getStack() is not None:
@@ -677,10 +678,7 @@ class mmWidget2(QtWidgets.QMainWindow):
         else:
             self.blockSlotsOff()
 
-        # _pointSelection = event.getStackSelection().getPointSelection()
-        # _segmentSelection = event.getStackSelection().getSegmentSelection()
-        # logger.info(f'>>>>>>>>> emit "{self.getName()}" {event.type} points:{_pointSelection} segments:{_segmentSelection}')
-        logger.info(f'>>>>>>>>> emit "{self.getName()}" session:{self.getMapSession()} {event.type}')
+        # logger.info(f'>>>>>>>>> emit "{self.getName()}" session:{self.getMapSession()} {event.type}')
 
         self._signalPmmEvent.emit(event)
 
@@ -696,41 +694,23 @@ class mmWidget2(QtWidgets.QMainWindow):
         if _doDebug:
             logger.info(f'   <<< "{self.getClassName()}" "{self.getName()}" received {event.type}')
 
-        # order between calling self and next emit matters
-        # if we are parent and we modify the backend, we need to do that first
-        
-        # logger.info(f'   <<< "{self.getClassName()}" event type does not match: {event.type == pmmEventType.selection}')
-        
-        # logger.info(f"name: {event.type.name} value: {event.type.value}")
-
-        # logger.info(f'   <<< " {event.type == pmmEventType.selection.name}')
-        # logger.info(f'   <<< " {event.type == pmmEventType.selection.value}')
-
-        # logger.info(f'   <<<  {event.type.name}')
-        # logger.info(f'   <<<  {event.type.value}')
-        # logger.info(f'   <<<  {pmmEventType.selection.name}')
-        # logger.info(f'   <<<  {pmmEventType.selection.value}')
-
-        # logger.info(f"event.type: {type(event.type)}")
-        # logger.info(f"event.type: {event.type}")
-        # logger.info(f"event.val: {event.type.value}")
-                    
-        # logger.info(f"selection val: {pmmEventType.selection.value}")
-        
         acceptEvent = True  # if False then do not propogate
         
         if _doDebug:
             logger.info(f"event.type: {event.type.name} pmmEventType.selection.name: {pmmEventType.selection.name}")
 
-        if event.type.name == pmmEventType.selection.name:
+        # if event.type.name == pmmEventType.selection.name:
+        if event.type == pmmEventType.selection:
             # logger.info(f'   <<< "{self.getClassName()}"')
             acceptEvent = self.selectedEvent(event)
         elif event.type == pmmEventType.add:
             acceptEvent = self.addedEvent(event)
         elif event.type == pmmEventType.delete:
             acceptEvent = self.deletedEvent(event)
+        
         elif event.type == pmmEventType.edit:
             acceptEvent = self.editedEvent(event)
+        
         elif event.type == pmmEventType.stateChange:
             acceptEvent = self.stateChangedEvent(event)
         elif event.type == pmmEventType.moveAnnotation:
@@ -754,7 +734,6 @@ class mmWidget2(QtWidgets.QMainWindow):
             logger.warning(f'halting propogation --- acceptEvent is {acceptEvent}')
             return
         
-        # if self.getStackWidget() is None:
         if self._iAmStackWidget:
             if _doDebug:
                 logger.info('===>>> ===>>> iAmStackWidget re-emit')
@@ -848,10 +827,12 @@ class mmWidget2(QtWidgets.QMainWindow):
     def deletedEvent(self, event : pmmEvent):
         """Derived classes need to perform action of selection event.
         """
-        logger.warning('base class called ????????????')
+        logger.warning(f'{self.getClassName()} base class called ????????????')
 
     def editedEvent(self, event : pmmEvent):
-        """Derived classes need to perform action of selection event.
+        """Derived classes need to perform action.
+
+        spineIDs = event.getSpines()
         """
 
     def stateChangedEvent(self, event : pmmEvent):
@@ -941,3 +922,8 @@ class mmWidget2(QtWidgets.QMainWindow):
             
         # elif event.key() in [QtCore.Qt.Key_Delete, QtCore.Qt.Key_Backspace]:
         #     self._deleteSelection()
+
+
+if __name__ == '__main__':
+    from pymapmanager._logger import setLogLevel
+    setLogLevel()

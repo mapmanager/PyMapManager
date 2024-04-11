@@ -10,6 +10,8 @@
 # this works but requires us to import each plugin (not optimal)
 # from .searchWidget2 import searchWidget2
 
+# from .mmWidget2 import pmmEvent, pmmEventType
+
 from inspect import isclass
 from pkgutil import iter_modules
 from pathlib import Path

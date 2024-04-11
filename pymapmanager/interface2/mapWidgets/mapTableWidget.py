@@ -92,7 +92,7 @@ class mapTableWidget(QtWidgets.QWidget):
         _toolbarLayout = self._getToolbar()
         vLayout.addLayout(_toolbarLayout)
         
-        self._myTableView = myQTableView()
+        self._myTableView = myQTableView(name='mapTableWidget')
 
         # self._myTableView.resizeRowsToContents()
 

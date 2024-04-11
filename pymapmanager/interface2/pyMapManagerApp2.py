@@ -210,11 +210,10 @@ class PyMapManagerApp(QtWidgets.QApplication):
         #     theWindow.closeStackWindow()
         #     return
         
-        stackPath = theWindow.getStack().getTifPath()
-        logger.info(f'   {stackPath}')
+        zarrPath = theWindow.getStack().getPath()
         popThisKey = None
         for pathKey in self._stackWidgetDict.keys():
-            if pathKey == stackPath:
+            if pathKey == zarrPath:
                 popThisKey = pathKey
                 break
 
@@ -347,7 +346,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
             self._stackWidgetDict[path].show()
         else:
             # load stack and make widget
-            # _stack = pmm.stack(path)
+            logger.info(f'loading stack widget from path: {path}')
             _stackWidget = pmm.interface2.stackWidgets.stackWidget2(path)
 
             geometryRect = self.getConfigDict().getStackWindowGeometry()

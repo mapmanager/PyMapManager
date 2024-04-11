@@ -77,12 +77,13 @@ class StackToolBar(QtWidgets.QToolBar):
         """
         this REQUIRES a list of actions, self.tooList
         """
-        logger.info(f'checked:{checked} index:{index}')
+        # logger.info(f'checked:{checked} index:{index}')
         
         action = self._actionList[index]
         actionName = action.statusTip()
         isChecked = action.isChecked()
-        logger.info(f'  index:{index} actionName:"{actionName}" isChecked:{isChecked}')
+        
+        logger.info(f'actionName:"{actionName}" isChecked:{isChecked}')
 
         if actionName in self._channelList:
             # channel 1,2,3

@@ -28,7 +28,7 @@ class SearchWidget(mmWidget2):
         self._makeCentralWidget(vLayout)
 
         df = self._annotations.getDataFrame()
-        self.myTableView = myQTableView(df)
+        self.myTableView = myQTableView(df, name='SearchWidget')
 
         vLayout.addWidget(self.myTableView)
 

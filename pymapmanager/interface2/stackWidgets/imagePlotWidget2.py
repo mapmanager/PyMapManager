@@ -618,7 +618,9 @@ class ImagePlotWidget(mmWidget2):
             zoomFieldOfView: Width/height of zoom
         """
         logger.warning(f'we need to pass a display option for zoomFieldOfView: {zoomFieldOfView}')
+        
         halfZoom = zoomFieldOfView / 2
+        
         l = x - halfZoom
         t = y - halfZoom
         r = x + halfZoom
@@ -632,7 +634,7 @@ class ImagePlotWidget(mmWidget2):
         self._plotWidget.setRange(_zoomRect, padding=padding)
        
     def slot_setSlice(self, sliceNumber, doEmit=True):
-        logger.warning(f'sliceNumber:{sliceNumber} doEmit:{doEmit}')
+        # logger.warning(f'sliceNumber:{sliceNumber} doEmit:{doEmit}')
         if self.slotsBlocked():
             return
         self._setSlice(sliceNumber, doEmit=doEmit)
@@ -772,6 +774,9 @@ class ImagePlotWidget(mmWidget2):
     def autoContrast(self):
         """20220824, playing with this ... does not work.
         """        
+        logger.error('TURNED OFF ON SWITCH TO CORE')
+        return
+        
         _percent_low = 30.0 #0.5  # .30
         _percent_high = 99.95  #100 - 0.5
         
@@ -1165,6 +1170,6 @@ class StackSlider(QtWidgets.QSlider):
             self.signalUpdateSlice.emit(sliceNumber)
 
     def slot_setSlice(self, sliceNumber):
-        logger.info(sliceNumber)
+        # logger.info(sliceNumber)
         self._updateSlice(sliceNumber, doEmit=False)
         self.update()  # required by QSlider

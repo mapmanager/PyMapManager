@@ -94,8 +94,8 @@ class mapWidget(MainWindow):
         """Find an open stack widget.
         """
         for stackWidget in self._stackWidgetList:
-            tifPath = stackWidget.getStack().getTifPath()
-            if tifPath == path:
+            zarrPath = stackWidget.getStack().getPath()
+            if zarrPath == path:
                 return stackWidget
         return None
     
@@ -134,7 +134,6 @@ class mapWidget(MainWindow):
         
         for tp in range(firstTp, lastTp):
             stack = _map.stacks[tp]
-            # tifPath = stack.getTifPath()
             posRect = screenGrid[tp]
             bsw = self.openStack(stack=stack, posRect=posRect)
 

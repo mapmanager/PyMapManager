@@ -34,7 +34,7 @@ class HistogramWidget(mmWidget2):
         self._contrastDict = stackWidget._contrastDict
 
         self._sliceNumber = 0
-        self._channel = 1
+        self._channel = 2
         self._maxValue = 2**self._myStack.header['bitDepth']  # will default to 8 if not found
         self._sliceImage = None  # set by 
 
@@ -303,11 +303,13 @@ class _histogram(QtWidgets.QWidget):
         self._sliceNumber = sliceNumber
         
         channel = self._channel
-        # self._sliceImage = self._myStack.getImage2(channel=channel,
-        #                     sliceNum=self._sliceNumber)
         self._sliceImage = self._myStack.getImageSlice(imageSlice=self._sliceNumber,
                                 channel=channel)
 
+        if self._sliceImage is None:
+            logger.warning(f'did not get sliceNumber:{sliceNumber} channel:{channel}')
+            return
+        
         y,x = np.histogram(self._sliceImage, bins=255)
         if self._plotLogHist:
             y = np.log10(y, where=y>0)
@@ -321,9 +323,10 @@ class _histogram(QtWidgets.QWidget):
         #x = x[:-1]
         # abb linux
         #if doInit:
-        if len(x) == len(y)+1:
-           x = x[:-1]
-
+        
+        # windows?
+        # if len(x) == len(y)+1:
+        #    x = x[:-1]
 
         self.pgHist.setData(x=x, y=y)
 

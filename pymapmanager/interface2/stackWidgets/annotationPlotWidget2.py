@@ -50,10 +50,10 @@ class annotationPlotWidget(mmWidget2):
         # if isinstance(annotations, pymapmanager.annotations.pointAnnotations):
         #     logger.error('TESTING spine annotation core')
         #     from mapmanagercore import MapAnnotations, MMapLoader
-        #     from pymapmanager.annotations.baseAnnotationsCore import spineAnnotationsCore
+        #     from pymapmanager.annotations.baseAnnotationsCore import SpineAnnotationsCore
         #     zarrPath = '../MapManagerCore/data/rr30a_s0us.mmap'
         #     map = MapAnnotations(MMapLoader(zarrPath).cached())
-        #     self._annotations = spineAnnotationsCore(map)
+        #     self._annotations = SpineAnnotationsCore(map)
         # else:
         #     self._annotations = annotations
 
@@ -164,65 +164,6 @@ class annotationPlotWidget(mmWidget2):
         # logger.info(f'adding _scatter to view: {self.__class__.__name__}')
         # self._view.addItem(self._scatter)
 
-        # Displaying Radius Lines
-        penWidth = 6
-        _pen = pg.mkPen(width=penWidth, color=color)
-
-        # self._leftRadiusLines = pg.ScatterPlotItem(
-        #                     #pen=_pen,  # None to not draw lines
-        #                     symbol=symbol,
-        #                     size=size,
-        #                     color=color,
-        #                     hoverable=True
-        #                     )
-
-        self._leftRadiusLines = self._view.plot(
-            [],
-            [],
-            pen=_pen,  # None to not draw lines
-            symbol=None,
-            # symbolColor  = 'red',
-            symbolPen=None,
-            fillOutline=False,
-            markeredgewidth=0.0,
-            # symbolBrush = color,
-            # connect='finite',
-        )
-
-        self._leftRadiusLines.setZValue(
-            zorder
-        )  # put it on top, may need to change '10'
-
-        # logger.info(f'adding _leftRadiusLines to view: {self.__class__.__name__}')
-        # self._view.addItem(self._leftRadiusLines)
-
-        # self._rightRadiusLines = pg.ScatterPlotItem(pen=None,  # None to not draw lines
-        #                     symbol=symbol,
-        #                     size=size,
-        #                     color=color,
-        #                     hoverable=True
-        #                     )
-
-        self._rightRadiusLines = self._view.plot(
-            [],
-            [],
-            pen=_pen,  # None to not draw lines
-            symbol=None,
-            # symbolColor  = 'red',
-            symbolPen=None,
-            fillOutline=False,
-            markeredgewidth=0.0,
-            # symbolBrush = color,
-            # connect='finite',
-        )
-
-        self._rightRadiusLines.setZValue(
-            zorder
-        )  # put it on top, may need to change '10'
-
-        # logger.info(f'adding _rightRadiusLines to view: {self.__class__.__name__}')
-        self._view.addItem(self._rightRadiusLines)
-
         # user selection
         width = self._displayOptions["widthUserSelection"]
         color = self._displayOptions["colorUserSelection"]
@@ -283,10 +224,6 @@ class annotationPlotWidget(mmWidget2):
 
         visible = not self._scatterUserSelection.isVisible()
         self._scatterUserSelection.setVisible(visible)
-
-    def _old_getSelectedAnnotation(self):
-        """Get the currentently selected annotation."""
-        return self._selectedAnnotation
 
     def _on_mouse_hover(self, points, event):
         """Respond to mouse hover over scatter plot.
@@ -385,7 +322,7 @@ class annotationPlotWidget(mmWidget2):
         modifiers = QtWidgets.QApplication.queryKeyboardModifiers()
         isAlt = modifiers == QtCore.Qt.AltModifier
 
-        logger.info(f"{self.getClassName()}")
+        # logger.info(f"{self.getClassName()}")
 
         for idx, oneEvent in enumerate(event):
             if idx > 0:
@@ -408,7 +345,7 @@ class annotationPlotWidget(mmWidget2):
             # if isinstance(self._annotations, pymapmanager.annotations.pointAnnotations):
             if isinstance(
                 self._annotations,
-                pymapmanager.annotations.baseAnnotationsCore.spineAnnotationsCore,
+                pymapmanager.annotations.baseAnnotationsCore.SpineAnnotationsCore,
             ):
                 event.getStackSelection().setPointSelection(dbIdx)
                 _plotType = 'points'
@@ -422,7 +359,7 @@ class annotationPlotWidget(mmWidget2):
                 segmentIndex= [int(segmentIndex)]
                 event.getStackSelection().setSegmentSelection(segmentIndex)
 
-                logger.info(f'point and line selected {segmentIndex}')
+                logger.info(f'SpineAnnotationsCore selection segmentIndex:{segmentIndex}')
 
             elif isinstance(self._annotations, pymapmanager.annotations.lineAnnotations):
                 
@@ -449,6 +386,7 @@ class annotationPlotWidget(mmWidget2):
 
             logger.info(f'emitting "{_plotType}" event for dbIdx:{dbIdx}')
             logger.info(f'emitting "{_plotType}" event for sliceNum:{sliceNum}')
+            
             event.setSliceNumber(sliceNum)
 
             self.emitEvent(event, blockSlots=False)
@@ -580,16 +518,11 @@ class annotationPlotWidget(mmWidget2):
             # connect="finite",
         )
 
-        # Adding index labels for each spine Point
-        # self.label_value = pg.LabelItem('', **{'color': '#FFF','size': '5pt'})
-        # self.label_value.setPos(QtCore.QPointF(x[0], y[0]))
-        # self.label_value.setText(str(self._currentPlotIndex[0]))
-        # self._view .addItem(self.label_value)
+        logger.error('TURNED OFF LEFT/RIGHT plot')
 
+        return
+        
         if roiTypes == ["linePnt"]:
-            # print("checking columns:", self._dfPlot.columns.tolist())
-            # print("testing left", self._dfPlot[~self._dfPlot['xLeft'].isna()])
-            # Shows Radius Line points
             try:
                 self._leftRadiusLines.setData(
                     self._dfPlot["xLeft"].to_numpy(),
@@ -601,7 +534,6 @@ class annotationPlotWidget(mmWidget2):
                 print("exception is:", e)
                 print(self._dfPlot["xLeft"])
 
-            # self._rightRadiusLines.setData(self._dfPlot['xRight'], self._dfPlot['yRight'])
             try:
                 self._rightRadiusLines.setData(
                     self._dfPlot["xRight"].to_numpy(),
@@ -613,50 +545,9 @@ class annotationPlotWidget(mmWidget2):
                 print("exception is:", e)
                 print(self._dfPlot["xRight"])
 
-        # 20230206 removed while implementing tracing thread
-        # as far as I understand, setData() calls this
-        # update the view
-        # self._view.update()
-
         stopTime = time.time()
         msElapsed = (stopTime - startTime) * 1000
-        # logger.info(f'Took {round(msElapsed,2)} ms {type(self)}')
-
-    def _old_slot_addedAnnotation(
-        self, addAnnotationEvent: pymapmanager.annotations.AddAnnotationEvent
-    ):
-        """Slot called after an annotation was added."""
-
-        # order matters, we need to set slice before selecting new annotation
-
-        # refresh scatter
-        self._refreshSlice()
-
-        # select the new annotaiton
-        newAnnotationRow = addAnnotationEvent.getAddedRow()
-        # self._selectAnnotation(newAnnotationRow)
-
-        _selectionEvent = pymapmanager.annotations.SelectionEvent(
-            self._annotations, rowIdx=newAnnotationRow, isAlt=False, stack=self._stack
-        )
-
-        logger.info(f"  -->> emit signalAnnotationClicked2 {_selectionEvent}")
-        self.signalAnnotationClicked2.emit(_selectionEvent)
-
-    def _old_slot_deletedAnnotation(self, dDict: dict):
-        """Slot called after an annotation was deleted.
-        Also called when moving spine (since original spine is deleted in the process)
-
-        Update the interface.
-        """
-
-        logger.info("")
-
-        # cancel selection (yellow)
-        self._selectAnnotation(None)
-
-        # refresh scatte
-        self._refreshSlice()
+        logger.info(f'Took {round(msElapsed,2)} ms {type(self)}')
 
     def deletedEvent(self, event: pmmEvent):
         # cancel selection (yellow)
@@ -731,7 +622,8 @@ class pointPlotWidget(annotationPlotWidget):
         self.lineAnnotations = lineAnnotations
         self.pointAnnotations = pointAnnotations
 
-        self.img = self.getStack().getMaxProject(channel=self._channel)
+        # abb 042024 removed
+        # self.img = self.getStack().getMaxProject(channel=self._channel)
 
         self._buildUI()
         # self._view.signalUpdateSlice.connect(self.slot_setSlice)
@@ -943,58 +835,6 @@ class pointPlotWidget(annotationPlotWidget):
         # make all spine lines
         self._bMakeSpineLines()
 
-    def _old_slot_addedAnnotation(
-        self, addAnnotationEvent: pymapmanager.annotations.AddAnnotationEvent
-    ):
-        """
-        Notes
-        -----
-        Need to defer calling super() until we update out interface.
-        """
-        # order matters
-        # super().slot_addedAnnotation(addAnnotationEvent)
-
-        logger.info(f"pointPlotWidget addAnnotationEvent:{addAnnotationEvent}")
-
-        addedRow = addAnnotationEvent.getAddedRow()
-        _, ySpine, xSpine = addAnnotationEvent.getZYX()
-
-        # add a label
-        newLabel = self._newLabel(addedRow, xSpine, ySpine)
-        # label_value.setText(str(row['index']), rotateAxis=(1, 0), angle=90)
-        self._view.addItem(newLabel)
-        self._labels.append(newLabel)  # our own list
-
-        # add a spine line
-        _brightestIndex = self.pointAnnotations.getValue(["brightestIndex"], addedRow)
-        xLeft = self.lineAnnotations.getValue(["xLeft"], _brightestIndex)
-        xRight = self.lineAnnotations.getValue(["xRight"], _brightestIndex)
-        yLeft = self.lineAnnotations.getValue(["yLeft"], _brightestIndex)
-        yRight = self.lineAnnotations.getValue(["yRight"], _brightestIndex)
-
-        leftRadiusPoint = (xLeft, yLeft)
-        rightRadiusPoint = (xRight, yRight)
-        spinePoint = (xSpine, ySpine)
-        closestPoint = pymapmanager.utils.getCloserPoint2(
-            spinePoint, leftRadiusPoint, rightRadiusPoint
-        )
-
-        logger.info(f"   xSpine:{xSpine}")
-        logger.info(f"   ySpine:{ySpine}")
-        logger.info(f"   closestPoint:{closestPoint}")
-
-        self._xSpineLines = np.append(self._xSpineLines, xSpine)
-        self._xSpineLines = np.append(self._xSpineLines, closestPoint[0])
-
-        self._ySpineLines = np.append(self._ySpineLines, ySpine)
-        self._ySpineLines = np.append(self._ySpineLines, closestPoint[1])
-
-        self._spineLinesConnect = np.append(self._spineLinesConnect, 1)  # connect
-        self._spineLinesConnect = np.append(self._spineLinesConnect, 0)  # don't connect
-
-        # order matters
-        super().slot_addedAnnotation(addAnnotationEvent)
-
     def _deleteSelection(self):
         _selection = self.getStackWidget().getStackSelection()
         if _selection.hasPointSelection():
@@ -1021,16 +861,8 @@ class pointPlotWidget(annotationPlotWidget):
         self._refreshSlice()
 
     def editedEvent(self, event: pmmEvent):
-        # logger.info(event)
-        _selection = event.getStackSelection()
-        if not _selection.hasPointSelection():
-            return
 
-        items = _selection.getPointSelection()
-        for item in items:
-            self._updateItem(item)
-
-        super().editedEvent(event)
+        self._refreshSlice()
 
     def deletedEvent(self, event: pmmEvent):
         # order matters, call after we do our work
@@ -1082,53 +914,6 @@ class pointPlotWidget(annotationPlotWidget):
 
         super().deletedEvent(event)
 
-    def _old_slot_deletedAnnotation(self, delDict: dict):
-        """Delete an annotation by removing its label and spine line.
-
-        Notes
-        -----
-        As we are using int indices, only allow poping one label, will not work for multiple.
-        After pop, the next index is not valied!
-        """
-        super().slot_deletedAnnotation(delDict)
-
-        # logger.info(f'pointPlotWidget slot_deletedAnnotation {delDict}')
-
-        annotationIndexList = delDict["annotationIndex"]
-
-        if len(annotationIndexList) == 1:
-            oneIndex = annotationIndexList[0]
-
-            # remove the deleted annotation from our label list
-            popped_item = self._labels.pop(oneIndex)  # remove from list
-            self._view.removeItem(popped_item)  # remove from pyqtgraph view
-
-            # decriment all labels after (and including) oneIndex
-            for i in range(oneIndex, len(self._labels)):
-                self._labels[i].setText(str(i))
-
-            # delete spine line (TODO: we need a set slice for this to refresh)
-            realIdx = oneIndex * 2
-            # x
-            self._xSpineLines = np.delete(self._xSpineLines, realIdx)
-            self._xSpineLines = np.delete(self._xSpineLines, realIdx)
-            # y
-            self._ySpineLines = np.delete(self._ySpineLines, realIdx)
-            self._ySpineLines = np.delete(self._ySpineLines, realIdx)
-            # connect
-            self._spineLinesConnect = np.delete(self._spineLinesConnect, realIdx)
-            self._spineLinesConnect = np.delete(self._spineLinesConnect, realIdx)
-
-            # TODO: we need a set slice to set the data of the spine lines
-
-        else:
-            logger.error(
-                f"Does not correctly remove labels/lines when more than one annotation, got {len(annotationIndexList)} annotations"
-            )
-
-        # TODO: probably not necc. as we should (in theory) receive a slot_selectAnnotation with [] annotations to select
-        self._cancelSpineRoiSelection()
-
     def _cancelSpineRoiSelection(self):
         """Cancel spine ROI selection."""
         self._spinePolygon.setData([], [])
@@ -1177,80 +962,6 @@ class pointPlotWidget(annotationPlotWidget):
         itemList = _stackSelection.getPointSelection()  # might be []
         isAlt = event.isAlt()
         self._selectAnnotation(itemList, isAlt)
-
-    def _old_slot_selectAnnotation2(
-        self, selectionEvent: "pymapmanager.annotations.SelectionEvent"
-    ):
-        super().slot_selectAnnotation2(selectionEvent)
-
-        # logger.info('pointPlotWidget XXX')
-        # logger.info(f'{self._getClassName()}')
-        if not selectionEvent.isPointSelection():
-            return
-
-        _selectedRows = selectionEvent.getRows()
-
-        # segmentID = self.pointAnnotations.getValue('segmentID', spineIdx)
-        # zyxList = self.lineAnnotations.get_zyx_list(segmentID)
-        # brightestIndex = self.pointAnnotations._calculateSingleBrightestIndex(self._channel, int(_selectedRows), zyxList, self.img)
-
-        # if(_selectedRows is None):
-        if len(_selectedRows) == 0:
-            self._cancelSpineRoiSelection()
-
-        elif len(_selectedRows) == 1:
-            # logger.info(f'selectedRow {_selectedRow}')
-            firstSelectedRow = _selectedRows[0]
-
-            roiType = self.pointAnnotations.getValue("roiType", firstSelectedRow)
-            xOffset = self.pointAnnotations.getValue(
-                "xBackgroundOffset", firstSelectedRow
-            )
-            yOffset = self.pointAnnotations.getValue(
-                "yBackgroundOffset", firstSelectedRow
-            )
-            # logger.info(f'xOffset {xOffset} yOffset {yOffset}')
-
-            if roiType == "spineROI":
-                # firstSelectedRow = spine row index
-                # jaggedPolygon = self.pointAnnotations.calculateJaggedPolygon(self.lineAnnotations, firstSelectedRow, self._channel, self.img)
-                jaggedPolygon = self.pointAnnotations.getValue(
-                    "spineROICoords", firstSelectedRow
-                )
-
-                if jaggedPolygon is not None:
-                    # TODO: Move this to load in base annotations
-                    jaggedPolygon = eval(jaggedPolygon)
-                    # logger.info(f'within list {jaggedPolygon} list type {type(jaggedPolygon)}')
-                    jaggedPolygon = np.array(jaggedPolygon)
-
-                    self._spinePolygon.setData(jaggedPolygon[:, 1], jaggedPolygon[:, 0])
-
-                    # Add code to plot the backgroundROI
-                    self._spineBackgroundPolygon.setData(
-                        jaggedPolygon[:, 1] + yOffset, jaggedPolygon[:, 0] + xOffset
-                    )
-                    # self._spineBackgroundPolygon.setData(jaggedPolygon[:,1] + xOffset, jaggedPolygon[:,0] + yOffset)
-
-                # radius = 5
-                forFinalMask = False
-                segmentPolygon = self.pointAnnotations.calculateSegmentPolygon(
-                    firstSelectedRow, self.lineAnnotations, forFinalMask
-                )
-                # Removed - No longer storing polygon in backend
-                # segmentPolygon = self.pointAnnotations.getValue("segmentROICoords", firstSelectedRow)
-                # segmentPolygon = eval(segmentPolygon)
-                # segmentPolygon = np.array(segmentPolygon)
-
-                if segmentPolygon is not None:
-                    # logger.info(f'segmentPolygon coordinate list {segmentPolygon}')
-                    self._segmentPolygon.setData(
-                        segmentPolygon[:, 0], segmentPolygon[:, 1]
-                    )
-                    # self._view.update()
-                    self._segmentBackgroundPolygon.setData(
-                        segmentPolygon[:, 0] + yOffset, segmentPolygon[:, 1] + xOffset
-                    )
 
     # TODO: Figure out where this is being called twice
     # NEEDED WITH pmmWidget v3 interface
@@ -1415,11 +1126,14 @@ class pointPlotWidget(annotationPlotWidget):
         """
         anchorDf = self._annotations.getSpineLines()
         
-        self._xSpineLines = anchorDf['x']
-        self._ySpineLines = anchorDf['y']
+        # logger.info(f'anchorDf:{type(anchorDf["x"])}')
+        # print(anchorDf)
 
+        self._xSpineLines = anchorDf['x'].to_numpy()
+        self._ySpineLines = anchorDf['y'].to_numpy()
+
+        # 1 is connect to next, 0 is not connect to next
         self._spineLinesConnect = np.ndarray(len(anchorDf))
-        
         self._spineLinesConnect[::2] = 1
         self._spineLinesConnect[1::2] = 0
 
@@ -1476,33 +1190,56 @@ class linePlotWidget(annotationPlotWidget):
         self._roiTypes = ["linePnt"]
         self._buildUI()
 
-    def _old_slot_selectAnnotation2(
-        self, selectionEvent: "pymapmanager.annotations.SelectionEvent"
-    ):
-        # logger.info('linePlotWidget ... rowidx is segment ID')
-        # logger.info(f'{selectionEvent}')
-        # if selectionEvent.type == type(self._annotations):
-        if selectionEvent.isLineSelection():
-            rowIdx = selectionEvent.getRows()
-            isAlt = selectionEvent.isAlt
+    def _buildUI(self):
+        super()._buildUI()
 
-            logger.info(f"  fetching rowIdx:{rowIdx}")
+        # Displaying Radius Lines
 
-            # if rowIdx is None or len(rowIdx)==0:
-            #     segmentID = None
-            # else:
-            #     segmentID = self._annotations.getValue('segmentID', rowIdx)
+        color = self._displayOptions["color"]
+        zorder = self._displayOptions["zorder"]
+        penWidth = 6
+        _pen = pg.mkPen(width=penWidth, color=color)
 
-            segmentID = rowIdx
-            self._selectSegment(segmentID)
-            # self._selectAnnotation(rowIdx, isAlt)
+        self._leftRadiusLines = self._view.plot(
+            [],
+            [],
+            pen=_pen,  # None to not draw lines
+            symbol=None,
+            # symbolColor  = 'red',
+            symbolPen=None,
+            fillOutline=False,
+            markeredgewidth=0.0,
+            # symbolBrush = color,
+            # connect='finite',
+        )
 
-    def _old_slot_selectSegment(self, segmentID: int, isAlt: bool):
-        logger.info(f"segmentID:{segmentID} isAlt:{isAlt}")
-        self._selectSegment(segmentID)
+        self._leftRadiusLines.setZValue(
+            zorder
+        )  # put it on top, may need to change '10'
+
+        self._rightRadiusLines = self._view.plot(
+            [],
+            [],
+            pen=_pen,  # None to not draw lines
+            symbol=None,
+            # symbolColor  = 'red',
+            symbolPen=None,
+            fillOutline=False,
+            markeredgewidth=0.0,
+            # symbolBrush = color,
+            # connect='finite',
+        )
+
+        self._rightRadiusLines.setZValue(
+            zorder
+        )  # put it on top, may need to change '10'
+
+        # logger.info(f'adding _rightRadiusLines to view: {self.__class__.__name__}')
+        self._view.addItem(self._rightRadiusLines)
 
     def _selectSegment(self, segmentID: Optional[List[int]]):
         """Visually select an entire segment"""
+        logger.info(segmentID)
         if len(segmentID) == 0:
             x = []
             y = []
@@ -1531,19 +1268,34 @@ class linePlotWidget(annotationPlotWidget):
         y = []
         self._scatterUserSelection.setData(x, y)
 
+    def slot_setSlice(self, sliceNumber: int):
+        super().slot_setSlice(sliceNumber)  # draws centerline
+
+        dfLeft = self._annotations.getLeftRadiusPlot(None, sliceNumber, 1)
+        self._leftRadiusLines.setData(
+            dfLeft["x"],
+            dfLeft["y"],
+            # connect='finite',
+        )
+
+        dfRight = self._annotations.getRightRadiusPlot(None, sliceNumber, 1)
+        self._rightRadiusLines.setData(
+            dfRight["x"],
+            dfRight["y"],
+            # connect='finite',
+        )
+
     def selectedEvent(self, event: pmmEvent):
         """If in manualConnectSpine state and got a point selection on the line
         that is the new connection point   !!!
         """
 
-        # logger.info(event)
-        logger.info("linePlotWidget selectedEvent Called")
-        
         _stackSelection = event.getStackSelection()
         logger.info(f"linePlotWidget _stackSelection: {_stackSelection}")
+        
         if _stackSelection.hasSegmentSelection():
             logger.info("linePlotWidget has a segment selection")
-            _selectedItems = _eventStackSelection.getSegmentSelection()
+            _selectedItems = _stackSelection.getSegmentSelection()
             self._selectSegment(_selectedItems)
 
         _state = event.getStackSelection().getState()
