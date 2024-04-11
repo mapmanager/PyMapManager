@@ -15,6 +15,7 @@ from .stackStatusbar import StatusToolbar
 from .stackPluginWidget import stackPluginDock
 from .annotationListWidget2 import pointListWidget, lineListWidget
 from .imagePlotWidget2 import ImagePlotWidget
+from .selectionInfoWidget import SelectionInfoWidget
 
 # from .tracingWidget import tracingWidget
 # from .histogramWidget2 import HistogramWidget
@@ -340,6 +341,12 @@ class stackWidget2(mmWidget2):
         llw = lineListWidget(self)
         lineListDock = self._addDockWidget(llw, 'left', 'Lines')
         self._widgetDict[lineListName] = lineListDock  # the dock, not the widget ???
+
+        #abj
+        # selectionInfoName = SelectionInfoWidget._widgetName
+        # siw = SelectionInfoWidget(self)
+        # selectionInfoDock = self._addDockWidget(siw, 'left', 'Selection')
+        # self._widgetDict[selectionInfoName] = selectionInfoDock  # the dock, not the widget ???
 
         #
         imagePlotName = ImagePlotWidget._widgetName
@@ -863,4 +870,9 @@ class stackWidget2(mmWidget2):
         
         newEvent = pmmEvent(pmmEventType.selection, self)
         newEvent.getStackSelection().setPointSelection(items)
+
+        sliceNum = self.getStack().getPointAnnotations().getValue("z", spineIndex)
+        logger.info(f"accept Point sliceNum {sliceNum}")
+        newEvent.setSliceNumber(sliceNum)
+
         self._afterEdit(newEvent)

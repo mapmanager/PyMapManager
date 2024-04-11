@@ -566,7 +566,6 @@ class baseAnnotations():
         )
         self.addColumn(colItem)
 
-
         #
         # create dataframe with column names
         #columns = self._columns.getColumnNames()
@@ -1393,9 +1392,9 @@ class baseAnnotations():
         # self._df.set_index()
             
     def intializeIsBad(self):
+        logger.info("IsBad Column Initialized")
         for row in range(self._df.shape[0]):
             self.setValue("isBad", row, False)
-
 
 if __name__ == '__main__':
     pass

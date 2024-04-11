@@ -13,6 +13,9 @@ import pymapmanager.stack
 import pymapmanager.annotations
 
 from .mmWidget2 import mmWidget2, pmmEventType, pmmEvent, pmmStates
+# import matplotlib as mpl
+# from matplotlib import colors
+import seaborn as sns
 
 class annotationPlotWidget(mmWidget2):
     """Base class to plot annotations in a pg view.
@@ -73,6 +76,10 @@ class annotationPlotWidget(mmWidget2):
         self._allowClick = True
         # used in stateChangedEvent sigPointsClicked disconnect does not seem to work?
 
+        # self._colorMap = mpl.colormaps['Pastel1'].colors
+        # self._colorMap = colors.ListedColormap(['r', 'g', 'b', 'c', 'm', 'y', 'k',]).colors
+        self._colorMap = sns.color_palette("husl", 10).as_hex()
+        
     def getStack(self):
         return self.getStackWidget().getStack()
 
@@ -471,7 +478,7 @@ class annotationPlotWidget(mmWidget2):
             sliceNumber:
         """
         
-        # _className = self.__class__.__name__
+        _className = self.__class__.__name__
         # logger.info(f'xxx {_className} sliceNumber:{sliceNumber}')
         
         startTime = time.time()
@@ -521,17 +528,34 @@ class annotationPlotWidget(mmWidget2):
             doLine = False
             #self._scatter.connect(False)
         
-        # connect is from ('all' 'pairs', 'finite', ndarray of [0, 1])
-        # Show points in the segment
-        
-        # logger.info(f'set data slice {sliceNumber} has {len(x)} {len(y)}')
+        # Accept is only done within pointAnnotations
+        if _className == "linePlotWidget":
+            self._scatter.setData(x, y)
+        elif _className == "pointPlotWidget":
+            # logger.info(f'dfPlot {dfPlot}')
 
-        self._scatter.setData(x, y,
-                            #   symbolBrush=None,
-                            #   markeredgewidth=0.0,
-                            #   fillstyle='full',
-                              #connect="finite",
-                              )
+            # Color is either usertype (0-9), no color (isBad), basic color (!isBad)
+            color = dfPlot['isBad'].tolist()
+            userType = dfPlot['userType'].tolist()
+
+            # logger.info(f'color {color}')
+            for index, boolean in enumerate(color):
+                if boolean:
+                    color[index] = "white"
+                else:
+                    colorFormat = self._colorMap[userType[index]] 
+                    # logger.info(f"color is: {colorFormat}")
+                    color[index] = colorFormat
+
+            self._scatter.setData(x, y,
+                                #   symbolBrush=None,
+                                #   markeredgewidth=0.0,
+                                #   fillstyle='full',
+                                #connect="finite",
+                                symbolBrush = color
+                                )
+            
+            self._scatter.setZValue(10)
 
         # Adding index labels for each spine Point
         # self.label_value = pg.LabelItem('', **{'color': '#FFF','size': '5pt'})
@@ -669,7 +693,7 @@ class pointPlotWidget(annotationPlotWidget):
                         pointAnnotations,
                         pgView,
                         displayOptions)
-        
+
         self._displayOptionsLines = displayOptionsLines
 
         # define the roi types we will display, see: slot_setDisplayTypes()
@@ -1077,6 +1101,9 @@ class pointPlotWidget(annotationPlotWidget):
         yOffset = self.pointAnnotations.getValue("yBackgroundOffset", rowIdx)
         # logger.info(f'xOffset {xOffset} yOffset {yOffset}')
 
+        # TODO: replot scatter plot to show updated values of accept (isBad) Points
+
+
         if roiType == "spineROI":
             
             # firstSelectedRow = spine row index
@@ -1462,7 +1489,6 @@ class linePlotWidget(annotationPlotWidget):
             x = dfPlot['x'].tolist()
             y = dfPlot['y'].tolist()
 
-        # TODO: 3/12 Figure out how to click through this data set.
         self._scatterUserSelection.setData(x, y)
 
         self._highlightedPlotIndex = self._annotations._df[self._annotations._df['segmentID'].isin(segmentID)]

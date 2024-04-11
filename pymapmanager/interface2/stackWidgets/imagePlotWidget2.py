@@ -106,6 +106,7 @@ class ImagePlotWidget(mmWidget2):
 
         # self.refreshSlice()
 
+
     def wheelEvent_monkey_patch(self, event):
         """Respond to mouse wheel and set new slice.
 
@@ -231,26 +232,67 @@ class ImagePlotWidget(mmWidget2):
 
         _pointAnnotations = self._myStack.getPointAnnotations()
         isBad = _pointAnnotations.getValue('isBad', firstPointSelection)
-        logger.info(f"isBad {isBad}")
+        # logger.info(f"isBad {isBad}")
         import math
         if math.isnan(isBad):
             isBad = False
 
-        if isBad is True:
-            acceptAction = _menu.addAction(f'Accept {point_roiType} ')
-            acceptAction.setCheckable(True)
+        acceptAction = _menu.addAction(f'Accept {point_roiType} ')
+        acceptAction.setCheckable(True)
+
+        if isBad:
             acceptAction.setChecked(False)
-        elif isBad is False:
-            acceptAction = _menu.addAction(f'Accept {point_roiType} ')
-            acceptAction.setCheckable(True)
+        else:
             acceptAction.setChecked(True)
 
         acceptAction.setEnabled(isSpineSelection)
 
+        #abj
+        userTypeMenu = QtWidgets.QMenu('userTypeMenu',self)
+        currentUserType = _pointAnnotations.getValue('userType', firstPointSelection)
+        logger.info(f"currentUserType {currentUserType}")
+
+        self.userTypeActionDict = {}
+        for i in range(10):
+            self.userTypeActionDict[i] = QtGui.QAction(QtGui.QIcon(''), 'userType: %d' %i, self)
+            userTypeMenu.addAction(self.userTypeActionDict[i])
+            self.userTypeActionDict[i].setCheckable(True)
+            if currentUserType == i:
+                #  logger.info(f"currentUserType {currentUserType}")
+                logger.info(f"ITS TRUE")
+                self.userTypeActionDict[i].setChecked(True)
+            else:
+                self.userTypeActionDict[i].setChecked(False)
+
+        # Have an action for each usertype ?
+        _menu.addMenu(userTypeMenu)
 
         action = _menu.exec_(self.mapToGlobal(event.pos()))
         
         #logger.info(f'User selected action: {action}')
+
+        for userActionKey in self.userTypeActionDict:
+            logger.info(f"userAction {userActionKey}")
+            currentAction = self.userTypeActionDict[userActionKey]
+            if action == currentAction:
+                logger.info(f"{currentAction} is being activated")
+                if currentAction.isChecked(): # Once an action is clicked it will be checked
+                    logger.info(f"We are Checking {userActionKey}")
+                    
+                    self.uncheckAllBoxes()
+                    # Select the new type
+                    # self.userTypeActionDict[userActionKey].setChecked(False)
+
+                    # TODO: Change to update backend with Robert's new event system
+                    currentUserType = _pointAnnotations.setValue('userType', firstPointSelection, userActionKey)
+                    # eventType = pmmEventType.changeUserType
+                    # event = pmmEvent(eventType, self)
+                    # self.emitEvent(event, blockSlots=True)
+                    # # emit
+                else:
+                    logger.info(f"Already checked {userActionKey}")
+                    # Do nothing
+                break
 
         if action == moveAction:
             logger.warning('TODO: moveAction')
@@ -310,8 +352,27 @@ class ImagePlotWidget(mmWidget2):
             event = pmmEvent(eventType, self)
             self.emitEvent(event, blockSlots=True)
 
+        # elif action == userType:
+        #     # eventType = pmmEventType.changeUserType
+        #     # event = pmmEvent(eventType, self)
+        #     # self.emitEvent(event, blockSlots=True)
+
+        #     # Open dropdown menu to show current usertype
+        #     # And all selectable usertypes
+
+        #     return
+
+
         else:
             logger.info('No action?')
+
+    
+    def uncheckAllBoxes(self):
+        for userActionKey in self.userTypeActionDict:
+            # logger.info(f"userAction {userActionKey}")
+            # currentAction = self.userTypeActionDict[userActionKey]
+            # currentAction.setChecked(False)
+            self.userTypeActionDict[userActionKey].setChecked(False)
 
     def _old_emitCancelSelection(self):
         """

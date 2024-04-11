@@ -43,7 +43,9 @@ class SelectionInfoWidget(mmWidget2):
 
         # Holds the columns values that is displayed
         # Need to actually get the value from baseAnnotation so that we can get type
+        # self.infoList = ["roiType", "segmentID", "note", "accept"]
         self.infoList = ["roiType", "segmentID", "note"]
+
 
         # Maintain different widgets that display information
         self.widgetDict = {}
@@ -71,20 +73,6 @@ class SelectionInfoWidget(mmWidget2):
         vLayout = QtWidgets.QGridLayout()
         finalLayout.addLayout(vLayout)
 
-        # How to get type from rowIdx?
-        #  Need point Annotations to retrieve from backend
-        # self.pa.getValues(self.infoList,)
-
-        # roiTypeLabel = QtWidgets.QLabel("Roi Type")
-        # # vLayout.addWidget(roiTypeLabel, row, col, rowSpan, colSpan)
-        # finalLayout.addWidget(roiTypeLabel)
-
-        # noteLabel = QtWidgets.QLabel("Note")
-        # finalLayout.addWidget(noteLabel)
-
-        # segmentIDLabel = QtWidgets.QLabel("segmentID")
-        # finalLayout.addWidget(segmentIDLabel)
-
         col = 0
         row = 0
         rowSpan = 1
@@ -111,39 +99,24 @@ class SelectionInfoWidget(mmWidget2):
             if str(valueType) == "Int64":
                 # currentValue = 0
                 logger.info("type is int")
-                # aWidget = QtWidgets.QSpinBox()
-                # aWidget.setRange(
-                #     0, 2**16
-                # )  # minimum is used for setSpecialValueText()
-                 # displayed when widget is set to minimum
-                # if currentValue is None or math.isnan(currentValue):
-                #     aWidget.setValue(0)
-                # else:
-                #     aWidget.setValue(currentValue)
                 aWidget = QtWidgets.QLabel()
                 aWidget.setAlignment(QtCore.Qt.AlignLeft)
-                # aWidget.setReadOnly(True)
-                # aWidget.setKeyboardTracking(False)  # don't trigger signal as user edits
-                # aWidget.valueChanged.connect(partial(self.on_spin_box, itemName))
-            # elif valueType == "string":
-            # elif isinstance(valueType, str):
             elif valueType ==  str:
                 # logger.info("type is string")
                 if itemName == "note":
                     aWidget = QtWidgets.QLineEdit(currentValue)
                     aWidget.setAlignment(QtCore.Qt.AlignLeft)
-
                     aWidget.textChanged.connect(self._updateNote)
                     # aWidget.setReadOnly(False) 
+                elif itemName == "accept":
+                    logger.info("creating accept")
+                    aWidget = QtWidgets.QCheckBox()
+                    aWidget.setAlignment(QtCore.Qt.AlignLeft)
+                    # aWidget.textChanged.connect(self._updateNote)
                 else:
                     # aWidget.setReadOnly(True)
                     aWidget = QtWidgets.QLabel()
                     aWidget.setAlignment(QtCore.Qt.AlignLeft)
-                   
-                # aWidget.editingFinished.connect(
-                #     partial(self.on_text_edit, aWidget, itemName)
-                # )
-
             if aWidget is not None:
                 # logger.info("adding new widget")
                 # logger.info(f"with name {itemName}")
@@ -178,6 +151,7 @@ class SelectionInfoWidget(mmWidget2):
             #TODO: no selection, need to blank out all controls (QLabel)
             return
 
+        logger.info(f"self.infoList {self.infoList}")
         backendVal = self.pa.getValues(self.infoList, rowIdx)[0]
 
         # print("widgetDict:", self.widgetDict)
@@ -186,32 +160,16 @@ class SelectionInfoWidget(mmWidget2):
         for values in backendVal:
             itemName = self.infoList[index]
             itemWidget = self.widgetDict[itemName]["widget"]
-            # itemWidget.setValue(currentValue)
-            # if isinstance(itemWidget, QtWidgets.QSpinBox):
-            #     try:
-            #         if backendVal[index] is None or math.isnan(backendVal[index]):
-            #             itemWidget.setValue(0)
-            #         else:
-            #             itemWidget.setValue(int(backendVal[index]))
-            #     except TypeError as e:
-            #         logger.error(f"QSpinBox analysisParam:{itemName} ... {e}")
+
             if isinstance(itemWidget, QtWidgets.QLabel):
-                # logger.info(f"widget is a qlabel")
-                # logger.info(f"backendVal[index]: {backendVal[index]}")
-                # logger.info(f"type of backendVal[index]: {type(backendVal[index])}")
                 valType = type(backendVal[index])
                 if valType == float:
-                    # checkInt = int(backendVal[index])
-                    # logger.info(f"checkInt is {checkInt}")
-                    # itemWidget.setText(str(checkInt))
                     itemWidget.setText(str(backendVal[index]))
                 else:
                     itemWidget.setText(str(backendVal[index]))
 
             elif isinstance(itemWidget, QtWidgets.QLineEdit):
                 itemWidget.setText(str(backendVal[index]))
-                # TODO: make text for Note editable
-                # Need to update backend whenever there is an edit to Note
             index += 1
     
     # Slot that receives signal from other widgets (Stack/ AnotationPlotWidget)
@@ -251,7 +209,15 @@ class SelectionInfoWidget(mmWidget2):
         #self.signalUpdateNote.emit(currentVal)
 
         #TODO: emit pmmEvent type edit with the point annotation row
-        pass
+        # pass
+
+        # Could make the change here and then emit edit event to signal rest of the widgets
+
+        eventType = pmmEventType.edit
+        event = pmmEvent(eventType, self)
+
+        self.emitEvent(event, blockSlots=False)
+
 
     def selectedEvent(self, event):
         logger.info(event)
