@@ -428,6 +428,7 @@ class stackWidget2(mmWidget2):
         else:
             self.getStackSelection().setSegmentSelection([])
 
+        # abb 202404 we don't need this any more
         if _eventSelection.hasSegmentPointSelection():
             _segmentPointSelection = _eventSelection.getSegmentPointSelection()
             self.getStackSelection().setSegmentPointSelection(_segmentPointSelection)
@@ -622,9 +623,10 @@ class stackWidget2(mmWidget2):
         # _imageSlice = z
         # imgSliceData = self._stack.getImageSlice(_imageSlice, channelNumber)
         
-        _pointAnnotation.updateSpineInt2(
-                        item,
-                        self._stack)
+        # abb 202404, done by core
+        # _pointAnnotation.updateSpineInt2(
+        #                 item,
+        #                 self._stack)
                             
         #
 

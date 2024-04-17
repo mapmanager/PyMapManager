@@ -358,6 +358,7 @@ class annotationPlotWidget(mmWidget2):
 
                 # 3/11 adding segment selection everytime there is a point selection
                 # segmentIndex = [self.getStack().getPointAnnotations().getValue("segmentID", dbIdx)]
+                logger.error('todo: move segment selection logic into stackwidget.selectionEvent()')
                 segmentIndex = self.getStack().getPointAnnotations().getValue("segmentID", dbIdx)
 
                 # add this
@@ -467,7 +468,7 @@ class annotationPlotWidget(mmWidget2):
             sliceNumber:
         """
         
-        _className = self.__class__.__name__
+        # _className = self.__class__.__name__
         # logger.info(f'xxx {_className} sliceNumber:{sliceNumber}')
 
         startTime = time.time()
@@ -497,17 +498,6 @@ class annotationPlotWidget(mmWidget2):
 
         # TODO: Can get rid of this and just use dfPlot, use dfPlot at index 
         self._currentPlotIndex = dfPlot['index'].tolist()
-
-        # feb 2023, if we are only displaying controlPnt then connect lines in scatter
-        # if (
-        #     len(roiTypes) == 1
-        #     and roiTypes[0] == pymapmanager.annotations.pointTypes.controlPnt
-        # ):
-        #     doLine = True
-        #     # self._scatter.connect(True)
-        # else:
-        #     doLine = False
-        #     #self._scatter.connect(False)
         
         # Accept is only done within pointAnnotations
         _symbolBrush = self._getScatterColor()
@@ -515,74 +505,8 @@ class annotationPlotWidget(mmWidget2):
         self._scatter.setData(x, y,
                               symbolBrush=_symbolBrush)
         
-        # abb 20240411 removed
-        # if _className == "linePlotWidget":
-        #     self._scatter.setData(x, y)
-        # elif _className == "pointPlotWidget":
-        #     # logger.info(f'dfPlot {dfPlot}')
-
-        #     # Color is either usertype (0-9), no color (isBad), basic color (!isBad)
-        #     color = dfPlot['isBad'].tolist()
-        #     userType = dfPlot['userType'].tolist()
-
-        #     # logger.info(f'color {color}')
-        #     for index, boolean in enumerate(color):
-        #         if boolean:
-        #             color[index] = "white"
-        #         else:
-        #             colorFormat = self._colorMap[userType[index]] 
-        #             # logger.info(f"color is: {colorFormat}")
-        #             color[index] = colorFormat
-
-        #     self._scatter.setData(x, y,
-        #                         #   symbolBrush=None,
-        #                         #   markeredgewidth=0.0,
-        #                         #   fillstyle='full',
-        #                         #connect="finite",
-        #                         symbolBrush = color
-        #                         )
-
-        # TODO (cudmore) is this supposed to be here?    
-        # normally we set z when creating, not when updating?
-        # self._scatter.setZValue(10)
-
-        # Adding index labels for each spine Point
-        # self.label_value = pg.LabelItem('', **{'color': '#FFF','size': '5pt'})
-        # self.label_value.setPos(QtCore.QPointF(x[0], y[0]))
-        # self.label_value.setText(str(self._currentPlotIndex[0]))  
-        # self._view .addItem(self.label_value)     
-        
-        logger.error('abb 20240411 TURNED OFF RADIUS PLOT')
-        return
-    
-        if roiTypes == ['linePnt']:
-            # print("checking columns:", self._dfPlot.columns.tolist())
-            # print("testing left", self._dfPlot[~self._dfPlot['xLeft'].isna()])
-            # Shows Radius Line points
-            try:
-                self._leftRadiusLines.setData(self._dfPlot['xLeft'].to_numpy(),
-                                              self._dfPlot['yLeft'].to_numpy(),
-                                                # connect='finite',
-                                              )
-            except (KeyError) as e:
-                logger.error('while plotting left radius')
-                print('exception is:', e)
-                print(self._dfPlot['xLeft'])
-
-            try:
-                self._rightRadiusLines.setData(
-                    self._dfPlot["xRight"].to_numpy(),
-                    self._dfPlot["yRight"].to_numpy(),
-                    # connect='finite',
-                )
-            except KeyError as e:
-                logger.error("while plotting right radius")
-                print("exception is:", e)
-                print(self._dfPlot["xRight"])
-
         stopTime = time.time()
-        msElapsed = (stopTime - startTime) * 1000
-        logger.info(f'Took {round(msElapsed,2)} ms {type(self)}')
+        logger.info(f'base annotation plot widget ... {self.getClassName()} Took {round(stopTime-startTime,4)} sec')
 
     def deletedEvent(self, event: pmmEvent):
         # cancel selection (yellow)
@@ -981,8 +905,7 @@ class pointPlotWidget(annotationPlotWidget):
         _rows = self._dfPlot["index"].to_list()
         # _rows = self._dfPlot.index.to_list()
 
-        # logger.info(_rows)
-
+        #
         # show and hide labels based on sliceNumber
         for labelIndex, label in enumerate(self._labels):
             # labelIndex = int(labelIndex)  # some labels will not cast
@@ -991,6 +914,7 @@ class pointPlotWidget(annotationPlotWidget):
             else:
                 label.hide()
 
+        #
         # mask and unmask spine lines based on sliceNumber
         _spineLineIndex = []
         for row in _rows:
@@ -1002,36 +926,15 @@ class pointPlotWidget(annotationPlotWidget):
         try:
             _xData = self._xSpineLines[_spineLineIndex]
             _yData = self._ySpineLines[_spineLineIndex]
-            _connect = self._spineLinesConnect[_spineLineIndex]
+            # _connect = self._spineLinesConnect[_spineLineIndex]
         except IndexError as e:
             logger.error(f"my IndexError {e}")
 
         else:
-            # self._spineConnections.setData(_xData, _yData, connect=_connect)
             self._spineConnections.setData(_xData, _yData)
 
-        # else:
-        #     if len(self.labels) > 0:
-        #         for label in self.labels:
-        #             self._view.removeItem(label)
-        #             self.labels = []
-
-        #     for index, row in self._dfPlot.iterrows():
-        #         if row['roiType'] == "spineROI":
-        #             label_value = pg.LabelItem('', **{'color': '#FFF','size': '2pt'})
-        #             label_value.setPos(QtCore.QPointF(row['x']-9, row['y']-9))
-        #             label_value.setText(str(row['index']))
-        #             # label_value.setText(str(row['index']), rotateAxis=(1, 0), angle=90)
-        #             self._view.addItem(label_value)
-        #             self.labels.append(label_value)
-
-        # # lines are taking ~100ms per set slice
-        # xPlotSpines, yPlotSpines = self.lineAnnotations.getSpineLineConnections(self._dfPlot)
-        # # self._spineConnections.setData(xPlotLines, yPlotLines)
-        # self._spineConnections.setData(xPlotSpines, yPlotSpines, connect="finite")
-
         stopSec = time.time()
-        # logger.info(f'took {round(stopSec-startSec,3)} seconds')
+        logger.info(f'{self.getClassName()} took {round(stopSec-startSec,4)} seconds')
 
     def _updateItem(self, rowIdx: int):
         """Update one item (both labels and spine line).
@@ -1146,10 +1049,11 @@ class pointPlotWidget(annotationPlotWidget):
         self._xSpineLines = anchorDf['x'].to_numpy()
         self._ySpineLines = anchorDf['y'].to_numpy()
 
+        # 202404, we now use connect='pairs', not need for this !!!
         # 1 is connect to next, 0 is not connect to next
-        self._spineLinesConnect = np.ndarray(len(anchorDf))
-        self._spineLinesConnect[::2] = 1
-        self._spineLinesConnect[1::2] = 0
+        # self._spineLinesConnect = np.ndarray(len(anchorDf))
+        # self._spineLinesConnect[::2] = 1
+        # self._spineLinesConnect[1::2] = 0
 
     def _bMakeLabels(self):
         """Make a label for each point annotations.
@@ -1301,19 +1205,42 @@ class linePlotWidget(annotationPlotWidget):
     def slot_setSlice(self, sliceNumber: int):
         super().slot_setSlice(sliceNumber)  # draws centerline
 
+        startSec = time.time()
+ 
+        logger.info(f'{self.getClassName()}')
+        
         dfLeft = self._annotations.getLeftRadiusPlot(None, sliceNumber, 1)
+
+        # _leftSegmentDiff will be 0 for points (rows) that are same as next point (row)
+        # results in 1 if next point is in same segment, 0 if it is not
+        _leftSegmentDiff = np.diff(dfLeft.index.to_numpy())
+        _leftSegmentDiff[ _leftSegmentDiff != 0] = -1
+        _leftSegmentDiff[ _leftSegmentDiff == 0] = 1
+        _leftSegmentDiff[ _leftSegmentDiff == -1] = 0
+        _leftSegmentDiff = np.append(_leftSegmentDiff, 0)  # append 0 value
+
         self._leftRadiusLines.setData(
-            dfLeft["x"],
-            dfLeft["y"],
-            # connect='finite',
+            dfLeft["x"].to_numpy(),
+            dfLeft["y"].to_numpy(),
+            connect=_leftSegmentDiff,
         )
 
         dfRight = self._annotations.getRightRadiusPlot(None, sliceNumber, 1)
+
+        _rightSegmentDiff = np.diff(dfRight.index.to_numpy())
+        _rightSegmentDiff[ _rightSegmentDiff != 0] = -1
+        _rightSegmentDiff[ _rightSegmentDiff == 0] = 1
+        _rightSegmentDiff[ _rightSegmentDiff == -1] = 0
+        _rightSegmentDiff = np.append(_rightSegmentDiff, 0)  # append 0 value
+    
         self._rightRadiusLines.setData(
-            dfRight["x"],
-            dfRight["y"],
-            # connect='finite',
+            dfRight["x"].to_numpy(),
+            dfRight["y"].to_numpy(),
+            connect=_rightSegmentDiff,
         )
+
+        stopSec = time.time()
+        logger.info(f'{self.getClassName()} took {round(stopSec-startSec,4)} sec')
 
     def selectedEvent(self, event: pmmEvent):
         """If in manualConnectSpine state and got a point selection on the line

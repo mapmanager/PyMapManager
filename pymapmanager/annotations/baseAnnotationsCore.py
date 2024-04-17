@@ -246,7 +246,7 @@ class LineAnnotationsCore(AnnotationsCore):
         _startSlice = zSlice - zPlusMinus
         _stopSlice = zSlice + zPlusMinus
 
-        df = self._xyLeftDf  
+        df = self._xyLeftDf      
         df = df[(df['z']>=_startSlice) & (df['z']<=_stopSlice)]
 
         return df
@@ -396,7 +396,7 @@ class SpineAnnotationsCore(AnnotationsCore):
         """
         logger.info(f'rowIdx:{rowIdx}')
 
-        logger.error('!!! 20240416, delete spine core is broken')
+        logger.error('!!! 20240416, delete spine core is broken -> NOT DELETING  !!!')
         # self._fullMap.deleteSpine((rowIdx, self.sessionID))
 
         self._buildDataFrame()

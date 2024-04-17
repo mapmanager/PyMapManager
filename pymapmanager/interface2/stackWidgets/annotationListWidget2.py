@@ -160,22 +160,6 @@ class annotationListWidget(mmWidget2):
         #  table view
         self._myTableView = myQTableView(df=self._annotations.getSummaryDf(), name=name)
         self._myTableView.signalSelectionChanged.connect(self.on_table_selection)
-
-        # TODO (Cudmore) Figure out how to set font of (cell, row/vert header, col/horz header)
-        #   and reduce row size to match font
-        # _fontSize = 11
-        # aFont = QtGui.QFont('Arial', _fontSize)
-        # self._myTableView.setFont(aFont)  # set the font of the cells
-        # self._myTableView.horizontalHeader().setFont(aFont)
-        # self._myTableView.verticalHeader().setFont(aFont)
-
-        # self._myTableView.verticalHeader().setDefaultSectionSize(_fontSize)  # rows
-        # self._myTableView.verticalHeader().setMaximumSectionSize(_fontSize)
-        #self._myTableView.horizontalHeader().setDefaultSectionSize(_fontSize)  # rows
-        #self._myTableView.horizontalHeader().setMaximumSectionSize(_fontSize)
-        
-        # TODO: 3/24, is this necc?
-        # self._myTableView.resizeRowsToContents()
         
         vLayout.addWidget(self._myTableView)
 
@@ -226,10 +210,6 @@ class pointListWidget(annotationListWidget):
 
         self._myTableView._selectRow(pointSelection)
 
-        # # logger.info(f'itemList: {itemList}')
-        # if itemList:
-        #     self._myTableView._selectRow(itemList)
-
     def setDisplayPointType(self, pointType : "pymapmanager.annotations.pointTypes"):
         """Displaly just one pointType(s) in the table.
         
@@ -270,15 +250,8 @@ class pointListWidget(annotationListWidget):
     def deleteSelected(self):
         """Delete currently selected annotations.
         """
-
         items = self._myTableView.getSelectedRows()
-
-        # abb 202404, was this
-        # eventType = pmmEventType.delete
-        # event = pmmEvent(eventType, self)
-        # event.getStackSelection().setPointSelection(deletedRows)
-        # self.emitEvent(event)
-
+        logger.info(f'items:{items}')
         deleteSpineEvent = DeleteSpineEvent(self, items)
         self.emitEvent(deleteSpineEvent)
 
@@ -317,6 +290,7 @@ class lineListWidget(annotationListWidget):
         event.setAlt(isAlt)
         self.emitEvent(event, blockSlots=False)
 
+    # not sure if this is used ???
     def deleteSelected(self):
         """Delete currently selected line annotations.
         """
@@ -324,7 +298,7 @@ class lineListWidget(annotationListWidget):
         selectedRows = self._myTableView.selectionModel().selectedRows()
         deletedRows : List[int] = []
         
-        logger.error(f'{self.getClassName()} WILL TRIGGER ERROR')
+        logger.error(f'{self.getClassName()} WILL TRIGGER ERROR - IS THIS USED')
 
         for row in selectedRows:
             sortedRowItem = self._myTableView.model().mapToSource(row)
