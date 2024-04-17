@@ -276,27 +276,31 @@ class mmMap():
         #load each stack db
         # this assumes self.objMap has already been loaded
         self._stacks = [] #  A list of mmStack
-        for _session in range(0, self.numSessions):
-            stackPath = self.getStackPath(_session)
-            stack = pymapmanager.stack(stackPath,
-                                       loadImageData=False,
-                                       mmMap=self,
-                                       mmMapSession=_session)
-            # if doFile:
-            #     stack = mmStack(name=self._getStackName(i), numChannels=self.numChannels, \
-            #                     map=self, mapSession=i)
-            # else:
-            #     stack = mmStack(name=self._getStackName(i), numChannels=self.numChannels, \
-            #                     map=self, mapSession=i, urlmap=self.name)
-            self.stacks.append(stack)
+        
+        _loadStacks = False
+        if _loadStacks:
+            for _session in range(0, self.numSessions):
+                stackPath = self.getStackPath(_session)
+                stack = pymapmanager.stack(stackPath,
+                                        loadImageData=False,
+                                        mmMap=self,
+                                        mmMapSession=_session)
+                # if doFile:
+                #     stack = mmStack(name=self._getStackName(i), numChannels=self.numChannels, \
+                #                     map=self, mapSession=i)
+                # else:
+                #     stack = mmStack(name=self._getStackName(i), numChannels=self.numChannels, \
+                #                     map=self, mapSession=i, urlmap=self.name)
+                self.stacks.append(stack)
+
+
+            # 202402 need to add some columns to stack db
+            logger.warning('REMOVE THIS INGEST !!!!!!!!!')
+            from pymapmanager.interface2.mapWidgets._mapIngest import addDistance
+            addDistance(self)
 
         stopTime = time.time()
         print('map', self.name, 'loaded in', round(stopTime-startTime,2), 'seconds.')
-
-        # 202402 need to add some columns to stack db
-        logger.warning('REMOVE THIS INGEST !!!!!!!!!')
-        from pymapmanager.interface2.mapWidgets._mapIngest import addDistance
-        addDistance(self)
 
     def __iter__(self):
         # this along with __next__ allow mmMap to iterate over stacks
@@ -306,9 +310,12 @@ class mmMap():
     def __next__(self):
         # this along with __iter__ allow mmMap to iterate over stacks
         if self._iterIdx < self.numSessions:
-            x = self.stacks[self._iterIdx]
-            self._iterIdx += 1
-            return x
+            try:
+                x = self.stacks[self._iterIdx]
+                self._iterIdx += 1
+                return x
+            except (IndexError):
+                raise StopIteration
         else:
             raise StopIteration
 
@@ -1126,8 +1133,12 @@ def run():
     for oneStack in _map:
         print(oneStack)
 
-    tstShowMap()
+    # 20240412 turn back on
+    # tstShowMap()
     
+    print(_map.runMap.shape)
+    print(_map.runMap)
+
     sys.exit(1)
 
     if 1:

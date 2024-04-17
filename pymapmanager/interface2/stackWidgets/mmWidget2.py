@@ -11,9 +11,11 @@ from pymapmanager._logger import logger
 class pmmStates(Enum):
     view = auto()
     edit = auto()
+    
     movingPnt = auto()
     manualConnectSpine = auto()
     autoConnectSpine = auto()
+    
     editSegment = auto()
 
 class pmmEventType(Enum):
@@ -21,14 +23,17 @@ class pmmEventType(Enum):
     add = auto()
     delete = auto()
     edit = auto()  # signal there has been a change in an annotation (note, isBad, ...)
-    stateChange = auto()  # one state from pmmStates    
+    stateChange = auto()  # one state from pmmStates
+
     moveAnnotation = auto()  # intermediate, normally no need for response
     manualConnectSpine = auto()  # intermediate, normally no need for response
     autoConnectSpine = auto()
+
     setSlice = auto()
     setColorChannel = auto()
-    acceptPoint = auto() # abj, used for setting isBad boolean
-    changeUserType = auto()
+
+    # acceptPoint = auto() # abj, used for setting isBad boolean
+    # changeUserType = auto()
 
 class StackSelection:
     def __init__(self, stack : pymapmanager.stack = None):
@@ -193,7 +198,7 @@ class StackSelection:
         segmentSelectionList = self._getValue('segmentSelectionList')
         # return segmentSelectionList is not None and len(segmentSelectionList) > 0
         # abj - removed len checking so that we can cancel segment selection
-        return segmentSelectionList is not None
+        return segmentSelectionList is not None or segmentSelectionList == []
 
 
     def firstSegmentSelection(self) -> Optional[int]:
@@ -277,7 +282,7 @@ class pmmEvent():
         
         self._sender = mmWidget
 
-        self._spineEditList : List[SpineEdit] = []
+        # self._spineEditList : List[SpineEdit] = []
         # List of SpineEdit
 
         self._dict = {
@@ -679,7 +684,7 @@ class mmWidget2(QtWidgets.QMainWindow):
         else:
             self.blockSlotsOff()
 
-        # logger.info(f'>>>>>>>>> emit "{self.getName()}" session:{self.getMapSession()} {event.type}')
+        logger.info(f'>>>>>>>>> emit "{self.getName()}" session:{self.getMapSession()} {event.type}')
 
         self._signalPmmEvent.emit(event)
 
@@ -706,6 +711,7 @@ class mmWidget2(QtWidgets.QMainWindow):
             acceptEvent = self.selectedEvent(event)
         elif event.type == pmmEventType.add:
             acceptEvent = self.addedEvent(event)
+
         elif event.type == pmmEventType.delete:
             acceptEvent = self.deletedEvent(event)
         
@@ -724,11 +730,13 @@ class mmWidget2(QtWidgets.QMainWindow):
             acceptEvent = self.setSliceEvent(event)
         elif event.type == pmmEventType.setColorChannel:
             acceptEvent = self.setColorChannelEvent(event)
+
         # abj
-        elif event.type == pmmEventType.acceptPoint:
-            acceptEvent = self.acceptPoint(event)
-        elif event.type == pmmEventType.changeUserType:
-            acceptEvent = self.changeUserType(event)
+        # elif event.type == pmmEventType.acceptPoint:
+        #     acceptEvent = self.acceptPoint(event)
+        # elif event.type == pmmEventType.changeUserType:
+        #     acceptEvent = self.changeUserType(event)
+
         else:
             logger.error(f'did not understand event type {event.type}')
 
@@ -863,10 +871,6 @@ class mmWidget2(QtWidgets.QMainWindow):
     
     def setColorChannelEvent(self, event : pmmEvent):
         pass
-
-    # abj
-    def acceptPoint(self, event : pmmEvent):
-        pass
     
     def changeUserType(self, event : pmmEvent):
         pass
@@ -921,7 +925,7 @@ class mmWidget2(QtWidgets.QMainWindow):
         self.emitEvent(event, blockSlots=False)
 
     def keyPressEvent(self, event : QtGui.QKeyEvent):
-        logger.info(f'{event.text()}')
+        logger.info(f'{self.getName()} {event.text()}')
 
         # if event.key() == QtCore.Qt.Key_Escape:
         #    self._cancelSelection()

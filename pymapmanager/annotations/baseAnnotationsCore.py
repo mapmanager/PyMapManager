@@ -38,12 +38,14 @@ class AnnotationsCore:
         return self._sessionID
 
     @property
-    def sessionMap(self):
+    def sessionMap(self) -> AnnotationsLayers:
         """Core map reduced to one session id.
         """
         return self._sessionMap
 
-    def __len__(self):
+    def __len__(self) -> int:
+        """Get the number of annotations.
+        """
         return self.numAnnotations
 
     @property
@@ -51,15 +53,21 @@ class AnnotationsCore:
         return len(self.getDataFrame())
 
     def getDataFrame(self) -> pd.DataFrame:
+        """Flat dataframe of all annotations (one per row).
+        """
         return self._df
     
     def _buildSummaryDf(self):
+        """Derived classes can define this.
+        
+        See: LineAnnotationsCore
+        """
         pass
 
     def getSummaryDf(self):
         """By default, summary df is underlying df.
         
-        This is further defined in LineAnnotationsCore.
+        See: LineAnnotationsCore.
         """
         return self._df
     
@@ -94,8 +102,8 @@ class AnnotationsCore:
     def getRow(self, rowIdx : int):
         """Get columns and values for one row.
         """
-        df = self.getDataFrame()  # geopandas.geodataframe.GeoDataFrame
-        rowIdx = str(rowIdx)
+        df = self.getDataFrame() 
+        # rowIdx = str(rowIdx)
         row = df.loc[rowIdx]
         return row
     
@@ -140,24 +148,13 @@ class AnnotationsCore:
             logger.error(f'did not find column name "{colName}"')
             return
         
-        # logger.error(f'testing individual colName: "{colName}"')
         if rowIdx is None:
             rowIdx = range(self.numAnnotations)  # get all rows
         elif not isinstance(rowIdx, list):
             rowIdx = [rowIdx]
         
-        # 20240411 old
-        # rowIdx = [str(_row) for _row in rowIdx]
-
-        # logger.info(f'rowIdx:{rowIdx}')
-
         try:
             ret = df.loc[rowIdx, colName].to_numpy()
-
-            # abb removed
-            # if ret.shape[1]==1:
-            #     ret = ret.flatten() # ensure 1D (for napari)
-
             return ret
         
         except (KeyError):
@@ -167,12 +164,13 @@ class AnnotationsCore:
     def setValue(self, colName : str, row : int, value):
         """Set a single value in a row and column.
         
-        Args:
-            colName (str)
-            row (int)
-            value (???)
+        Parameters:
+        -----------
+        colName : str
+        row : int
+        value : object
         """
-        logger.error(f'   row:{row} colName:{colName}, value:{value}')
+        # logger.info(f'   row:{row} colName:{colName}, value:{value}')
 
         try:
             newDict = {
@@ -185,13 +183,9 @@ class AnnotationsCore:
             except (ValueError) as e:
                 logger.error(e)
                 return
-
-            print('before:', self._df.loc[row, 'userType'])
             
+            # rebuild df from mutated full map
             self._buildDataFrame()
-            
-            print('after:', self._df.loc[row, 'userType'])
-
 
         except(IndexError):
             logger.error(f'did not set value for col "{colName}" at row {row}')
@@ -205,10 +199,10 @@ class AnnotationsCore:
         return self.__class__.__name__
 
 class LineAnnotationsCore(AnnotationsCore):
-    # def __init__(self, mapAnnotations):
-    #     super().__init__(mapAnnotations)
 
     def getSummaryDf(self):
+        """DataFrame with per segment info (one segment per ro)
+        """
         return self._summaryDf
     
     def _buildSummaryDf(self) -> pd.DataFrame:
@@ -219,7 +213,9 @@ class LineAnnotationsCore(AnnotationsCore):
 
     def _buildDataFrame(self):  
 
+        # rebuild session map from full map
         self._buildSessionMap()
+        
         df = self._sessionMap.segments["segment"].get_coordinates(include_z=True)
         
         df['segmentID'] = [int(index) for index in df.index]
@@ -250,9 +246,7 @@ class LineAnnotationsCore(AnnotationsCore):
         _startSlice = zSlice - zPlusMinus
         _stopSlice = zSlice + zPlusMinus
 
-        # 20240410 left/right radius lines do not have a z ???
-        df = self._xyLeftDf
-                
+        df = self._xyLeftDf  
         df = df[(df['z']>=_startSlice) & (df['z']<=_stopSlice)]
 
         return df
@@ -286,21 +280,26 @@ class SpineAnnotationsCore(AnnotationsCore):
         
         Needs to be regenerated on any edit/mutation.
         """
+        
+        # reduce full map to one session
         self._buildSessionMap()
 
         allSpinesDf = self.sessionMap[:]
+        
+        # reduce df index from tuple (spineID,session) to just spineID
+        allSpinesDf = allSpinesDf.droplevel(1)
+
+        # logger.info('')
+        # print('allSpinesDf.columns', allSpinesDf.columns)
+        # print('allSpinesDf')
+        # print(allSpinesDf)
 
         # abb temporary fix
         allSpinesDf['roiType'] = 'spineROI'
         # allSpinesDf['index'] = [int(index[0]) for index in allSpinesDf.index]
 
         allSpinesDf.insert(0,'index', allSpinesDf['spineID'])  # index is first column
-        # allSpinesDf['index'] = allSpinesDf['spineID']
 
-        n = len(allSpinesDf)
-        allSpinesDf['isBad'] = np.random.choice([True,False],size=n)
-
-        # logger.info(f'allSpinesDf: {allSpinesDf}')
         self._df = allSpinesDf
 
     def getSpineLines(self):
@@ -336,33 +335,27 @@ class SpineAnnotationsCore(AnnotationsCore):
             logger.error(f'did not understand roiType: {roiType}')
             return
         
-        # 20240411 old
-        # df = df.loc[str(rowIdx)]
         df = df.loc[rowIdx]
         
         return df
     
     def getSpineRoi(self, rowIdx):
         df = self._sessionMap["roiHead"].get_coordinates()
-        # df = df.loc[str(rowIdx)]
         df = df.loc[rowIdx]
         return df
     
     def getSpineBackgroundRoi(self, rowIdx):
         df = self._sessionMap["roiHeadBg"].get_coordinates()
-        # df = df.loc[str(rowIdx)]
         df = df.loc[rowIdx]
         return df
 
     def getSegmentRoi(self, rowIdx):
         df = self._sessionMap["roiBase"].get_coordinates()
-        # df = df.loc[str(rowIdx)]
         df = df.loc[rowIdx]
         return df
     
     def getSegmentRoiBackground(self, rowIdx):
         df = self._sessionMap["roiBaseBg"].get_coordinates()
-        # df = df.loc[str(rowIdx)]
         df = df.loc[rowIdx]
         return df
     
@@ -371,13 +364,13 @@ class SpineAnnotationsCore(AnnotationsCore):
         
         Used to infer making gui controls (checkbox, spinner, dropdown).
 
-        For now, col needs to be in ("roiType", "segmentID", "note", 'isBad', 'userType')
+        For now, col needs to be in ("roiType", "segmentID", "note", 'accept', 'userType')
         """
         if col in ['roiType', 'note']:
             return str
         elif col == 'segmentID':
             return int
-        elif col == 'isBad':
+        elif col == 'accept':
             return bool
         elif col == 'userType':
             return int
@@ -385,8 +378,15 @@ class SpineAnnotationsCore(AnnotationsCore):
             logger.error(f'did not understand col: {col}')
             return
 
-    def addAnnotation(self, spineID, x, y, z):
-        pass
+    def addSpine(self, segmentID : int, x : int, y : int, z : int) -> int:
+        newSpineID = self._fullMap.addSpine(segmentId=(segmentID, self.sessionID), 
+                               x=x,
+                               y=y,
+                               z=z)
+
+        self._buildDataFrame()
+
+        return newSpineID
     
     def deleteAnnotation(self, rowIdx : Union[int, List[int]]) -> None:
         """Delete an annotation or list of annotations based on the row index.
@@ -396,14 +396,10 @@ class SpineAnnotationsCore(AnnotationsCore):
         """
         logger.info(f'rowIdx:{rowIdx}')
 
-        rowIdx = str(rowIdx)
-        self._fullMap.deleteSpine(rowIdx)
+        logger.error('!!! 20240416, delete spine core is broken')
+        # self._fullMap.deleteSpine((rowIdx, self.sessionID))
 
         self._buildDataFrame()
-
-        # if not isinstance(rowIdx, list):
-        #     rowIdx = [rowIdx]
-        # self._df.drop(labels=rowIdx, axis=0, inplace=True)
 
     def editSpine(self, editSpineProperty : "EditSpineProperty"):
         # spineID:117 col:isBad value:True

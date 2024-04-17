@@ -53,7 +53,7 @@ class _EditSpine(pmmEvent):
         return [item['spineID'] for item in self._list]
 
     def addEdit(self,
-                spineID : int,
+                spineID : int = None,
                 segmentID : int = None,
                 x : int = None,
                 y: int = None,
@@ -156,7 +156,7 @@ class AddSpineEvent(_EditSpine):
     """
     def __init__(self,
                  mmWidget : "mmWidget2",
-                 segmentID : int,
+                #  segmentID : int,
                  x : int,
                  y : int,
                  z : int
@@ -164,21 +164,23 @@ class AddSpineEvent(_EditSpine):
                 
         super().__init__(pmmEventType.add, mmWidget)
         
-        self.addAddSpine(segmentID, x, y, z)
+        # self.addAddSpine(segmentID, x, y, z)
+        self.addAddSpine(x, y, z)
 
-    def addAddSpine(self, segmentID, x, y, z):
-        self.addEdit(segmentID=segmentID, x=x, y=y, z=z)
+    def addAddSpine(self, x, y, z):
+        self.addEdit(x=x, y=y, z=z)
 
     def _getItem(self, item : SpineEdit):
         """Get the meaningful keys for this edit type.
         """
         item = SpineEdit(
-                  sessionID=item['sessionID'],
-                  segmentID=item['segmentID'],
-                  x=item['x'],
-                  y=item['y'],
-                  z=item['z']
-                  )
+            spineID=item['spineID'],
+            sessionID=item['sessionID'],
+            segmentID=item['segmentID'],
+            x=item['x'],
+            y=item['y'],
+            z=item['z']
+            )
         return item
     
 class DeleteSpineEvent(_EditSpine):

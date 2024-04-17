@@ -436,16 +436,16 @@ def tstSpineRun():
     
     app.openMapWidget(0)
 
-    if 0:
-        # plot a run for tp 2, annotation 94
-        tp = 2
-        stack = _map.stacks[tp]
-        pa = stack.getPointAnnotations()
-        selPnt = [43]
-        isAlt = True
-        selectionEvent = pymapmanager.annotations.SelectionEvent(pa, selPnt, isAlt=isAlt, stack=stack)
+    # if 0:
+    #     # plot a run for tp 2, annotation 94
+    #     tp = 2
+    #     stack = _map.stacks[tp]
+    #     pa = stack.getPointAnnotations()
+    #     selPnt = [43]
+    #     isAlt = True
+    #     selectionEvent = pymapmanager.annotations.SelectionEvent(pa, selPnt, isAlt=isAlt, stack=stack)
 
-        app.slot_selectAnnotation(selectionEvent, plusMinus=1)
+    #     app.slot_selectAnnotation(selectionEvent, plusMinus=1)
 
     if 1:
         # open one stack for given timepoint

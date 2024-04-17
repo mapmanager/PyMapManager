@@ -8,7 +8,7 @@ import sys
 from pymapmanager.interface2 import PyMapManagerApp
 from stackWidgets import stackWidget2
 
-def AddRandomColumns(df):
+def _old_AddRandomColumns(df):
     import numpy as np  # remember, never do this in production code
 
     n = len(df)
@@ -34,7 +34,7 @@ def run():
     df['userType'] = 0
     # AddRandomColumns(df)
 
-    sw2.getStack().getPointAnnotations().intializeIsBad()
+    # sw2.getStack().getPointAnnotations().intializeIsBad()
     # sw2.getStack().getPointAnnotations().intializeUserType()
     
     sw2.zoomToPointAnnotation(120, isAlt=True)

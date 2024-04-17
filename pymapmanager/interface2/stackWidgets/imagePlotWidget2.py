@@ -1,5 +1,6 @@
 import enum
-import math
+# import math
+from functools import partial
 
 import numpy as np
 import pyqtgraph as pg
@@ -9,10 +10,11 @@ from qtpy import QtGui, QtCore, QtWidgets
 import pymapmanager
 import pymapmanager.annotations
 import pymapmanager.interface2
+from pymapmanager.interface2.stackWidgets.event.spineEvent import EditSpinePropertyEvent, AddSpineEvent
 
 from .mmWidget2 import mmWidget2, pmmEventType, pmmEvent, pmmStates
 # from mmWidget2 import mmWidget2, pmmEventType, pmmEvent, pmmStates
-from .annotationPlotWidget2 import pointPlotWidget, linePlotWidget, annotationPlotWidget
+from .annotationPlotWidget2 import pointPlotWidget, linePlotWidget
 # from .annotationPlotWidget2 import annotationPlotWidget
 
 from pymapmanager._logger import logger
@@ -150,22 +152,11 @@ class ImagePlotWidget(mmWidget2):
         -----
         We need to grab the selection of the stack widget.
         - If a spine is selected, menu should be 'Delete Spine'
-        - If no selection then gray out 'Delete'
+        - If no selection then disable 'Delete'
         """
-        logger.info(f"event {event}")
-        # return
-
-        # activate menus if we have a point selection
-        # get the current selection from the parent stack widget
-
-        # currentSelection = self._stackWidgetParent.getCurrentSelection()
-        # isPointSelection = currentSelection.isPointSelection()
-        # _selectedRows = currentSelection.getRows()
-
-        # _annotations = self.getAnnotations()
+        logger.info('')
 
         stackSelection = self.getStackWidget().getStackSelection()
-        
         hasPointSelection = stackSelection.hasPointSelection()
 
         if not hasPointSelection:
@@ -177,27 +168,6 @@ class ImagePlotWidget(mmWidget2):
 
         point_roiType = ' ' + str(firstPointSelection)
         isSpineSelection = firstRoiType == 'spineROI'
-
-
-        # _annotations = self.getStackWidget().getAnnotations()
-        # _selectedRows = self._aPointPlot.getSelectedAnnotations()
-        # _noSelection = len(_selectedRows) == 0
-        # if _noSelection:
-        #     logger.warning('no selection -> no context menu')
-        #     return
-        # isPointSelection = True
-
-        # # some menus require just one selection
-        # isOneRowSelection = len(_selectedRows) == 1
-        
-        # if isOneRowSelection:
-        #     firstRow = _selectedRows[0]
-        #     point_roiType = _annotations.getValue('roiType', firstRow)
-        #     isSpineSelection = point_roiType == 'spineROI'
-        #     point_roiType += ' ' + str(_selectedRows[0])
-        # else:
-        #     isSpineSelection = False
-            # point_roiType = ''
 
         _menu = QtWidgets.QMenu(self)
 
@@ -213,95 +183,45 @@ class ImagePlotWidget(mmWidget2):
         autoConnectAction = _menu.addAction(f'Auto Connect {point_roiType}')
         autoConnectAction.setEnabled(isSpineSelection)
 
-        # only allowed to reanalyze spine
-        reanalyzeAction = _menu.addAction(f'Reanalyze {point_roiType}')
-        reanalyzeAction.setEnabled(isSpineSelection)
-
-        # For testing purposes: testing analysis params
-        # testSingleSpineAction = _menu.addAction(f'test update {point_roiType}')
-        # testSingleSpineAction.setEnabled(isPointSelection and isOneRowSelection)
-
         _menu.addSeparator()
         
         # allowed to delete any point annotation
         deleteAction = _menu.addAction(f'Delete {point_roiType}')
-        # deleteAction.setEnabled(isPointSelection and isOneRowSelection)
         deleteAction.setEnabled(isSpineSelection)
 
-
-        # TODO: add check mark if isBad is False, otherwise dont show checkmark
-
         _pointAnnotations = self._myStack.getPointAnnotations()
-        isBad = _pointAnnotations.getValue('isBad', firstPointSelection)
-        # logger.info(f"isBad {isBad}")
-        import math
-        if math.isnan(isBad):
-            isBad = False
+        _accept = _pointAnnotations.getValue('accept', firstPointSelection)
 
         acceptAction = _menu.addAction(f'Accept {point_roiType} ')
         acceptAction.setCheckable(True)
-
-        if isBad:
-            acceptAction.setChecked(False)
-        else:
-            acceptAction.setChecked(True)
-
+        acceptAction.setChecked(_accept)
         acceptAction.setEnabled(isSpineSelection)
 
-        #abj
-        userTypeMenu = QtWidgets.QMenu('userTypeMenu',self)
+        # user type submenu
         currentUserType = _pointAnnotations.getValue('userType', firstPointSelection)
-        logger.info(f"currentUserType {currentUserType}")
+        if currentUserType == -1:
+            currentUserType = 0
+        userTypeMenu = _menu.addMenu('User Type')
+        numUserType = 10  # TODO: should be a global option
+        userTypes = range(numUserType)
+        for userType in userTypes:
+            action = userTypeMenu.addAction(str(userType))
+            action.setCheckable(True)
+            isChecked = userType == currentUserType
+            action.setChecked(isChecked)
+            # action.triggered.connect(partial(self._on_user_type_menu_action, action))
 
-        self.userTypeActionDict = {}
-        for i in range(10):
-            self.userTypeActionDict[i] = QtGui.QAction(QtGui.QIcon(''), 'userType: %d' %i, self)
-            userTypeMenu.addAction(self.userTypeActionDict[i])
-            self.userTypeActionDict[i].setCheckable(True)
-            if currentUserType == i:
-                #  logger.info(f"currentUserType {currentUserType}")
-                logger.info(f"ITS TRUE")
-                self.userTypeActionDict[i].setChecked(True)
-            else:
-                self.userTypeActionDict[i].setChecked(False)
-
-        # Have an action for each usertype ?
         _menu.addMenu(userTypeMenu)
 
         action = _menu.exec_(self.mapToGlobal(event.pos()))
         
-        #logger.info(f'User selected action: {action}')
-
-        for userActionKey in self.userTypeActionDict:
-            logger.info(f"userAction {userActionKey}")
-            currentAction = self.userTypeActionDict[userActionKey]
-            if action == currentAction:
-                logger.info(f"{currentAction} is being activated")
-                if currentAction.isChecked(): # Once an action is clicked it will be checked
-                    logger.info(f"We are Checking {userActionKey}")
-                    
-                    self.uncheckAllBoxes()
-                    # Select the new type
-                    # self.userTypeActionDict[userActionKey].setChecked(False)
-
-                    # TODO: Change to update backend with Robert's new event system
-                    currentUserType = _pointAnnotations.setValue('userType', firstPointSelection, userActionKey)
-                    # eventType = pmmEventType.changeUserType
-                    # event = pmmEvent(eventType, self)
-                    # self.emitEvent(event, blockSlots=True)
-                    # # emit
-                else:
-                    logger.info(f"Already checked {userActionKey}")
-                    # Do nothing
-                break
-
-        if action == moveAction:
+        if action is None:
+            return
+        
+        elif action == moveAction:
             logger.warning('TODO: moveAction')
             # self._mouseMovedState = True 
             
-            # TODO: emit a signal
-            # moveAnnotationEvent in stackWidget will respond
-
             event = pmmEvent(pmmEventType.stateChange, self)
             event.setStateChange(pmmStates.movingPnt)
             self.emitEvent(event)
@@ -317,80 +237,34 @@ class ImagePlotWidget(mmWidget2):
 
         elif action == autoConnectAction:
             logger.warning('Auto Connecting Spine')
-            # Dont need to acquire any new data, everything should be known because of the current selection
+            # Dont need to acquire any new data,
+            #everything should be known because of the current selection
             eventType = pmmEventType.autoConnectSpine
             event = pmmEvent(eventType, self)
             event.setSliceNumber(self._currentSlice)
             self.emitEvent(event, blockSlots=True)
-
-        elif action == reanalyzeAction:
-
-            # currentSelection = self._stackWidgetParent.getCurrentSelection()
-            # _selectedRows = currentSelection.getRows()
-            # addedRowIdx =_selectedRows[0]
-    
-            _selectionEvent = pymapmanager.annotations.SelectionEvent(pymapmanager.annotations.lineAnnotations, 
-                                                                    rowIdx = _selectedRows)
-            self.signalReanalyzeSpine.emit(_selectionEvent)
-
-        # elif action == testSingleSpineAction:
-        #     logger.info('TODO: manualConnect')
-
-            # Detect on mouse click but ensure that it is part of the line
-            # self._spineUpdateState = True 
-            # Send signal to update spine
 
         elif action == deleteAction:
             logger.warning('deleting the selected annotation')
             # self._deleteAnnotation()
             self._aPointPlot._deleteSelection() # aPointPlot emits delete signal
 
+            # text = action.text()
+            # isChecked = action.isChecked()
+            # logger.info(f'{text} {isChecked}')
+
+        elif action.text() in str(range(numUserType)):
+            _newValue = action.isChecked()
+            esp = EditSpinePropertyEvent(self, firstPointSelection, 'userType', _newValue)
+            self.emitEvent(esp)
+
         elif action == acceptAction:
-            logger.info('Accept Action triggered')
-            # self.emitEvent(event, blockSlots=True)
-
-            eventType = pmmEventType.acceptPoint
-            event = pmmEvent(eventType, self)
-            self.emitEvent(event, blockSlots=True)
-
-        # elif action == userType:
-        #     # eventType = pmmEventType.changeUserType
-        #     # event = pmmEvent(eventType, self)
-        #     # self.emitEvent(event, blockSlots=True)
-
-        #     # Open dropdown menu to show current usertype
-        #     # And all selectable usertypes
-
-        #     return
-
+            _newValue = action.isChecked()
+            esp = EditSpinePropertyEvent(self, firstPointSelection, 'accept', _newValue)
+            self.emitEvent(esp)
 
         else:
             logger.info('No action?')
-
-    
-    def uncheckAllBoxes(self):
-        for userActionKey in self.userTypeActionDict:
-            # logger.info(f"userAction {userActionKey}")
-            # currentAction = self.userTypeActionDict[userActionKey]
-            # currentAction.setChecked(False)
-            self.userTypeActionDict[userActionKey].setChecked(False)
-
-    def _old_emitCancelSelection(self):
-        """
-        TODO
-        ----
-        - If there is no selection then do not emit a new cancel selection
-        """
-        # _pointSelectionEvent = pymapmanager.annotations.SelectionEvent(self._aPointPlot._annotations,
-        #                                                             rowIdx=[],
-        #                                                             isAlt=False,
-        #                                                             stack=self._myStack)
-        # self.signalAnnotationSelection2.emit(_pointSelectionEvent)
-
-        eventType = pmmEventType.selection
-        event = pmmEvent(eventType, self._aPointPlot)
-        event.setSelection(itemList=[])
-        self.emitEvent(event)
 
     def keyPressEvent(self, event : QtGui.QKeyEvent):
         """Override PyQt key press.
@@ -399,7 +273,7 @@ class ImagePlotWidget(mmWidget2):
             event: QtGui.QKeyEvent
         """
 
-        logger.info(f'{event.text()}')
+        logger.info(f'{self.getClassName()} {event.text()}')
         
         if event.key() in [QtCore.Qt.Key_Enter, QtCore.Qt.Key_Return]:
             self._setFullView()
@@ -450,73 +324,12 @@ class ImagePlotWidget(mmWidget2):
             event.setAccepted(False)
             #logger.warning(f'key not understood {event.text()}')
 
-    def _old_deleteAnnotation(self):
-        """Delete the selected annotation.
-        
-        This is in response to:
-            keyboard del/backspace.
-            context menu delete
-
-        Note:
-            For now this will only delete selected point annotations in point plot.
-            It does not delete segments.
-        """
-                
-        # for _aLinePlot we will have to types of selected annotation:
-        #   1) point in line
-        #   2) segmentID
-        
-        # we need to know the state of the parent window
-        #   default: delete point annotations of roiType (spineROI)
-        #   in editSegment mode/state, delete line annotations if roiType linePoint
-
-        # aug 28, was this
-        # if there is a selection and it is an annotation point (not a line)
-        # _currentSelection = self._stackWidgetParent.getCurrentSelection()
-        # logger.info(_currentSelection)
-
-        # we are now depending on the state of our children (not our parent)
-        
-        # v1
-        # pointPlotItemList = self._aPointPlot.getSelectedAnnotations()
-        # pointPlotAnnotations = self._aPointPlot._annotations
-
-        # if len(pointPlotItemList) == 0:
-        #     return
-        # eventType = pmmEventType.delete
-        # event = pmmEvent(eventType, self._aPointPlot.getName())
-        # event.setDeleteEvent(pointPlotAnnotations, pointPlotItemList)
-        
-        # logger.info('=== imagePlotWidget emitting delete (via _aPointPlot)')
-        # logger.info(event)
-        
-        # # self.emitEvent(event)
-        # self._aPointPlot.emitEvent(event, blockSlots=False)
-
-        # v2
-        self._aPointPlot._deleteSelection()
-
-        # deleteDict = {
-        #     'annotationType': pymapmanager.annotations.annotationType.point,
-        #     'annotationIndex': _rows,
-        #     'isSegment': False,
-        # }
-        # logger.info(f'-->> emit signalDeletingAnnotation deleteDict:{deleteDict}')
-        # self.signalDeletingAnnotation.emit(deleteDict)
-
     def _onMouseClick_scene(self, event):
         """If we get shift+click, make new annotation.
         
-        Just emit the coordinates and have the parent stack window decide
-        on the point type given its state
-        
-        This will depend on window state, we need to know 'new item'
-        New items are always point annotations but different roiType like:
-            - spineROI
-            - controlPnt
-
         Note:
-            This seems to get called AFTER _on_mouse_click in our annotation plots?
+        -----
+        This seems to get called AFTER _on_mouse_click in our annotation plots?
 
         Parameters
         ----------
@@ -589,51 +402,19 @@ class ImagePlotWidget(mmWidget2):
             #     # self.emitEvent(event, blockSlots=True)
 
         elif isShift:
-            # if self._displayOptionsDict['windowState']['doEditSegments']:
-            #     roiType = pymapmanager.annotations.pointTypes.controlPnt
-            # else:
-            #     roiType = pymapmanager.annotations.pointTypes.spineROI
-            
-            # logger.info(f'  TODO: implement new point annotation from [spineROI, controlPnt]')
-            # logger.info(f'new point will be pointAnnotations.pointTypes:"{roiType.value}"')
-
-            # for both (spineROI, controlPnt) we need a selected segmentID to associate it with
 
             pos = event.pos()
             imagePos : QtCore.QPointF = self._myImage.mapFromScene(pos)
-            # print('  imagePos:', imagePos)
 
-            # x = int(imagePos.x())
-            # y = int(imagePos.y())
-            # z = self._currentSlice
-
-            # segmentID = 0  # 
+            x = int(imagePos.x())
+            y = int(imagePos.y())
+            z = self._currentSlice
             
-            # logger.info(f'Adding point annotation roiType:{roiType} segmentID:{segmentID} x:{x}, y:{y}, z{z}')
-            # self._myStack.getPointAnnotations().addAnnotation(roiType, segmentID, x, y, z)
-
-            # our imagePlotWidgethas multiple plot types of annotations
-            # we don't know the type to be added
-            # the parent window we are in needs to make that choice, best we can do is give up (z,y,x) of proposed new annotation
-            # 
-            # newDict = {
-            #     # 'roiType': roiType,  # type is pymapmanager.annotations.pointTypes
-            #     # 'segmentID': segmentID,
-            #     'x': x,
-            #     'y': y,
-            #     'z': z,
-            # }
-            # let stack widget decide what type of point (like spine roi,
-            # does this on basis of ???
-            # pointType = pymapmanager.annotations.pointTypes.spineROI
-            # _addAnnotationEvent = pymapmanager.annotations.AddAnnotationEvent(z, y, x, pointType)
-            # logger.info(f'-->> signalAddingAnnotation.emit {_addAnnotationEvent}')
-            # self.signalAddingAnnotation.emit(_addAnnotationEvent)
-
-            eventType = pmmEventType.add
-            event = pmmEvent(eventType, self)
-            event.setAddMovePosition(x, y, z)
-            self.emitEvent(event)
+            # _stackSelection = self.getStackWidget().getStackSelection()
+            # _segmentSelection = _stackSelection.getSegmentSelection()
+            
+            addSpineEvent = AddSpineEvent(self, x=x, y=y, z=z)
+            self.emitEvent(addSpineEvent)
 
     def _onMouseMoved_scene(self, pos):
         """As user moves mouse, grab and emit the pixel (x, y, intensity).
@@ -701,12 +482,12 @@ class ImagePlotWidget(mmWidget2):
             return
         self._setSlice(sliceNumber, doEmit=doEmit)
 
-    def _old_slot_selectAnnotation2(self, selectionEvent : pymapmanager.annotations.SelectionEvent):
+    def _old_slot_selectAnnotation2(self, selectionEvent : "pymapmanager.annotations.SelectionEvent"):
         if self._blockSlots:
             return
         self._selectAnnotation(selectionEvent)
     
-    def _old__selectAnnotation(self, selectionEvent : pymapmanager.annotations.SelectionEvent):
+    def _old__selectAnnotation(self, selectionEvent : "pymapmanager.annotations.SelectionEvent"):
         self._blockSlots = True
         
         self.signalAnnotationSelection2.emit(selectionEvent)
@@ -978,9 +759,6 @@ class ImagePlotWidget(mmWidget2):
         segmentID = None
         la.calculateAndStoreRadiusLines(segmentID = segmentID, radius = radius)
         self.refreshSlice()
-
-    def _old_tmpSlot(self, obj):
-        logger.info(obj)
 
     def _old_monkeyPatchMouseMove(self, event, emit=True):
         # PyQt5.QtGui.QMouseEvent

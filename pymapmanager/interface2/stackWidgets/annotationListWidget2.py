@@ -14,6 +14,7 @@ from pymapmanager.interface2.core.search_widget import myQTableView
 from pymapmanager.interface2.core._data_model import pandasModel
 
 from pymapmanager.interface2.stackWidgets.mmWidget2  import mmWidget2, pmmEventType, pmmEvent, pmmStates
+from pymapmanager.interface2.stackWidgets.event.spineEvent import DeleteSpineEvent
 
 # from .mmWidget2 import pmmEventType, pmmEvent, pmmStates
 
@@ -21,7 +22,7 @@ class annotationListWidget(mmWidget2):
 
     def __init__(self,
                     stackWidget : "StackWidget",
-                    annotations : pymapmanager.annotations.baseAnnotations,
+                    annotations : "pymapmanager.annotations.baseAnnotations",
                     name : str = None):
         """
         Args:
@@ -31,7 +32,7 @@ class annotationListWidget(mmWidget2):
         """
         super().__init__(stackWidget)
 
-        self._annotations : pymapmanager.annotations.baseAnnotations = annotations
+        self._annotations : "pymapmanager.annotations.baseAnnotations" = annotations
         
         self._buildGui(name=name)
         self._setModel()
@@ -89,7 +90,7 @@ class annotationListWidget(mmWidget2):
         Args:
             event: QKeyEvent
         """
-        logger.info('')
+        logger.info(f'{self.getClassName()}')
         
         # removed while writing mmWidget2
         if event.key() in [QtCore.Qt.Key_Backspace, QtCore.Qt.Key_Delete]:            
@@ -98,8 +99,8 @@ class annotationListWidget(mmWidget2):
 
         elif event.key() in [QtCore.Qt.Key_Escape]:
             # cancel all selections
-            self.on_table_selection(None)
-            self._myTableView.mySelectRows([None])
+            self.on_table_selection([])
+            self._myTableView.mySelectRows([])
     
         elif event.key() == QtCore.Qt.Key_N:
             logger.info('TODO: open note setting dialog for selected annotation')
@@ -187,7 +188,7 @@ class annotationListWidget(mmWidget2):
             rowList: List of rows that were selected
             isAlt: True if keyboard Alt is down
         """
-        logger.info('BASE CLASS CALLED')
+        logger.warning('BASE CLASS CALLED')
         return
 
         logger.info(f'{self.getClassName()} rowList:{itemList} isAlt:{isAlt}')
@@ -209,7 +210,7 @@ class pointListWidget(annotationListWidget):
         super().__init__(stackWidget, annotations, name='pointListWidget')
 
         # limit the displayed columns
-        colList = ['index', 'userType', 'z', 'roiType', 'segmentID', 'isBad', 'note']
+        colList = ['index', 'userType', 'z', 'roiType', 'segmentID', 'accept', 'note']
         self._myTableView.showTheseColumns(colList)
 
         # limit the rows based on roiType
@@ -229,7 +230,7 @@ class pointListWidget(annotationListWidget):
         # if itemList:
         #     self._myTableView._selectRow(itemList)
 
-    def setDisplayPointType(self, pointType : pymapmanager.annotations.pointTypes):
+    def setDisplayPointType(self, pointType : "pymapmanager.annotations.pointTypes"):
         """Displaly just one pointType(s) in the table.
         
         Use this to switch between spineROI and controlPnt
@@ -270,25 +271,16 @@ class pointListWidget(annotationListWidget):
         """Delete currently selected annotations.
         """
 
-        # # selectedRows is [QtCore.QModelIndex]
-        # selectedRows = self._myTableView.selectionModel().selectedRows()
-        # deletedRows : List[int] = []
-        
-        # for row in selectedRows:
-        #     sortedRowItem = self._myTableView.model().mapToSource(row)
-        #     deletedRows.append(sortedRowItem.row())
+        items = self._myTableView.getSelectedRows()
 
-        # if isinstance(self._annotations, pymapmanager.annotations.pointAnnotations):
-        #     annotationType = pymapmanager.annotations.annotationType.point
-        # elif isinstance(self._annotations, pymapmanager.annotations.lineAnnotations):
-        #     annotationType = pymapmanager.annotations.annotationType.segment
+        # abb 202404, was this
+        # eventType = pmmEventType.delete
+        # event = pmmEvent(eventType, self)
+        # event.getStackSelection().setPointSelection(deletedRows)
+        # self.emitEvent(event)
 
-        deletedRows = self._myTableView.getSelectedRows()
-
-        eventType = pmmEventType.delete
-        event = pmmEvent(eventType, self)
-        event.getStackSelection().setPointSelection(deletedRows)
-        self.emitEvent(event)
+        deleteSpineEvent = DeleteSpineEvent(self, items)
+        self.emitEvent(deleteSpineEvent)
 
 class lineListWidget(annotationListWidget):
 
@@ -299,14 +291,10 @@ class lineListWidget(annotationListWidget):
         super().__init__(stackWidget, annotations, name='lineListWidget')
 
     def selectedEvent(self, event):
-        # logger.info(event)
+        logger.info(event)
         
         segmentSelection = event.getStackSelection().getSegmentSelection()        
         self._myTableView._selectRow(segmentSelection)
-
-        # # logger.info(f'itemList: {itemList}')
-        # if itemList:
-        #     self._myTableView._selectRow(itemList)
 
     def on_table_selection(self, itemList : List[int], isAlt : bool = False):
         """Respond to user selection in table (myTableView).
@@ -330,20 +318,17 @@ class lineListWidget(annotationListWidget):
         self.emitEvent(event, blockSlots=False)
 
     def deleteSelected(self):
-        """Delete currently selected annotations.
+        """Delete currently selected line annotations.
         """
         # selectedRows is [QtCore.QModelIndex]
         selectedRows = self._myTableView.selectionModel().selectedRows()
         deletedRows : List[int] = []
         
+        logger.error(f'{self.getClassName()} WILL TRIGGER ERROR')
+
         for row in selectedRows:
             sortedRowItem = self._myTableView.model().mapToSource(row)
             deletedRows.append(sortedRowItem.row())
-
-        # if isinstance(self._annotations, pymapmanager.annotations.pointAnnotations):
-        #     annotationType = pymapmanager.annotations.annotationType.point
-        # elif isinstance(self._annotations, pymapmanager.annotations.lineAnnotations):
-        #     annotationType = pymapmanager.annotations.annotationType.segment
 
         eventType = pmmEventType.delete
         event = pmmEvent(eventType, self)

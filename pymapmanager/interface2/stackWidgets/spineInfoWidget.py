@@ -12,7 +12,7 @@ from .event.spineEvent import  EditSpinePropertyEvent
 To add a new display value, like spineLength (not editable)
 
 1) in __init__(), add 'spineLength' to
-    self.infoList = ["index", "segmentID", "note", 'isBad', 'userType', 'spineLength']
+    self.infoList = ["index", "segmentID", "note", 'accept', 'userType', 'spineLength']
 2) in _selectionInfoUI(), add 'spineLength' to
     if itemName in ['index', 'roiType', 'segmentID', 'spineLength']:
 3) in _updateUserInterface(), add 'spineLength' to
@@ -34,9 +34,9 @@ class SpineInfoWidget(mmWidget2):
         self.pa = stackWidget.getStack().getPointAnnotations()
 
         # The columns values that are displayed
-        # self.infoList = ["index", "segmentID", "note", 'isBad', 'userType', 'spineLength']
+        # self.infoList = ["index", "segmentID", "note", 'accept', 'userType', 'spineLength']
         self._displayList = ["index", "segmentID", 'spineLength', 'roiType']
-        self.infoList = self._displayList + ["note", 'isBad', 'userType']
+        self.infoList = self._displayList + ["note", 'accept', 'userType']
 
         # Maintain different widgets that display information
         self.widgetDict = {}
@@ -90,7 +90,7 @@ class SpineInfoWidget(mmWidget2):
                 aWidget.setAlignment(QtCore.Qt.AlignLeft)
                 # aWidget.textChanged.connect(self._updateNote)
                 aWidget.editingFinished.connect(self._updateNote)
-            elif itemName == 'isBad':
+            elif itemName == 'accept':
                 aWidget = QtWidgets.QCheckBox()
                 aWidget.stateChanged.connect(partial(self._updateCheckBox, itemName))
             elif itemName == 'userType':
@@ -116,7 +116,7 @@ class SpineInfoWidget(mmWidget2):
         if self.slotsBlocked():
             return
         
-        if name == 'isBad':
+        if name == 'accept':
             # TODO: emit signal that spine has changed
             # checkboxes actually have 3 states
             if state in [1,2]:
@@ -125,7 +125,7 @@ class SpineInfoWidget(mmWidget2):
                 state = False
             # logger.info(f'spine {currentRowSelection} isBad is now: {state}')
     
-            self._emitChange(self._pointRowSelection, 'isBad', state)
+            self._emitChange(self._pointRowSelection, 'accept', state)
 
         elif name == 'futurecheckbox':
             print('do somethnig')
@@ -214,10 +214,11 @@ class SpineInfoWidget(mmWidget2):
             # self.blockSignals(True)
             self.blockSlotsOn()
 
-            # ["index", "segmentID", "note", 'isBad', 'userType']
+            # ["index", "segmentID", "note", 'accept', 'userType']
             if itemName in ['index', 'segmentID', 'note', 'spineLength']:
                 itemWidget.setText(str(backendValue))
-            elif itemName == 'isBad':
+            elif itemName == 'accept':
+                # logger.info(f'backendValue: {backendValue} {type(backendValue)}')
                 itemWidget.setChecked(bool(backendValue))
             elif itemName == 'userType':
                 if backendValue == -1:

@@ -1,4 +1,4 @@
-from typing import List, Union, Optional, Tuple
+from typing import Optional  # List, Union, Tuple
 
 import numpy as np
 
@@ -12,7 +12,6 @@ from .stackStatusbar import StatusToolbar
 from .stackPluginWidget import stackPluginDock
 from .annotationListWidget2 import pointListWidget, lineListWidget
 from .imagePlotWidget2 import ImagePlotWidget
-from .selectionInfoWidget import SelectionInfoWidget
 
 # from .tracingWidget import tracingWidget
 # from .histogramWidget2 import HistogramWidget
@@ -144,7 +143,7 @@ class stackWidget2(mmWidget2):
         
         state = _selection.getState()
         if state != pmmStates.edit:
-            logger.info("not edit")
+            logger.info("not in edit state")
             event = pmmEvent(pmmEventType.stateChange, self)
             event.setStateChange(pmmStates.edit)
             self.slot_pmmEvent(event)
@@ -177,25 +176,17 @@ class stackWidget2(mmWidget2):
             event = pmmEvent(pmmEventType.selection, self)
             event.getStackSelection().setPointSelection(items)
 
-            # 2/26 getting slice
-            # logger.info(f"selected point items: {items}")
-            # sliceNum = self.getStack().getPointAnnotations().getValue("z", items[0])
-            # event.setSliceNumber(sliceNum)
-
             # self.emitEvent(event)
             self.slot_pmmEvent(event)
-
-            # self is not called in signal slot ???
-            # self.selectedEvent(event)
-
-        # elif 
 
     def _deleteSelection(self):
         """Delete the current point selection.
         """
         _selection = self.getStackSelection()
-        logger.info(_selection)
-        
+        logger.error(f'DELETE IS PERFORMED BY imagePlotWidget {_selection}')
+        logger.error('TURNED OFF')
+        return
+    
         # delete point selection
         if _selection.getPointSelection() is not None:
             items = _selection.getPointSelection()
@@ -205,7 +196,7 @@ class stackWidget2(mmWidget2):
             self.slot_pmmEvent(event)
 
     def keyPressEvent(self, event : QtGui.QKeyEvent):
-        logger.info(event.text())
+        logger.info(f'{self.getClassName()} {event.text()}')
 
         if event.key() == QtCore.Qt.Key_Escape:
             self._cancelSelection()
@@ -273,7 +264,6 @@ class stackWidget2(mmWidget2):
             aAction.triggered.connect(_lambda)
             viewMenu.addAction(aAction)
 
-                         
     def runPlugin(self, pluginName: str, show: bool = True, inDock=False):
         """Run one stack plugin.
 
@@ -353,18 +343,13 @@ class stackWidget2(mmWidget2):
         lineListDock = self._addDockWidget(llw, 'left', 'Lines')
         self._widgetDict[lineListName] = lineListDock  # the dock, not the widget ???
 
-        #abj
-        # selectionInfoName = SelectionInfoWidget._widgetName
-        # siw = SelectionInfoWidget(self)
-        # selectionInfoDock = self._addDockWidget(siw, 'left', 'Selection')
-        # self._widgetDict[selectionInfoName] = selectionInfoDock  # the dock, not the widget ???
-
         #
         imagePlotName = ImagePlotWidget._widgetName
         _imagePlotWidget = ImagePlotWidget(self)
         hBoxLayout_main.addWidget(_imagePlotWidget)
         self._widgetDict[imagePlotName] = _imagePlotWidget  # the dock, not the widget ???
 
+        #
         # status toolbar (bottom)
         numSlices = self._stack.numSlices
         self._statusToolbar = StatusToolbar(numSlices, parent=self)
@@ -376,6 +361,7 @@ class stackWidget2(mmWidget2):
 
         self._topToolbar.signalChannelChange.connect(self.slot_setChannel)
 
+        #
         # plugin panel with tabs
         self.pluginDock1 = stackPluginDock(self)
         self.addDockWidget(QtCore.Qt.RightDockWidgetArea, self.pluginDock1.getPluginDock())
@@ -450,7 +436,7 @@ class stackWidget2(mmWidget2):
 
         return True
 
-    def addedEvent(self, event : "pmmEvent") -> bool:
+    def addedEvent(self, event : "AddSpineEvent") -> bool:
         """Add to backend.
         
         Currently only allows adding a spine annotation.
@@ -465,11 +451,28 @@ class stackWidget2(mmWidget2):
         _stackSelection = self.getStackSelection()
         if not _stackSelection.hasSegmentSelection():
             logger.warning('   Rejecting new point, segmentid selection is required')
-            self.slot_setStatus('Please select a segment before adding a point annotation')
+            self.slot_setStatus('Please select a segment before adding a spine annotation')
             return False
         
         segmentID = _stackSelection.firstSegmentSelection()
+        # segmentID = _stackSelection.getSegmentSelection()
 
+        for _rowIdx, item in enumerate(event):
+            logger.info(item)
+            x = item['x']
+            y = item['y']
+            z = item['z']
+            newSpineID = self.getStack().getPointAnnotations().addSpine(
+                segmentID=segmentID,
+                x=x, y=y, z=z)
+            logger.info(f'   newSpineID:{newSpineID}')
+
+            # fill in newSpineID and segmentID
+            event._list[_rowIdx]['spineID'] = newSpineID
+            event._list[_rowIdx]['segmentID'] = segmentID
+
+        return True
+    
         x, y, z = event.getAddMovePosition()
         newRow = self.getStack().getPointAnnotations().addSpine(x, y, z, segmentID, self._stack)
         logger.info(f'   newRow:{newRow}')
@@ -500,7 +503,7 @@ class stackWidget2(mmWidget2):
         logger.info(event)
         self.getStack().getPointAnnotations().editSpine(event)
 
-    def deletedEvent(self, event : "pmmEvent") -> bool:
+    def deletedEvent(self, event : "DeleteSpineEvent") -> bool:
         """Delete items from backend.
         
         Returns
@@ -508,27 +511,22 @@ class stackWidget2(mmWidget2):
         True if deleted, False otherwise
         """
         logger.info('=== ===   STACK WIDGET PERFORMING DELETE   === ===')
-        _selection = event.getStackSelection()
+        logger.info(event)
         
-        # delete points
-        _pointSelection = _selection.getPointSelection()
-        if _pointSelection is not None:
-            if len(_pointSelection) > 0:
-                logger.info(f'  deleting {_pointSelection}')
-                _pointSelection = _pointSelection[0]
-                self.getStack().getPointAnnotations().deleteAnnotation(_pointSelection)
-                return True
+        spineIDs = event.getSpines()
+        for spineID in spineIDs:
+            self.getStack().getPointAnnotations().deleteAnnotation(spineID)
 
-        # delete segment
-        _segmentSelection = _selection.getSegmentSelection()
-        if _segmentSelection is not None:
-            if len(_segmentSelection) > 0:
-                _segmentSelection = _segmentSelection[0]
-                logger.warning('deleting segments is not implemented !!!')
-                #self.getStack().getLineAnnotations().deleteAnnotation(_pointSelection)
-                return True
+        # # delete segment
+        # _segmentSelection = _selection.getSegmentSelection()
+        # if _segmentSelection is not None:
+        #     if len(_segmentSelection) > 0:
+        #         _segmentSelection = _segmentSelection[0]
+        #         logger.warning('deleting segments is not implemented !!!')
+        #         #self.getStack().getLineAnnotations().deleteAnnotation(_pointSelection)
+        #         return True
 
-        return False
+        return True
     
     def stateChangedEvent(self, event : pmmEvent):
         _state = event.getStateChange()
@@ -862,7 +860,7 @@ class stackWidget2(mmWidget2):
         self.resize(width, height)
 
     # abj
-    def acceptPoint(self, event):
+    def _old_acceptPoint(self, event):
         """ Changes the value set in the isBad Column of the selected Spine Point
         
         """

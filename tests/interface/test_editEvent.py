@@ -41,7 +41,7 @@ def test_editSpineProperty(stackWidgetObject, qapp):
     esp = EditSpinePropertyEvent(stackWidgetObject, spineID=spineID, col=col, value=value)
     
     spineID = 5
-    col = 'isBad'
+    col = 'accept'
     value = True  # str, int, float
     esp.addEdit(spineID, col, value)
 
