@@ -95,7 +95,7 @@ class annotationListWidget(mmWidget2):
         # removed while writing mmWidget2
         if event.key() in [QtCore.Qt.Key_Backspace, QtCore.Qt.Key_Delete]:            
             # delete selected annotations
-            self.deleteSelected()
+            self._deleteSelected()
 
         elif event.key() in [QtCore.Qt.Key_Escape]:
             # cancel all selections
@@ -191,6 +191,7 @@ class pointListWidget(annotationListWidget):
 
         annotations = stackWidget.getStack().getPointAnnotations()
         logger.info(annotations)
+        
         super().__init__(stackWidget, annotations, name='pointListWidget')
 
         # limit the displayed columns
@@ -247,11 +248,12 @@ class pointListWidget(annotationListWidget):
 
         self.emitEvent(event, blockSlots=False)        
 
-    def deleteSelected(self):
+    def _deleteSelected(self):
         """Delete currently selected annotations.
         """
         items = self._myTableView.getSelectedRows()
         logger.info(f'items:{items}')
+        
         deleteSpineEvent = DeleteSpineEvent(self, items)
         self.emitEvent(deleteSpineEvent)
 

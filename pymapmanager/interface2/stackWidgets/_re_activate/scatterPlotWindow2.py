@@ -389,6 +389,9 @@ class ScatterPlotWindow2(QtWidgets.QWidget):
     Get stat names and variables from sanpy.bAnalysisUtil.getStatList()
     """
     signalAnnotationSelection2 = QtCore.Signal(object)  # pymapmanager.annotations.SelectionEvent
+    
+    # signalDeleteAnnotation = QtCore.Signal(List[int])
+
     def __init__(self, inputtedDF, filterColumn: None, hueColumn: None):
         super().__init__(None)
         # keep track of what we are plotting.
