@@ -78,18 +78,19 @@ class PmmScatterPlotWidget(mmWidget2):
     def addedEvent(self, event : pmmEvent):
         """Derived classes need to perform action of selection event.
         """
-
+        pass
     def deletedEvent(self, event : pmmEvent):
         """Derived classes need to perform action of selection event.
         """
         logger.warning(f'{self.getClassName()} base class called ????????????')
-
+        pass
     def editedEvent(self, event : pmmEvent):
         """Derived classes need to perform action.
 
         spineIDs = event.getSpines()
         """
-
+        pass
+    
     def stateChangedEvent(self, event : pmmEvent):
         """Derived classes need to perform action of selection event.
         """

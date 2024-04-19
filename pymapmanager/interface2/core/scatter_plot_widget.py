@@ -609,13 +609,13 @@ class ScatterPlotWidget(QtWidgets.QWidget):
         self.xPlotWidget.signalUpdateStat.connect(self.slot_xyStat)
 
         # TODO: make function to change according to string name rather than integer
-        self.xPlotWidget.myTableWidget.selectRow(0)
+        self.xPlotWidget.myTableWidget.selectRow(4)
         
         # TODO: Have a state be selected here
         # Create a default state
         self.yPlotWidget = myStatListWidget(self.columnNameList, headerStr="Y Stat")
         self.yPlotWidget.signalUpdateStat.connect(self.slot_xyStat)
-        self.yPlotWidget.myTableWidget.selectRow(2)
+        self.yPlotWidget.myTableWidget.selectRow(5)
 
         hColumnLayout.addWidget(self.xPlotWidget)
         hColumnLayout.addWidget(self.yPlotWidget)
