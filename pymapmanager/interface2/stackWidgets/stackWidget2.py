@@ -751,6 +751,12 @@ class stackWidget2(mmWidget2):
         sliceNumber = event.getSliceNumber()
         self._statusToolbar.slot_setSlice(sliceNumber)
 
+        # abj
+        self._currentSliceNumber = sliceNumber
+
+    def getCurrentSliceNumber(self):
+        return self._currentSliceNumber 
+
     def setColorChannelEvent(self, event):
         colorChannel = event.getColorChannel()
         self._topToolbar.slot_setChannel(colorChannel)

@@ -17,27 +17,22 @@ def _old_AddRandomColumns(df):
     print(df['isBad'])
 
     df['userType'] = np.random.randint(0, 10, size=n)
-  
-    # df['userType'] = UserTypeColors[0]
+
 
 def run():
     app = PyMapManagerApp()
 
-    path = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
-    
+    path = '../PyMapManager-Data/core-map/one-timepoint/oneTimepoint.mmap'
+
     sw2 = app.loadStackWidget(path)
     
-    # sw2 = stackWidget2(path, app=app)
-    # sw2.show()	
-
     df = sw2.getStack().getPointAnnotations().getDataFrame()
     df['userType'] = 0
-    # AddRandomColumns(df)
-
     # sw2.getStack().getPointAnnotations().intializeIsBad()
     # sw2.getStack().getPointAnnotations().intializeUserType()
     
     sw2.zoomToPointAnnotation(120, isAlt=True)
+    sw2.runPlugin('Scatter Plot', inDock=True)
 
     sys.exit(app.exec_())
 
