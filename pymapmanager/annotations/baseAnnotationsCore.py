@@ -95,6 +95,7 @@ class AnnotationsCore:
         _stopSlice = zSlice + zPlusMinus
 
         df = self.getDataFrame()
+        df['rowIndex'] = list(np.arange(len(df)))
         df = df[(df['z']>=_startSlice) & (df['z']<=_stopSlice)]
 
         return df
@@ -198,81 +199,6 @@ class AnnotationsCore:
     def _getClassName(self) -> str:
         return self.__class__.__name__
 
-class LineAnnotationsCore(AnnotationsCore):
-
-    def getSummaryDf(self):
-        """DataFrame with per segment info (one segment per ro)
-        """
-        return self._summaryDf
-    
-    def _buildSummaryDf(self) -> pd.DataFrame:
-        """Get a summary dataframe, one segment per row.
-        """
-        self._summaryDf = pd.DataFrame()
-        self._summaryDf['segmentID'] = self._df['segmentID'].unique()
-
-    def _buildDataFrame(self):  
-
-        # rebuild session map from full map
-        self._buildSessionMap()
-        
-        df = self._sessionMap.segments["segment"].get_coordinates(include_z=True)
-        
-        df['segmentID'] = [int(index) for index in df.index]
-
-        df.insert(0,'index', np.arange(len(df)))  # index is first column
-
-        # logger.info(f'Line annotation df: {df}')
-        self._df = df
-
-        # summary, one row per segment
-        self._buildSummaryDf()
-
-        # left/right
-        xyLeft = self._sessionMap.segments["segmentLeft"].get_coordinates(include_z=True)
-        self._xyLeftDf = xyLeft
-        
-        xyRight = self._sessionMap.segments["segmentRight"].get_coordinates(include_z=True)
-        self._xyRightDf = xyRight
-
-    def getLeftRadiusPlot(self, segmentID,
-                       zSlice,
-                       zPlusMinus
-                       ):
-        """Get a spine dataframe based on z
-
-        Used for plotting x/y/z scatter over image
-        """
-        _startSlice = zSlice - zPlusMinus
-        _stopSlice = zSlice + zPlusMinus
-
-        df = self._xyLeftDf      
-        df = df[(df['z']>=_startSlice) & (df['z']<=_stopSlice)]
-
-        return df
-    
-    def getRightRadiusPlot(self, segmentID,
-                       zSlice,
-                       zPlusMinus
-                       ):
-        """Get a spine dataframe based on z
-
-        Used for plotting x/y/z scatter over image
-        """
-        _startSlice = zSlice - zPlusMinus
-        _stopSlice = zSlice + zPlusMinus
-
-        df = self._xyRightDf
-        df = df[(df['z']>=_startSlice) & (df['z']<=_stopSlice)]
-
-        return df
-    
-    def getLeftRadiusLine(self):
-        return self._xyLeftDf
-    
-    def getRightRadiusLine(self):
-        return self._xyRightDf
-    
 class SpineAnnotationsCore(AnnotationsCore):
         
     def _buildDataFrame(self):
@@ -413,6 +339,88 @@ class SpineAnnotationsCore(AnnotationsCore):
 
         self._buildDataFrame()
 
+class LineAnnotationsCore(AnnotationsCore):
+
+    def getSummaryDf(self):
+        """DataFrame with per segment info (one segment per ro)
+        """
+        return self._summaryDf
+    
+    def _buildSummaryDf(self) -> pd.DataFrame:
+        """Get a summary dataframe, one segment per row.
+        """
+        self._summaryDf = pd.DataFrame()
+        self._summaryDf['segmentID'] = self._df['segmentID'].unique()
+
+    def _buildDataFrame(self):  
+
+        # rebuild session map from full map
+        self._buildSessionMap()
+        
+        df = self._sessionMap.segments["segment"].get_coordinates(include_z=True)
+        
+        df['segmentID'] = [int(index) for index in df.index]
+
+        # before core, we were using 'index' column, now just use row index label
+        # df.insert(0,'index', np.arange(len(df)))  # index is first column
+
+        # logger.info(f'Line annotation df: {df}')
+        self._df = df
+
+        # summary, one row per segment
+        self._buildSummaryDf()
+
+        # left/right
+        xyLeft = self._sessionMap.segments["segmentLeft"].get_coordinates(include_z=True)
+        self._xyLeftDf = xyLeft
+        # use to know how to connect when sequential points are in same segment but there is a gap
+        # self._xyLeftDf.loc[:,'rowIndex'] = list(np.arange(len(xyLeft)))
+        self._xyLeftDf['rowIndex'] = list(np.arange(len(xyLeft)))
+
+        xyRight = self._sessionMap.segments["segmentRight"].get_coordinates(include_z=True)
+        self._xyRightDf = xyRight
+        # use to know how to connect when sequential points are in same segment but there is a gap
+        # self._xyRightDf.loc[:,'rowIndex'] = list(np.arange(len(xyRight)))
+        self._xyRightDf['rowIndex'] = list(np.arange(len(xyRight)))
+
+    def getLeftRadiusPlot(self, segmentID,
+                       zSlice,
+                       zPlusMinus
+                       ):
+        """Get a spine dataframe based on z
+
+        Used for plotting x/y/z scatter over image
+        """
+        _startSlice = zSlice - zPlusMinus
+        _stopSlice = zSlice + zPlusMinus
+
+        df = self._xyLeftDf      
+        df = df[(df['z']>=_startSlice) & (df['z']<=_stopSlice)]
+
+        return df
+    
+    def getRightRadiusPlot(self, segmentID,
+                       zSlice,
+                       zPlusMinus
+                       ):
+        """Get a spine dataframe based on z
+
+        Used for plotting x/y/z scatter over image
+        """
+        _startSlice = zSlice - zPlusMinus
+        _stopSlice = zSlice + zPlusMinus
+
+        df = self._xyRightDf
+        df = df[(df['z']>=_startSlice) & (df['z']<=_stopSlice)]
+
+        return df
+    
+    def getLeftRadiusLine(self):
+        return self._xyLeftDf
+    
+    def getRightRadiusLine(self):
+        return self._xyRightDf
+    
 if __name__ == '__main__':
     from pymapmanager._logger import setLogLevel
     setLogLevel()

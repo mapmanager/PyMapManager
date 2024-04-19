@@ -94,6 +94,9 @@ class annotationPlotWidget(mmWidget2):
         # self._colorMap = colors.ListedColormap(['r', 'g', 'b', 'c', 'm', 'y', 'k',]).colors
         self._colorMap = sns.color_palette("husl", 10).as_hex()
         
+    def _getScatterConnect(self, df : pd.DataFrame):
+        return None
+    
     def getStack(self):
         return self.getStackWidget().getStack()
 
@@ -115,41 +118,21 @@ class annotationPlotWidget(mmWidget2):
         size = self._displayOptions["size"]
         zorder = self._displayOptions["zorder"]
 
-        # logger.info('plotting with defaults')
-        # logger.info(f'  color: {color}')
-        # logger.info(f'  width: {width}')
+        penWidth = 6
+        _pen = pg.mkPen(width=penWidth, color=color)
 
-        # _pen = pg.mkPen(width=width, color=color)
-        # _pen = None
-
-        # feb 2023, switching from ScatterPlotItem to PlotDataItem (for 'connect' argument
-        # v1
-        # self._scatter = pg.PlotDataItem(pen=_pen,
-        #                     # symbolPen=None, # feb 2023
-        #                     symbol=symbol,
-        #                     size=size,
-        #                     color = color,
-        #                     connect='all')
-        # v2
-        # self._scatter = pg.ScatterPlotItem(pen=pg.mkPen(width=width, color=color),
-        #                     symbol=symbol,
-        #                     size=size,
-        #                     color=color,
-        #                     hoverable=True
-        #                     )
-        # v3
-        # logger.info('MAKING _scatter')
         # _scatter is pyqtgraph.graphicsItems.PlotDataItem.PlotDataItem
         self._scatter = self._view.plot(
             [],
             [],
-            pen=None,  # None to not draw lines
+            pen=_pen,  # None to not draw lines
             symbol=symbol,
             # symbolColor  = 'red',
             symbolPen=None,
             fillOutline=False,
             markeredgewidth=0.0,
             symbolBrush=color,
+            # connect=None
         )
 
         # ,pen=pg.mkPen(width=width, color=color), symbol=symbol)
@@ -157,69 +140,43 @@ class annotationPlotWidget(mmWidget2):
         # zorder = 100
         self._scatter.setZValue(zorder)  # put it on top, may need to change '10'
 
-        # when using ScatterPlotItem
-        # self._scatter.sigClicked.connect(self._on_mouse_click)
-        # self._scatter.sigHovered.connect(self._on_mouse_hover)
-
         # when using PlotDataItem
         self._scatter.sigPointsClicked.connect(self._on_mouse_click)
         # self._scatter.sigPointsHovered.connect(self._on_mouse_hover)
 
-        # do not need to ad .plot to _view (already added)
-        # logger.info(f'adding _scatter to view: {self.__class__.__name__}')
-        # self._view.addItem(self._scatter)
-
+        # abj
         # user selection
-        width = self._displayOptions["widthUserSelection"]
-        color = self._displayOptions["colorUserSelection"]
-        symbol = self._displayOptions["symbolUserSelection"]
-        size = self._displayOptions["sizeUserSelection"]
-        zorder = self._displayOptions["zorderUserSelection"]
+        if 1:
+            width = self._displayOptions["widthUserSelection"]
+            color = self._displayOptions["colorUserSelection"]
+            symbol = self._displayOptions["symbolUserSelection"]
+            size = self._displayOptions["sizeUserSelection"]
+            zorder = self._displayOptions["zorderUserSelection"]
 
-        # this scatter plot get updated when user click an annotation
-        # self._scatterUserSelection = pg.ScatterPlotItem(pen=pg.mkPen(width=width,
-        #                                     color=color), symbol=symbol, size=size)
+            # this scatter plot get updated when user click an annotation
+            # self._scatterUserSelection = pg.ScatterPlotItem(pen=pg.mkPen(width=width,
+            #                                     color=color), symbol=symbol, size=size)
 
-        self._scatterUserSelection = self._view.plot(
-            [],
-            [],
-            # pen=None, # None to not draw lines
-            symbol=symbol,
-            # symbolColor  = 'red',
-            symbolPen=None,
-            fillOutline=False,
-            markeredgewidth=width,
-            symbolBrush=color,
-        )
+            self._scatterUserSelection = self._view.plot(
+                [],
+                [],
+                # pen=None, # None to not draw lines
+                symbol=symbol,
+                # symbolColor  = 'red',
+                symbolPen=None,
+                fillOutline=False,
+                markeredgewidth=width,
+                symbolBrush=color,
+            )
 
-        # self._scatterUserSelection.scatter.sigClicked.connect(self.scatterClicked)
-        self._scatterUserSelection.scatter.sigClicked.disconnect()
+            self._scatterUserSelection.scatter.sigClicked.disconnect()
 
-        self._scatterUserSelection.setZValue(
-            zorder
-        )  # put it on top, may need to change '10'
-        # logger.info(f'adding _scatterUserSelection to view: {self.__class__.__name__}')
-        self._view.addItem(self._scatterUserSelection)
+            self._scatterUserSelection.setZValue(
+                zorder
+            )  # put it on top, may need to change '10'
+            self._view.addItem(self._scatterUserSelection)
 
-        self._scatterUserSelection.sigPointsClicked.connect(self._on_highlighted_mouse_click) 
-
-        # Scatter for connection of lines (segments) and spines
-        # width = self._displayOptions['widthUserSelection']
-        # color = self._displayOptions['colorUserSelection']
-        # symbol = self._displayOptions['symbolUserSelection']
-        # size = self._displayOptions['sizeUserSelection']
-        # zorder = self._displayOptions['zorderUserSelection']
-
-        # width = self._displayOptionsLine['widthUserSelection']
-        # color = self._displayOptionsLine['colorUserSelection']
-        # symbol = self._displayOptionsLine['symbolUserSelection']
-        # size = self._displayOptionsLine['sizeUserSelection']
-        # zorder = self._displayOptionsLine['zorderUserSelection']
-        # # self._spineConnections = pg.ScatterPlotItem(pen=pg.mkPen(width=width,
-        # #                                     color=color), symbol=symbol, size=size)
-        # self._spineConnections = self._view.plot([],[],pen=pg.mkPen(width=width, color=(255, 0, 0)), symbol='o')
-        # self._spineConnections.setZValue(1)
-        # self._view.addItem(self._spineConnections)
+            # self._scatterUserSelection.sigPointsClicked.connect(self._on_highlighted_mouse_click) 
 
     def toggleScatterPlot(self):
         logger.info("")
@@ -227,6 +184,7 @@ class annotationPlotWidget(mmWidget2):
         visible = not self._scatter.isVisible()
         self._scatter.setVisible(visible)
 
+        # abj
         visible = not self._scatterUserSelection.isVisible()
         self._scatterUserSelection.setVisible(visible)
 
@@ -257,6 +215,7 @@ class annotationPlotWidget(mmWidget2):
 
         self._selectAnnotation(dbIdx=dbIdx)
 
+    # abj
     def _on_highlighted_mouse_click(self, points, event):
         """Respond to user click on highlighted scatter plot.
         This is only used for manual connect on a highlighted segment Point
@@ -345,59 +304,45 @@ class annotationPlotWidget(mmWidget2):
             eventType = pmmEventType.selection
             event = pmmEvent(eventType, self)
 
-            # either a point selection or a segment point selection
-            _plotType = "unknown"
-            # if isinstance(self._annotations, pymapmanager.annotations.pointAnnotations):
             if isinstance(
                 self._annotations,
                 pymapmanager.annotations.baseAnnotationsCore.SpineAnnotationsCore,
             ):
                 event.getStackSelection().setPointSelection(dbIdx)
-                _plotType = 'points'
-                sliceNum = self.getStack().getPointAnnotations().getValue("z", dbIdx)
+                # sliceNum = self.getStack().getPointAnnotations().getValue("z", dbIdx)
 
-                # 3/11 adding segment selection everytime there is a point selection
-                # segmentIndex = [self.getStack().getPointAnnotations().getValue("segmentID", dbIdx)]
-                logger.error('todo: move segment selection logic into stackwidget.selectionEvent()')
-                segmentIndex = self.getStack().getPointAnnotations().getValue("segmentID", dbIdx)
+                # logger.error('todo: move segment selection logic into stackwidget.selectionEvent()')
+                # segmentIndex = self.getStack().getPointAnnotations().getValue("segmentID", dbIdx)
+                # segmentIndex= [int(segmentIndex)]
+                # event.getStackSelection().setSegmentSelection(segmentIndex)
 
-                # add this
-                segmentIndex= [int(segmentIndex)]
-                event.getStackSelection().setSegmentSelection(segmentIndex)
+                # logger.info(f'SpineAnnotationsCore selection segmentIndex:{segmentIndex}')
 
-                logger.info(f'SpineAnnotationsCore selection segmentIndex:{segmentIndex}')
-
-            elif isinstance(self._annotations, pymapmanager.annotations.lineAnnotations):
+            # with new core, do not need a line point selection
+            # this logic moves up into imagePlotWidget
+            # elif isinstance(self._annotations, pymapmanager.annotations.lineAnnotations):
                 
-                # abj 3/12
-                # need to check if we are in manual connect, else there will be errors
-                currentState = self.getStackWidget().getStackSelection().getState()
-                # logger.info(f'currentState {currentState}')
-                if currentState.name != pmmEventType.manualConnectSpine.name:
-                    logger.info(f'not manual connect state - returning now, state is: {currentState}')
-                    return
+            #     # abj 3/12
+            #     # need to check if we are in manual connect, else there will be errors
+            #     currentState = self.getStackWidget().getStackSelection().getState()
+            #     # logger.info(f'currentState {currentState}')
+            #     if currentState.name != pmmEventType.manualConnectSpine.name:
+            #         logger.info(f'not manual connect state - returning now, state is: {currentState}')
+            #         return
 
-                logger.info(f'line segment selected')
-                # used to manually connect a spine to segment
-                event.getStackSelection().setSegmentPointSelection(dbIdx)
-                _plotType = 'lines'
-                sliceNum = self.getStackWidget().getStackSelection().getCurrentStackSlice() # gets current stacks slice selection
-            else:
-                logger.error(
-                    f"did not understand type of annotations {type(self._annotations)}"
-                )
-                return
+            #     logger.info(f'line segment selected')
+            #     # used to manually connect a spine to segment
+            #     event.getStackSelection().setSegmentPointSelection(dbIdx)
+            #     sliceNum = self.getStackWidget().getStackSelection().getCurrentStackSlice() # gets current stacks slice selection
+            # else:
+            #     logger.error(
+            #         f"did not understand type of annotations {type(self._annotations)}"
+            #     )
+            #     return
 
             event.setAlt(isAlt)
-
-            logger.info(f'emitting "{_plotType}" event for dbIdx:{dbIdx}')
-            logger.info(f'emitting "{_plotType}" event for sliceNum:{sliceNum}')
-            
-            event.setSliceNumber(sliceNum)
-
+            # event.setSliceNumber(sliceNum)
             self.emitEvent(event, blockSlots=False)
-
-            # implement left/right arrow to select prev/next point
 
     def _selectAnnotation(self, dbIdx: List[int], isAlt: bool = False):
         """Select annotations as 'yellow'
@@ -497,13 +442,18 @@ class annotationPlotWidget(mmWidget2):
         y = dfPlot["y"].tolist()
 
         # TODO: Can get rid of this and just use dfPlot, use dfPlot at index 
-        self._currentPlotIndex = dfPlot['index'].tolist()
+        # self._currentPlotIndex = dfPlot['index'].tolist()
+        self._currentPlotIndex = dfPlot.index.tolist()
         
-        # Accept is only done within pointAnnotations
         _symbolBrush = self._getScatterColor()
-        
+        _connect = self._getScatterConnect(dfPlot)
+
+        # logger.info(f'{self.getClassName()} connect is')
+        # print(_connect)
+
         self._scatter.setData(x, y,
-                              symbolBrush=_symbolBrush)
+                              symbolBrush=_symbolBrush,
+                              connect=_connect)
         
         stopTime = time.time()
         logger.info(f'base annotation plot widget ... {self.getClassName()} Took {round(stopTime-startTime,4)} sec')
@@ -557,11 +507,11 @@ class pointPlotWidget(annotationPlotWidget):
     def __init__(
         self,
         stackWidget: "StackWidget",
-        pointAnnotations: "pymapmanager.annotations.pointAnnotations",
+        #pointAnnotations: "pymapmanager.annotations.pointAnnotations",
         pgView,  # pymapmanager.interface.myPyQtGraphPlotWidget
-        displayOptions: dict,
-        displayOptionsLines: dict,
-        lineAnnotations: "pymapmanager.annotations.lineAnnotations",
+        #displayOptions: dict,
+        #displayOptionsLines: dict,
+        #lineAnnotations: "pymapmanager.annotations.lineAnnotations",
     ):
         """
         Args:
@@ -571,12 +521,15 @@ class pointPlotWidget(annotationPlotWidget):
             pgView:
         """
         
+        pointAnnotations = stackWidget.getStack().getPointAnnotations()
+        pointDisplayOptions = stackWidget.getDisplayOptions()['pointDisplay']
+        
         super().__init__(stackWidget,
                         pointAnnotations,
                         pgView,
-                        displayOptions)
+                        pointDisplayOptions)
 
-        self._displayOptionsLines = displayOptionsLines
+        self._displayOptionsLines = stackWidget.getDisplayOptions()['spineLineDisplay']
 
         # define the roi types we will display, see: slot_setDisplayTypes()
         # when user is editing a segment, just plot controlPnt
@@ -585,7 +538,7 @@ class pointPlotWidget(annotationPlotWidget):
 
         self.labels = []
 
-        self.lineAnnotations = lineAnnotations
+        #self.lineAnnotations = lineAnnotations
         self.pointAnnotations = pointAnnotations
 
         # abb 042024 removed
@@ -855,7 +808,7 @@ class pointPlotWidget(annotationPlotWidget):
     def _selectAnnotation(self, rowIdx: List[int], isAlt: bool = False):
         """Select one annotation."""
 
-        logger.info(f"{self.getClassName()} rowIdx:{rowIdx}")
+        # logger.info(f"{self.getClassName()} rowIdx:{rowIdx}")
 
         # selects the point in scatter plot
         super()._selectAnnotation(rowIdx, isAlt)
@@ -869,6 +822,7 @@ class pointPlotWidget(annotationPlotWidget):
         if roiType == "spineROI":
             firstSelectedRow = rowIdx[0]
 
+            logger.info(f'{self.getClassName()} updating polygons for spine {firstSelectedRow}')
             # spine and spine background
             spineRoi = self.pointAnnotations.getSpineRoi(firstSelectedRow)
             if spineRoi is not None:
@@ -1110,16 +1064,19 @@ class linePlotWidget(annotationPlotWidget):
     def __init__(
         self,
         stackWidget: "StackWidget",
-        lineAnnotations: "pymapmanager.annotations.lineAnnotations",
+        # lineAnnotations: "pymapmanager.annotations.lineAnnotations",
         pgView,  # pymapmanager.interface.myPyQtGraphPlotWidget
-        displayOptions: dict,
+        # displayOptions: dict,
     ):
         """
         Args:
             annotations:
             pgView:
         """
-        super().__init__(stackWidget, lineAnnotations, pgView, displayOptions)
+        lineAnnotations = stackWidget.getStack().getLineAnnotations()
+        lineDisplayOptions = stackWidget.getDisplayOptions()['lineDisplay']
+        
+        super().__init__(stackWidget, lineAnnotations, pgView, lineDisplayOptions)
 
         # define the roi types we will display, see: slot_setDisplayTypes()
         self._roiTypes = ["linePnt"]
@@ -1172,9 +1129,43 @@ class linePlotWidget(annotationPlotWidget):
         # logger.info(f'adding _rightRadiusLines to view: {self.__class__.__name__}')
         self._view.addItem(self._rightRadiusLines)
 
+    def _getScatterColor(self):
+        # TODO: refactor this to not explicitly loop
+        
+        dfPlot = self._dfPlot
+
+        # dfPlot.loc[:, 'color'] = ['b'] * len(dfPlot)
+        # dfPlot.loc[:,'color'] = ['b'] * len(dfPlot)
+        dfPlot['color'] = 'b'
+
+        # logger.info('')
+        # print(type(dfPlot))
+        # print(dfPlot)
+
+        _stackSelection = self.getStackWidget().getStackSelection()
+        _segmentSelection = _stackSelection.getSegmentSelection()
+
+        # logger.info(f'{self.getClassName()} segmentSelection:{_segmentSelection}')
+        # logger.info('dfPlot Before')
+        # print(dfPlot)
+
+        if _segmentSelection is not None and len(_segmentSelection) > 0:
+            _tmp = dfPlot.loc[ dfPlot.index.isin(_segmentSelection) ]
+            # print('_tmp:', _tmp)
+            dfPlot.loc[_tmp.index, 'color'] = 'y'
+        
+        # logger.info('dfPlot AFTER')
+        # print(dfPlot)
+
+        return dfPlot['color'].tolist()
+    
+    # abj
     def _selectSegment(self, segmentID: Optional[List[int]]):
         """Visually select an entire segment"""
-        logger.info(segmentID)
+        return
+    
+        # logger.info(segmentID)
+        
         if len(segmentID) == 0:
             x = []
             y = []
@@ -1192,51 +1183,49 @@ class linePlotWidget(annotationPlotWidget):
 
         self._highlightedPlotIndex = self._annotations._df[self._annotations._df['segmentID'].isin(segmentID)]
         self._highlightedPlotIndex = self._highlightedPlotIndex['index'].tolist()
-        # logger.info(f"full  self._highlightedPlotIndex {self._highlightedPlotIndex}")
 
-        # setData calls this ???
-        # self._view.update()
+    def _getScatterConnect(self, df : pd.DataFrame):
+        """Given a line df to plot (for a slice)
+            Build a connect array with
+                1 : connect to next
+                0 : do not connect to next
+        """
+        # logger.info(df)
 
-    def _unselectSegment(self):
-        x = []
-        y = []
-        self._scatterUserSelection.setData(x, y)
+        dfRet = np.diff(df.index.to_numpy())
+        dfRet[ dfRet != 0] = -1
+        dfRet[ dfRet == 0] = 1
+        dfRet[ dfRet == -1] = 0
 
+        rowIndexDiff = np.diff(df['rowIndex'])  # 1 when contiguous rows
+        dfRet[ (dfRet == 1) & (rowIndexDiff != 1)] = 0
+
+        dfRet = np.append(dfRet, 0)  # append 0 value
+
+        return dfRet
+    
     def slot_setSlice(self, sliceNumber: int):
+        
         super().slot_setSlice(sliceNumber)  # draws centerline
-
+        
         startSec = time.time()
  
         logger.info(f'{self.getClassName()}')
         
         dfLeft = self._annotations.getLeftRadiusPlot(None, sliceNumber, 1)
-
-        # _leftSegmentDiff will be 0 for points (rows) that are same as next point (row)
-        # results in 1 if next point is in same segment, 0 if it is not
-        _leftSegmentDiff = np.diff(dfLeft.index.to_numpy())
-        _leftSegmentDiff[ _leftSegmentDiff != 0] = -1
-        _leftSegmentDiff[ _leftSegmentDiff == 0] = 1
-        _leftSegmentDiff[ _leftSegmentDiff == -1] = 0
-        _leftSegmentDiff = np.append(_leftSegmentDiff, 0)  # append 0 value
-
+        _lineConnect = self._getScatterConnect(dfLeft)
         self._leftRadiusLines.setData(
             dfLeft["x"].to_numpy(),
             dfLeft["y"].to_numpy(),
-            connect=_leftSegmentDiff,
+            connect=_lineConnect,
         )
 
         dfRight = self._annotations.getRightRadiusPlot(None, sliceNumber, 1)
-
-        _rightSegmentDiff = np.diff(dfRight.index.to_numpy())
-        _rightSegmentDiff[ _rightSegmentDiff != 0] = -1
-        _rightSegmentDiff[ _rightSegmentDiff == 0] = 1
-        _rightSegmentDiff[ _rightSegmentDiff == -1] = 0
-        _rightSegmentDiff = np.append(_rightSegmentDiff, 0)  # append 0 value
-    
+        _lineConnect = self._getScatterConnect(dfRight)
         self._rightRadiusLines.setData(
             dfRight["x"].to_numpy(),
             dfRight["y"].to_numpy(),
-            connect=_rightSegmentDiff,
+            connect=_lineConnect,
         )
 
         stopSec = time.time()
@@ -1248,26 +1237,26 @@ class linePlotWidget(annotationPlotWidget):
         """
 
         _stackSelection = event.getStackSelection()
-        logger.info(f"linePlotWidget _stackSelection: {_stackSelection}")
+        # logger.info(f"linePlotWidget _stackSelection: {_stackSelection}")
         
         if _stackSelection.hasSegmentSelection():
-            logger.info("linePlotWidget has a segment selection")
+            # logger.info("linePlotWidget has a segment selection")
             _selectedItems = _stackSelection.getSegmentSelection()
             self._selectSegment(_selectedItems)
 
-        _state = event.getStackSelection().getState()
-        _stackSelection = self.getStackWidget().getStackSelection()
+        # _state = event.getStackSelection().getState()
+        # _stackSelection = self.getStackWidget().getStackSelection()
         
-        if _stackSelection.getState() == pmmStates.manualConnectSpine:
-            _selectedAnnotations = event.getStackSelection().getSegmentPointSelection()
-            logger.info(
-                f"   -->> emit pmmEventType.manualConnectSpine with segmentpointselection:{_selectedAnnotations}"
-            )
+        # if _stackSelection.getState() == pmmStates.manualConnectSpine:
+        #     _selectedAnnotations = event.getStackSelection().getSegmentPointSelection()
+        #     logger.info(
+        #         f"   -->> emit pmmEventType.manualConnectSpine with segmentpointselection:{_selectedAnnotations}"
+        #     )
 
-            manualConnectEvent = event.getCopy()
-            manualConnectEvent.setType(pmmEventType.manualConnectSpine)
-            manualConnectEvent.getStackSelection().setSegmentPointSelection(_selectedAnnotations)
-            self.emitEvent(manualConnectEvent, blockSlots=True)
+        #     manualConnectEvent = event.getCopy()
+        #     manualConnectEvent.setType(pmmEventType.manualConnectSpine)
+        #     manualConnectEvent.getStackSelection().setSegmentPointSelection(_selectedAnnotations)
+        #     self.emitEvent(manualConnectEvent, blockSlots=True)
 
     def stateChangedEvent(self, event):
         if event.getStateChange() == pmmStates.manualConnectSpine:
