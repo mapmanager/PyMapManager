@@ -84,6 +84,9 @@ class stackWidget2(mmWidget2):
         self._buildUI()
         self._buildMenus()
 
+    def getDisplayOptions(self) -> "AppDisplayOptions":
+        return self._displayOptionsDict
+    
     def closeEvent(self, event):
         """Called when user closes main window or selects quit.
 
@@ -387,7 +390,7 @@ class stackWidget2(mmWidget2):
 
         _state = self.getStackSelection().getState()
         
-        logger.info(f'state is: {_state}')
+        # logger.info(f'state is: {_state}')
         
         if _state == pmmStates.manualConnectSpine:
             # we are only after segmentPointSelection
@@ -419,21 +422,32 @@ class stackWidget2(mmWidget2):
             _pointSelection = _eventSelection.getPointSelection()
             self.getStackSelection().setPointSelection(_pointSelection)
 
+            if len(_pointSelection) == 1:
+                _onePoint = _pointSelection[0]
+                segmentIndex = self.getStack().getPointAnnotations().getValue("segmentID", _onePoint)
+                segmentIndex= [int(segmentIndex)]
+                self.getStackSelection().setSegmentSelection(segmentIndex)
+                #
+                _eventSelection.setSegmentSelection(segmentIndex)
+            else:
+                logger.warning(f'not setting segment selection for multi point selection {_pointSelection}')
+
         else:
             self.getStackSelection().setPointSelection([])
 
-        if _eventSelection.hasSegmentSelection():
-            _segmentSelection = _eventSelection.getSegmentSelection()
-            self.getStackSelection().setSegmentSelection(_segmentSelection)
-        else:
-            self.getStackSelection().setSegmentSelection([])
+        if not _eventSelection.hasPointSelection():
+            if _eventSelection.hasSegmentSelection():
+                _segmentSelection = _eventSelection.getSegmentSelection()
+                self.getStackSelection().setSegmentSelection(_segmentSelection)
+            else:
+                self.getStackSelection().setSegmentSelection([])
 
         # abb 202404 we don't need this any more
-        if _eventSelection.hasSegmentPointSelection():
-            _segmentPointSelection = _eventSelection.getSegmentPointSelection()
-            self.getStackSelection().setSegmentPointSelection(_segmentPointSelection)
-        else:
-            self.getStackSelection().setSegmentPointSelection([])
+        # if _eventSelection.hasSegmentPointSelection():
+        #     _segmentPointSelection = _eventSelection.getSegmentPointSelection()
+        #     self.getStackSelection().setSegmentPointSelection(_segmentPointSelection)
+        # else:
+        #     self.getStackSelection().setSegmentPointSelection([])
 
         return True
 

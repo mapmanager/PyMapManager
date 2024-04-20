@@ -1,6 +1,6 @@
 import enum
 # import math
-from functools import partial
+# from functools import partial
 
 import numpy as np
 import pyqtgraph as pg
@@ -13,9 +13,7 @@ import pymapmanager.interface2
 from pymapmanager.interface2.stackWidgets.event.spineEvent import EditSpinePropertyEvent, AddSpineEvent
 
 from .mmWidget2 import mmWidget2, pmmEventType, pmmEvent, pmmStates
-# from mmWidget2 import mmWidget2, pmmEventType, pmmEvent, pmmStates
 from .annotationPlotWidget2 import pointPlotWidget, linePlotWidget
-# from .annotationPlotWidget2 import annotationPlotWidget
 
 from pymapmanager._logger import logger
 
@@ -99,6 +97,8 @@ class ImagePlotWidget(mmWidget2):
 
         # self._mouseConnectState = False
         # Variable to keep track of State, Used creating new connection to an existing Spine ROI
+
+        self._sliderBlocked = False
 
         self._buildUI()
 
@@ -475,7 +475,12 @@ class ImagePlotWidget(mmWidget2):
 
         padding = 0.0
         self._plotWidget.setRange(_zoomRect, padding=padding)
-       
+    
+    def slot_slider_setSlice(self, sliceNumber):
+        if self._sliderBlocked:
+            return
+        self.slot_setSlice(sliceNumber=sliceNumber)
+
     def slot_setSlice(self, sliceNumber, doEmit=True):
         # logger.warning(f'sliceNumber:{sliceNumber} doEmit:{doEmit}')
         if self.slotsBlocked():
@@ -724,7 +729,10 @@ class ImagePlotWidget(mmWidget2):
         # emit
         #logger.info(f'  -->> emit signalUpdateSlice() _currentSlice:{self._currentSlice}')
 
-        self._stackSlider.setValue(self._currentSlice)
+        # self._stackSlider.setValue(self._currentSlice)
+        self._sliderBlocked = True
+        self._stackSlider._updateSlice(self._currentSlice, doEmit=False)
+        self._sliderBlocked = False
 
         # return
         # removed aug 31
@@ -775,7 +783,7 @@ class ImagePlotWidget(mmWidget2):
         # we are now a QWidget
         self._plotWidget = pg.PlotWidget()  # pyqtgraph.widgets.PlotWidget.PlotWidget
         # monkey patch wheel event
-        logger.warning(f'remember, we are monkey patching imagePlotWidget wheel event')
+        # logger.warning(f'remember, we are monkey patching imagePlotWidget wheel event')
         # logger.info(f'  self._plotWidget:{self._plotWidget}')
         self._plotWidget.orig_wheelEvent = self._plotWidget.wheelEvent
         self._plotWidget.wheelEvent = self.wheelEvent_monkey_patch
@@ -848,14 +856,14 @@ class ImagePlotWidget(mmWidget2):
         # add point plot of pointAnnotations
         pointAnnotations = self._myStack.getPointAnnotations()
         lineAnnotations = self._myStack.getLineAnnotations()
-        _displayOptions = self._displayOptionsDict['pointDisplay']
-        _displayOptionsLine = self._displayOptionsDict['spineLineDisplay']
+        # _displayOptions = self._displayOptionsDict['pointDisplay']
+        # _displayOptionsLine = self._displayOptionsDict['spineLineDisplay']
         self._aPointPlot = pointPlotWidget(self.getStackWidget(),
-                                            pointAnnotations,
+                                            #pointAnnotations,
                                             self._plotWidget,
-                                            _displayOptions,
-                                            _displayOptionsLine,
-                                            lineAnnotations,
+                                            # _displayOptions,
+                                            # _displayOptionsLine,
+                                            #lineAnnotations,
                                             )
         # self._aPointPlot.signalAnnotationClicked2.connect(self.slot_selectAnnotation2)
         # self.signalAnnotationSelection2.connect(self._aPointPlot.slot_selectAnnotation2)
@@ -863,12 +871,12 @@ class ImagePlotWidget(mmWidget2):
 
 
         # add line plot of lineAnnotations
-        lineAnnotations = self._myStack.getLineAnnotations()
-        _displayOptions = self._displayOptionsDict['lineDisplay']
+        # lineAnnotations = self._myStack.getLineAnnotations()
+        # _displayOptions = self._displayOptionsDict['lineDisplay']
         self._aLinePlot = linePlotWidget(self.getStackWidget(),
-                                            lineAnnotations,
+                                            # lineAnnotations,
                                             self._plotWidget,
-                                            _displayOptions,
+                                            # _displayOptions,
                                             )
 
         # self._aLinePlot.signalAnnotationClicked2.connect(self.slot_selectAnnotation2)
@@ -891,7 +899,7 @@ class ImagePlotWidget(mmWidget2):
         _numSlices = self._myStack.numSlices
         self._stackSlider = StackSlider(_numSlices)
         # self._stackSlider.signalUpdateSlice.connect(self._setSlice)
-        self._stackSlider.signalUpdateSlice.connect(self.slot_setSlice)
+        self._stackSlider.signalUpdateSlice.connect(self.slot_slider_setSlice)
         self.signalUpdateSlice.connect(self._stackSlider.slot_setSlice)
 
         hBoxLayout.addWidget(self._stackSlider)
@@ -924,7 +932,7 @@ class ImagePlotWidget(mmWidget2):
         self.signalUpdateSlice.connect(self._aLinePlot_tmp.slot_setSlice)
 
     def selectedEvent(self, event : pmmEvent):
-        """Snap and optionally zoom to point and line  annotations.
+        """Snap and optionally zoom to point and line annotations.
         
             Notes
             -----
@@ -939,21 +947,22 @@ class ImagePlotWidget(mmWidget2):
         if not event.getStackSelection().hasPointSelection():  # False on (None, [])
             return
 
+        if not event.isAlt():
+            return
+        
         oneItem = event.getStackSelection().firstPointSelection()
 
-        # get z and set slice
         _pointAnnotations = self.getStackWidget().getStack().getPointAnnotations()
         x = _pointAnnotations.getValue('x', oneItem)
         y = _pointAnnotations.getValue('y', oneItem)
-        # z = _pointAnnotations.getValue('z', oneItem)
-        z = event.getSliceNumber()
+        z = _pointAnnotations.getValue('z', oneItem)
+        # z = event.getSliceNumber()
 
-        if event.isAlt():
-            # When zooming to point, set the slice to be that of the current selection
-            logger.info(f"zoom to coordinates x: {x} y: {y}")
-            self._zoomToPoint(x, y)
-            z = _pointAnnotations.getValue('z', oneItem) # zoom to z of current point
-        
+        # When zooming to point, set the slice to be that of the current selection
+        logger.info(f"zoom to coordinates x: {x} y: {y}")
+        self._zoomToPoint(x, y)
+        # z = _pointAnnotations.getValue('z', oneItem) # zoom to z of current point
+    
         self._currentSlice = z
 
         doEmit = True
@@ -995,18 +1004,24 @@ class StackSlider(QtWidgets.QSlider):
 
         #
         # slider signal
-        # valueChanged()    Emitted when the slider's value has changed. The tracking() determines whether this signal is emitted during user interaction.
+        # valueChanged()    Emitted when the slider's value has changed.
+        #   The tracking() determines whether this signal is emitted during user interaction.
         # sliderPressed()    Emitted when the user starts to drag the slider.
         # sliderMoved()    Emitted when the user drags the slider.
         # sliderReleased()    Emitted when the user releases the slider.
 
+        # self.sliderReleased.connect(self._updateSlice)
+        
+        # was this
         self.sliderMoved.connect(self._updateSlice)
         self.valueChanged.connect(self._updateSlice) # abb 20200829
+        
         #self.valueChanged.connect(self.sliceSliderValueChanged)
 
     def _updateSlice(self, sliceNumber, doEmit=True):
         self.setValue(sliceNumber)
         if doEmit:
+            logger.info(f' *** --->>> StackSlider emit signalUpdateSlice {sliceNumber}')
             self.signalUpdateSlice.emit(sliceNumber)
 
     def slot_setSlice(self, sliceNumber):

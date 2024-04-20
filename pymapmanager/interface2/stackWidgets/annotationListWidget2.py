@@ -207,7 +207,7 @@ class pointListWidget(annotationListWidget):
         
         pointSelection = event.getStackSelection().getPointSelection()        
 
-        logger.info(f'{self.getClassName()} pointSelection:{pointSelection}')
+        # logger.info(f'{self.getClassName()} pointSelection:{pointSelection}')
 
         self._myTableView._selectRow(pointSelection)
 
@@ -266,7 +266,7 @@ class lineListWidget(annotationListWidget):
         super().__init__(stackWidget, annotations, name='lineListWidget')
 
     def selectedEvent(self, event):
-        logger.info(event)
+        # logger.info(event)
         
         segmentSelection = event.getStackSelection().getSegmentSelection()        
         self._myTableView._selectRow(segmentSelection)

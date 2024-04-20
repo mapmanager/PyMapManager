@@ -74,6 +74,7 @@ setup(
             'PyQt5',  # This will not work on macOS arm
             'pyqtgraph',
             'pyqtdarktheme',
+            'plotly'
 		],
 
         'napari': [

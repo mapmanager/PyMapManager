@@ -90,7 +90,7 @@ class myQSortFilterProxyModel(QSortFilterProxyModel):
                         return False
                 elif(self.currentComparisonSymbol == ">"):
                     if float(val) > float(self.currentComparisonValue):
-                        logger.info(f"here in > !!!")
+                        # logger.info(f"here in > !!!")
                         return True
                         # return False
                     else:
@@ -579,11 +579,11 @@ class myQTableView(QtWidgets.QTableView):
         isAlt = modifiers == QtCore.Qt.AltModifier
         
         # debug
-        logger.info('XXXXXXXX    DEBUG     XXXXXXXXXX')
-        # modelIndex is QtCore.QModelIndex
-        for modelIndex in self.selectedIndexes():
-            # print('   ', modelIndex, type(modelIndex))
-            print(f'   {self.getMyName()} {modelIndex.row()} row:{self.proxyModel.mapToSource(modelIndex).row()}')
+        # logger.info('XXXXXXXX    DEBUG     XXXXXXXXXX')
+        # # modelIndex is QtCore.QModelIndex
+        # for modelIndex in self.selectedIndexes():
+        #     # print('   ', modelIndex, type(modelIndex))
+        #     print(f'   {self.getMyName()} {modelIndex.row()} row:{self.proxyModel.mapToSource(modelIndex).row()}')
 
         # Don't use params, use self.selectedIndexes()
         selectedIndexes = [self.proxyModel.mapToSource(modelIndex).row()
@@ -692,7 +692,7 @@ class myQTableView(QtWidgets.QTableView):
         if rowList is None or len(rowList)==0:
             return
         
-        logger.info(f'rowList:{rowList}')
+        # logger.info(f'rowList:{rowList}')
         
         # 2nd argument is column, here we default to zero since we will select the entire row regardless
         for _idx, rowIdx in enumerate(rowList):
@@ -706,7 +706,7 @@ class myQTableView(QtWidgets.QTableView):
             self.mySelectionModel.select(proxyIndex, mode)
 
             if _idx == 0:
-                logger.info(f"{self.getMyName()} scrollTo proxyIndex {proxyIndex.row()} modelIndex:{modelIndex.row()}")
+                # logger.info(f"{self.getMyName()} scrollTo proxyIndex {proxyIndex.row()} modelIndex:{modelIndex.row()}")
                 # logger.info(f'      {type(proxyIndex)} {type(modelIndex)}')
                 # self.scrollTo(proxyIndex, QtWidgets.QAbstractItemView.PositionAtTop) 
                 self.scrollTo(proxyIndex) 
