@@ -790,8 +790,8 @@ class ScatterPlotWidget(QtWidgets.QWidget):
                 orientation="horizontal",
                 facecolor="silver",
                 edgecolor="gray",
-                cumulative = True,
-                density = True
+                # cumulative = True,
+                # density = True
             )
             ax_histy.tick_params(axis="y", labelleft=False)
             ax_histy.grid(False)
