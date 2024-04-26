@@ -854,10 +854,11 @@ class stackWidget2(mmWidget2):
         """
 
         logger.info(f'stackWiget2 zoomToPointAnnotation idx:{idx} isAlt:{isAlt} select:{select}')
+        
         _pointAnnotations = self._stack.getPointAnnotations()
         
-        if _pointAnnotations.numAnnotations == 0:
-            logger.warning('point annotations is empty')
+        if idx > (_pointAnnotations.numAnnotations-1):
+            logger.warning(f'bad point index, max value is {_pointAnnotations.numAnnotations-1}')
             return
         
         event = pmmEvent(pmmEventType.selection, self)

@@ -843,6 +843,7 @@ class pointPlotWidget(annotationPlotWidget):
 
     def selectedEvent(self, event: pmmEvent):
         # logger.info(event)
+        # super().selectedEvent(event)
         _stackSelection = event.getStackSelection()
         itemList = _stackSelection.getPointSelection()  # might be []
         isAlt = event.isAlt()
@@ -887,8 +888,8 @@ class pointPlotWidget(annotationPlotWidget):
         else:
             self._spineConnections.setData(_xData, _yData)
 
-        stopSec = time.time()
-        logger.info(f'{self.getClassName()} took {round(stopSec-startSec,4)} seconds')
+        # stopSec = time.time()
+        # logger.info(f'{self.getClassName()} took {round(stopSec-startSec,4)} seconds')
 
     def _updateItem(self, rowIdx: int):
         """Update one item (both labels and spine line).
@@ -1134,6 +1135,7 @@ class linePlotWidget(annotationPlotWidget):
         
         dfPlot = self._dfPlot
 
+        pd.options.mode.chained_assignment = None  # default='warn'
         # dfPlot.loc[:, 'color'] = ['b'] * len(dfPlot)
         # dfPlot.loc[:,'color'] = ['b'] * len(dfPlot)
         dfPlot['color'] = 'b'
@@ -1210,7 +1212,7 @@ class linePlotWidget(annotationPlotWidget):
         
         startSec = time.time()
  
-        logger.info(f'{self.getClassName()}')
+        # logger.info(f'{self.getClassName()}')
         
         dfLeft = self._annotations.getLeftRadiusPlot(None, sliceNumber, 1)
         _lineConnect = self._getScatterConnect(dfLeft)
@@ -1243,6 +1245,8 @@ class linePlotWidget(annotationPlotWidget):
             # logger.info("linePlotWidget has a segment selection")
             _selectedItems = _stackSelection.getSegmentSelection()
             self._selectSegment(_selectedItems)
+
+            # super().selectedEvent(event)
 
         # _state = event.getStackSelection().getState()
         # _stackSelection = self.getStackWidget().getStackSelection()

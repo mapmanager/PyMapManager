@@ -11,7 +11,7 @@ from pymapmanager._logger import logger
 class AnnotationsCore:
     def __init__(self,
                  mapAnnotations : AnnotationsLayers,
-                 analysisParams : "AnalysisParams",
+                #  analysisParams : "AnalysisParams",
                  sessionID = 0,
                  ):
         """
@@ -29,7 +29,7 @@ class AnnotationsCore:
         self._sessionMap : AnnotationsLayers = None
         self._df = None
 
-        self._analasisParams = analysisParams
+        # self._analasisParams = analysisParams
 
         self._buildDataFrame()
     
@@ -421,6 +421,14 @@ class LineAnnotationsCore(AnnotationsCore):
     def getRightRadiusLine(self):
         return self._xyRightDf
     
+    def getMedianZ(self, segmentID : int):
+        df = self.getDataFrame()
+        df = df[ df['segmentID']==segmentID ]
+        xMedian = np.median(df['x'])
+        yMedian = np.median(df['y'])
+        zMedian = np.median(df['z'])
+        return (int(xMedian), int(yMedian), int(zMedian) )
+
 if __name__ == '__main__':
     from pymapmanager._logger import setLogLevel
     setLogLevel()

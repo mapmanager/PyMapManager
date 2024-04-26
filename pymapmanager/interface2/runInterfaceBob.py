@@ -10,6 +10,9 @@ def run():
 
     path = '../PyMapManager-Data/core-map/one-timepoint/oneTimepoint.mmap'
 
+    path = '/Users/cudmore/Desktop/tmpMap.mmap'
+    path = '/Users/cudmore/Desktop/rr30a_s0.mmap'
+    
     sw2 = app.loadStackWidget(path)
     
     # grab point dataframe

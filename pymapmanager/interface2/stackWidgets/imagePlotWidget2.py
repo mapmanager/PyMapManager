@@ -944,29 +944,41 @@ class ImagePlotWidget(mmWidget2):
              - TODO: For segment selection,
                 select the median z value of the first selected segment
         """
-        if not event.getStackSelection().hasPointSelection():  # False on (None, [])
-            return
-
-        if not event.isAlt():
-            return
+        logger.error('on segment selection, snap z to median of z in segment selection.')
         
-        oneItem = event.getStackSelection().firstPointSelection()
+        if event.getStackSelection().hasPointSelection():  # False on (None, [])
+            # if not event.isAlt():
+            #     return
+            
+            oneItem = event.getStackSelection().firstPointSelection()
 
-        _pointAnnotations = self.getStackWidget().getStack().getPointAnnotations()
-        x = _pointAnnotations.getValue('x', oneItem)
-        y = _pointAnnotations.getValue('y', oneItem)
-        z = _pointAnnotations.getValue('z', oneItem)
-        # z = event.getSliceNumber()
+            _pointAnnotations = self.getStackWidget().getStack().getPointAnnotations()
+            x = _pointAnnotations.getValue('x', oneItem)
+            y = _pointAnnotations.getValue('y', oneItem)
+            z = _pointAnnotations.getValue('z', oneItem)
+            # z = event.getSliceNumber()
 
-        # When zooming to point, set the slice to be that of the current selection
-        logger.info(f"zoom to coordinates x: {x} y: {y}")
-        self._zoomToPoint(x, y)
-        # z = _pointAnnotations.getValue('z', oneItem) # zoom to z of current point
-    
-        self._currentSlice = z
+            # When zooming to point, set the slice to be that of the current selection
+            logger.info(f"zoom to coordinates x: {x} y: {y}")
+            self._zoomToPoint(x, y)
+            # z = _pointAnnotations.getValue('z', oneItem) # zoom to z of current point
+        
+            self._currentSlice = z
+            doEmit = True
+            self._setSlice(z, doEmit=doEmit)
 
-        doEmit = True
-        self._setSlice(z, doEmit=doEmit)
+        elif event.getStackSelection().hasSegmentSelection():
+            oneSegmentID = event.getStackSelection().firstSegmentSelection()
+            # logger.info(f'oneSegmentID:{oneSegmentID}')
+            _lineAnnotations = self.getStackWidget().getStack().getLineAnnotations()
+            x, y, z = _lineAnnotations.getMedianZ(oneSegmentID)
+            # logger.info(f'{x} {y} {z}')
+
+            # self._zoomToPoint(x, y)
+
+            self._currentSlice = z
+            doEmit = True
+            self._setSlice(z, doEmit=doEmit)
 
     def setSliceEvent(self, event):
         # logger.info(event)
@@ -1021,7 +1033,7 @@ class StackSlider(QtWidgets.QSlider):
     def _updateSlice(self, sliceNumber, doEmit=True):
         self.setValue(sliceNumber)
         if doEmit:
-            logger.info(f' *** --->>> StackSlider emit signalUpdateSlice {sliceNumber}')
+            # logger.info(f' *** --->>> StackSlider emit signalUpdateSlice {sliceNumber}')
             self.signalUpdateSlice.emit(sliceNumber)
 
     def slot_setSlice(self, sliceNumber):

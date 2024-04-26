@@ -1059,38 +1059,33 @@ class ScatterPlotWidget(QtWidgets.QWidget):
     def getHighlighter(self):
         return self.myHighlighter
     
-def makeDF():
-    df = pd.DataFrame()
-    df["A"] = [10,20,30]
-    df["B"] = [11,22,33]
-    df["C"] = [111,222,333]
-    return df
-
-
-    # TODO: Add slot when we edit, derived from base class
-
-from PyQt5.QtWidgets import QApplication, QWidget, QTableView, QMainWindow, QVBoxLayout, QLineEdit
-from PyQt5.QtCore import Qt, QSortFilterProxyModel, QAbstractTableModel, QModelIndex, pyqtSignal 
-from PyQt5 import QtCore
-import sys
 if __name__ == '__main__':
+    # pip install scikit-learn
+
+    import sys
+    from PyQt5.QtWidgets import QApplication  # , QWidget, QTableView, QMainWindow, QVBoxLayout, QLineEdit
+    # from PyQt5.QtCore import Qt, QSortFilterProxyModel, QAbstractTableModel, QModelIndex, pyqtSignal 
+    # from PyQt5 import QtCore
+
     app = QApplication(sys.argv)
 
-    df = makeDF()
-
     # import sklearn as scikit_learn
-    import sklearn
+    # import sklearn
     from sklearn import datasets
-    # pip install scikit-learn
     iris = datasets.load_iris()
+    
     # data_test = sklearn.datasets.load_iris(as_frame=True)
     df = pd.DataFrame(data=np.c_[iris['data'], iris['target']],
                   columns= iris['feature_names'] + ['target']).astype({'target': int}) \
        .assign(species=lambda x: x['target'].map(dict(enumerate(iris['target_names']))))
+
+    print(df)
+    
     # print("data_test", data_test)
     # data = datasets.load_iris(as_frame=True)['data']
-    container = ScatterPlotWindow2(df, "species", "target")
-    # container = ScatterPlotWindow(df, "species", None)
+
+    container = ScatterPlotWidget(df, "species", "target")
+
     # container.setFilter("species")
 
     # roiTypeList = 

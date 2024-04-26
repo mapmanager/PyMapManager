@@ -5,7 +5,7 @@ from typing import List, Union, Optional
 import numpy as np
 
 import pymapmanager
-from pymapmanager.analysisParams import AnalysisParams
+# from pymapmanager.analysisParams import AnalysisParams
 from mapmanagercore import MapAnnotations, MMapLoader
 from pymapmanager.annotations.baseAnnotationsCore import SpineAnnotationsCore, LineAnnotationsCore
 # from mapmanagercore.annotations.layers import AnnotationsLayers
@@ -31,7 +31,7 @@ class stack:
         self._images = [None] * self.maxNumChannels
 
         # TODO: in the future have analysis params be passed in so that each stack shares the same params.
-        self._analysisParams = AnalysisParams()
+        # self._analysisParams = AnalysisParams()
         
         # load the map
         self._fullMap : MapAnnotations = MapAnnotations(MMapLoader(self._zarrPath).cached())
@@ -140,12 +140,14 @@ class stack:
     def loadAnnotations(self) -> None:
         """Load point annotations.
         """
-        self._annotations = SpineAnnotationsCore(self.sessionMap, analysisParams = self._analysisParams)
+        # self._annotations = SpineAnnotationsCore(self.sessionMap, analysisParams = self._analysisParams)
+        self._annotations = SpineAnnotationsCore(self.sessionMap)
 
     def loadLines(self) -> None:
         """Load line annotations.
         """
-        self._lines = LineAnnotationsCore(self.sessionMap, analysisParams = self._analysisParams)
+        # self._lines = LineAnnotationsCore(self.sessionMap, analysisParams = self._analysisParams)
+        self._lines = LineAnnotationsCore(self.sessionMap)
     
     def getImageChannel(self,
                         channel : int = 1

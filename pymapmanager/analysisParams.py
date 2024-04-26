@@ -7,8 +7,8 @@ What I really want is a ...
 import pandas as pd
 from pymapmanager._logger import logger
 
-# TODO: separate to interface
-class AnalysisParams():
+# TODO: moove this to core !!!
+class _old_AnalysisParams():
 
     # signalParameterChanged = QtCore.Signal(dict) # dict
 
