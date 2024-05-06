@@ -3,8 +3,9 @@ Widget to plot columns within backend dataframe (in the form of a scatterplot + 
 """
 
 import sys
-from typing import List
+from typing import List, Optional
 
+import pandas as pd
 from qtpy import QtGui, QtCore, QtWidgets
 
 from pymapmanager._logger import logger
@@ -15,30 +16,114 @@ from pymapmanager.interface2.core.scatter_plot_widget import ScatterPlotWidget
 # from pymapmanager.interface2.core._data_model import pandasModel
 
 from pymapmanager.interface2.stackWidgets.mmWidget2  import mmWidget2, pmmEventType, pmmEvent, pmmStates
-from pymapmanager.interface2.stackWidgets.event.spineEvent import DeleteSpineEvent
+from pymapmanager.interface2.stackWidgets.event.spineEvent import DeleteSpineEvent, EditSpinePropertyEvent
 
 class PmmScatterPlotWidget(mmWidget2):
 
     _widgetName = 'Scatter Plot'
 
-    def __init__(self, stackWidget : "StackWidget",):
+    def __init__(self, stackWidget : "StackWidget"):
         """
         Args:
-            annotations:
-            title:
             parent:
         """
         super().__init__(stackWidget)
-        # self._buildGui()
-
         self.stackWidget = stackWidget
         self.df = stackWidget.getStack().getPointAnnotations().getDataFrame()
-        logger.info(f"self.df {self.df}")
 
-        # Maybe use _myTableView to filter out unneeded columns
+        self._buildScatterPlot()
 
-        self._scatterPlotWidget = ScatterPlotWidget(self.df, None, "segmentID")
+    def _buildScatterPlot(self):
+        self._scatterPlotWidget = ScatterPlotWidget(df=self.df, filterColumn="roiType", acceptColumn = None,
+                                                    hueColumnList=["segmentID", "userType"],
+                                                    # stackWidget = stackWidget,
+                                                    parent=self
+                                                    )
+        
         self._scatterPlotWidget.signalAnnotationSelected.connect(self.on_scatter_plot_selection)
+
+        scatterPlotLayout = self._scatterPlotWidget.getMainLayout()
+        self._makeCentralWidget(scatterPlotLayout)
+
+        # If there is a current selection in stack widget then select it
+        
+    def contextMenuEvent(self, event : QtGui.QContextMenuEvent):
+        """Show a right-click menu.
+        
+        This is inherited from QtWidget.
+        Functionality
+            Accept: Set all selected spines to Accept=True
+            Reject: Set all selected spines to Accept=False
+            User Type: have a submenu with items [0,9], set all selected spines to selected user type (selected menu)
+            Delete: Delete all selected spines. Should have a dialog popup to ask 'are you sure you want to delete'
+        """
+        _menu = QtWidgets.QMenu(self)
+        logger.info(f"event for PmmScatterPlotWidget{event}")
+
+        storedRowIndexes = self._scatterPlotWidget.getHighlightedIndexes()
+        logger.info(f"storedRowIdx contextMenu {storedRowIndexes}")
+        if len(storedRowIndexes) <= 0:
+            logger.warning('no selection -> no context menu')
+            return
+
+        _menu = QtWidgets.QMenu(self)
+
+        # only allowed to move spine roi
+        acceptAction = _menu.addAction(f'Accept')
+        acceptAction.setEnabled(True)
+        
+        # only allowed to manually connect spine roi
+        rejectAction = _menu.addAction(f'Reject')
+        rejectAction.setEnabled(True)
+
+        # only allowed to auto connect spine roi
+        userTypeAction= _menu.addAction(f'User Type')
+        userTypeAction.setEnabled(True)
+        
+        # allowed to delete any point annotation
+        deleteAction = _menu.addAction(f'Delete')
+        deleteAction.setEnabled(True)
+
+        userTypeMenu = _menu.addMenu('User Type')
+        numUserType = 10  # TODO: should be a global option
+        userTypes = range(numUserType)
+        for userType in userTypes:
+            action = userTypeMenu.addAction(str(userType))
+        action = _menu.exec_(self.mapToGlobal(event.pos()))
+
+        if action is None:
+            return
+        
+        elif action.text() in str(range(numUserType)):
+            _newValue = action.text() 
+            for row in storedRowIndexes:
+                esp = EditSpinePropertyEvent(self, row, 'userType', _newValue)
+                self.emitEvent(esp)
+        
+        elif action == acceptAction:
+            # Change all values to accept
+            for row in storedRowIndexes:
+                esp = EditSpinePropertyEvent(self, row, 'accept', True)
+                self.emitEvent(esp)
+   
+        elif action == rejectAction:
+            # Change all accept values to False
+            # TODO: loop through each rowIndex
+
+            # for row in storedRowIndexes:
+            # espList = [EditSpinePropertyEvent(self, row, 'accept', False) for row in storedRowIndexes]
+            # logger.info(f"espList {espList}")
+            # self.emitEvent(espList)
+            for row in storedRowIndexes:
+                esp = EditSpinePropertyEvent(self, row, 'accept', True)
+                self.emitEvent(esp)
+
+        elif action == deleteAction:
+            for row in storedRowIndexes:
+                deleteEvent = DeleteSpineEvent(self, row)
+                self.emitEvent(deleteEvent)
+
+
 
     def on_scatter_plot_selection(self, itemList : List[int], isAlt : bool = False):
         """Respond to user selection in scatter plot.
@@ -60,17 +145,13 @@ class PmmScatterPlotWidget(mmWidget2):
         event.getStackSelection().setPointSelection(itemList)
         event.setAlt(isAlt)
 
-        # 2/9/24 - added slice to maintain slice while plotting
-        # Might be easier to get slice directly from stack
-        currentSlice = self.stackWidget.getCurrentSliceNumber()
-        event.setSliceNumber(currentSlice)
-
         self.emitEvent(event, blockSlots=False)     
 
     def selectedEvent(self, event : pmmEvent):
         """ StackWidget emits signal to this widget. This function passes those point selections into the stand alone
         scatter plot widget to highlight them.
         """
+        logger.info("calling selected event in PmmScatterPlotWidget")
         rowIndexes = event.getStackSelection().getPointSelection()  
 
         self._scatterPlotWidget.selectHighlighterPoints(rowIndexes)
@@ -78,18 +159,35 @@ class PmmScatterPlotWidget(mmWidget2):
     def addedEvent(self, event : pmmEvent):
         """Derived classes need to perform action of selection event.
         """
-        pass
+
+        # update dataframe within scatter plot widget
+        refreshDf = self.stackWidget.getStack().getPointAnnotations().getDataFrame()
+        self._scatterPlotWidget._updatedRow(refreshDf)
+
+        # rowIndexes = event.getStackSelection().getPointSelection()  
+        spineIDs = event.getSpines()
+        logger.info(f"addedEvent rowIndexes {spineIDs}")
+        logger.info(f"event {event}")
+        # select new point within highlighter
+        self._scatterPlotWidget.selectHighlighterPoints(spineIDs)
+
     def deletedEvent(self, event : pmmEvent):
-        """Derived classes need to perform action of selection event.
+        """ Refresh dataframe then unselected all points within highlighter
         """
         logger.warning(f'{self.getClassName()} base class called ????????????')
-        pass
-    def editedEvent(self, event : pmmEvent):
-        """Derived classes need to perform action.
+        # pass
+        refreshDf = self.stackWidget.getStack().getPointAnnotations().getDataFrame()
+        self._scatterPlotWidget._updatedRow(refreshDf)
+        self._scatterPlotWidget.selectHighlighterPoints(None)
 
-        spineIDs = event.getSpines()
+    def editedEvent(self, event : pmmEvent):
+        """ Refresh dataframe and replot point(s)
         """
-        pass
+        logger.warning(f'{self.getClassName()} edited event')
+        refreshDf = self.stackWidget.getStack().getPointAnnotations().getDataFrame()
+        self._scatterPlotWidget._updatedRow(refreshDf)
+        spineIDs = event.getSpines()
+        self._scatterPlotWidget.selectHighlighterPoints(spineIDs)
     
     def stateChangedEvent(self, event : pmmEvent):
         """Derived classes need to perform action of selection event.
@@ -98,20 +196,17 @@ class PmmScatterPlotWidget(mmWidget2):
         # self._state = event.getStateChange()
 
     def moveAnnotationEvent(self, event : pmmEvent):
-        pass
+        """ Refresh dataframe and replot point(s)
+        """
+        refreshDf = self.stackWidget.getStack().getPointAnnotations().getDataFrame()
+        self._scatterPlotWidget._updatedRow(refreshDf)
+        spineIDs = event.getSpines()
+        self._scatterPlotWidget.selectHighlighterPoints(spineIDs)
     
     def manualConnectSpineEvent(self, event : pmmEvent):
-        # logger.info(event)
+        # Nothing needs to be done since same spine will be selected within highlighter
         pass
 
     def autoConnectSpineEvent(self, event : pmmEvent):
-        """Auto connect existing spine selection.
-        
-        Handled by stack widget
-        """
+        # Nothing needs to be done since same spine will be selected within highlighter
         pass
-
-
-
-    # def _buildGui(self):
-    #     self._scatterPlotWidget = ScatterPlotWidget()

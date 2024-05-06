@@ -329,7 +329,8 @@ class SpineAnnotationsCore(AnnotationsCore):
 
     def editSpine(self, editSpineProperty : "EditSpineProperty"):
         # spineID:117 col:isBad value:True
-        logger.info(editSpineProperty)
+        # logger.info(editSpineProperty)
+        logger.info(f"stack widget editSpineProperty {editSpineProperty}")
         for item in editSpineProperty:
             spineID = item['spineID']
             col = item['col']
