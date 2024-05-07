@@ -115,7 +115,7 @@ class PmmScatterPlotWidget(mmWidget2):
             # logger.info(f"espList {espList}")
             # self.emitEvent(espList)
             for row in storedRowIndexes:
-                esp = EditSpinePropertyEvent(self, row, 'accept', True)
+                esp = EditSpinePropertyEvent(self, row, 'accept', False)
                 self.emitEvent(esp)
 
         elif action == deleteAction:
