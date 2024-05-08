@@ -76,54 +76,48 @@ class PmmScatterPlotWidget(mmWidget2):
         rejectAction = _menu.addAction(f'Reject')
         rejectAction.setEnabled(True)
 
-        # only allowed to auto connect spine roi
-        userTypeAction= _menu.addAction(f'User Type')
-        userTypeAction.setEnabled(True)
-        
         # allowed to delete any point annotation
         deleteAction = _menu.addAction(f'Delete')
         deleteAction.setEnabled(True)
 
         userTypeMenu = _menu.addMenu('User Type')
         numUserType = 10  # TODO: should be a global option
-        userTypes = range(numUserType)
-        for userType in userTypes:
-            action = userTypeMenu.addAction(str(userType))
+        userTypeList = [str(i) for i in range(numUserType)]
+        for userType in userTypeList:
+            action = userTypeMenu.addAction(userType)
         action = _menu.exec_(self.mapToGlobal(event.pos()))
 
         if action is None:
             return
         
-        elif action.text() in str(range(numUserType)):
+        elif action.text() in userTypeList:
             _newValue = action.text() 
+            logger.info(f"_newValue for PmmScatterPlotWidget {_newValue}")
+            esp = EditSpinePropertyEvent(self)
             for row in storedRowIndexes:
-                esp = EditSpinePropertyEvent(self, row, 'userType', _newValue)
-                self.emitEvent(esp)
+                esp.addEditProperty(row, 'userType', _newValue)
+            self.emitEvent(esp)
         
         elif action == acceptAction:
             # Change all values to accept
+            esp = EditSpinePropertyEvent(self)
             for row in storedRowIndexes:
-                esp = EditSpinePropertyEvent(self, row, 'accept', True)
-                self.emitEvent(esp)
-   
+                esp.addEditProperty(row, 'accept', True)
+            self.emitEvent(esp)
+
         elif action == rejectAction:
             # Change all accept values to False
-            # TODO: loop through each rowIndex
-
-            # for row in storedRowIndexes:
-            # espList = [EditSpinePropertyEvent(self, row, 'accept', False) for row in storedRowIndexes]
-            # logger.info(f"espList {espList}")
-            # self.emitEvent(espList)
+            esp = EditSpinePropertyEvent(self)
             for row in storedRowIndexes:
-                esp = EditSpinePropertyEvent(self, row, 'accept', False)
-                self.emitEvent(esp)
+                esp.addEditProperty(row, 'accept', False)
+            self.emitEvent(esp)
 
         elif action == deleteAction:
+            deleteEvent = DeleteSpineEvent(self)
             for row in storedRowIndexes:
-                deleteEvent = DeleteSpineEvent(self, row)
-                self.emitEvent(deleteEvent)
-
-
+                # deleteEvent = DeleteSpineEvent(self, row)
+                deleteEvent.addDeleteSpine(row)
+            self.emitEvent(deleteEvent)
 
     def on_scatter_plot_selection(self, itemList : List[int], isAlt : bool = False):
         """Respond to user selection in scatter plot.
@@ -135,7 +129,7 @@ class PmmScatterPlotWidget(mmWidget2):
             isAlt: True if keyboard Alt is down
         """
 
-        logger.info(f'{self.getClassName()} itemList:{itemList} isAlt:{isAlt}')
+        # logger.info(f'{self.getClassName()} itemList:{itemList} isAlt:{isAlt}')
 
         if itemList is None:
             itemList = []
@@ -144,7 +138,6 @@ class PmmScatterPlotWidget(mmWidget2):
         event = pmmEvent(eventType, self)
         event.getStackSelection().setPointSelection(itemList)
         event.setAlt(isAlt)
-
         self.emitEvent(event, blockSlots=False)     
 
     def selectedEvent(self, event : pmmEvent):

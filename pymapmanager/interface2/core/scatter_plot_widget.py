@@ -593,6 +593,7 @@ class ScatterPlotWidget(QtWidgets.QWidget):
         # controls and both stat lists
         vLayout = QtWidgets.QVBoxLayout()
 
+        # Invert Y Checkbox
         hLayoutHeader = QtWidgets.QHBoxLayout()
         self.invertYCheckbox = QtWidgets.QCheckBox('Invert Y')
         self.invertYCheckbox.setChecked(True)
@@ -612,6 +613,7 @@ class ScatterPlotWidget(QtWidgets.QWidget):
         self.acceptCheckbox.stateChanged.connect(self._on_change_Accept)
         hLayoutHeader.addWidget(self.acceptCheckbox)
 
+        hLayoutHeader2 = QtWidgets.QHBoxLayout()
         # Filter Str
         if self.filterStrList is not None:
             self.filterStrComboBox = QtWidgets.QComboBox()
@@ -621,8 +623,7 @@ class ScatterPlotWidget(QtWidgets.QWidget):
 
             self.filterStrComboBox.setCurrentText(self.dict["filterStr"])
             self.filterStrComboBox.currentTextChanged.connect(self._on_new_filterStr)
-            hLayoutHeader.addWidget(self.filterStrComboBox)
-
+            hLayoutHeader2.addWidget(self.filterStrComboBox)
 
         if self.hueColumnList is not None:
             self.hueColumnComboBox = QtWidgets.QComboBox()
@@ -635,9 +636,8 @@ class ScatterPlotWidget(QtWidgets.QWidget):
             # Set initial segment
             self.hueColumnComboBox.setCurrentText(str(self.dict["currentHueColumnStr"]))
             self.hueColumnComboBox.currentTextChanged.connect(self._onNewHueColumnStr)
-            hLayoutHeader.addWidget(self.hueColumnComboBox)
+            hLayoutHeader2.addWidget(self.hueColumnComboBox)
 
-      
         # 2nd Combo box for plotting IDs, individual or ALL
         self.idComboBox = QtWidgets.QComboBox()
 
@@ -645,10 +645,11 @@ class ScatterPlotWidget(QtWidgets.QWidget):
             self.idComboBox.setEnabled(False)
 
         self.idComboBox.currentTextChanged.connect(self._on_new_ID)
-        hLayoutHeader.addWidget(self.idComboBox)
+        hLayoutHeader2.addWidget(self.idComboBox)
 
         # Adding horizontal header of options to entire vertical stack
         vLayout.addLayout(hLayoutHeader)
+        vLayout.addLayout(hLayoutHeader2)
 
         # controls
         columnsWidget = QtWidgets.QWidget()
@@ -922,6 +923,11 @@ class ScatterPlotWidget(QtWidgets.QWidget):
 
             self.scatterPoints = self.axScatter.scatter(xStat, yStat, s = 12, c = myColorMap, 
                                                         picker=False)
+            
+            # IF else
+            # seaborn for histogram, cumulative histogram
+            # hue selected -> multiple histograms
+            # Turn off highlighter for histogram
 
 
         self.axScatter.grid(False)

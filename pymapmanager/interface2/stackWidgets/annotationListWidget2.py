@@ -232,7 +232,7 @@ class pointListWidget(annotationListWidget):
             isAlt: True if keyboard Alt is down
         """
 
-        logger.info(f'{self.getClassName()} itemList:{itemList} isAlt:{isAlt}')
+        # logger.info(f'{self.getClassName()} itemList:{itemList} isAlt:{isAlt}')
 
         if itemList is None:
             itemList = []
@@ -281,7 +281,7 @@ class lineListWidget(annotationListWidget):
             isAlt: True if keyboard Alt is down
         """
 
-        logger.info(f'{self.getClassName()} itemList:{itemList} isAlt:{isAlt}')
+        # logger.info(f'{self.getClassName()} itemList:{itemList} isAlt:{isAlt}')
 
         if itemList is None:
             itemList = []
