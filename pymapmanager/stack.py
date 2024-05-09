@@ -34,10 +34,19 @@ class stack:
         # self._analysisParams = AnalysisParams()
         
         # load the map
+        _startSec = time.time()
+        
+        logger.info(f'loading map from:{self._zarrPath}')
         self._fullMap : MapAnnotations = MapAnnotations(MMapLoader(self._zarrPath).cached())
+        # self._fullMap : MapAnnotations = MapAnnotations(MMapLoader(self._zarrPath))
+        
+        _stopSec = time.time()
+        logger.info(f'loaded map in {round(_stopSec-_startSec,3)} sec')
 
+        # logger.info('building session map ...')
         self._buildSessionMap()
-
+        # logger.info('done')
+                    
         # TODO (cudmore) we should add an option to defer loading until explicitly called
         self.loadAnnotations()
         self.loadLines()
@@ -48,6 +57,11 @@ class stack:
             for _channel in range(self.numChannels):
                 _channel += 1
                 self.loadImages(channel=_channel)
+
+    def getMetadata(self) -> "MetaData":
+        """Get metadata from the core map.
+        """
+        return self._fullMap.metadata()
 
     def _buildSessionMap(self):
         """Reduce full core map to a single session id.
@@ -179,19 +193,27 @@ class stack:
         if sessionNumber is None:
             sessionNumber = 0
 
+        # logger.info('self.sessionMap.images ...')
+
         _images = self.sessionMap.images
-        sls = [_images.loadSlice(sessionNumber, channel, i)
-               for i in range(self.numSlices)]
+        
+        # logger.info('loadSlice ...')
+        
+        # sls = [_images.loadSlice(sessionNumber, channel, i)
+        #        for i in range(self.numSlices)]
+        _imgData = _images.fetchSlices2(sessionNumber, channel, (0, self.numSlices))
 
-        _imgData = np.array(sls)
+        # logger.info('done')
 
-        logger.info(f'channel:{channel} _imgData {_imgData.shape}')
+        # _imgData = np.array(sls)
+
+        # logger.info(f'channel:{channel} _imgData {_imgData.shape}')
 
         self._images[channel] = _imgData
 
         stopSec = time.time()
         elapsedSec = round(stopSec-startSec,3)
-        logger.info(f'loaded img {_imgData.shape} in {elapsedSec} seconds')
+        logger.info(f'loaded channel:{channel} img:{_imgData.shape} in {elapsedSec} seconds')
 
     def getImageSlice(self,
                       imageSlice : int,
@@ -221,15 +243,22 @@ class stack:
         # slices = self.sessionMap.slices(time=0, channel=channelIdx, zRange=zRange)
         # _imgData = slices._image
 
-        # in memory np arrray
-        channelIdx = channel - 1
-        if self._images[channelIdx] is None:
-            # image data not loaded
-            logger.error(f'channel index {channelIdx} is None')
-            return
+        _doInMemory = True
         
-        _imgData =  self._images[channelIdx][imageSlice][:][:]
-    
+        if _doInMemory:
+            channelIdx = channel - 1
+            if self._images[channelIdx] is None:
+                # image data not loaded
+                logger.error(f'channel index {channelIdx} is None')
+                return
+            _imgData =  self._images[channelIdx][imageSlice][:][:]
+        else:
+            # core
+            _images = self.sessionMap.images
+            _imgData = _images.fetchSlices2(self.sessionID, channelIdx, (imageSlice, imageSlice+1))
+            _imgData = _imgData[0,:,:]
+            logger.info(f'_imgData: {_imgData.shape}')
+
         return _imgData
     
     def getMaxProjectSlice(self, 
@@ -291,3 +320,26 @@ class stack:
             return np.nan
         return _intensity
     
+    def undo(self):
+        logger.info('')
+
+        _beforeDf = self.getPointAnnotations().getDataFrame()
+
+        print('_beforeDf[115]')
+        print(_beforeDf.loc[115, ['x', 'y', 'z']])
+
+        _ret = self._fullMap.undo()
+        print(f'_ret:{_ret}')
+
+        self.getPointAnnotations()._buildDataFrame()
+
+        _afterDf = self.getPointAnnotations().getDataFrame()
+        print('_afterDf[115]')
+        print(_afterDf.loc[115, ['x', 'y', 'z']])
+
+
+    def redo(self):
+        logger.info('')
+        _ret = self._fullMap.redo()
+        print(f'_ret:{_ret}')
+        

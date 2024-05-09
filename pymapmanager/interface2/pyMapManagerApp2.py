@@ -178,6 +178,9 @@ class PyMapManagerApp(QtWidgets.QApplication):
         appDir = user_data_dir(appName)
         return appDir
     
+    def getFrontWindow(self):
+        return self.activeWindow()
+    
     def getFrontWindowType(self):
         """Get the type of the front window.
         
@@ -237,6 +240,8 @@ class PyMapManagerApp(QtWidgets.QApplication):
             self.openFirstWindow()
 
     def openFirstWindow(self):
+        """Toggle or create an OpenFirstWindow.
+        """
         if self._openFirstWindow is not None:
             self._openFirstWindow.show()
             # update recent
@@ -280,6 +285,14 @@ class PyMapManagerApp(QtWidgets.QApplication):
         logger.info('')
         pass
 
+    def _undo_action(self):
+        self.getFrontWindow()._undo_action()
+        # logger.info('')
+        
+    def _redo_action(self):
+        self.getFrontWindow()._redo_action()
+        # logger.info('')
+        
     def toggleMapWidget(self, path : str, visible : bool):
         """Show/hide a map widget.
         """
@@ -336,10 +349,13 @@ class PyMapManagerApp(QtWidgets.QApplication):
 
         return self._mapWidgetDict[path]
     
-    def loadStackWidget(self, path):
+    def loadStackWidget(self, path : str):
         """Load a stack from a path.
         
-        No concept of map.
+        Parameters
+        ----------
+        path : str
+            Full path to zarr file
         """
         if path in self._stackWidgetDict.keys():
             logger.info('showing already create stack widget')

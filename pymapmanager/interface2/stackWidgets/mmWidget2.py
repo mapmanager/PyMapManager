@@ -35,6 +35,9 @@ class pmmEventType(Enum):
     # acceptPoint = auto() # abj, used for setting isBad boolean
     # changeUserType = auto()
 
+    undoSpineEvent = auto()
+    redoSpineEvent = auto()
+
 class StackSelection:
     def __init__(self, stack : pymapmanager.stack = None):
         
@@ -726,10 +729,17 @@ class mmWidget2(QtWidgets.QMainWindow):
             acceptEvent = self.manualConnectSpineEvent(event)
         elif event.type == pmmEventType.autoConnectSpine:
             acceptEvent = self.autoConnectSpineEvent(event)
+        
         elif event.type == pmmEventType.setSlice:
             acceptEvent = self.setSliceEvent(event)
+        
         elif event.type == pmmEventType.setColorChannel:
             acceptEvent = self.setColorChannelEvent(event)
+
+        elif event.type == pmmEventType.undoSpineEvent:
+            acceptEvent = self.undoEvent(event)
+        elif event.type == pmmEventType.redoSpineEvent:
+            acceptEvent = self.redoEvent(event)
 
         # abj
         # elif event.type == pmmEventType.acceptPoint:
@@ -873,6 +883,12 @@ class mmWidget2(QtWidgets.QMainWindow):
         pass
     
     def changeUserType(self, event : pmmEvent):
+        pass
+    
+    def undoEvent(self, event : pmmEvent):
+        pass
+    
+    def redoEvent(self, event : pmmEvent):
         pass
     
     # def _deleteSelection(self):

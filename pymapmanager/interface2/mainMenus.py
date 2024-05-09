@@ -68,13 +68,13 @@ class PyMapManagerMenus:
         undoAction = QtWidgets.QAction("Undo", self.getApp())
         undoAction.setCheckable(False)  # setChecked is True by default?
         undoAction.setShortcut("Ctrl+Z")
-        # loadFileAction.triggered.connect(self.getApp().openFile)
+        undoAction.triggered.connect(self.getApp()._undo_action)
         editMenu.addAction(undoAction)
 
         redoAction = QtWidgets.QAction("Redo", self.getApp())
         redoAction.setCheckable(False)  # setChecked is True by default?
         redoAction.setShortcut("Shift+Ctrl+Z")
-        # loadFileAction.triggered.connect(self.getApp().openFile)
+        redoAction.triggered.connect(self.getApp()._redo_action)
         editMenu.addAction(redoAction)
 
         #

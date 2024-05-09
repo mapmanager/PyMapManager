@@ -545,7 +545,7 @@ class stackWidget2(mmWidget2):
     
     def stateChangedEvent(self, event : pmmEvent):
         _state = event.getStateChange()
-        logger.info(f' ======================= {_state}')
+        logger.info(f'   -->> {_state}')
                 
         if _state == pmmStates.manualConnectSpine:
             # store the current point selection for connecting later
@@ -565,12 +565,41 @@ class stackWidget2(mmWidget2):
         if _state == pmmStates.edit:
             self.slot_setStatus('Ready')
         elif _state == pmmStates.movingPnt:
-            self.slot_setStatus('Click the new position of the point')
+            self.slot_setStatus('Click the new position of the point, esc to cancel')
         elif _state == pmmStates.manualConnectSpine:
-            self.slot_setStatus('Click the line to specify the new connection point')
+            self.slot_setStatus('Click the line to specify the new connection point, esc to cancel')
 
         return True
     
+    # only used by move spine
+    def _afterEdit2(self, event):
+        """After edit (move), return to edit state and re-select spines (to refresh ROIs).
+        """
+
+        logger.info('returning to edit state and re-select spines')
+
+        # return to edit state
+        stateEvent = pmmEvent(pmmEventType.stateChange, self)
+        stateEvent.setStateChange(pmmStates.edit)
+        # self.emitEvent(stateEvent)
+        # logger.info(f'stateEvent:{stateEvent}')
+        self.slot_pmmEvent(stateEvent)
+
+        # reselect spine
+        spines = event.getSpines()  # [int]
+        # logger.info(f'spines:{spines}')
+        # if len(spines) == 0:
+        #     return
+        # spine = spines[0]
+        selectionEvent = pmmEvent(pmmEventType.selection, self)
+        selectionEvent.getStackSelection().setPointSelection(spines)
+        # self.emitEvent(selectionEvent)
+        # logger.info(f'selectionEvent:{selectionEvent}')
+        self.slot_pmmEvent(selectionEvent)
+
+        self.slot_setStatus('Ready')
+
+    # only used by manual and auto connect
     def _afterEdit(self, event):
         """Set the state after an edit event
 
@@ -598,11 +627,12 @@ class stackWidget2(mmWidget2):
         # self.emitEvent(selectionEvent)
         self.slot_pmmEvent(selectionEvent)
 
+        # abb removed
         # signal there has been a change in an annotation
-        editEvent = event.getCopy()
-        editEvent.setType(pmmEventType.edit)
-        # self.emitEvent(editEvent)
-        self.slot_pmmEvent(selectionEvent)
+        # editEvent = event.getCopy()
+        # editEvent.setType(pmmEventType.edit)
+        # # self.emitEvent(editEvent)
+        # self.slot_pmmEvent(selectionEvent)
 
         # select the point annotation
         selectionEvent = event.getCopy()
@@ -614,39 +644,62 @@ class stackWidget2(mmWidget2):
         self.slot_setStatus('Ready')
 
     def moveAnnotationEvent(self, event : "pmmEvent"):
-        _eventSelection = event.getStackSelection()
-        if not _eventSelection.hasPointSelection():
-            logger.warning('only works for single item selection')
-            return
         
+        # items = event.getSpines()  # [int]
+        # if len(items) == 0:
+        #     return
+
         logger.info('=== ===   STACK WIDGET PERFORMING Move   === ===')
-        itemList = _eventSelection.getPointSelection()
-        item = itemList[0]
-        x, y, z = event.getAddMovePosition()
-        logger.warning(f'   item:{item} x:{x} y:{y} z:{z}')
-        _pointAnnotation = self.getStack().getPointAnnotations()
-        _pointAnnotation.setValue('x', item, x)
-        _pointAnnotation.setValue('y', item, y)
-        _pointAnnotation.setValue('z', item, z)
 
-        # force recalculation of brightest index
-        #_pointAnnotation.setValue('brightestIndex', item, np.nan)
+        for item in event:
+            logger.info(f'item:{item}')
 
-        # la = self.getStack().getLineAnnotations()
-        # channelNumber = 1
-        # _imageSlice = z
-        # imgSliceData = self._stack.getImageSlice(_imageSlice, channelNumber)
+            # _eventSelection = event.getStackSelection()
+
+            # logger.info(f'event:{event} _eventSelection:{_eventSelection}')
+
+            # if not _eventSelection.hasPointSelection():
+            #     logger.warning('only works for single item selection')
+            #     return
+            
+            # itemList = _eventSelection.getPointSelection()
+            # item = itemList[0]
+            # x, y, z = event.getAddMovePosition()
+            spineID = item['spineID']
+            # if len(spineID) > 0:
+            #     spineID = spineID[0]
+            x = item['x']
+            y = item['y']
+            z = item['z']
+            
+            logger.info(f'   spineID:{spineID} x:{x} y:{y} z:{z}')
+            _pointAnnotation = self.getStack().getPointAnnotations()
+            _pointAnnotation.moveSpine(spineID=spineID, x=x, y=y, z=z)
+            # _pointAnnotation.setValue('x', spineID, x)
+            # _pointAnnotation.setValue('y', spineID, y)
+            # _pointAnnotation.setValue('z', spineID, z)
+
+            # force recalculation of brightest index
+            #_pointAnnotation.setValue('brightestIndex', item, np.nan)
+
+            # la = self.getStack().getLineAnnotations()
+            # channelNumber = 1
+            # _imageSlice = z
+            # imgSliceData = self._stack.getImageSlice(_imageSlice, channelNumber)
+            
+            # abb 202404, done by core
+            # _pointAnnotation.updateSpineInt2(
+            #                 item,
+            #                 self._stack)
+                                
+            #
+
+        # sliceNum = event.getSliceNumber()
+        # logger.info(f"moveAnnotationEvent sliceNum {sliceNum}")
         
-        # abb 202404, done by core
-        # _pointAnnotation.updateSpineInt2(
-        #                 item,
-        #                 self._stack)
-                            
-        #
-
-        sliceNum = event.getSliceNumber()
-        logger.info(f"moveAnnotationEvent sliceNum {sliceNum}")
-        self._afterEdit(event)
+        # logger.error('put call to _afterEdit back in')
+        
+        self._afterEdit2(event)
         
     def manualConnectSpineEvent(self, event : pmmEvent):
         """Update back end with a manually specified brightestIndex.
@@ -927,3 +980,25 @@ class stackWidget2(mmWidget2):
         newEvent.setSliceNumber(sliceNum)
 
         self._afterEdit(newEvent)
+
+    def _undo_action(self):
+        # logger.info('')
+        #self.getStack().undo()
+        logger.warning('=== ===   STACK WIDGET PERFORMING UNDO   === ===')
+
+        self.getStack().undo()
+
+        from pymapmanager.interface2.stackWidgets.event.spineEvent import UndoSpineEvent
+        undoSpineEvent = UndoSpineEvent(self)
+        self.emitEvent(undoSpineEvent)
+
+    def _redo_action(self):
+        # logger.info('')
+        
+        logger.warning('=== ===   STACK WIDGET PERFORMING REDO   === ===')
+
+        self.getStack().redo()
+
+        from pymapmanager.interface2.stackWidgets.event.spineEvent import RedoSpineEvent
+        redoSpineEvent = RedoSpineEvent(self)
+        self.emitEvent(redoSpineEvent)

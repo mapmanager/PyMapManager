@@ -1,6 +1,6 @@
 import time
 from typing import List, Optional
-from abc import ABC, abstractmethod
+# from abc import ABC, abstractmethod
 
 import numpy as np
 import pandas as pd
@@ -13,7 +13,7 @@ import pymapmanager.stack
 import pymapmanager.annotations
 
 from .mmWidget2 import mmWidget2, pmmEventType, pmmEvent, pmmStates
-from pymapmanager.interface2.stackWidgets.event.spineEvent import AddSpineEvent, DeleteSpineEvent
+from pymapmanager.interface2.stackWidgets.event.spineEvent import AddSpineEvent, DeleteSpineEvent, MoveSpineEvent
 
 import seaborn as sns  # to color points with userType
 
@@ -351,7 +351,8 @@ class annotationPlotWidget(mmWidget2):
             dbIdx: Index(row) of annotation, if None then cancel selection
             isAlt: If True then snap z
         """
-        # logger.info(f'annotationPlotWidget dbIdx:{dbIdx}')
+        logger.info(f'annotationPlotWidget dbIdx:{dbIdx}')
+        
         if dbIdx is None or len(dbIdx) == 0:
             # self._selectedAnnotation = None
             xPlot = []
@@ -463,6 +464,11 @@ class annotationPlotWidget(mmWidget2):
         self._selectAnnotation([])
 
         # refresh scatter
+        self._refreshSlice()
+
+    def undoEvent(self, event: pmmEvent):
+        # return super().undoEvent(event)
+        logger.info('')
         self._refreshSlice()
 
     def stateChangedEvent(self, event):
@@ -730,7 +736,29 @@ class pointPlotWidget(annotationPlotWidget):
             deleteSpineEvent = DeleteSpineEvent(self, items)
             self.emitEvent(deleteSpineEvent)
 
-    def addedEvent(self, event : "AddSpineEvent"):
+    def moveAnnotationEvent(self, event : MoveSpineEvent):
+        """Update plots on move spine event.
+        """
+        logger.info(event)
+
+        for spine in event:
+            # self._addAnnotation(spineID)
+            # self._selectAnnotation([spineID])
+
+            # update label
+            spineID = spine['spineID']
+            x = spine['x']
+            y = spine['y']
+            # z = spine['z']
+            self._labels[spineID].setPos(QtCore.QPointF(x - 9, y - 9))
+
+        # remake all spine lines
+        self._bMakeSpineLines()
+
+        
+        self._refreshSlice()
+
+    def addedEvent(self, event : AddSpineEvent):
         
         logger.info(event)
         

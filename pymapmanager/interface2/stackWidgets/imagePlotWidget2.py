@@ -10,7 +10,7 @@ from qtpy import QtGui, QtCore, QtWidgets
 import pymapmanager
 import pymapmanager.annotations
 import pymapmanager.interface2
-from pymapmanager.interface2.stackWidgets.event.spineEvent import EditSpinePropertyEvent, AddSpineEvent
+from pymapmanager.interface2.stackWidgets.event.spineEvent import EditSpinePropertyEvent, AddSpineEvent, MoveSpineEvent
 
 from .mmWidget2 import mmWidget2, pmmEventType, pmmEvent, pmmStates
 from .annotationPlotWidget2 import pointPlotWidget, linePlotWidget
@@ -154,7 +154,8 @@ class ImagePlotWidget(mmWidget2):
         - If a spine is selected, menu should be 'Delete Spine'
         - If no selection then disable 'Delete'
         """
-        logger.info('')
+        
+        # logger.info('')
 
         stackSelection = self.getStackWidget().getStackSelection()
         hasPointSelection = stackSelection.hasPointSelection()
@@ -219,9 +220,6 @@ class ImagePlotWidget(mmWidget2):
             return
         
         elif action == moveAction:
-            logger.warning('TODO: moveAction')
-            # self._mouseMovedState = True 
-            
             event = pmmEvent(pmmEventType.stateChange, self)
             event.setStateChange(pmmStates.movingPnt)
             self.emitEvent(event)
@@ -362,12 +360,19 @@ class ImagePlotWidget(mmWidget2):
             _stackSelection = self.getStackWidget().getStackSelection()
             if _stackSelection.hasPointSelection():
                 items = _stackSelection.getPointSelection()
-                eventType = pmmEventType.moveAnnotation
-                event = pmmEvent(eventType, self)
-                event.setAddMovePosition(x, y, z)
-                event.getStackSelection().setPointSelection(items)
-                event.setSliceNumber(self._currentSlice)
+                
+                # v2
+                event = MoveSpineEvent(self, spineID=items, x=x, y=y, z=z)
+                logger.info(f'-->> EMIT: {event}')
                 self.emitEvent(event, blockSlots=True)
+
+                # v1
+                # eventType = pmmEventType.moveAnnotation
+                # event = pmmEvent(eventType, self)
+                # event.setAddMovePosition(x, y, z)
+                # event.getStackSelection().setPointSelection(items)
+                # event.setSliceNumber(self._currentSlice)
+                # self.emitEvent(event, blockSlots=True)
 
         elif _state == pmmStates.manualConnectSpine:
 

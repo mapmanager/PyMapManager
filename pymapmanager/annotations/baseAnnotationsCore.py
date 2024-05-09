@@ -1,4 +1,5 @@
 import sys
+import time
 from typing import List, Union  # , Optional, Tuple
 
 import numpy as np
@@ -162,6 +163,18 @@ class AnnotationsCore:
             logger.error(f'bad rowIdx(s) {rowIdx}, colName:{colName} range is 0...{len(self)-1}')
             return None
         
+    def moveSpine(self, spineID :int, x, y, z):
+        """Move a spine to new (x,y,z).
+        """
+        if not isinstance(spineID, int):
+            logger.error(f'got bad spineID:{spineID}, expecting int')
+            return
+        
+        _moved = self._fullMap.moveSpine((spineID, self.sessionID), x=x, y=y, z=z)
+
+        # rebuild df from mutated full map
+        self._buildDataFrame()
+
     def setValue(self, colName : str, row : int, value):
         """Set a single value in a row and column.
         
@@ -191,6 +204,16 @@ class AnnotationsCore:
         except(IndexError):
             logger.error(f'did not set value for col "{colName}" at row {row}')
 
+    def undo(self):
+        # logger.info('NEVER CALLED')
+        self._fullMap.undo()
+        self._buildDataFrame()
+
+    def redo(self):
+        # logger.info('NEVER CALLED')
+        self._fullMap.redo()
+        self._buildDataFrame()
+
     def __str__(self):
         _str = ''
         _str += f'{self._getClassName()} has {self.numAnnotations} rows'
@@ -207,13 +230,59 @@ class SpineAnnotationsCore(AnnotationsCore):
         Needs to be regenerated on any edit/mutation.
         """
         
+        _startSec = time.time()
+        
         # reduce full map to one session
         self._buildSessionMap()
 
-        allSpinesDf = self.sessionMap[:]
+        # self.sessionMap is mapmanagercore.annotations.layers.AnnotationsLayers
         
+        # logger.info('... SUPER SLOW ...')
+        # logger.info(f'self.sessionMap:{type(self.sessionMap)}')
+
+        # this is geo dataframe
+        # _points = self.sessionMap._points
+        
+        # map._points.columns
+        # print('_allSpinesDf:', type(_allSpinesDf))
+        # print(_allSpinesDf.columns)
+        # print(_allSpinesDf)
+
+        # v2
+        # xySpine = _points['point'].get_coordinates()
+        # xyAnchor = _points['anchor'].get_coordinates()
+
+        # xySpine['z'] = _points['z']
+        # xySpine['segmentID'] = _points['segmentID']
+        # xySpine['userType'] = _points['userType']
+        # xySpine['accept'] = _points['accept']
+        # xySpine['note'] = _points['note']
+
+        # xySpine['anchorX'] = xyAnchor['x']
+        # xySpine['anchorY'] = xyAnchor['y']
+
+        # allSpinesDf = xySpine
+
+        # v1
+        # this takes a super long time
+        # 20240502, after speaking with Suhayb, on Igor import, calling spines[:]
+        # then saving mmap will have ALL intensity columns computed !!!
+        
+        # logger.info('SLOW calling self.sessionMap[:]')
+        
+        allSpinesDf = self.sessionMap[:]
+
+        # print('allSpinesDf:')
+        # print(allSpinesDf.columns)
+
+        # logger.info(f'done allSpinesDf:')
+        # print(allSpinesDf)
+
         # reduce df index from tuple (spineID,session) to just spineID
         allSpinesDf = allSpinesDf.droplevel(1)
+
+        # logger.info(f'2 done allSpinesDf:')
+        # print(allSpinesDf)
 
         # logger.info('')
         # print('allSpinesDf.columns', allSpinesDf.columns)
@@ -224,9 +293,15 @@ class SpineAnnotationsCore(AnnotationsCore):
         allSpinesDf['roiType'] = 'spineROI'
         # allSpinesDf['index'] = [int(index[0]) for index in allSpinesDf.index]
 
-        allSpinesDf.insert(0,'index', allSpinesDf['spineID'])  # index is first column
+        # allSpinesDf.insert(0,'index', allSpinesDf['spineID'])  # index is first column
+        allSpinesDf.insert(0,'index', allSpinesDf.index)  # index is first column
+
+        # logger.info(f'allSpinesDf:{len(allSpinesDf)}')
 
         self._df = allSpinesDf
+
+        _stopSeconds = time.time()
+        logger.info(f'   {self._getClassName()} took {round(_stopSeconds-_startSec,3)} s')
 
     def getSpineLines(self):
         """Get df to plot spine lines from head to tail (anchor).
@@ -354,34 +429,45 @@ class LineAnnotationsCore(AnnotationsCore):
 
     def _buildDataFrame(self):  
 
+        _startSec = time.time()
+
         # rebuild session map from full map
         self._buildSessionMap()
         
-        df = self._sessionMap.segments["segment"].get_coordinates(include_z=True)
-        
-        df['segmentID'] = [int(index) for index in df.index]
+        # this still has 't'
+        _lineSegments = self._sessionMap._lineSegments        
+        dfSession = _lineSegments.loc[ (slice(None), self.sessionID), : ]
+        dfSession = dfSession.droplevel(1)
+
+        df = dfSession['segment']        
+        df = df.get_coordinates(include_z=True)
+        df['segmentID'] = df.index
 
         # before core, we were using 'index' column, now just use row index label
         # df.insert(0,'index', np.arange(len(df)))  # index is first column
-
-        # logger.info(f'Line annotation df: {df}')
+        
         self._df = df
 
-        # summary, one row per segment
+        # summary, one row per segment        
         self._buildSummaryDf()
 
+        #
         # left/right
+        
+        logger.warning('left/right is slow, can we get this pre-built and saved into zarr')
+        
         xyLeft = self._sessionMap.segments["segmentLeft"].get_coordinates(include_z=True)
         self._xyLeftDf = xyLeft
         # use to know how to connect when sequential points are in same segment but there is a gap
-        # self._xyLeftDf.loc[:,'rowIndex'] = list(np.arange(len(xyLeft)))
         self._xyLeftDf['rowIndex'] = list(np.arange(len(xyLeft)))
 
         xyRight = self._sessionMap.segments["segmentRight"].get_coordinates(include_z=True)
         self._xyRightDf = xyRight
         # use to know how to connect when sequential points are in same segment but there is a gap
-        # self._xyRightDf.loc[:,'rowIndex'] = list(np.arange(len(xyRight)))
         self._xyRightDf['rowIndex'] = list(np.arange(len(xyRight)))
+
+        _stopSeconds = time.time()
+        logger.info(f'   {self._getClassName()} took {round(_stopSeconds-_startSec,3)} s')
 
     def getLeftRadiusPlot(self, segmentID,
                        zSlice,

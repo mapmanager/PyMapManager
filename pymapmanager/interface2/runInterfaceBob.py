@@ -8,12 +8,24 @@ from pymapmanager.interface2.pyMapManagerApp2 import PyMapManagerApp
 def run():
     app = PyMapManagerApp()
 
-    path = '../PyMapManager-Data/core-map/one-timepoint/oneTimepoint.mmap'
+    # path = '../PyMapManager-Data/core-map/one-timepoint/oneTimepoint.mmap'
 
     path = '/Users/cudmore/Desktop/tmpMap.mmap'
-    path = '/Users/cudmore/Desktop/rr30a_s0.mmap'
     
+    # map
+    path = '/Users/cudmore/Desktop/rr30a_tmp2.mmap'
+    
+    # single timepoint
+    path = '/Users/cudmore/Sites/MapManagerCore/sandbox/data/rr30a_s1.mmap'
+
     sw2 = app.loadStackWidget(path)
+    
+    # works
+    # _metaData = sw2.getStack().getMetadata()
+    # print('_metaData')
+    # print(type(_metaData))  # dict
+    # # print(_metaData._prettyPrint())
+    # print(_metaData)
     
     # grab point dataframe
     # df = sw2.getStack().getPointAnnotations().getDataFrame()
@@ -24,7 +36,26 @@ def run():
 
     # sw2.runPlugin('Spine Info Widget', inDock=True)
     
+    # TODO: get this working
+    # _map = sw2.getStack().sessionMap
+    # tryCore(_map)
+
     sys.exit(app.exec_())
+
+def tryCore(map):
+    from mapmanagercore.annotations.layers import AnnotationsOptions, ImageViewSelection, AnnotationsSelection
+
+    options = AnnotationsOptions(
+        selection=ImageViewSelection(z=(0,50)),
+        annotationSelections=AnnotationsSelection(spineID=10, segmentID=0, segmentIDEditing=0),
+        showSpines=True,
+        showLineSegments=False,
+        showAnchors=True,
+        showLabels=False,
+        showLineSegmentsRadius=False
+    )
+
+    layerList = map.getAnnotations(options)
 
 if __name__ == '__main__':
     run()
