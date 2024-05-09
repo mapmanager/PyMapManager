@@ -278,7 +278,8 @@ class EditSpinePropertyEvent(_EditSpine):
                 
         super().__init__(pmmEventType.edit, mmWidget)
         
-        self.addEditProperty(spineID, col, value)
+        if spineID is not None:
+            self.addEditProperty(spineID, col, value)
 
     def addEditProperty(self,
                         spineID,

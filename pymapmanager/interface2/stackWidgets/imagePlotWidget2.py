@@ -200,15 +200,17 @@ class ImagePlotWidget(mmWidget2):
 
         # user type submenu
         currentUserType = _pointAnnotations.getValue('userType', firstPointSelection)
+        logger.info(f"currentUserType {currentUserType}")
         if currentUserType == -1:
             currentUserType = 0
         userTypeMenu = _menu.addMenu('User Type')
         numUserType = 10  # TODO: should be a global option
-        userTypes = range(numUserType)
-        for userType in userTypes:
-            action = userTypeMenu.addAction(str(userType))
+        userTypesList = [str(i) for i in range(numUserType)]
+        for userType in userTypesList:
+            action = userTypeMenu.addAction(userType)
             action.setCheckable(True)
-            isChecked = userType == currentUserType
+            isChecked = str(userType) == str(currentUserType)
+            logger.info(f"userType {userType} isChecked {isChecked}")
             action.setChecked(isChecked)
             # action.triggered.connect(partial(self._on_user_type_menu_action, action))
 
@@ -251,9 +253,10 @@ class ImagePlotWidget(mmWidget2):
             # isChecked = action.isChecked()
             # logger.info(f'{text} {isChecked}')
 
-        elif action.text() in str(range(numUserType)):
-            _newValue = action.isChecked()
-            esp = EditSpinePropertyEvent(self, firstPointSelection, 'userType', _newValue)
+        elif action.text() in userTypesList:
+            logger.warning(f'usertype selected {action.text()}')
+            # _newValue = action.isChecked()
+            esp = EditSpinePropertyEvent(self, firstPointSelection, 'userType', action.text())
             self.emitEvent(esp)
 
         elif action == acceptAction:
