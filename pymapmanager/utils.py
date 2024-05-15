@@ -876,7 +876,7 @@ def checkLabel(mask, _xSpine, _ySpine):
 # Take points of Xleft or Xright
 # Check to see if they are in the mask (expanded outline mask)
 # Returns the points within XLeft or Xright that are in the mask
-def getSegmentROIPoints(coordsOfMask, linePolyCoords):
+def _old_getSegmentROIPoints(coordsOfMask, linePolyCoords):
     """
         Return points of left/Right segmentROI within the OutlineMask
         that is used to form the polygon of the sectioned SpineROI

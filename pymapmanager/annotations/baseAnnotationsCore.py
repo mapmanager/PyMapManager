@@ -382,61 +382,7 @@ class SpineAnnotationsCore(AnnotationsCore):
 
         return (x, y)
     
-    def getSpineRoi(self, rowIdx):
-        df = self._fullMap.points["roiHead"].get_coordinates()
-        df = df.loc[rowIdx]
-        return df
-    
-    def getSpineBackgroundRoi(self, rowIdx):
-        df = self._fullMap.points["roiHeadBg"].get_coordinates()
-        df = df.loc[rowIdx]
-        return df
-
-    def getSegmentRoi(self, rowIdx):
-        df = self._fullMap.points["roiBase"].get_coordinates()
-        df = df.loc[rowIdx]
-        return df
-    
-    def getSegmentRoiBackground(self, rowIdx):
-        df = self._fullMap.points["roiBaseBg"].get_coordinates()
-        df = df.loc[rowIdx]
-        return df
-    
-    def _getRoi(self, rowIdx):
-        """Combined spine and segment (base) roi
-        """
-        df = self._fullMap.points["roi"].get_coordinates()
-        df = df.loc[rowIdx]
-        return df
-
-    def getRoiBg(self, rowIdx):
-        """Combined background spine and segment (base) roi
-        """
-        df = self._fullMap.points["roiBg"].get_coordinates()
-        df = df.loc[rowIdx]
-        return df
-
-    def getColumnType(self, col : str):
-        """Get the type of a column.
-        
-        Used to infer making gui controls (checkbox, spinner, dropdown).
-
-        For now, col needs to be in ("roiType", "segmentID", "note", 'accept', 'userType')
-        """
-        if col in ['roiType', 'note']:
-            return str
-        elif col == 'segmentID':
-            return int
-        elif col == 'accept':
-            return bool
-        elif col == 'userType':
-            return int
-        else:
-            logger.error(f'did not understand col: {col}')
-            return
-
     def addSpine(self, segmentID : int, x : int, y : int, z : int) -> int:
-        channel = 1
         # newSpineID = self._fullMap.addSpine(segmentId=(segmentID, self.sessionID), 
         newSpineID = self._fullMap.addSpine(segmentId=segmentID, 
                                x=x,

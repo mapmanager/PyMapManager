@@ -16,7 +16,7 @@ def run():
     path = '/Users/cudmore/Desktop/rr30a_tmp2.mmap'
     
     # single timepoint
-    path = '/Users/cudmore/Sites/MapManagerCore/sandbox/data/rr30a_s1.mmap'
+    path = '/Users/cudmore/Sites/MapManagerCore/sandbox/data/rr30a_s6.mmap'
 
     # load from core 20240513
     # path = '/Users/cudmore/Sites/MapManagerCore/data/rr30a_s0u.mmap'
