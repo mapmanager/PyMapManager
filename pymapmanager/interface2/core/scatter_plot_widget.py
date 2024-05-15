@@ -62,7 +62,8 @@ class Highlighter(object):
         self.setCanvasConnections()
 
     def setCanvasConnections(self):
-
+        
+        self.selector.set_active(True)
         self._keepPickEvent = self.ax.figure.canvas.mpl_connect("pick_event", self._on_spine_pick_event3)
         self._keepKeyPressEvent =  self.ax.figure.canvas.mpl_connect("key_press_event", self._keyPressEvent)
         self._keepKeyReleaseEvent = self.ax.figure.canvas.mpl_connect("key_release_event", self._keyReleaseEvent)
@@ -78,6 +79,7 @@ class Highlighter(object):
         )
 
     def disconnectCanvas(self):
+        self.selector.set_active(False)
         self.ax.figure.canvas.mpl_disconnect(self._keepPickEvent)
         self.ax.figure.canvas.mpl_disconnect(self._keepKeyPressEvent)
         self.ax.figure.canvas.mpl_disconnect(self._keepKeyReleaseEvent)
@@ -405,7 +407,8 @@ class ScatterPlotWidget(QtWidgets.QWidget):
                      "filterStr": "", # Change this to detect an inputted option,  Create a function that takes in a type
                      "filterColumn": "", # column that we are searching the filterString for
                      "currentHueID": "",
-                     "hueColumn": ""}
+                     "hueColumn": "",
+                     "plotType" : "Scatter"}
         
         self.xStatName = None
         self.yStatName = None
@@ -444,7 +447,7 @@ class ScatterPlotWidget(QtWidgets.QWidget):
 
         self.plotHistograms = True
         self.acceptValue = False
-
+        self.rePlotLock = False
         self._buildGUI()
         # self._buildMainLayout()
         self.show()
@@ -520,6 +523,10 @@ class ScatterPlotWidget(QtWidgets.QWidget):
     def setHueIDList(self, hueColumnStr):
         # self.hueIDList = ["All", self._df[hueColumnStr].unique().tolist()] 
         self.dict["hueColumn"] = hueColumnStr
+
+        if hueColumnStr == "None":
+            return
+
         self.hueIDList = self._df[hueColumnStr].unique().tolist()
             
     def getfilterStr(self):
@@ -613,17 +620,23 @@ class ScatterPlotWidget(QtWidgets.QWidget):
         self.acceptCheckbox.stateChanged.connect(self._on_change_Accept)
         hLayoutHeader.addWidget(self.acceptCheckbox)
 
+        self.toolBarCheckbox = QtWidgets.QCheckBox('Tool Bar')
+        self.toolBarCheckbox.setChecked(True)
+        self.toolBarCheckbox.stateChanged.connect(self._on_tool_bar)
+        hLayoutHeader.addWidget(self.toolBarCheckbox)
+
         hLayoutHeader2 = QtWidgets.QHBoxLayout()
+
         # Filter Str
-        if self.filterStrList is not None:
-            self.filterStrComboBox = QtWidgets.QComboBox()
+        # if self.filterStrList is not None:
+        #     self.filterStrComboBox = QtWidgets.QComboBox()
 
-            for type in self.filterStrList:
-                self.filterStrComboBox.addItem(str(type))      
+        #     for type in self.filterStrList:
+        #         self.filterStrComboBox.addItem(str(type))      
 
-            self.filterStrComboBox.setCurrentText(self.dict["filterStr"])
-            self.filterStrComboBox.currentTextChanged.connect(self._on_new_filterStr)
-            hLayoutHeader2.addWidget(self.filterStrComboBox)
+        #     self.filterStrComboBox.setCurrentText(self.dict["filterStr"])
+        #     self.filterStrComboBox.currentTextChanged.connect(self._on_new_filterStr)
+        #     hLayoutHeader2.addWidget(self.filterStrComboBox)
 
         if self.hueColumnList is not None:
             self.hueColumnComboBox = QtWidgets.QComboBox()
@@ -647,9 +660,23 @@ class ScatterPlotWidget(QtWidgets.QWidget):
         self.idComboBox.currentTextChanged.connect(self._on_new_ID)
         hLayoutHeader2.addWidget(self.idComboBox)
 
+
+        hLayoutHeader3 = QtWidgets.QHBoxLayout()
+        self.plotComboBox = QtWidgets.QComboBox()
+
+        self.plotComboBox.addItem("Scatter")      
+        self.plotComboBox.addItem("Histogram")   
+        self.plotComboBox.addItem("Cumulative Histogram")   
+
+        self.plotComboBox.setCurrentText(self.dict["plotType"])
+        self.plotComboBox.currentTextChanged.connect(self._on_new_plot)
+        self.plotComboBox.setEnabled(False)
+        hLayoutHeader3.addWidget(self.plotComboBox)
+
         # Adding horizontal header of options to entire vertical stack
         vLayout.addLayout(hLayoutHeader)
         vLayout.addLayout(hLayoutHeader2)
+        vLayout.addLayout(hLayoutHeader3) # Temp to test plot combobox
 
         # controls
         columnsWidget = QtWidgets.QWidget()
@@ -842,6 +869,13 @@ class ScatterPlotWidget(QtWidgets.QWidget):
             updateHighlighter: Boolean to tell plot whether to update currently highlighted points
             accept: show accepted values as white when accept is False. Otherwise show it regularly
         """
+
+
+        # if self.rePlotLock:
+        #     return
+        
+        # self.rePlotLock = True
+    
         # Reset entire plot if histogram condition is changed
         self._switchScatter()
 
@@ -855,16 +889,15 @@ class ScatterPlotWidget(QtWidgets.QWidget):
         columnNameY = self.dict["Y Stat"]
         
         if filterStr != "" and filterColumn != "":
+            # Filter by the inputted column and default str. In the case of pmm: filterStr=spineROI, filterColumn=roiType
             self.filteredDF, xyStatIndex = self.getfilteredDFWithIndexList(filterStr=filterStr, filterColumn=filterColumn)   
-        else:     # when there is no filterStr
+        else:  
             self.filteredDF, xyStatIndex = self.getfilteredDFWithIndexList(filterStr=None, filterColumn=None)
 
         try:
-            # Get and convert one segment
+            # In For Plotting Later, the dataframe needs to be filtered by the hueColumn and current hueID
             currentHueID = float(self.dict["currentHueID"])
             self.filteredDF  = self.filteredDF.loc[self.filteredDF[hueColumn] == currentHueID]
-            # xyStatIndex needs to be filtered by hueID too
-            # logger.info(f"yes current hue ID: {currentHueID}")
             xyStatIndex = self.getFilteredIndexList(self.filteredDF)
 
         except:
@@ -884,23 +917,29 @@ class ScatterPlotWidget(QtWidgets.QWidget):
         xStat = np.array(xStat)
         yStat = np.array(yStat)
         xyStatIndex =  np.array(xyStatIndex)
-        xMin = np.nanmin(xStat)
-        xMax = np.nanmax(xStat)
-        yMin = np.nanmin(yStat)
-        yMax = np.nanmax(yStat)
 
-        self.axScatter.set_xlim([xMin, xMax])
-        self.axScatter.set_ylim([yMin, yMax])
+        # xMin = np.nanmin(xStat)
+        # xMax = np.nanmax(xStat)
+        # yMin = np.nanmin(yStat)
+        # yMax = np.nanmax(yStat)
+
+        # if self.dict["plotType"] == "Scatter":
+        #     logger.info("scatter limits")
+        #     self.axScatter.set_xlim([xMin, xMax])
+        #     self.axScatter.set_ylim([yMin, yMax])
+        # else:
+        #     logger.info("other limits")
+        #     self.axScatter.set_xlim(auto=True)
+        #     self.axScatter.set_ylim(auto=True)
 
         if self.dict["invertY"]:
             self.axScatter.invert_yaxis()
 
         # Plot New Plot    
         self.myHighlighter.update_axScatter(self.axScatter) 
-
+        # logger.info(f"hue column {hueColumn}")
         myColorMap = []
-        if hueColumn == "":
-          
+        if hueColumn == "None" and self.dict["plotType"] == "Scatter":
             for id in xyStatIndex:
                 if self.acceptCheckbox.isChecked() and not self._df["accept"].iloc[id]:
                     myColorMap.append("white")
@@ -910,34 +949,90 @@ class ScatterPlotWidget(QtWidgets.QWidget):
             self.scatterPoints = self.axScatter.scatter(xStat, yStat, s = self._markerSize, c = myColorMap, 
                                                         picker=False)
          
-        else:
+        else: # hue is selected
             # logger.info(f"length of xyStatIndex {len(xyStatIndex)}")
             # idList = self.filteredDF[hueColumn].tolist()
-        
+            # logger.info(f"hue column inside else {hueColumn}")
+            # temp = self.dict["plotType"]
+            # logger.info(f"[plotType] inside else {temp}")
+            # only use accept column when dealing with hue column and scatter plot
             for id in xyStatIndex:
                 if self.acceptCheckbox.isChecked() and not self._df["accept"].iloc[id]:
                     myColorMap.append("white")
                 else:
-                    hueId = self._df[hueColumn].iloc[id]
-                    myColorMap.append(self.color[hueId])
+                    if hueColumn != "None":
+                        hueId = self._df[hueColumn].iloc[id]
+                        myColorMap.append(self.color[hueId])
 
-            self.scatterPoints = self.axScatter.scatter(xStat, yStat, s = 12, c = myColorMap, 
-                                                        picker=False)
-            
-            # IF else
-            # seaborn for histogram, cumulative histogram
-            # hue selected -> multiple histograms
-            # Turn off highlighter for histogram
 
+            if self.dict["plotType"] == "Scatter":
+                # logger.info("making scatter")
+                self.scatterPoints = self.axScatter.scatter(xStat, yStat, s = 12, c = myColorMap, 
+                                                            picker=False)
+            elif self.dict["plotType"] == "Histogram":
+                
+                if hueColumn == "None":
+                    # Do nothing when histogram with no hue column
+                    return
+                
+                # TODO: disable marginal histogram when in plot type other than scatter
+                logger.info("making histogram")
+   
+                self.scatterPoints  = sns.histplot(
+                    x=xStat,
+                    # y=yStat,
+                    hue=hueColumn,
+                    # kde=False,
+                    data=self.filteredDF,
+                    ax=self.axScatter,
+                    picker=False,
+                    # weights=factor*np.ones_like(xStat)
+                    )
+                ymax = self.scatterPoints.get_ylim()[0]
+                self.scatterPoints.set_ylim(0, ymax)
+                
+            elif self.dict["plotType"] == "Cumulative Histogram":
+
+                if hueColumn == "None":
+                    # Do nothing when histogram with no hue column
+                    return
+        
+                logger.info("Cumulative histogram")
+                factor = 2
+                self.scatterPoints  = sns.histplot(
+                    x=xStat,
+                    # y=yStat,
+                    cumulative=True,
+                    hue=hueColumn,
+                    element="step",
+                    # kde=doKde,
+                    data=self.filteredDF,
+                    ax=self.axScatter,
+                    picker=False,
+                    # weights =factor*np.ones_like(xStat)
+                    )
+                ymax = self.scatterPoints.get_ylim()[0]
+                self.scatterPoints.set_ylim(0, ymax)
 
         self.axScatter.grid(False)
         # logger.info(f"replot xyStatIndex {xyStatIndex}")
-        self.myHighlighter.set_xy(xStat, yStat, xyStatIndex)
 
-        if updateHighlighter:
-            xHStat = self._df.loc[self.storedRowIdx, columnNameX].to_numpy()
-            yHStat = self._df.loc[self.storedRowIdx, columnNameY].to_numpy()
-            self.myHighlighter._setData(xHStat, yHStat)
+        if self.dict["plotType"] == "Scatter":
+            self.myHighlighter.setCanvasConnections()
+            self.myHighlighter.set_xy(xStat, yStat, xyStatIndex)
+
+            logger.info(f"columnNameX {columnNameX}")
+            self.axScatter.set_xlabel(columnNameX)
+            self.axScatter.set_ylabel(columnNameY)
+
+            if updateHighlighter:
+                xHStat = self._df.loc[self.storedRowIdx, columnNameX].to_numpy()
+                yHStat = self._df.loc[self.storedRowIdx, columnNameY].to_numpy()
+                self.myHighlighter._setData(xHStat, yHStat)
+
+        else:
+            # Disable highlighter for histogram plots
+            self.myHighlighter.disconnectCanvas()
 
         # Reset histogram
         if self.plotHistograms:
@@ -1057,9 +1152,17 @@ class ScatterPlotWidget(QtWidgets.QWidget):
         if hueColumnStr != "None":
             self._updateIdComboBox()
             self.idComboBox.setEnabled(True)
+            self.plotComboBox.setEnabled(True)
         else:
+
+            logger.info ("clearing everything with hue as None")
             self.idComboBox.clear()
             self.idComboBox.setEnabled(False)
+            
+            # reset plotComboBox
+            self.dict["plotType"] = "Scatter"
+            self.plotComboBox.setCurrentText("Scatter")
+            self.plotComboBox.setEnabled(False)
 
         self.rePlot()
 
@@ -1098,6 +1201,26 @@ class ScatterPlotWidget(QtWidgets.QWidget):
     def _on_change_Histogram(self):
         self.plotHistograms = not self.plotHistograms
         self.rePlot()
+
+    def _on_new_plot(self, newPlotType):
+        self.dict["plotType"] = newPlotType
+        self.plotComboBox.setCurrentText(str(newPlotType))
+        logger.info(f"new plot {newPlotType}")
+        self.rePlot()
+
+
+    def _on_tool_bar(self, toolBarOn):
+
+        if toolBarOn:
+            # self.mplToolbar.pack(side=Tkinter.BOTTOM, fill=Tkinter.X)
+            # self.fig.canvas.window().statusBar().setVisible(True)
+            self.mplToolbar.setVisible(True)
+        else:
+            # self.mplToolbar.fig.canvas.toolbar.pack_forget()
+            # self.fig.canvas.window().statusBar().setVisible(False)
+            self.mplToolbar.setVisible(False)
+
+
     
     # ----------- Functions that need to be used by adapted slots ----------- #
     def _deletedRow(self, df):
