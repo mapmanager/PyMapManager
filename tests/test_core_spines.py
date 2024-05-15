@@ -38,6 +38,18 @@ def _tmpCudmoreTest():
     afterMoveDf = pa.getDataFrame()
     print(f"   afterMoveDf:{afterMoveDf.loc[100, ['x', 'y', 'z']]}")
 
+    # manual connect (anchor) is failing
+    if 0:
+        spineID = 115
+        x = 266
+        y = 215
+        z = 37
+        pa.manualConnectSpine(spineID=spineID, x=x, y=y, z=z)
+
+        afterManualConnectDf = pa.getDataFrame()
+        print(f"   afterManualConnectDf:{afterManualConnectDf.loc[spineID, ['x', 'y', 'z']]}")
+        print(afterManualConnectDf.columns)
+
 if __name__ == '__main__':
     setLogLevel()
     _tmpCudmoreTest()

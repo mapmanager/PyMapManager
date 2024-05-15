@@ -1136,8 +1136,20 @@ def run():
     # 20240412 turn back on
     # tstShowMap()
     
-    print(_map.runMap.shape)
+    print('_map.runMap.shape:', _map.runMap.shape)
     print(_map.runMap)
+
+    print('_map.segRunMap.shape:', _map.segRunMap.shape)
+    print(_map.segRunMap)
+
+    # save the run map and use it in core import igor
+    runMapPath = '/Users/cudmore/Desktop/igorRunMap'
+    print('saving runMapPath:', runMapPath)
+    np.save(runMapPath, _map.runMap)
+
+    segMapPath = '/Users/cudmore/Desktop/igorSegMap'
+    print('saving segMapPath:', segMapPath)
+    np.save(segMapPath, _map.segRunMap)
 
     sys.exit(1)
 

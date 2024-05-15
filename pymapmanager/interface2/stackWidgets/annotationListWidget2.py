@@ -65,7 +65,7 @@ class annotationListWidget(mmWidget2):
         
         # logger.info(event)
         
-        _state = event.getStateChange()
+        # _state = event.getStateChange()
         if event.getStateChange() == pmmStates.edit:
             # turn on
             self._myTableView.setEnabled(True)

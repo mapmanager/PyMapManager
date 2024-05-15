@@ -704,58 +704,64 @@ class stackWidget2(mmWidget2):
     def manualConnectSpineEvent(self, event : pmmEvent):
         """Update back end with a manually specified brightestIndex.
         """
-        # logger.info(event)
+        logger.info('=== ===   STACK WIDGET PERFORMING Manual Connect   === ===')
+
+        for item in event:
+            logger.info(f'item:{item}')
+
+            spineID = item['spineID']
+            x = item['x']
+            y = item['y']
+            z = item['z']
+            
+            # logger.info(f'   spineID:{spineID} x:{x} y:{y} z:{z}')
+            _pointAnnotation = self.getStack().getPointAnnotations()
+            _pointAnnotation.manualConnectSpine(spineID=spineID, x=x, y=y, z=z)
+
+        self._afterEdit2(event)
+
+        # OLD
+        # # _stackSelection = self.getStackSelection()
+        # _stackSelection = event.getStackSelection()
         
-        # get spine selection from xxx, not from event
-        
-        # problem is this is the line selection (not annotation selection) !!!!
-        # item = event.getListOfItems()
-        # if len(item) != 1:
-        #     logger.warning(f'too many selections {item}')
+        # manuallyConnectSpine = _stackSelection.getManualConnectSpine()
+        # if manuallyConnectSpine is None or manuallyConnectSpine == []:
+        #     errStr = 'Did not get spine selection - can not make manual connection'
+        #     logger.error(f'{errStr} manuallyConnectSpine:{manuallyConnectSpine}')
+        #     self.slot_setStatus(errStr)
+        #     logger.error(f'_stackSelection: {_stackSelection}')
         #     return
-        # item = item[0]
-
-        # _stackSelection = self.getStackSelection()
-        _stackSelection = event.getStackSelection()
         
-        manuallyConnectSpine = _stackSelection.getManualConnectSpine()
-        if manuallyConnectSpine is None or manuallyConnectSpine == []:
-            errStr = 'Did not get spine selection - can not make manual connection'
-            logger.error(f'{errStr} manuallyConnectSpine:{manuallyConnectSpine}')
-            self.slot_setStatus(errStr)
-            logger.error(f'_stackSelection: {_stackSelection}')
-            return
+        # # user selected brightest index
+        # if not _stackSelection.hasSegmentPointSelection():
+        #     logger.error('got bad brightestIndex')
+        #     return
         
-        # user selected brightest index
-        if not _stackSelection.hasSegmentPointSelection():
-            logger.error('got bad brightestIndex')
-            return
+        # brightestIndex = _stackSelection.getSegmentPointSelection()
         
-        brightestIndex = _stackSelection.getSegmentPointSelection()
+        # logger.info('=== ===   STACK WIDGET PERFORMING MANUAL CONNECT   === ===')
+        # logger.info(f'   manuallyConnectSpine:{manuallyConnectSpine} to brightestIndex:{brightestIndex}')
+
+        # # set backend
+        # _pointAnnotation = self.getStack().getPointAnnotations()
+        # _pointAnnotation.setValue('brightestIndex', manuallyConnectSpine, brightestIndex)
+        # _pointAnnotation.updateSpineInt2(manuallyConnectSpine, self.getStack())
         
-        logger.info('=== ===   STACK WIDGET PERFORMING MANUAL CONNECT   === ===')
-        logger.info(f'   manuallyConnectSpine:{manuallyConnectSpine} to brightestIndex:{brightestIndex}')
+        # #
+        # # need to transform event into a spine selection (it is currently a line selection)
+        # eventType = pmmEventType.selection
+        # newEvent = pmmEvent(eventType, self)
+        # newEvent.getStackSelection().setPointSelection(manuallyConnectSpine)
+        # sliceNum = event.getSliceNumber()
+        # newEvent.setSliceNumber(sliceNum)
 
-        # set backend
-        _pointAnnotation = self.getStack().getPointAnnotations()
-        _pointAnnotation.setValue('brightestIndex', manuallyConnectSpine, brightestIndex)
-        _pointAnnotation.updateSpineInt2(manuallyConnectSpine, self.getStack())
-        
-        #
-        # need to transform event into a spine selection (it is currently a line selection)
-        eventType = pmmEventType.selection
-        newEvent = pmmEvent(eventType, self)
-        newEvent.getStackSelection().setPointSelection(manuallyConnectSpine)
-        sliceNum = event.getSliceNumber()
-        newEvent.setSliceNumber(sliceNum)
+        # logger.info(f'manualConnectSpineEvent Slice number emit {sliceNum} ')
+        # # self.emitEvent(event, blockSlots=False)
 
-        logger.info(f'manualConnectSpineEvent Slice number emit {sliceNum} ')
-        # self.emitEvent(event, blockSlots=False)
+        # # Removed 3/6 since it causes looping of calls
+        # # self.slot_pmmEvent(newEvent)
 
-        # Removed 3/6 since it causes looping of calls
-        # self.slot_pmmEvent(newEvent)
-
-        self._afterEdit(newEvent)
+        # self._afterEdit(newEvent)
 
     def autoConnectSpineEvent(self, event):
         """Auto connect the currently selected spine.
@@ -869,9 +875,10 @@ class stackWidget2(mmWidget2):
         for channelIdx in range(self._stack.numChannels):
             channelNumber = channelIdx + 1
             
-            _stackData = self._stack.getImageChannel(channel=channelNumber)
-            minStackIntensity = np.min(_stackData)
-            maxStackIntensity = np.max(_stackData)
+            logger.warning('removed on merge core 20240513')
+            # _stackData = self._stack.getImageChannel(channel=channelNumber)
+            minStackIntensity = 0  # np.min(_stackData)
+            maxStackIntensity = 2048  # np.max(_stackData)
 
             if minStackIntensity is None:
                 minStackIntensity = 0

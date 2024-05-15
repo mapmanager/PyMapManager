@@ -28,7 +28,8 @@ class stack:
         self._mmMapSession = mmMapSession
 
         self.maxNumChannels = 4  # TODO: put into backend core
-        self._images = [None] * self.maxNumChannels
+        
+        # self._images = [None] * self.maxNumChannels
 
         # TODO: in the future have analysis params be passed in so that each stack shares the same params.
         # self._analysisParams = AnalysisParams()
@@ -36,7 +37,7 @@ class stack:
         # load the map
         _startSec = time.time()
         
-        logger.info(f'loading map from:{self._zarrPath}')
+        logger.info(f'loading core map from zar:{self._zarrPath}')
         self._fullMap : MapAnnotations = MapAnnotations(MMapLoader(self._zarrPath).cached())
         # self._fullMap : MapAnnotations = MapAnnotations(MMapLoader(self._zarrPath))
         
@@ -66,7 +67,8 @@ class stack:
     def _buildSessionMap(self):
         """Reduce full core map to a single session id.
         """
-        self._sessionMap = self._fullMap[ self._fullMap['t']==self.sessionID ]
+        # self._sessionMap = self._fullMap[ self._fullMap['t']==self.sessionID ]
+        self._sessionMap = self._fullMap.getTimePoint(self.sessionID)
         return self._sessionMap
     
     def __str__(self):
@@ -78,20 +80,35 @@ class stack:
         return str
     
     def _buildHeader(self):
-        sessions, numChannels, numSlices, x, y = self.sessionMap.images.shape()
-
+        """
+        {
+        "size": { "t": 1, "c": 2, "z": 70, "x": 1024, "y": 1024 },
+        "voxel": { "x": 0.12, "y": 0.12, "z": 1 },
+        "dtype": "Uint16",
+        "physicalSize": { "x": 122.88, "y": 122.88, "unit": "µm" }
+        }
+        """
+        # abb 20240513
+        # sessions, numChannels, numSlices, x, y = self.sessionMap.images.shape()
+        
         sessionNumber = self.getMapSession()
         if sessionNumber is None:
             sessionNumber = 0
-        image0 = self.sessionMap.images.loadSlice(sessionNumber, 0, 0)
-    
+        
+        # image0 = self.sessionMap.images.loadSlice(sessionNumber, 0, 0)
+        # image0 = self.sessionMap.getPixels(channel=0, z=0)
+
+        # x,y = image0.shape
+        x = 1024
+        y = 1024
+
         bitDepth = 8
 
         self._header = {
-            'dtype' : image0.dtype,
+            'dtype' : "Uint16",  # image0._image.dtype,
             'bitDepth' : bitDepth,
-            'numChannels' : numChannels,
-            'numSlices' : numSlices,
+            'numChannels' : 2,  # numChannels,
+            'numSlices' : 70,  # numSlices,
             'xPixels' : x,
             'yPixels' : y,
         }
@@ -163,7 +180,7 @@ class stack:
         # self._lines = LineAnnotationsCore(self.sessionMap, analysisParams = self._analysisParams)
         self._lines = LineAnnotationsCore(self.sessionMap)
     
-    def getImageChannel(self,
+    def _old_getImageChannel(self,
                         channel : int = 1
                         ) -> Optional[np.ndarray]:
         """Get the full image volume for one color channel.
@@ -182,6 +199,8 @@ class stack:
     def loadImages(self, channel : int = None):
         """Load all images for one channel.
         """
+        return
+    
         startSec = time.time()
 
         if channel is not None:
@@ -195,13 +214,26 @@ class stack:
 
         # logger.info('self.sessionMap.images ...')
 
-        _images = self.sessionMap.images
+        logger.info(f'self.sessionMap:{self.sessionMap}')
+
+        # abb 20240513
+        # this always gets z-project, I want the full 3d img volume?
+        _imgData = self.sessionMap.getPixels(channel=channel, zRange=(0,70))
+        
+        # _imgData = self.sessionMap._annotations._images
+        
+        # logger.info(f'_imgData:{_imgData}')
+        # logger.info(f'_imgData:{_imgData.shape}')
+
+        # sys.exit(1)
+
+        # _images = self.sessionMap.images
         
         # logger.info('loadSlice ...')
         
         # sls = [_images.loadSlice(sessionNumber, channel, i)
         #        for i in range(self.numSlices)]
-        _imgData = _images.fetchSlices2(sessionNumber, channel, (0, self.numSlices))
+        # _imgData = _images.fetchSlices2(sessionNumber, channel, (0, self.numSlices))
 
         # logger.info('done')
 
@@ -243,6 +275,15 @@ class stack:
         # slices = self.sessionMap.slices(time=0, channel=channelIdx, zRange=zRange)
         # _imgData = slices._image
 
+        logger.info(f'channel:{channel} imageSlice:{imageSlice} {type(imageSlice)}')
+
+        _imgData = self.sessionMap.getPixels(channel=channel, z=imageSlice)
+        _imgData = _imgData._image
+
+        logger.info(f'_imgData: {type(_imgData)} {_imgData.shape}')
+    
+        return _imgData
+    
         _doInMemory = True
         
         if _doInMemory:

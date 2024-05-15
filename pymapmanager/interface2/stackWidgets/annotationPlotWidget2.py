@@ -215,6 +215,7 @@ class annotationPlotWidget(mmWidget2):
 
         self._selectAnnotation(dbIdx=dbIdx)
 
+    # abb 202405 turned off for now, core will accept a click (in image lpot) and then find the closest point
     # abj
     def _on_highlighted_mouse_click(self, points, event):
         """Respond to user click on highlighted scatter plot.
@@ -851,23 +852,24 @@ class pointPlotWidget(annotationPlotWidget):
             firstSelectedRow = rowIdx[0]
 
             logger.info(f'{self.getClassName()} updating polygons for spine {firstSelectedRow}')
+
             # spine and spine background
-            spineRoi = self.pointAnnotations.getSpineRoi(firstSelectedRow)
-            if spineRoi is not None:
-                self._spinePolygon.setData(spineRoi["x"], spineRoi["y"])
+            x, y = self.pointAnnotations.getRoi(firstSelectedRow, 'roiHead')
+            if x is not None:
+                self._spinePolygon.setData(x, y)
             
-            spineBackgroundRoi = self.pointAnnotations.getSpineBackgroundRoi(firstSelectedRow)
-            if spineBackgroundRoi is not None:
-                self._spineBackgroundPolygon.setData(spineBackgroundRoi["x"], spineBackgroundRoi["y"])
+            x, y = self.pointAnnotations.getRoi(firstSelectedRow, 'roiHeadBg')
+            if x is not None:
+                self._spineBackgroundPolygon.setData(x, y)
 
             # segment and segment background
-            segmentRoi = self.pointAnnotations.getSegmentRoi(firstSelectedRow)
-            if segmentRoi is not None:
-                self._segmentPolygon.setData(segmentRoi['x'], segmentRoi['y']) 
+            x, y = self.pointAnnotations.getRoi(firstSelectedRow, 'roiBase')
+            if x is not None:
+                self._segmentPolygon.setData(x, y)
 
-            segmentBackgroundRoi = self.pointAnnotations.getSegmentRoiBackground(firstSelectedRow)           
-            if segmentBackgroundRoi is not None:
-                self._segmentBackgroundPolygon.setData(segmentBackgroundRoi['x'], segmentBackgroundRoi['y'])
+            x, y = self.pointAnnotations.getRoi(firstSelectedRow, 'roiBaseBg')
+            if x is not None:
+                self._segmentBackgroundPolygon.setData(x, y)
 
     def selectedEvent(self, event: pmmEvent):
         # logger.info(event)
@@ -1242,21 +1244,21 @@ class linePlotWidget(annotationPlotWidget):
  
         # logger.info(f'{self.getClassName()}')
         
-        dfLeft = self._annotations.getLeftRadiusPlot(None, sliceNumber, 1)
-        _lineConnect = self._getScatterConnect(dfLeft)
-        self._leftRadiusLines.setData(
-            dfLeft["x"].to_numpy(),
-            dfLeft["y"].to_numpy(),
-            connect=_lineConnect,
-        )
+        # dfLeft = self._annotations.getLeftRadiusPlot(None, sliceNumber, 1)
+        # _lineConnect = self._getScatterConnect(dfLeft)
+        # self._leftRadiusLines.setData(
+        #     dfLeft["x"].to_numpy(),
+        #     dfLeft["y"].to_numpy(),
+        #     connect=_lineConnect,
+        # )
 
-        dfRight = self._annotations.getRightRadiusPlot(None, sliceNumber, 1)
-        _lineConnect = self._getScatterConnect(dfRight)
-        self._rightRadiusLines.setData(
-            dfRight["x"].to_numpy(),
-            dfRight["y"].to_numpy(),
-            connect=_lineConnect,
-        )
+        # dfRight = self._annotations.getRightRadiusPlot(None, sliceNumber, 1)
+        # _lineConnect = self._getScatterConnect(dfRight)
+        # self._rightRadiusLines.setData(
+        #     dfRight["x"].to_numpy(),
+        #     dfRight["y"].to_numpy(),
+        #     connect=_lineConnect,
+        # )
 
         stopSec = time.time()
         logger.info(f'{self.getClassName()} took {round(stopSec-startSec,4)} sec')

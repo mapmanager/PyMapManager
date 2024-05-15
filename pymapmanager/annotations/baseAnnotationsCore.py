@@ -1,17 +1,18 @@
 import sys
 import time
-from typing import List, Union  # , Optional, Tuple
+from typing import List, Union, Optional
 
 import numpy as np
 import pandas as pd
 
-from mapmanagercore.annotations.layers import AnnotationsLayers
+# from mapmanagercore.annotations.layers import AnnotationsLayers
+from mapmanagercore import MapAnnotations
 
 from pymapmanager._logger import logger
 
 class AnnotationsCore:
     def __init__(self,
-                 mapAnnotations : AnnotationsLayers,
+                 mapAnnotations : "MapAnnotations",  # TODO: update on merge 20240513
                 #  analysisParams : "AnalysisParams",
                  sessionID = 0,
                  ):
@@ -24,10 +25,11 @@ class AnnotationsCore:
         self._sessionID = sessionID
 
         # full map, multiple session ids (timepoint, t)
-        self._fullMap : AnnotationsLayers = mapAnnotations
+        self._fullMap : MapAnnotations = mapAnnotations
+        # mapmanagercore.annotations.single_time_point.layers.AnnotationsLayers
 
         #filtered down to just sessionID
-        self._sessionMap : AnnotationsLayers = None
+
         self._df = None
 
         # self._analasisParams = analysisParams
@@ -39,7 +41,7 @@ class AnnotationsCore:
         return self._sessionID
 
     @property
-    def sessionMap(self) -> AnnotationsLayers:
+    def _old_sessionMap(self) -> MapAnnotations:
         """Core map reduced to one session id.
         """
         return self._sessionMap
@@ -72,10 +74,11 @@ class AnnotationsCore:
         """
         return self._df
     
-    def _buildSessionMap(self):
+    def _old__buildSessionMap(self):
         """Reduce full core map to a single session id.
         """
-        self._sessionMap = self._fullMap[ self._fullMap['t']==self.sessionID ]
+        # self._sessionMap = self._fullMap[ self._fullMap['t']==self.sessionID ]
+        self._sessionMap = self._fullMap.getTimePoint(self.sessionID)
         return self._sessionMap
     
     def _buildDataFrame(self):
@@ -170,7 +173,26 @@ class AnnotationsCore:
             logger.error(f'got bad spineID:{spineID}, expecting int')
             return
         
-        _moved = self._fullMap.moveSpine((spineID, self.sessionID), x=x, y=y, z=z)
+        # logger.info(f'self._fullMap:{type(self._fullMap)}')
+        
+        # _moved = self._fullMap.moveSpine((spineID, self.sessionID), x=x, y=y, z=z)
+        _moved = self._fullMap.moveSpine(spineID, x=x, y=y, z=z)
+
+        # rebuild df from mutated full map
+        self._buildDataFrame()
+
+
+    def manualConnectSpine(self, spineID : int, x, y, z):
+        """Manually connect a spine to specified image (x,y,z).
+        
+        Backend will find closest point on tracing.
+        """
+        if not isinstance(spineID, int):
+            logger.error(f'got bad spineID:{spineID}, expecting int')
+            return
+        
+        # _moved = self._fullMap.moveAnchor((spineID, self.sessionID), x=x, y=y, z=z)
+        _moved = self._fullMap.moveAnchor(spineID, x=x, y=y, z=z)
 
         # rebuild df from mutated full map
         self._buildDataFrame()
@@ -193,7 +215,22 @@ class AnnotationsCore:
             
             try:
                 # (spineID, self.sessionID)
-                self._fullMap.updateSpine((row, self.sessionID), value=newDict)
+                # self._fullMap.updateSpine((row, self.sessionID), value=newDict)
+                logger.info(f'newDict:{newDict}')
+                
+                from mapmanagercore.schemas.spine import Spine
+
+                if colName == 'userType':
+                    _spine = Spine(userType=value)
+                elif colName == 'accept':
+                    _spine = Spine(accept=value)
+                else:
+                    logger.error(f'did not understand col name {colName}')
+                    return
+                
+                # self._fullMap.updateSpine(row, value=newDict)
+                self._fullMap.updateSpine(row, value=_spine)
+            
             except (ValueError) as e:
                 logger.error(e)
                 return
@@ -233,7 +270,7 @@ class SpineAnnotationsCore(AnnotationsCore):
         _startSec = time.time()
         
         # reduce full map to one session
-        self._buildSessionMap()
+        # self._buildSessionMap()
 
         # self.sessionMap is mapmanagercore.annotations.layers.AnnotationsLayers
         
@@ -270,7 +307,8 @@ class SpineAnnotationsCore(AnnotationsCore):
         
         # logger.info('SLOW calling self.sessionMap[:]')
         
-        allSpinesDf = self.sessionMap[:]
+        # allSpinesDf = self.sessionMap[:]
+        allSpinesDf = self._fullMap.points[:]
 
         # print('allSpinesDf:')
         # print(allSpinesDf.columns)
@@ -279,7 +317,7 @@ class SpineAnnotationsCore(AnnotationsCore):
         # print(allSpinesDf)
 
         # reduce df index from tuple (spineID,session) to just spineID
-        allSpinesDf = allSpinesDf.droplevel(1)
+        # allSpinesDf = allSpinesDf.droplevel(1)
 
         # logger.info(f'2 done allSpinesDf:')
         # print(allSpinesDf)
@@ -315,51 +353,69 @@ class SpineAnnotationsCore(AnnotationsCore):
         1        378.0  236.0 NaN
         1        382.0  250.0 NaN
         """
-        anchorDf = self._sessionMap['anchors'].get_coordinates(include_z=True)
+        # anchorDf = self._sessionMap['anchors'].get_coordinates(include_z=True)
+        anchorDf = self._fullMap.points['anchorLine'].get_coordinates(include_z=True)
         return anchorDf
     
     # TODO: use this rather than individual functions below
-    def getRoi(self, rowIdx : int, roiType : str) -> pd.DataFrame:
+    def getRoi(self, rowIdx : int, roiType : str):  # -> Optional[(list[int], list[int])]:
         """Get one of 4 rois (polygons).
         
         Each is a df with (spineID, x, y).
         """
         if roiType == 'roiHead':
-            df = self._sessionMap["roiHead"].get_coordinates()
+            df = self._fullMap.points["roiHead"].get_coordinates()
         elif roiType == 'roiHeadBg':
-            df = self._sessionMap["roiHeadBg"].get_coordinates()
+            df = self._fullMap.points["roiHeadBg"].get_coordinates()
         elif roiType == 'roiBase':
-            df = self._sessionMap["roiBase"].get_coordinates()
+            df = self._fullMap.points["roiBase"].get_coordinates()
         elif roiType == 'roiBaseBg':
-            df = self._sessionMap["roiBaseBg"].get_coordinates()
+            df = self._fullMap.points["roiBaseBg"].get_coordinates()
         else:
             logger.error(f'did not understand roiType: {roiType}')
-            return
+            return None, None
         
         df = df.loc[rowIdx]
         
-        return df
+        x = df['x'].tolist()
+        y = df['y'].tolist()
+
+        return (x, y)
     
     def getSpineRoi(self, rowIdx):
-        df = self._sessionMap["roiHead"].get_coordinates()
+        df = self._fullMap.points["roiHead"].get_coordinates()
         df = df.loc[rowIdx]
         return df
     
     def getSpineBackgroundRoi(self, rowIdx):
-        df = self._sessionMap["roiHeadBg"].get_coordinates()
+        df = self._fullMap.points["roiHeadBg"].get_coordinates()
         df = df.loc[rowIdx]
         return df
 
     def getSegmentRoi(self, rowIdx):
-        df = self._sessionMap["roiBase"].get_coordinates()
+        df = self._fullMap.points["roiBase"].get_coordinates()
         df = df.loc[rowIdx]
         return df
     
     def getSegmentRoiBackground(self, rowIdx):
-        df = self._sessionMap["roiBaseBg"].get_coordinates()
+        df = self._fullMap.points["roiBaseBg"].get_coordinates()
         df = df.loc[rowIdx]
         return df
     
+    def _getRoi(self, rowIdx):
+        """Combined spine and segment (base) roi
+        """
+        df = self._fullMap.points["roi"].get_coordinates()
+        df = df.loc[rowIdx]
+        return df
+
+    def getRoiBg(self, rowIdx):
+        """Combined background spine and segment (base) roi
+        """
+        df = self._fullMap.points["roiBg"].get_coordinates()
+        df = df.loc[rowIdx]
+        return df
+
     def getColumnType(self, col : str):
         """Get the type of a column.
         
@@ -380,10 +436,13 @@ class SpineAnnotationsCore(AnnotationsCore):
             return
 
     def addSpine(self, segmentID : int, x : int, y : int, z : int) -> int:
-        newSpineID = self._fullMap.addSpine(segmentId=(segmentID, self.sessionID), 
+        channel = 1
+        # newSpineID = self._fullMap.addSpine(segmentId=(segmentID, self.sessionID), 
+        newSpineID = self._fullMap.addSpine(segmentId=segmentID, 
                                x=x,
                                y=y,
                                z=z)
+                            #    channel=channel)
 
         self._buildDataFrame()
 
@@ -399,6 +458,7 @@ class SpineAnnotationsCore(AnnotationsCore):
 
         logger.error('!!! 20240416, delete spine core is broken -> NOT DELETING  !!!')
         # self._fullMap.deleteSpine((rowIdx, self.sessionID))
+        # self._fullMap.deleteSpine(rowIdx)
 
         self._buildDataFrame()
 
@@ -433,15 +493,21 @@ class LineAnnotationsCore(AnnotationsCore):
         _startSec = time.time()
 
         # rebuild session map from full map
-        self._buildSessionMap()
+        # self._buildSessionMap()
         
         # this still has 't'
-        _lineSegments = self._sessionMap._lineSegments        
-        dfSession = _lineSegments.loc[ (slice(None), self.sessionID), : ]
-        dfSession = dfSession.droplevel(1)
+        _lineSegments = self._fullMap.segments [:]       
+        # print('_lineSegments:', _lineSegments)
 
-        df = dfSession['segment']        
-        df = df.get_coordinates(include_z=True)
+        df = self._fullMap.segments["segment"].get_coordinates(include_z=True)
+        # print('columns:', df.columns)
+        # print(df)
+
+        # dfSession = _lineSegments.loc[ (slice(None), self.sessionID), : ]
+        # dfSession = dfSession.droplevel(1)
+
+        # df = dfSession['segment']        
+        # df = df.get_coordinates(include_z=True)
         df['segmentID'] = df.index
 
         # before core, we were using 'index' column, now just use row index label
@@ -457,18 +523,19 @@ class LineAnnotationsCore(AnnotationsCore):
         
         logger.warning('left/right is slow, can we get this pre-built and saved into zarr')
         
-        xyLeft = self._sessionMap.segments["segmentLeft"].get_coordinates(include_z=True)
-        self._xyLeftDf = xyLeft
-        # use to know how to connect when sequential points are in same segment but there is a gap
-        self._xyLeftDf['rowIndex'] = list(np.arange(len(xyLeft)))
+    
+        # xyLeft = self._fullMap.segments["segmentLeft"].get_coordinates(include_z=True)
+        # self._xyLeftDf = xyLeft
+        # # use to know how to connect when sequential points are in same segment but there is a gap
+        # self._xyLeftDf['rowIndex'] = list(np.arange(len(xyLeft)))
 
-        xyRight = self._sessionMap.segments["segmentRight"].get_coordinates(include_z=True)
-        self._xyRightDf = xyRight
-        # use to know how to connect when sequential points are in same segment but there is a gap
-        self._xyRightDf['rowIndex'] = list(np.arange(len(xyRight)))
+        # xyRight = self._fullMap.segments["segmentRight"].get_coordinates(include_z=True)
+        # self._xyRightDf = xyRight
+        # # use to know how to connect when sequential points are in same segment but there is a gap
+        # self._xyRightDf['rowIndex'] = list(np.arange(len(xyRight)))
 
-        _stopSeconds = time.time()
-        logger.info(f'   {self._getClassName()} took {round(_stopSeconds-_startSec,3)} s')
+        # _stopSeconds = time.time()
+        # logger.info(f'   {self._getClassName()} took {round(_stopSeconds-_startSec,3)} s')
 
     def getLeftRadiusPlot(self, segmentID,
                        zSlice,
@@ -477,7 +544,7 @@ class LineAnnotationsCore(AnnotationsCore):
         """Get a spine dataframe based on z
 
         Used for plotting x/y/z scatter over image
-        """
+        """    
         _startSlice = zSlice - zPlusMinus
         _stopSlice = zSlice + zPlusMinus
 

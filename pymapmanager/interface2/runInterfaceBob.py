@@ -18,6 +18,9 @@ def run():
     # single timepoint
     path = '/Users/cudmore/Sites/MapManagerCore/sandbox/data/rr30a_s1.mmap'
 
+    # load from core 20240513
+    # path = '/Users/cudmore/Sites/MapManagerCore/data/rr30a_s0u.mmap'
+
     sw2 = app.loadStackWidget(path)
     
     # works

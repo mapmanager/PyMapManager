@@ -10,7 +10,11 @@ from qtpy import QtGui, QtCore, QtWidgets
 import pymapmanager
 import pymapmanager.annotations
 import pymapmanager.interface2
-from pymapmanager.interface2.stackWidgets.event.spineEvent import EditSpinePropertyEvent, AddSpineEvent, MoveSpineEvent
+from pymapmanager.interface2.stackWidgets.event.spineEvent import (
+                EditSpinePropertyEvent,
+                AddSpineEvent,
+                MoveSpineEvent,
+                ManualConnectSpineEvent)
 
 from .mmWidget2 import mmWidget2, pmmEventType, pmmEvent, pmmStates
 from .annotationPlotWidget2 import pointPlotWidget, linePlotWidget
@@ -200,9 +204,9 @@ class ImagePlotWidget(mmWidget2):
 
         # user type submenu
         currentUserType = _pointAnnotations.getValue('userType', firstPointSelection)
-        logger.info(f"currentUserType {currentUserType}")
-        if currentUserType == -1:
-            currentUserType = 0
+        # logger.info(f"currentUserType {currentUserType}")
+        # if currentUserType == -1:
+        #     currentUserType = 0
         userTypeMenu = _menu.addMenu('User Type')
         numUserType = 10  # TODO: should be a global option
         userTypesList = [str(i) for i in range(numUserType)]
@@ -210,7 +214,7 @@ class ImagePlotWidget(mmWidget2):
             action = userTypeMenu.addAction(userType)
             action.setCheckable(True)
             isChecked = str(userType) == str(currentUserType)
-            logger.info(f"userType {userType} isChecked {isChecked}")
+            # logger.info(f"userType {userType} isChecked {isChecked}")
             action.setChecked(isChecked)
             # action.triggered.connect(partial(self._on_user_type_menu_action, action))
 
@@ -379,20 +383,30 @@ class ImagePlotWidget(mmWidget2):
 
         elif _state == pmmStates.manualConnectSpine:
 
-            # logger.warning('todo: need to wait for user clicking on line annotation plot.')
-            # NOTE: This is only called when segment is highlighted
-            logger.info("Manual connect emit is done with AnnotationPlotWidget2")
+            # v2
             _stackSelection = self.getStackWidget().getStackSelection()
-            items = _stackSelection.getPointSelection()
-            eventType = pmmEventType.manualConnectSpine
-            event = pmmEvent(eventType, self)
-            # event.getStackSelection().setPointSelection(items)
-            event.getStackSelection().setManualConnectSpine(items)
-            brightestIndex = _stackSelection.getSegmentPointSelection()
-            logger.info(f"brightestIndex {brightestIndex}")
-            event.getStackSelection().setSegmentPointSelection(brightestIndex)
-            logger.info(event)
-            self.emitEvent(event, blockSlots=True)
+            if _stackSelection.hasPointSelection():
+                items = _stackSelection.getPointSelection()
+
+                event = ManualConnectSpineEvent(self, spineID=items, x=x, y=y, z=z)
+                logger.info(f'-->> EMIT: {event}')
+                self.emitEvent(event, blockSlots=True)
+
+            # v1
+            # # logger.warning('todo: need to wait for user clicking on line annotation plot.')
+            # # NOTE: This is only called when segment is highlighted
+            # logger.info("Manual connect emit is done with AnnotationPlotWidget2")
+            # _stackSelection = self.getStackWidget().getStackSelection()
+            # items = _stackSelection.getPointSelection()
+            # eventType = pmmEventType.manualConnectSpine
+            # event = pmmEvent(eventType, self)
+            # # event.getStackSelection().setPointSelection(items)
+            # event.getStackSelection().setManualConnectSpine(items)
+            # brightestIndex = _stackSelection.getSegmentPointSelection()
+            # logger.info(f"brightestIndex {brightestIndex}")
+            # event.getStackSelection().setSegmentPointSelection(brightestIndex)
+            # logger.info(event)
+            # self.emitEvent(event, blockSlots=True)
             
             # _stackSelection = self.getStackWidget().getStackSelection()
             # # Check for selection on segment point
@@ -410,6 +424,7 @@ class ImagePlotWidget(mmWidget2):
             #     # self.emitEvent(event, blockSlots=True)
 
         elif isShift:
+            # make a new spine
 
             pos = event.pos()
             imagePos : QtCore.QPointF = self._myImage.mapFromScene(pos)
@@ -436,6 +451,11 @@ class ImagePlotWidget(mmWidget2):
 
         # get intensity from stack (x/y is swapped)
         # x/y swapped stack is (row, col)
+        
+        # logger.warning('TURN BACK ON')
+        
+        return
+    
         if self._channelIsRGB():
             intensity = float('nan')
         else:
@@ -674,7 +694,9 @@ class ImagePlotWidget(mmWidget2):
         self._currentSlice = sliceNumber
         
         # order matters
-        channel = self._displayThisChannel
+        # channel = self._displayThisChannel
+        channelIdx = self._displayThisChannel - 1
+
         if self._channelIsRGB():
             ch1_image = self._myStack.getImageSlice(imageSlice=sliceNumber, channel=1)
             ch2_image = self._myStack.getImageSlice(imageSlice=sliceNumber, channel=2)
@@ -697,13 +719,14 @@ class ImagePlotWidget(mmWidget2):
         elif self._doSlidingZ:
             # upDownSlices = self._upDownSlices
             upDownSlices = self._displayOptionsDict['windowState']['zPlusMinus']
-            sliceImage = self._myStack.getMaxProjectSlice(sliceNumber,
-                                    channel,
-                                    upDownSlices, upDownSlices,
-                                    func=np.max)
+            logger.warning('re-implement with core')
+            # sliceImage = self._myStack.getMaxProjectSlice(sliceNumber,
+            #                         channel,
+            #                         upDownSlices, upDownSlices,
+            #                         func=np.max)
         else:
             # one channel
-            sliceImage = self._myStack.getImageSlice(imageSlice=sliceNumber, channel=channel)
+            sliceImage = self._myStack.getImageSlice(imageSlice=sliceNumber, channel=channelIdx)
 
         # myStack.createBrightestIndexes(sliceImage, channel)
 

@@ -1,13 +1,13 @@
-from typing import List, Optional, Tuple, TypedDict, Self
+from typing import List, TypedDict, Self
 
-# import pymapmanager.interface2.stackWidgets
-from pymapmanager.interface2.stackWidgets.mmWidget2 import pmmEvent, pmmEventType
+from pymapmanager.interface2.stackWidgets.mmWidget2 import (
+    mmWidget2, pmmEvent, pmmEventType)
 
 from pymapmanager._logger import logger
 
 class SpineEdit(TypedDict):
     """Dict to hold a spine edit including
-        (add, delete, edit, move head, move tail)
+        (add, delete, edit, move head, move tail, etc)
     """
     spineID : int  # all but new
     sessionID : int
@@ -41,9 +41,9 @@ class SpineEdit(TypedDict):
 class _EditSpine(pmmEvent):
     """Abstract class for all spine edit(s).
     
-    Including (add, delete, move head, move tail, edit property)
+    Including (add, delete, move head, move tail/anchor, edit property, connect to segment)
     """
-    def __init__(self, eventType : pmmEventType, mmWidget : "mmWidget2"):
+    def __init__(self, eventType : pmmEventType, mmWidget : mmWidget2):
         super().__init__(eventType, mmWidget)
 
         # list of dict with keys in (spineID, col, value)
@@ -68,6 +68,11 @@ class _EditSpine(pmmEvent):
         ----------
         spineID : int
             Spine ID (row).
+        segmentID : int
+            Segment ID
+        x/y/z : int
+            Coordinates of edit, different meaning for different event.
+            e.g. For add, is new position, for move is new position.
         col : str
             Column name.
         value : object
@@ -105,24 +110,9 @@ class _EditSpine(pmmEvent):
 
         return newList
     
-    # def getList(self) -> Tuple[List[int], List[str], List[object]]:
-    #     """Get lists of events as tuple
-        
-    #     Note, used to interface with core.
-    #     """
-    #     spineIDs = []
-    #     sessionIDs = []
-    #     cols = []
-    #     values = []
-    #     for item in self._list:
-    #         spineIDs.append(item['spineID'])
-    #         sessionIDs.append(item['sessionID'])
-    #         cols.append(item['col'])
-    #         values.append(item['value'])
-
-    #     return spineIDs, sessionIDs, cols, values
-    
     def __str__(self):
+        """To print an edit spine event to console.
+        """
         _str = f'_editSpine event:{self.type}\n'
         for row in self._list:
             for k,v in row.items():
@@ -151,14 +141,12 @@ class AddSpineEvent(_EditSpine):
     Parameters
     ----------
     mmWidget : mmWidget2
-    segmentID : int
     x : int
     y : int
     z : int
     """
     def __init__(self,
-                 mmWidget : "mmWidget2",
-                #  segmentID : int,
+                 mmWidget : mmWidget2,
                  x : int,
                  y : int,
                  z : int
@@ -192,7 +180,39 @@ class UndoSpineEvent(_EditSpine):
 class RedoSpineEvent(_EditSpine):
     def __init__(self, mmWidget):
         super().__init__(pmmEventType.redoSpineEvent, mmWidget)
-   
+
+class ManualConnectSpineEvent(_EditSpine):
+    """Manual connect spine event.
+    """
+    def __init__(self,
+                 mmWidget : mmWidget2,
+                 spineID : int,
+                 x : int,
+                 y : int,
+                 z : int
+                 ):
+
+        super().__init__(pmmEventType.manualConnectSpine, mmWidget)
+
+        if isinstance(spineID, list):
+            logger.warning(f'expecting spineID as int, got list of spineID:{spineID}')
+            spineID = spineID[0]
+            
+        self.addEdit(spineID=spineID, x=x, y=y, z=z)
+
+    def _getItem(self, item : SpineEdit) -> SpineEdit:
+        """Get the meaningful keys for this edit type.
+        """
+        item = SpineEdit(
+            spineID=item['spineID'],
+            sessionID=item['sessionID'],
+            segmentID=item['segmentID'],
+            x=item['x'],
+            y=item['y'],
+            z=item['z']
+            )
+        return item
+    
 class MoveSpineEvent(_EditSpine):
     """Add spine event.
     
@@ -205,7 +225,7 @@ class MoveSpineEvent(_EditSpine):
     z : int
     """
     def __init__(self,
-                 mmWidget : "mmWidget2",
+                 mmWidget : mmWidget2,
                  spineID : int,
                  x : int,
                  y : int,
@@ -214,16 +234,11 @@ class MoveSpineEvent(_EditSpine):
 
         super().__init__(pmmEventType.moveAnnotation, mmWidget)
 
-        # self.addAddSpine(segmentID, x, y, z)
-        # self.addAddSpine(x, y, z)
         if isinstance(spineID, list):
             logger.warning(f'expecting spineID as int, got list of spineID:{spineID}')
             spineID = spineID[0]
             
         self.addEdit(spineID=spineID, x=x, y=y, z=z)
-
-    # def addAddSpine(self, x, y, z):
-    #     self.addEdit(x=x, y=y, z=z)
 
     def _getItem(self, item : SpineEdit) -> SpineEdit:
         """Get the meaningful keys for this edit type.
@@ -247,7 +262,7 @@ class DeleteSpineEvent(_EditSpine):
     spineID : int
     """
     def __init__(self,
-                 mmWidget : "mmWidget2",
+                 mmWidget : mmWidget2,
                  spineID : int
                  ):
                 
@@ -271,7 +286,7 @@ class EditSpinePropertyEvent(_EditSpine):
      - isBad, userType, note
     """
     def __init__(self,
-                 mmWidget : "mmWidget2",
+                 mmWidget : mmWidget2,
                  spineID : int = None,
                  col : str = None,
                  value : object = None):
