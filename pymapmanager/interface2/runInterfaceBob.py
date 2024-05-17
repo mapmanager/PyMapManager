@@ -17,6 +17,10 @@ def run():
     
     # single timepoint
     path = '/Users/cudmore/Sites/MapManagerCore/sandbox/data/rr30a_s6.mmap'
+    
+    # 2020516, added spine distance and spine side
+    path = '/Users/cudmore/Sites/MapManagerCore/sandbox/data/rr30a_s0.mmap'
+
 
     # load from core 20240513
     # path = '/Users/cudmore/Sites/MapManagerCore/data/rr30a_s0u.mmap'

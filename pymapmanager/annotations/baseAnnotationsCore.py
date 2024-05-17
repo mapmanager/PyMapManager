@@ -357,7 +357,6 @@ class SpineAnnotationsCore(AnnotationsCore):
         anchorDf = self._fullMap.points['anchorLine'].get_coordinates(include_z=True)
         return anchorDf
     
-    # TODO: use this rather than individual functions below
     def getRoi(self, rowIdx : int, roiType : str):  # -> Optional[(list[int], list[int])]:
         """Get one of 4 rois (polygons).
         
@@ -400,11 +399,10 @@ class SpineAnnotationsCore(AnnotationsCore):
         Args:
             rowIdx: Either a single row or a list of rows.
         """
-        logger.info(f'rowIdx:{rowIdx}')
+        logger.info(f'DELETING ANNOTATION rowIdx:{rowIdx}')
 
-        logger.error('!!! 20240416, delete spine core is broken -> NOT DELETING  !!!')
         # self._fullMap.deleteSpine((rowIdx, self.sessionID))
-        # self._fullMap.deleteSpine(rowIdx)
+        self._fullMap.deleteSpine(rowIdx)
 
         self._buildDataFrame()
 
