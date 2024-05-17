@@ -23,7 +23,7 @@ def run():
 
 
     # load from core 20240513
-    # path = '/Users/cudmore/Sites/MapManagerCore/data/rr30a_s0u.mmap'
+    path = '/Users/cudmore/Sites/MapManagerCore/data/rr30a_s0u.mmap'
 
     sw2 = app.loadStackWidget(path)
     
