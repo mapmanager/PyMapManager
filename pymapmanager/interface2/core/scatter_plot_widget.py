@@ -407,7 +407,7 @@ class ScatterPlotWidget(QtWidgets.QWidget):
                      "filterStr": "", # Change this to detect an inputted option,  Create a function that takes in a type
                      "filterColumn": "", # column that we are searching the filterString for
                      "currentHueID": "",
-                     "hueColumn": "",
+                     "hueColumn": "None",
                      "plotType" : "Scatter"}
         
         self.xStatName = None
@@ -645,16 +645,16 @@ class ScatterPlotWidget(QtWidgets.QWidget):
                 self.hueColumnComboBox.addItem(str(hueStr))
 
             self.hueColumnComboBox.addItem("None")
-            self.dict["currentHueColumnStr"] = "None" # Forcing the None to be selected on start
+            self.dict["hueColumn"] = "None" # Forcing the None to be selected on start
             # Set initial segment
-            self.hueColumnComboBox.setCurrentText(str(self.dict["currentHueColumnStr"]))
+            self.hueColumnComboBox.setCurrentText(str(self.dict["hueColumn"]))
             self.hueColumnComboBox.currentTextChanged.connect(self._onNewHueColumnStr)
             hLayoutHeader2.addWidget(self.hueColumnComboBox)
 
         # 2nd Combo box for plotting IDs, individual or ALL
         self.idComboBox = QtWidgets.QComboBox()
 
-        if  self.dict["currentHueColumnStr"] == "None":
+        if  self.dict["hueColumn"] == "None":
             self.idComboBox.setEnabled(False)
 
         self.idComboBox.currentTextChanged.connect(self._on_new_ID)
@@ -773,7 +773,7 @@ class ScatterPlotWidget(QtWidgets.QWidget):
         # Reference: https://matplotlib.org/stable/gallery/text_labels_and_annotations/figlegend_demo.html#sphx-glr-gallery-text-labels-and-annotations-figlegend-demo-py
         
         # Display points color coordinated by segment
-        if hueColumn == "":
+        if hueColumn == "None":
             myColorMap = [self.color[0]] * len(xDFStat) # default: all points are colored the first value of the color map
             self.scatterPoints = self.axScatter.scatter(xDFStat, yDFStat, s = self._markerSize, c = myColorMap, picker=False)
         else:
@@ -961,6 +961,7 @@ class ScatterPlotWidget(QtWidgets.QWidget):
                     myColorMap.append("white")
                 else:
                     if hueColumn != "None":
+                        logger.info(f"hueColumn {hueColumn}")
                         hueId = self._df[hueColumn].iloc[id]
                         myColorMap.append(self.color[hueId])
 
@@ -1146,7 +1147,7 @@ class ScatterPlotWidget(QtWidgets.QWidget):
     def _onNewHueColumnStr(self, hueColumnStr):
         """ Update column str within dictionary everytime it is changed within the combobox
         """
-        self.dict["currentHueColumnStr"] = hueColumnStr
+        self.dict["hueColumn"] = hueColumnStr
         self.setHueIDList(hueColumnStr)
 
         if hueColumnStr != "None":
