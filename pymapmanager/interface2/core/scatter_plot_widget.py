@@ -18,6 +18,7 @@ import matplotlib.markers as mmarkers
 import numpy as np
 import seaborn as sns
 from random import randint
+from PyQt5.QtCore import Qt, QAbstractTableModel
 # from pymapmanager.interface.pmmWidget import PmmWidget
 
 class comparisonTypes(enum.Enum):
@@ -26,6 +27,123 @@ class comparisonTypes(enum.Enum):
     greaterthan = 'greaterthan'
     lessthanequal = 'lessthanequal'
     greaterthanequal = 'greaterthanequal'
+
+class TableModel(QAbstractTableModel):
+    """
+        This will replace Pandas Model 
+    """
+    def __init__(self, data : pd.DataFrame):
+        # QtCore.QAbstractTableModel.__init__(self)
+        super().__init__()
+        self._data = data # pandas dataframe
+        # logger.info(f"self._data {self._data}")
+
+    # NOTE: Only necessary in editable Table View
+    # https://www.pythonguis.com/faq/editing-pyqt-tableview/
+    def flags(self, item):
+        """
+        """
+        # logger.info(f'item: {item}')
+        theRet = QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+        return theRet
+
+    def headerData(self, section, orientation, role):
+        """
+        col: section
+        orientation:
+        role:
+        """
+        if role == QtCore.Qt.DisplayRole:
+            if orientation == QtCore.Qt.Horizontal:
+                # print("entering column names")
+                # Shows the column names
+                # print("self._data.columns[section]", self._data.columns[section])
+                return self._data.columns[section]
+  
+            # elif orientation == QtCore.Qt.Vertical:
+            #     # this is to show pandas 'index' for each row 
+            #     # vertical headers, the section number corresponds to the row number
+            #     return self._data.index.tolist()[section]
+
+    def data(self, index, role):
+        """
+        data(const QModelIndex &index, int role = Qt::DisplayRole)
+
+        Returns the data stored under the given role for the item referred to by the index.
+        """
+        if role == Qt.DisplayRole:
+            row = index.row()
+
+            # Get the corresponding row within the actual dataframe
+            # They could be different values due to deleting
+            row = self._data.index.tolist()[row]
+            col = index.column()
+                
+            # Get column name
+            colName = self._data.columns[col]
+            try:     
+                returnVal = self._data.loc[row, colName]
+                return str(returnVal)
+            except KeyError:
+                print(f'Error occurred when accessing dataframe: {KeyError}')
+
+
+    def rowCount(self, index: None):
+        """
+        Args:
+            QModelIndex &parent = QModelIndex()
+        """
+        return self._data.shape[0]
+
+    def columnCount(self, index):
+        """
+        Args:
+            QModelIndex &parent = QModelIndex()
+        """
+        # print("self._data.shape[1]", self._data.shape[1])
+        return self._data.shape[1]
+
+
+class myTableView(QtWidgets.QTableView):
+    # def __init__(self, dataType, parent=None):
+    def __init__(self, parent=None):
+        """
+        dataType: in ['All Spikes', 'File Mean']
+        """
+        super(myTableView, self).__init__(parent)
+
+        # self.dataType = dataType
+
+        self.doIncludeCheckbox = False  # todo: turn this on
+        # self.keepCheckBoxDelegate = myCheckBoxDelegate(None)
+
+        # self.setFont(QtGui.QFont('Arial', 10))
+        self.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding
+        )
+        self.setSelectionBehavior(QtWidgets.QTableView.SelectRows)
+
+        p = self.palette()
+        color1 = QtGui.QColor("#dddddd")
+        color2 = QtGui.QColor("#ffffff")
+        p.setColor(QtGui.QPalette.Base, color1)
+        p.setColor(QtGui.QPalette.AlternateBase, color2)
+        self.setAlternatingRowColors(True)
+        self.setPalette(p)
+
+    def setTableModel(self, newDF):
+        """
+        switch between full .csv model and getMeanDf model
+        """
+        # print('myTableView.slotSwitchTableModel()')
+
+        if newDF is None:
+            return
+    
+        newModel = TableModel(newDF)
+        self.setModel(newModel)
+
+  
 
 class Highlighter(object):
     def __init__(self, parentPlot, ax, x, y, xyStatIndex):
@@ -487,9 +605,6 @@ class ScatterPlotWidget(QtWidgets.QWidget):
         """ Update data frame everytime outside dataframe is updated
         """
         self._df = newDF
-
-        # update columnNames within DF
-        # self.columnNameList = list(self._df.columns.values)
         self.setColumnList()
 
     def setFilter(self, filterColumn):
@@ -574,23 +689,69 @@ class ScatterPlotWidget(QtWidgets.QWidget):
         windowLayout = self._buildMainLayout()
         self.layout.addLayout(windowLayout)
 
-    # def getGUI(self):
-    #     return self.layout
-
-    # def _makeCentralWidget(self, layout):
-    #     """To build a visual widget, call this function with a Qt layout like QVBoxLayout.
-    #     """
-    #     centralWidget = QtWidgets.QWidget()
-    #     centralWidget.setLayout(layout)
-    #     self.setCentralWidget(centralWidget)
-
-    # def _buildGUI(self):
-    #     windowLayout = self._buildMainLayout()
-    #     self._makeCentralWidget(windowLayout)
-
     def getMainLayout(self):
         return self.layout
 
+    def setScatterPlot(self, xStat, yStat, xyStatIndex):
+        hueColumn = str(self.dict["hueColumn"])
+        myColorMap = []
+        if hueColumn == "None" and self.dict["plotType"] == "Scatter":
+            for id in xyStatIndex:
+                if self.acceptCheckbox.isChecked() and not self._df["accept"].iloc[id]:
+                    myColorMap.append("white")
+                else:
+                    myColorMap.append(self.color[0])
+            
+            self.scatterPoints = self.axScatter.scatter(xStat, yStat, s = self._markerSize, c = myColorMap, 
+                                                        picker=False)
+        else: # hue is selected
+            for id in xyStatIndex:
+                if self.acceptCheckbox.isChecked() and not self._df["accept"].iloc[id]:
+                    myColorMap.append("white")
+                else:
+                    if hueColumn != "None":
+                        # logger.info(f"hueColumn {hueColumn}")
+                        hueId = self._df[hueColumn].iloc[id]
+                        myColorMap.append(self.color[hueId])
+
+            if self.dict["plotType"] == "Scatter":
+                self.scatterPoints = self.axScatter.scatter(xStat, yStat, s = 12, c = myColorMap, 
+                                                            picker=False)
+            elif self.dict["plotType"] == "Histogram":
+                if hueColumn == "None":
+                    # Do nothing when histogram with no hue column
+                    return
+                logger.info("making histogram")
+   
+                self.scatterPoints  = sns.histplot(x=xStat, hue=hueColumn,
+                    data=self.filteredDF, ax=self.axScatter, picker=False,
+                    )
+                ymax = self.scatterPoints.get_ylim()[0]
+                self.scatterPoints.set_ylim(0, ymax)
+            elif self.dict["plotType"] == "Cumulative Histogram":
+                if hueColumn == "None":
+                    return
+                self.scatterPoints  = sns.histplot(x=xStat, cumulative=True,
+                    hue=hueColumn, element="step", data=self.filteredDF,
+                    ax=self.axScatter,picker=False,)
+                ymax = self.scatterPoints.get_ylim()[0]
+                self.scatterPoints.set_ylim(0, ymax)
+
+    def setTableDFs(self):
+        columnNameX = self.dict["X Stat"] 
+        columnNameY = self.dict["Y Stat"] 
+        aggList = ["count", "mean", "std", "sem", "median"]
+        hueColumn = str(self.dict["hueColumn"])
+
+        if hueColumn == "None":
+            self.xDf = None
+            self.yDf = None
+        else:
+            self.xDf = self._df.groupby(hueColumn, as_index=False)[
+                        columnNameX].agg(aggList)
+            self.yDf = self._df.groupby(hueColumn, as_index=False)[
+                        columnNameY].agg(aggList)
+            
     def _buildMainLayout(self):
         # main layout
         hLayout = QtWidgets.QHBoxLayout()
@@ -645,7 +806,7 @@ class ScatterPlotWidget(QtWidgets.QWidget):
                 self.hueColumnComboBox.addItem(str(hueStr))
 
             self.hueColumnComboBox.addItem("None")
-            self.dict["hueColumn"] = "None" # Forcing the None to be selected on start
+            self.dict["hueColumn"] = "segmentID" # Forcing the None to be selected on start
             # Set initial segment
             self.hueColumnComboBox.setCurrentText(str(self.dict["hueColumn"]))
             self.hueColumnComboBox.currentTextChanged.connect(self._onNewHueColumnStr)
@@ -696,6 +857,40 @@ class ScatterPlotWidget(QtWidgets.QWidget):
         hColumnLayout.addWidget(self.yPlotWidget)
         vLayout.addLayout(hColumnLayout)
 
+        # abj: 5/20 Testing subwidget tabs
+        hLayoutHeader4 = QtWidgets.QHBoxLayout()
+        self.tabwidget = QtWidgets.QTabWidget()
+
+        columnNameX = self.xPlotWidget.getCurrentStat()
+        columnNameY = self.yPlotWidget.getCurrentStat()
+        self.dict["X Stat"] = columnNameX
+        self.dict["Y Stat"] = columnNameY
+
+        # TODO: move this to its own function to be called in replot
+        # aggList = ["count", "mean", "std", "sem", "median"]
+        # hueColumn = str(self.dict["hueColumn"])
+        # self.xDf = self._df.groupby(hueColumn, as_index=False)[
+        #             columnNameX].agg(aggList)
+        # self.yDf = self._df.groupby(hueColumn, as_index=False)[
+        #             columnNameY].agg(aggList)
+        
+        self.rawTableView = myTableView()
+        self.rawTableView.setTableModel(self._df)
+        self.setTableDFs()
+        self.xTableView = myTableView()
+        self.xTableView.setTableModel(self.xDf)
+        self.yTableView = myTableView()
+        self.yTableView.setTableModel(self.yDf)
+
+        self.tabwidget.addTab(self.rawTableView, "Raw")
+        self.tabwidget.addTab(self.xTableView, "X-Stats")
+        self.tabwidget.addTab(self.yTableView, "Y-Stats")
+  
+        # self.tabwidget.addTab(self.rawTableView, "Raw")
+        hLayoutHeader4.addWidget(self.tabwidget)
+        vLayout.addLayout(hLayoutHeader4)
+        # vLayout.addWidget(tabwidget)
+
         columnsWidget.setLayout(vLayout)
 
         hSplitter.addWidget(columnsWidget)
@@ -740,11 +935,6 @@ class ScatterPlotWidget(QtWidgets.QWidget):
         self.axHistY.spines["right"].set_visible(False)
         self.axHistY.spines["top"].set_visible(False)
 
-        columnNameX = self.xPlotWidget.getCurrentStat()
-        columnNameY = self.yPlotWidget.getCurrentStat()
-        self.dict["X Stat"] = columnNameX
-        self.dict["Y Stat"] = columnNameY
-
         filterStr = self.dict["filterStr"]
         filterColumn = self.dict["filterColumn"]
         hueColumn = self.dict["hueColumn"]
@@ -752,35 +942,16 @@ class ScatterPlotWidget(QtWidgets.QWidget):
         if filterStr != "" and filterColumn != "":
             self.filteredDF, indexList = self.getfilteredDFWithIndexList(filterStr=filterStr, filterColumn=filterColumn)   
         else:     # when there is no filterStr
-             self.filteredDF, indexList = self.getfilteredDFWithIndexList(filterStr=None, filterColumn=None)
+            self.filteredDF, indexList = self.getfilteredDFWithIndexList(filterStr=None, filterColumn=None)
 
         xDFStat = np.array(self.filteredDF[columnNameX].tolist())
         yDFStat = np.array(self.filteredDF[columnNameY].tolist())
         indexList = np.array(indexList)
+
+        self.setScatterPlot(xDFStat, yDFStat, indexList)
+
         self.axScatter.set_xlabel(columnNameX)
         self.axScatter.set_ylabel(columnNameY)
-
-        # Check if np.array is all nan?
-        xMin = np.nanmin(xDFStat)
-        xMax = np.nanmax(xDFStat)
-        yMin = np.nanmin(yDFStat)
-        yMax = np.nanmax(yDFStat)
-
-        self.axScatter.set_xlim([xMin, xMax])
-        self.axScatter.set_ylim([yMin, yMax])
-
-        # OPTION 1: Plot the segments as different plots but in the same graph
-        # Reference: https://matplotlib.org/stable/gallery/text_labels_and_annotations/figlegend_demo.html#sphx-glr-gallery-text-labels-and-annotations-figlegend-demo-py
-        
-        # Display points color coordinated by segment
-        if hueColumn == "None":
-            myColorMap = [self.color[0]] * len(xDFStat) # default: all points are colored the first value of the color map
-            self.scatterPoints = self.axScatter.scatter(xDFStat, yDFStat, s = self._markerSize, c = myColorMap, picker=False)
-        else:
-            idList = self.filteredDF[hueColumn].tolist()
-            self.dict["currentHueID"] = "All"
-            self.scatterPoints = self.axScatter.scatter(xDFStat, yDFStat, s = self._markerSize, c = idList, cmap = self.color
-                                                        ,  picker=False)
 
         # Added to test histogram
         self.scatter_hist(xDFStat, yDFStat, self.axHistX, self.axHistY)
@@ -869,13 +1040,6 @@ class ScatterPlotWidget(QtWidgets.QWidget):
             updateHighlighter: Boolean to tell plot whether to update currently highlighted points
             accept: show accepted values as white when accept is False. Otherwise show it regularly
         """
-
-
-        # if self.rePlotLock:
-        #     return
-        
-        # self.rePlotLock = True
-    
         # Reset entire plot if histogram condition is changed
         self._switchScatter()
 
@@ -918,111 +1082,22 @@ class ScatterPlotWidget(QtWidgets.QWidget):
         yStat = np.array(yStat)
         xyStatIndex =  np.array(xyStatIndex)
 
-        # xMin = np.nanmin(xStat)
-        # xMax = np.nanmax(xStat)
-        # yMin = np.nanmin(yStat)
-        # yMax = np.nanmax(yStat)
-
-        # if self.dict["plotType"] == "Scatter":
-        #     logger.info("scatter limits")
-        #     self.axScatter.set_xlim([xMin, xMax])
-        #     self.axScatter.set_ylim([yMin, yMax])
-        # else:
-        #     logger.info("other limits")
-        #     self.axScatter.set_xlim(auto=True)
-        #     self.axScatter.set_ylim(auto=True)
-
         if self.dict["invertY"]:
             self.axScatter.invert_yaxis()
 
         # Plot New Plot    
         self.myHighlighter.update_axScatter(self.axScatter) 
         # logger.info(f"hue column {hueColumn}")
-        myColorMap = []
-        if hueColumn == "None" and self.dict["plotType"] == "Scatter":
-            for id in xyStatIndex:
-                if self.acceptCheckbox.isChecked() and not self._df["accept"].iloc[id]:
-                    myColorMap.append("white")
-                else:
-                    myColorMap.append(self.color[0])
-            
-            self.scatterPoints = self.axScatter.scatter(xStat, yStat, s = self._markerSize, c = myColorMap, 
-                                                        picker=False)
-         
-        else: # hue is selected
-            # logger.info(f"length of xyStatIndex {len(xyStatIndex)}")
-            # idList = self.filteredDF[hueColumn].tolist()
-            # logger.info(f"hue column inside else {hueColumn}")
-            # temp = self.dict["plotType"]
-            # logger.info(f"[plotType] inside else {temp}")
-            # only use accept column when dealing with hue column and scatter plot
-            for id in xyStatIndex:
-                if self.acceptCheckbox.isChecked() and not self._df["accept"].iloc[id]:
-                    myColorMap.append("white")
-                else:
-                    if hueColumn != "None":
-                        logger.info(f"hueColumn {hueColumn}")
-                        hueId = self._df[hueColumn].iloc[id]
-                        myColorMap.append(self.color[hueId])
 
-
-            if self.dict["plotType"] == "Scatter":
-                # logger.info("making scatter")
-                self.scatterPoints = self.axScatter.scatter(xStat, yStat, s = 12, c = myColorMap, 
-                                                            picker=False)
-            elif self.dict["plotType"] == "Histogram":
-                
-                if hueColumn == "None":
-                    # Do nothing when histogram with no hue column
-                    return
-                
-                # TODO: disable marginal histogram when in plot type other than scatter
-                logger.info("making histogram")
-   
-                self.scatterPoints  = sns.histplot(
-                    x=xStat,
-                    # y=yStat,
-                    hue=hueColumn,
-                    # kde=False,
-                    data=self.filteredDF,
-                    ax=self.axScatter,
-                    picker=False,
-                    # weights=factor*np.ones_like(xStat)
-                    )
-                ymax = self.scatterPoints.get_ylim()[0]
-                self.scatterPoints.set_ylim(0, ymax)
-                
-            elif self.dict["plotType"] == "Cumulative Histogram":
-
-                if hueColumn == "None":
-                    # Do nothing when histogram with no hue column
-                    return
-        
-                logger.info("Cumulative histogram")
-                factor = 2
-                self.scatterPoints  = sns.histplot(
-                    x=xStat,
-                    # y=yStat,
-                    cumulative=True,
-                    hue=hueColumn,
-                    element="step",
-                    # kde=doKde,
-                    data=self.filteredDF,
-                    ax=self.axScatter,
-                    picker=False,
-                    # weights =factor*np.ones_like(xStat)
-                    )
-                ymax = self.scatterPoints.get_ylim()[0]
-                self.scatterPoints.set_ylim(0, ymax)
+        self.setScatterPlot(xStat, yStat, xyStatIndex)
 
         self.axScatter.grid(False)
-        # logger.info(f"replot xyStatIndex {xyStatIndex}")
 
         if self.dict["plotType"] == "Scatter":
             self.myHighlighter.setCanvasConnections()
             self.myHighlighter.set_xy(xStat, yStat, xyStatIndex)
 
-            logger.info(f"columnNameX {columnNameX}")
+            # logger.info(f"columnNameX {columnNameX}")
             self.axScatter.set_xlabel(columnNameX)
             self.axScatter.set_ylabel(columnNameY)
 
@@ -1030,7 +1105,6 @@ class ScatterPlotWidget(QtWidgets.QWidget):
                 xHStat = self._df.loc[self.storedRowIdx, columnNameX].to_numpy()
                 yHStat = self._df.loc[self.storedRowIdx, columnNameY].to_numpy()
                 self.myHighlighter._setData(xHStat, yHStat)
-
         else:
             # Disable highlighter for histogram plots
             self.myHighlighter.disconnectCanvas()
@@ -1038,6 +1112,12 @@ class ScatterPlotWidget(QtWidgets.QWidget):
         # Reset histogram
         if self.plotHistograms:
             self.scatter_hist(xStat, yStat, self.axHistX, self.axHistY)
+
+        # Reset Aggregate Tables
+        self.setTableDFs()
+        self.rawTableView.setTableModel(self._df)
+        self.xTableView.setTableModel(self.xDf)
+        self.yTableView.setTableModel(self.yDf)
 
         self.static_canvas.draw()
 
@@ -1109,9 +1189,6 @@ class ScatterPlotWidget(QtWidgets.QWidget):
             columnNameY = self.yPlotWidget.getCurrentStat()
 
             # Get column values into respective lists
-            # xFilteredVals = self.filteredDF[columnNameX].tolist()
-            # yFilteredVals = self.filteredDF[columnNameY].tolist()
-
             xFilteredVals =  self._df[columnNameX].tolist()
             yFilteredVals = self._df[columnNameY].tolist()
             # logger.info(f"rowIndexes {rowIndexes}")
@@ -1220,7 +1297,6 @@ class ScatterPlotWidget(QtWidgets.QWidget):
             # self.mplToolbar.fig.canvas.toolbar.pack_forget()
             # self.fig.canvas.window().statusBar().setVisible(False)
             self.mplToolbar.setVisible(False)
-
 
     
     # ----------- Functions that need to be used by adapted slots ----------- #
