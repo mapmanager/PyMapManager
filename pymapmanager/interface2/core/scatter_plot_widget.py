@@ -53,6 +53,9 @@ class TableModel(QAbstractTableModel):
         orientation:
         role:
         """
+        if self._data.empty:
+            return
+
         if role == QtCore.Qt.DisplayRole:
             if orientation == QtCore.Qt.Horizontal:
                 # print("entering column names")
@@ -138,6 +141,9 @@ class myTableView(QtWidgets.QTableView):
         # print('myTableView.slotSwitchTableModel()')
 
         if newDF is None:
+            emptyDF= pd.DataFrame()
+            newModel = TableModel(emptyDF)
+            self.setModel(newModel)
             return
     
         newModel = TableModel(newDF)
@@ -806,7 +812,7 @@ class ScatterPlotWidget(QtWidgets.QWidget):
                 self.hueColumnComboBox.addItem(str(hueStr))
 
             self.hueColumnComboBox.addItem("None")
-            self.dict["hueColumn"] = "segmentID" # Forcing the None to be selected on start
+            self.dict["hueColumn"] = "None" # Forcing the None to be selected on start
             # Set initial segment
             self.hueColumnComboBox.setCurrentText(str(self.dict["hueColumn"]))
             self.hueColumnComboBox.currentTextChanged.connect(self._onNewHueColumnStr)
