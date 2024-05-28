@@ -23,7 +23,10 @@ def run():
 
 
     # load from core 20240513
-    path = '/Users/cudmore/Sites/MapManagerCore/data/rr30a_s0u.mmap'
+    # path = '/Users/cudmore/Sites/MapManagerCore/data/rr30a_s0u.mmap'
+
+    # from trySegment, works!
+    # path = '/Users/cudmore/Desktop/trySeg.mmap'
 
     sw2 = app.loadStackWidget(path)
     
@@ -39,9 +42,9 @@ def run():
     # add some columns (isBad, userType) with random values
     # AddRandomColumns(df)
 
-    sw2.zoomToPointAnnotation(120, isAlt=True)
+    sw2.zoomToPointAnnotation(0, isAlt=True)
 
-    # sw2.runPlugin('Spine Info Widget', inDock=True)
+    sw2.runPlugin('Tracing', inDock=True)
     
     # TODO: get this working
     # _map = sw2.getStack().sessionMap

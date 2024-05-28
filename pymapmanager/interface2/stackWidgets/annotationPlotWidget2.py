@@ -24,7 +24,8 @@ class annotationPlotWidget(mmWidget2):
 
     Annotations are plotted as ScatterItems.
 
-    Abstract class (not useable on its own), instantiated from a derived class (pointPlotWidget and linePlotWidget)
+    Abstract class (not useable on its own),
+    instantiated from a derived class (pointPlotWidget and linePlotWidget)
     """
 
     # _widgetName = 'not assigned'
@@ -494,7 +495,7 @@ class annotationPlotWidget(mmWidget2):
 
         else:
             logger.warning(
-                f'did not understand state "{_state}" _allowClick defaulting to True'
+                f'{self.getClassName()} did not understand state "{_state}" _allowClick defaulting to True'
             )
             self._allowClick = True
 

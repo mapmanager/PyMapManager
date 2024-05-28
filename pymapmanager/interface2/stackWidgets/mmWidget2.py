@@ -16,7 +16,7 @@ class pmmStates(Enum):
     manualConnectSpine = auto()
     autoConnectSpine = auto()
     
-    editSegment = auto()
+    tracingSegment = auto()
 
 class pmmEventType(Enum):
     selection = auto()

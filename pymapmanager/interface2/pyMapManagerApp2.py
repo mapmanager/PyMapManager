@@ -442,7 +442,15 @@ class PyMapManagerApp(QtWidgets.QApplication):
             currentTop += windowHeight + vSpace
         
         return posList
+
+def main():
+    """Run the PyMapMAnager app.
     
+    This is an entry point specified in setup.py and used by PyInstaller.
+    """
+    app = PyMapManagerApp()
+    sys.exit(app.exec_())
+
 def tstSpineRun():
     
     path = '../PyMapManager-Data/maps/rr30a/rr30a.txt'
@@ -481,4 +489,5 @@ def tstSpineRun():
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
-    tstSpineRun()
+    #tstSpineRun()
+    main()

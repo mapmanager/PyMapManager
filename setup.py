@@ -63,7 +63,7 @@ setup(
         "geopandas",
         "shapely",
         "platformdirs",
-        "brightest-path-lib",
+        # "brightest-path-lib",
     ],
 
 	extras_require={
@@ -109,6 +109,12 @@ setup(
             'pytest-cov',
             'pytest-qt',
             'flake8',
+        ]
+    },
+
+    entry_points={
+        'console_scripts': [
+            'pymapmanager=pymapmanager.interface2.pyMapManagerApp2:main',
         ]
     },
 

@@ -423,6 +423,17 @@ class ImagePlotWidget(mmWidget2):
             #     # # event.getStackSelection().setPointSelection(items)
             #     # self.emitEvent(event, blockSlots=True)
 
+        elif _state == pmmStates.tracingSegment:
+            if isShift:
+                pos = event.pos()
+                imagePos : QtCore.QPointF = self._myImage.mapFromScene(pos)
+
+                x = int(imagePos.x())
+                y = int(imagePos.y())
+                z = self._currentSlice
+                
+                logger.info(f'TODO: add new tracing point at {x} {y} {z}')
+
         elif isShift:
             # make a new spine
 
@@ -747,14 +758,6 @@ class ImagePlotWidget(mmWidget2):
         # update contrast
         self._setContrast()
        
-        # a mask of A* tracing progress
-        # logger.info('todo: fix logic of _myTracingMask, this recreates on each set slice')
-        # _imageLabel = self._stack.copy()
-        # _imageLabel[:] = 0
-        # _imageLabel[200:300,300:600] = 255
-        # # self._imageLabel = _imageLabel  # update self._imageLabel with tracing results and self.update()
-        # self._myTracingMask.setImage(_imageLabel, opacity=0.5)
-
         # self.update()  # update pyqtgraph interface
 
         # emit
@@ -937,30 +940,6 @@ class ImagePlotWidget(mmWidget2):
 
         # self.setLayout(hBoxLayout)
         # self.setCentralWidget(centralWidget)
-
-    def showTracingResults(self, x, y, z):
-        """Given a x/y/z tracing results, show it in the viewer.
-        """
-        logger.info(f'making temporary tracing result lineAnnotation with {len(x)} points')
-        # add line plot of lineAnnotations
-        #lineAnnotations = self._myStack.getLineAnnotations()
-        self._tracingLineAnnotations = pymapmanager.annotations.lineAnnotations(path=None)
-        self._tracingLineAnnotations.addEmptySegment()
-        segmentID = 0
-        for idx in range(len(x)):
-            self._tracingLineAnnotations.addToSegment(x[idx], y[idx], z[idx], segmentID)
-        
-        df = self._tracingLineAnnotations.getSegment(segmentID=segmentID)
-        print(df)
-        
-        _displayOptions = self._displayOptionsDict['lineDisplay']
-        self._aLinePlot_tmp = pymapmanager.interface2.linePlotWidget(self._tracingLineAnnotations,
-                                                                self._plotWidget,
-                                                                _displayOptions)
-
-        #self._aLinePlot_tmp.signalAnnotationClicked2.connect(self.slot_selectAnnotation2)
-        #self.signalAnnotationSelection2.connect(self._aLinePlot.slot_selectAnnotation2)
-        self.signalUpdateSlice.connect(self._aLinePlot_tmp.slot_setSlice)
 
     def selectedEvent(self, event : pmmEvent):
         """Snap and optionally zoom to point and line annotations.

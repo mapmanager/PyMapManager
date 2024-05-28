@@ -8,8 +8,43 @@ from pymapmanager._logger import logger
 from .mmWidget2 import mmWidget2
 from .mmWidget2 import pmmEventType, pmmEvent, pmmStates
 
+# taken from image plot widget
+
+        # a mask of A* tracing progress
+        # logger.info('todo: fix logic of _myTracingMask, this recreates on each set slice')
+        # _imageLabel = self._stack.copy()
+        # _imageLabel[:] = 0
+        # _imageLabel[200:300,300:600] = 255
+        # # self._imageLabel = _imageLabel  # update self._imageLabel with tracing results and self.update()
+        # self._myTracingMask.setImage(_imageLabel, opacity=0.5)
+
+# taken from image plot widget
+    # def showTracingResults(self, x, y, z):
+    #     """Given a x/y/z tracing results, show it in the viewer.
+    #     """
+    #     logger.info(f'making temporary tracing result lineAnnotation with {len(x)} points')
+    #     # add line plot of lineAnnotations
+    #     #lineAnnotations = self._myStack.getLineAnnotations()
+    #     self._tracingLineAnnotations = pymapmanager.annotations.lineAnnotations(path=None)
+    #     self._tracingLineAnnotations.addEmptySegment()
+    #     segmentID = 0
+    #     for idx in range(len(x)):
+    #         self._tracingLineAnnotations.addToSegment(x[idx], y[idx], z[idx], segmentID)
+        
+    #     df = self._tracingLineAnnotations.getSegment(segmentID=segmentID)
+    #     print(df)
+        
+    #     _displayOptions = self._displayOptionsDict['lineDisplay']
+    #     self._aLinePlot_tmp = pymapmanager.interface2.linePlotWidget(self._tracingLineAnnotations,
+    #                                                             self._plotWidget,
+    #                                                             _displayOptions)
+
+    #     #self._aLinePlot_tmp.signalAnnotationClicked2.connect(self.slot_selectAnnotation2)
+    #     #self.signalAnnotationSelection2.connect(self._aLinePlot.slot_selectAnnotation2)
+    #     self.signalUpdateSlice.connect(self._aLinePlot_tmp.slot_setSlice)
+
 class tracingWidget(mmWidget2):
-    _widgetName = 'tracing widget qqq'
+    _widgetName = 'Tracing'
 
     # signalSelectSegment = QtCore.Signal(int, bool)
     """Signal emitted when user selects a row (segment).
@@ -19,7 +54,7 @@ class tracingWidget(mmWidget2):
         bool: True if keyboard Alt is pressed
     """
 
-    signalEditSegments = QtCore.Signal(bool)
+    # signalEditSegments = QtCore.Signal(bool)
     """Signal emitted when user toggle the 'edit segment' checkbox.
 
     Args:
@@ -62,7 +97,7 @@ class tracingWidget(mmWidget2):
         aCheckbox = QtWidgets.QCheckBox('Edit')
         # aCheckbox.setChecked(_editSegment)
         aCheckbox.setChecked(False)
-        aCheckbox.setChecked(True)  # wil get updated on slot_selectAnnotation
+        # aCheckbox.setChecked(True)  # will get updated on slot_selectAnnotation
         aCheckbox.stateChanged.connect(self.on_segment_edit_checkbox)
         hBoxLayout.addWidget(aCheckbox, alignment=_alignLeft)
         # aLabel = QtWidgets.QLabel('Edit')
@@ -160,19 +195,21 @@ class tracingWidget(mmWidget2):
         # checkbox can have 3-states
         state = state > 0
 
-        # change the state of the stack widget !!!
-        #self._displayOptionsDict['doEditSegments'] = state
-
-        # self._addSegmentButton.setEnabled(state)
-        # self._deleteSegmentButton.setEnabled(state)
+        self._addSegmentButton.setEnabled(state)
+        self._deleteSegmentButton.setEnabled(state)
         
         # get current selected point
         # rowIdx, rowDict = self._stackWidget.annotationSelection.getPointSelection()
         
         # self._updateTracingButton(rowIdx)
 
-        logger.info(f'  -->> emit signalEditSegments() state:{state}')
-        self.signalEditSegments.emit(state)
+        event = pmmEvent(pmmEventType.stateChange, self)
+        if state:
+            event.setStateChange(pmmStates.tracingSegment)
+        else:
+            event.setStateChange(pmmStates.edit)
+        logger.info(f'  -->> emit {event.getStateChange()}')
+        self.emitEvent(event)
 
     def on_segment_button_clicked(self, state, buttonName : str):
         logger.info(f'buttonName is: "{buttonName}"')
