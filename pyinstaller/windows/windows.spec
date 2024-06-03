@@ -3,11 +3,11 @@
 block_cipher = None
 
 a = Analysis(
-    ['..\\pymapmanager\\interface2\\pyMapManagerApp2.py'],
+    ['..\\..\\pymapmanager\\interface2\\pyMapManagerApp2.py'],
     pathex=[
     'C:\\Users\\johns\\Documents\\GitHub\\MapManagerCore'],
     binaries=[],
-    datas=[],
+    datas=[('..\\..\\pymapmanager\\interface2\\icons\\mapmanager-icon.png', 'interface2\\icons\\')], # temp file path to load icon for window
     hiddenimports=['mapmanagercore'],
     hookspath=[],
     runtime_hooks=[],
@@ -33,12 +33,13 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,
+    console=False,
+    #console=True,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    #icon='..\\..\\sanpy\\interface\\icons\\sanpy_transparent.icns', # Desktop Icon
+    icon='..\\..\\pymapmanager\\interface2\\icons\\mapmanager-icon.png', # Desktop Icon
 )
 
