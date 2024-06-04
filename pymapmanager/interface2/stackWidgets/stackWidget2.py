@@ -124,8 +124,7 @@ class stackWidget2(mmWidget2):
         
         # the running QApplication
         app = QtWidgets.QApplication.instance()
-        
-        if isinstance(app, pymapmanager.interface2.PyMapManagerApp):
+        if isinstance(app, pymapmanager.interface2.pyMapManagerApp2.PyMapManagerApp):
             return app
     
     def getStack(self) -> pymapmanager.stack:

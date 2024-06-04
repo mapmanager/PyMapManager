@@ -15,12 +15,14 @@ import qdarktheme
 qdarktheme.enable_hi_dpi()
 
 import pymapmanager as pmm
+import mapmanagercore
 
 import pymapmanager.interface2
 
 import pymapmanager.interface2.stackWidgets
 import pymapmanager.interface2.mapWidgets
 
+from pymapmanager.interface2.stackWidgets import stackWidget2
 from pymapmanager.interface2.openFirstWindow import OpenFirstWindow
 from pymapmanager.interface2.mainMenus import PyMapManagerMenus
 
@@ -363,7 +365,8 @@ class PyMapManagerApp(QtWidgets.QApplication):
         else:
             # load stack and make widget
             logger.info(f'loading stack widget from path: {path}')
-            _stackWidget = pmm.interface2.stackWidgets.stackWidget2(path)
+            # _stackWidget = pmm.interface2.stackWidgets.stackWidget2(path)
+            _stackWidget = stackWidget2(path)
 
             geometryRect = self.getConfigDict().getStackWindowGeometry()
             
@@ -448,7 +451,11 @@ def main():
     
     This is an entry point specified in setup.py and used by PyInstaller.
     """
-    app = PyMapManagerApp()
+
+    # app = PyMapManagerApp()
+    # abj: previous instantiation created a __main__.PyMapManagerApp. 
+    # so it is classified as part of the main module, which does not allow for isinstance checking
+    app = pymapmanager.interface2.pyMapManagerApp2.PyMapManagerApp()
     sys.exit(app.exec_())
 
 def tstSpineRun():
