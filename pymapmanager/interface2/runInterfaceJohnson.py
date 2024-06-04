@@ -22,7 +22,9 @@ def _old_AddRandomColumns(df):
 def run():
     app = PyMapManagerApp()
 
+    # path = '../PyMapManager-Data/core-map/one-timepoint/oneTimepoint.mmap'
     path = '../PyMapManager-Data/core-map/one-timepoint/oneTimepoint.mmap'
+    path ='\\Users\\johns\\Documents\\GitHub\\MapManagerCore\\sandbox\\data\\rr30a_s0.mmap'
 
     sw2 = app.loadStackWidget(path)
     
