@@ -1063,13 +1063,10 @@ class pointPlotWidget(annotationPlotWidget):
 
             label_value = pg.LabelItem("", **{"color": "#FFF", "size": "6pt"})
             label_value.setPos(QtCore.QPointF(row["x"] - 9, row["y"] - 9))
-            # abb 042024
             label_value.setText(str(row["index"]))
-            # label_value.setText(str(row.index))
             label_value.hide()
             # label_value.setText(str(row['index']), rotateAxis=(1, 0), angle=90)
             self._view.addItem(label_value)
-            # self._labels.append(label_value)  # our own list
             self._labels[index] = label_value  # our own list
 
         # stop = time.time()
