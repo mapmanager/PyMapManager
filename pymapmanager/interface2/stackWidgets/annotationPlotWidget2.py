@@ -893,12 +893,13 @@ class pointPlotWidget(annotationPlotWidget):
 
         #
         # show and hide labels based on sliceNumber
-        for labelIndex, label in enumerate(self._labels):
+        # for labelIndex, label in enumerate(self._labels):
+        for k, v in self._labels.items():
             # labelIndex = int(labelIndex)  # some labels will not cast
-            if labelIndex in _rows:
-                label.show()
+            if k in _rows:
+                v.show()
             else:
-                label.hide()
+                v.hide()
 
         #
         # mask and unmask spine lines based on sliceNumber
@@ -990,7 +991,8 @@ class pointPlotWidget(annotationPlotWidget):
         # add a label
         newLabel = self._newLabel(addedRow, xSpine, ySpine)
         self._view.addItem(newLabel)
-        self._labels.append(newLabel)  # our own list
+        # self._labels.append(newLabel)  # our own list
+        self._labels[addedRow] = newLabel  # our own list
 
         # remake all spine lines
         self._bMakeSpineLines()
@@ -1054,7 +1056,7 @@ class pointPlotWidget(annotationPlotWidget):
 
         df = self._annotations.getDataFrame()
 
-        self._labels = []
+        self._labels = {}
         for index, row in df.iterrows():
             # if row['roiType'] != pymapmanager.annotations.pointTypes.spineROI.value:
             #     continue
@@ -1067,7 +1069,8 @@ class pointPlotWidget(annotationPlotWidget):
             label_value.hide()
             # label_value.setText(str(row['index']), rotateAxis=(1, 0), angle=90)
             self._view.addItem(label_value)
-            self._labels.append(label_value)  # our own list
+            # self._labels.append(label_value)  # our own list
+            self._labels[index] = label_value  # our own list
 
         # stop = time.time()
         # logger.info(f'took {round(stop-start,3)} seconds')  # 0.304
