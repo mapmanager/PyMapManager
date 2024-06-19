@@ -179,7 +179,7 @@ class stack:
         """
         # self._lines = LineAnnotationsCore(self.sessionMap, analysisParams = self._analysisParams)
         self._lines = LineAnnotationsCore(self.sessionMap)
-    
+
     def _old_getImageChannel(self,
                         channel : int = 1
                         ) -> Optional[np.ndarray]:
@@ -275,32 +275,34 @@ class stack:
         # slices = self.sessionMap.slices(time=0, channel=channelIdx, zRange=zRange)
         # _imgData = slices._image
 
-        logger.info(f'channel:{channel} imageSlice:{imageSlice} {type(imageSlice)}')
+        # logger.info(f'channel:{channel} imageSlice:{imageSlice} {type(imageSlice)}')
 
         _imgData = self.sessionMap.getPixels(channel=channel, z=imageSlice)
         _imgData = _imgData._image
 
-        logger.info(f'_imgData: {type(_imgData)} {_imgData.shape}')
+        # logger.info(f'_imgData: {type(_imgData)} {_imgData.shape}')
     
         return _imgData
     
-        _doInMemory = True
+        #
+        # before properly using core
+        # _doInMemory = True
         
-        if _doInMemory:
-            channelIdx = channel - 1
-            if self._images[channelIdx] is None:
-                # image data not loaded
-                logger.error(f'channel index {channelIdx} is None')
-                return
-            _imgData =  self._images[channelIdx][imageSlice][:][:]
-        else:
-            # core
-            _images = self.sessionMap.images
-            _imgData = _images.fetchSlices2(self.sessionID, channelIdx, (imageSlice, imageSlice+1))
-            _imgData = _imgData[0,:,:]
-            logger.info(f'_imgData: {_imgData.shape}')
+        # if _doInMemory:
+        #     channelIdx = channel - 1
+        #     if self._images[channelIdx] is None:
+        #         # image data not loaded
+        #         logger.error(f'channel index {channelIdx} is None')
+        #         return
+        #     _imgData =  self._images[channelIdx][imageSlice][:][:]
+        # else:
+        #     # core
+        #     _images = self.sessionMap.images
+        #     _imgData = _images.fetchSlices2(self.sessionID, channelIdx, (imageSlice, imageSlice+1))
+        #     _imgData = _imgData[0,:,:]
+        #     logger.info(f'_imgData: {_imgData.shape}')
 
-        return _imgData
+        # return _imgData
     
     def getMaxProjectSlice(self, 
                             imageSlice : int, 

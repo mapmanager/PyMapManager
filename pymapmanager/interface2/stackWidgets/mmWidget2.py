@@ -199,13 +199,14 @@ class StackSelection:
 
     def hasSegmentSelection(self) -> bool:
         segmentSelectionList = self._getValue('segmentSelectionList')
-        # return segmentSelectionList is not None and len(segmentSelectionList) > 0
+        return segmentSelectionList is not None and len(segmentSelectionList) > 0
         # abj - removed len checking so that we can cancel segment selection
-        return segmentSelectionList is not None or segmentSelectionList == []
+        # abb, put back in
+        # return segmentSelectionList is not None or segmentSelectionList == []
 
 
     def firstSegmentSelection(self) -> Optional[int]:
-        if self.hasSegmentSelection() is None:
+        if not self.hasSegmentSelection():
             return
         _segmentSelection = self._getValue('segmentSelectionList')
         return _segmentSelection[0]
@@ -228,7 +229,7 @@ class StackSelection:
         return segmentSelectionList is not None and len(segmentSelectionList) > 0
 
     def firstSegmentPointSelection(self) -> Optional[int]:
-        if self.hasSegmentPointSelection() is None:
+        if not self.hasSegmentPointSelection():
             return
         _segmentSelection = self._getValue('segmentPointSelectionList')
         return _segmentSelection[0]

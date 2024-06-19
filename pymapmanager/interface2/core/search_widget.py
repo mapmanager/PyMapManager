@@ -552,7 +552,14 @@ class myQTableView(QtWidgets.QTableView):
 
         # # logger.info(f'indexes: {indexes} ') #data {item.data()}
         # return indexes
-    
+
+    def keyPressEvent(self, event : QtGui.QKeyEvent):
+        logger.info('THIS keyPressEvent DOES NOTHING')
+        super().keyPressEvent(event)
+
+        # abb on_selectionChanged is not using its params
+        self.on_selectionChanged(None)
+
     def on_selectionChanged(self, item):
         """Respond to user selection.
         
@@ -565,8 +572,10 @@ class myQTableView(QtWidgets.QTableView):
         Not actually using item parameter? Using self.selectedIndexes()?
         """
         
+        logger.info(f'{self.getMyName()}')
+        
         if self._blockSignalSelectionChanged:
-            # sys.exit(1)
+            logger.info(f'  _blockSignalSelectionChanged -->> return')
             return
         
         # PyQt5.QtCore.Qt.KeyboardModifiers
@@ -578,21 +587,14 @@ class myQTableView(QtWidgets.QTableView):
 
         isAlt = modifiers == QtCore.Qt.AltModifier
         
-        # debug
-        # logger.info('XXXXXXXX    DEBUG     XXXXXXXXXX')
-        # # modelIndex is QtCore.QModelIndex
-        # for modelIndex in self.selectedIndexes():
-        #     # print('   ', modelIndex, type(modelIndex))
-        #     print(f'   {self.getMyName()} {modelIndex.row()} row:{self.proxyModel.mapToSource(modelIndex).row()}')
-
-        # Don't use params, use self.selectedIndexes()
+        # Don't use `item` param, use self.selectedIndexes()
         selectedIndexes = [self.proxyModel.mapToSource(modelIndex).row()
                             for modelIndex in self.selectedIndexes()]
         
         # reduce to list of unique values (selected indices are often repeated?)
         selectedIndexes = list(set(selectedIndexes))
 
-        logger.info(f'-->> signalSelectionChanged.emit selectedIndexes:{selectedIndexes} isAlt:{isAlt}')
+        logger.info(f'-->> "{self.getMyName()}" signalSelectionChanged.emit selectedIndexes:{selectedIndexes} isAlt:{isAlt}')
 
         self.signalSelectionChanged.emit(selectedIndexes, isAlt)
 
@@ -615,6 +617,7 @@ class myQTableView(QtWidgets.QTableView):
         selectedIndexes = [self.proxyModel.mapToSource(modelIndex).row()
                             for modelIndex in self.selectedIndexes()]
 
+        # select just the first item?
         if isinstance(selectedIndexes, list):
             selectedIndexes = selectedIndexes[0]
 
@@ -684,14 +687,20 @@ class myQTableView(QtWidgets.QTableView):
         Called by parent like annotationListWidget.
         """
 
-        self._blockSignalSelectionChanged = True
+        logger.info(f'{self.getMyName()} rowList:{rowList}')
+        
+        # abb was here
+        # self._blockSignalSelectionChanged = True
 
         # Remove previously selected rows
         super().clearSelection()
         
         if rowList is None or len(rowList)==0:
             return
-        
+
+        # abb moved here
+        self._blockSignalSelectionChanged = True
+
         # logger.info(f'rowList:{rowList}')
         
         # 2nd argument is column, here we default to zero since we will select the entire row regardless
