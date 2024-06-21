@@ -794,6 +794,22 @@ class ImagePlotWidget(mmWidget2):
         self._aPointPlot.toggleScatterPlot()
         self._aLinePlot.toggleScatterPlot()
 
+    def togglePlot(self, plotName):
+        """Show/hide tracing.
+        """
+
+        logger.info(f"toggling plotName {plotName}")
+        if plotName == "Spines":
+            self._aPointPlot.toggleScatterPlot()
+        elif plotName == "Center Line":
+            self._aLinePlot.toggleScatterPlot()
+        elif plotName == "Radius Lines":
+            # TODO:
+            self._aLinePlot.toggleRadiusLines()
+        elif plotName == "Labels":
+            # TODO:
+            self._aPointPlot.toggleLabels()
+
     def slot_updateLineRadius(self, radius):
         """ Called whenever radius is updated
         """

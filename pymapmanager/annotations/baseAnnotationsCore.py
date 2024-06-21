@@ -4,9 +4,11 @@ from typing import List, Union, Optional
 
 import numpy as np
 import pandas as pd
+import shapely
 
 # from mapmanagercore.annotations.layers import AnnotationsLayers
 from mapmanagercore import MapAnnotations
+from mapmanagercore.layers.line import clipLines
 
 from pymapmanager._logger import logger
 
@@ -467,8 +469,17 @@ class LineAnnotationsCore(AnnotationsCore):
         
         logger.warning('left/right is slow, can we get this pre-built and saved into zarr')
         
-    
+        # TODO: 6/19 fix xyLeft and xyRight
         # xyLeft = self._fullMap.segments["segmentLeft"].get_coordinates(include_z=True)
+        # TODO: replace zSlice, zPlusMinus, Radius Offset if this works
+        # radiusOffset = 3
+        # _startSlice = zSlice - zPlusMinus
+        # _stopSlice = zSlice + zPlusMinus
+
+        # segmentLines = clipLines(self._fullMap.segments['segment'], zRange = (_startSlice, _stopSlice))
+        # xyLeft = shapely.offset_curve(segmentLines, radiusOffset * -1)
+
+        # logger.info(f"xyLeft {xyLeft}")
         # self._xyLeftDf = xyLeft
         # # use to know how to connect when sequential points are in same segment but there is a gap
         # self._xyLeftDf['rowIndex'] = list(np.arange(len(xyLeft)))
@@ -483,35 +494,58 @@ class LineAnnotationsCore(AnnotationsCore):
 
     def getLeftRadiusPlot(self, segmentID,
                        zSlice,
-                       zPlusMinus
+                       zPlusMinus,
+                       radiusOffset
                        ):
         """Get a spine dataframe based on z
 
         Used for plotting x/y/z scatter over image
         """    
+        # _startSlice = zSlice - zPlusMinus
+        # _stopSlice = zSlice + zPlusMinus
+
+        # df = self._xyLeftDf 
+        # logger.info(f"self._xyLeftDf  {df}")     
+        # df = df[(df['z']>=_startSlice) & (df['z']<=_stopSlice)]
+
+        # TODO: replace zSlice, zPlusMinus, Radius Offset if this works
+        # move radius offset to arguments
+        # radiusOffset = 3
         _startSlice = zSlice - zPlusMinus
         _stopSlice = zSlice + zPlusMinus
 
-        df = self._xyLeftDf      
-        df = df[(df['z']>=_startSlice) & (df['z']<=_stopSlice)]
+        segmentLines = clipLines(self._fullMap.segments['segment'], zRange = (_startSlice, _stopSlice))
+        xyLeft = shapely.offset_curve(segmentLines, radiusOffset * -1)
+        xyLeft = xyLeft.get_coordinates(include_z=True)
+        xyLeft['rowIndex'] = list(np.arange(len(xyLeft)))
 
-        return df
+
+        return xyLeft
     
     def getRightRadiusPlot(self, segmentID,
                        zSlice,
-                       zPlusMinus
+                       zPlusMinus,
+                       radiusOffset
                        ):
         """Get a spine dataframe based on z
 
         Used for plotting x/y/z scatter over image
         """
+        # _startSlice = zSlice - zPlusMinus
+        # _stopSlice = zSlice + zPlusMinus
+
+        # df = self._xyRightDf
+        # df = df[(df['z']>=_startSlice) & (df['z']<=_stopSlice)]
+
         _startSlice = zSlice - zPlusMinus
         _stopSlice = zSlice + zPlusMinus
 
-        df = self._xyRightDf
-        df = df[(df['z']>=_startSlice) & (df['z']<=_stopSlice)]
+        segmentLines = clipLines(self._fullMap.segments['segment'], zRange = (_startSlice, _stopSlice))
+        xyRight = shapely.offset_curve(segmentLines, radiusOffset * 1)
+        xyRight = xyRight.get_coordinates(include_z=True)
+        xyRight['rowIndex'] = list(np.arange(len(xyRight)))
 
-        return df
+        return xyRight
     
     def getLeftRadiusLine(self):
         return self._xyLeftDf

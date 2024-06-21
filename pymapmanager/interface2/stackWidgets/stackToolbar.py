@@ -12,7 +12,7 @@ class StackToolBar(QtWidgets.QToolBar):
     signalChannelChange = QtCore.Signal(object)  # int : channel number
     signalSlidingZChanged = QtCore.Signal(object)  # dict : {checked, upDownSlices}
     signalRadiusChanged = QtCore.Signal(object)  # dict : {checked, upDownSlices}
-
+    signalPlotCheckBoxChanged = QtCore.Signal(object)  # str: plot name being checked/ unchecked
     def __init__(self,
 					myStack :pymapmanager.stack,
 					displayOptionsDict : dict, parent=None):
@@ -113,7 +113,9 @@ class StackToolBar(QtWidgets.QToolBar):
         """
         """
         logger.info(f'Recalculate left/right given new radius {value}')
+
         # call function to recaculate ALL left xy, right xy given a new radius
+        self.signalRadiusChanged.emit(value)
 
 
     def _on_slidingz_value_changed(self, value):
@@ -208,10 +210,43 @@ class StackToolBar(QtWidgets.QToolBar):
         self.addWidget(radiusLabel)
         self.addWidget(self._radiusSpinBox)
 
+        # Drop Box to hide different parts of plot
+        plotMenuButton = QtWidgets.QPushButton("Plots")
+        self.addWidget(plotMenuButton)
+        plotMenu = QtWidgets.QMenu()
+
+        # Need to get current state of plots (checked or unchecked)
+        # Can i get that here?
+        # Might be easier to do logic in annotationPlotWidget class?
+        # Easiest method. Have actions send signal 
+        # Signal is sent to stackwidget -> imageplotwidget
+        # Image plot widget handles unchecking
+        # states can be kept in this class (by default start off showing)
+        # menu.addAction("Spines")
+        # menu.addAction("Center Line")
+        # menu.addAction("Radius Lines")
+        # menu.addAction("Labels")
+        plotMenuList = ["Spines", "Center Line", "Radius Lines", "Labels"]
+
+        for plotName in plotMenuList:
+            action = plotMenu.addAction(plotName)
+            action.setCheckable(True)
+            isChecked = True # set true by default
+            # logger.info(f"userType {userType} isChecked {isChecked}")
+            action.setChecked(isChecked)
+
+        plotMenuButton.setMenu(plotMenu)
+        # menu.triggered.connect(lambda action: print(action.text()))
+        plotMenu.triggered.connect(lambda action: self.plotMenuChange(action.text()))
+
         # colorList = ['Gray', 'Gray Inverted', 'Green', 'Red', 'Blue']
         # self.colorPopup = QtWidgets.QComboBox()
         # self.colorPopup.addItems(colorList)
         # self.addWidget(self.colorPopup)
+
+    def plotMenuChange(self, plotName):
+        self.signalPlotCheckBoxChanged.emit(plotName)
+
 
     def _on_radius_value_changed(self, value):
         """

@@ -195,7 +195,7 @@ class pointListWidget(annotationListWidget):
         super().__init__(stackWidget, annotations, name='pointListWidget')
 
         # limit the displayed columns
-        colList = ['index', 'userType', 'z', 'roiType', 'segmentID', 'accept', 'note']
+        colList = ['index', 'userType', 'z', 'roiType', 'segmentID', 'accept', 'note', 'spineSide']
         self._myTableView.showTheseColumns(colList)
 
         # limit the rows based on roiType

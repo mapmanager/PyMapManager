@@ -323,6 +323,9 @@ class stackWidget2(mmWidget2):
         # top toolbar
         topToobarName = 'top toolbar'
         self._topToolbar = StackToolBar(self._stack, self._displayOptionsDict)
+        self._topToolbar.signalSlidingZChanged.connect(self.updateDisplayOptionsZ)
+        self._topToolbar.signalRadiusChanged.connect(self.updateRadius)
+        self._topToolbar.signalPlotCheckBoxChanged.connect(self.updatePlotBoxes)
         self.addToolBar(QtCore.Qt.TopToolBarArea, self._topToolbar)
         self._widgetDict[topToobarName] = self._topToolbar
         
@@ -368,6 +371,46 @@ class stackWidget2(mmWidget2):
         # plugin panel with tabs
         self.pluginDock1 = stackPluginDock(self)
         self.addDockWidget(QtCore.Qt.RightDockWidgetArea, self.pluginDock1.getPluginDock())
+
+    def updateDisplayOptionsZ(self, d):
+        """
+            Update Z Plus Minus values within Display options whenever z slider is changed within 
+            top tool bar
+
+
+            Arguments: 
+                d = {
+                    'checked': checked,
+                    'upDownSlices': upDownSlices,
+                    }
+        """
+        self._displayOptionsDict['windowState']['zPlusMinus'] = d["upDownSlices"]
+        temp = self._displayOptionsDict["windowState"]['zPlusMinus']
+        logger.info(f"self._displayOptionsDict['windowState']['zPlusMinus'] {temp}")
+        self._displayOptionsDict['pointDisplay']['zPlusMinus'] = d["upDownSlices"]
+        self._displayOptionsDict['lineDisplay']['zPlusMinus'] = d["upDownSlices"]
+
+        # Call to refresh other widgets
+        # Simply use slice change
+
+        _pmmEvent = pmmEvent(pmmEventType.setSlice, self)
+        _pmmEvent.setSliceNumber(self._currentSliceNumber)
+
+        logger.info(f'  -->> emit updateDisplayOptionsZ() self._currentSliceNumber :{self._currentSliceNumber}')
+        self.emitEvent(_pmmEvent, blockSlots=True)
+
+    def updateRadius(self, newRadius):
+        self._displayOptionsDict['lineDisplay']['radius'] = newRadius
+
+        _pmmEvent = pmmEvent(pmmEventType.setSlice, self)
+        _pmmEvent.setSliceNumber(self._currentSliceNumber)
+        self.emitEvent(_pmmEvent, blockSlots=True)
+
+    def updatePlotBoxes(self, plotName):
+        # problem would have to directly send to imagePlotWidget
+        imagePlotName = ImagePlotWidget._widgetName
+        imagePlotWidget = self._widgetDict[imagePlotName]
+        imagePlotWidget.togglePlot(plotName)
 
     def _on_user_close(self):
         """Called when user closes window.

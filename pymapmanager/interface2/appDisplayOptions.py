@@ -88,5 +88,8 @@ class AppDisplayOptions():
 
         #
         theDict['lineDisplay']['zPlusMinus'] = 3
+        # abj: 6/20
+        theDict['lineDisplay']['radius'] = 3
+
 
         return theDict

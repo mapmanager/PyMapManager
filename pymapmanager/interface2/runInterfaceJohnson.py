@@ -23,18 +23,20 @@ def run():
     app = PyMapManagerApp()
 
     # path = '../PyMapManager-Data/core-map/one-timepoint/oneTimepoint.mmap'
-    path = '../PyMapManager-Data/core-map/one-timepoint/oneTimepoint.mmap'
-    path ='\\Users\\johns\\Documents\\GitHub\\MapManagerCore\\sandbox\\data\\rr30a_s0.mmap'
+    # path = '../PyMapManager-Data/core-map/one-timepoint/oneTimepoint.mmap'
+    # path ='\\Users\\johns\\Documents\\GitHub\\MapManagerCore\\sandbox\\data\\rr30a_s0.mmap'
+    # path = 'C:\\Users\\johns\\Documents\\GitHub\\MapManagerCore\\data\\rr30a_s0u.mmap'
+    path = '\\Users\\johns\\Documents\\GitHub\\MapManagerCore\\data\\rr30a_s0u.mmap'
 
     sw2 = app.loadStackWidget(path)
     
     df = sw2.getStack().getPointAnnotations().getDataFrame()
-    df['userType'] = 0
+    # df['userType'] = 1
     # sw2.getStack().getPointAnnotations().intializeIsBad()
     # sw2.getStack().getPointAnnotations().intializeUserType()
     
     sw2.zoomToPointAnnotation(120, isAlt=True)
-    sw2.runPlugin('Scatter Plot', inDock=True)
+    # sw2.runPlugin('Scatter Plot', inDock=True)
 
     sys.exit(app.exec_())
 
