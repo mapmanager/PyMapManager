@@ -507,6 +507,7 @@ class ScatterPlotWidget(QtWidgets.QWidget):
         filterColumn : Optional[str] = None,
         acceptColumn : Optional[str] = None,
         hueColumnList: Optional[List[str]] = None,
+        darkTheme : bool = True,
         parent = None):
         """
         Parameters
@@ -551,7 +552,9 @@ class ScatterPlotWidget(QtWidgets.QWidget):
         # add to dictionary
         # self.color = plt.get_cmap("cool")
         self.color = sns.color_palette("Paired", 12).as_hex()
-        plt.style.use("dark_background")
+        
+        if darkTheme:
+            plt.style.use("dark_background")
         
         # TODO: add to scatterplot
         self._markerSize = 12

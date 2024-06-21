@@ -98,8 +98,10 @@ class annotationListWidget(mmWidget2):
             self._deleteSelected()
 
         elif event.key() in [QtCore.Qt.Key_Escape]:
-            # cancel all selections
+            # cancel all selections, emits event
             self.on_table_selection([])
+            
+            # visually cancel selection
             self._myTableView.mySelectRows([])
     
         elif event.key() == QtCore.Qt.Key_N:
@@ -290,6 +292,8 @@ class lineListWidget(annotationListWidget):
         event = pmmEvent(eventType, self)
         event.getStackSelection().setSegmentSelection(itemList)
         event.setAlt(isAlt)
+
+        logger.info(f'-->> "{self.getClassName()}" emit selection event {itemList}')
         self.emitEvent(event, blockSlots=False)
 
     # not sure if this is used ???

@@ -14,7 +14,7 @@ from pymapmanager._logger import logger
 
 class AnnotationsCore:
     def __init__(self,
-                 mapAnnotations : "MapAnnotations",  # TODO: update on merge 20240513
+                 mapAnnotations : "???",  # TODO: update on merge 20240513
                 #  analysisParams : "AnalysisParams",
                  sessionID = 0,
                  ):
@@ -27,7 +27,7 @@ class AnnotationsCore:
         self._sessionID = sessionID
 
         # full map, multiple session ids (timepoint, t)
-        self._fullMap : MapAnnotations = mapAnnotations
+        self._fullMap : "AnnotationsLayers" = mapAnnotations
         # mapmanagercore.annotations.single_time_point.layers.AnnotationsLayers
 
         #filtered down to just sessionID
@@ -41,12 +41,6 @@ class AnnotationsCore:
     @property
     def sessionID(self):
         return self._sessionID
-
-    @property
-    def _old_sessionMap(self) -> MapAnnotations:
-        """Core map reduced to one session id.
-        """
-        return self._sessionMap
 
     def __len__(self) -> int:
         """Get the number of annotations.
@@ -76,13 +70,6 @@ class AnnotationsCore:
         """
         return self._df
     
-    def _old__buildSessionMap(self):
-        """Reduce full core map to a single session id.
-        """
-        # self._sessionMap = self._fullMap[ self._fullMap['t']==self.sessionID ]
-        self._sessionMap = self._fullMap.getTimePoint(self.sessionID)
-        return self._sessionMap
-    
     def _buildDataFrame(self):
         """derived classes define this for (point, line)
         """
@@ -110,7 +97,6 @@ class AnnotationsCore:
         """Get columns and values for one row.
         """
         df = self.getDataFrame() 
-        # rowIdx = str(rowIdx)
         row = df.loc[rowIdx]
         return row
     
@@ -269,79 +255,29 @@ class SpineAnnotationsCore(AnnotationsCore):
         Needs to be regenerated on any edit/mutation.
         """
         
-        _startSec = time.time()
+        # _startSec = time.time()
         
-        # reduce full map to one session
-        # self._buildSessionMap()
-
-        # self.sessionMap is mapmanagercore.annotations.layers.AnnotationsLayers
+        try:
+            allSpinesDf = self._fullMap.points[:]
+        except (KeyError) as e:
+            logger.warning(e)
+            return
         
-        # logger.info('... SUPER SLOW ...')
-        # logger.info(f'self.sessionMap:{type(self.sessionMap)}')
+        # add (x, y) if it does not exists
+        xyCoord = allSpinesDf['point'].get_coordinates()
+        allSpinesDf['x'] = xyCoord['x']
+        allSpinesDf['y'] = xyCoord['y']
 
-        # this is geo dataframe
-        # _points = self.sessionMap._points
-        
-        # map._points.columns
-        # print('_allSpinesDf:', type(_allSpinesDf))
-        # print(_allSpinesDf.columns)
-        # print(_allSpinesDf)
-
-        # v2
-        # xySpine = _points['point'].get_coordinates()
-        # xyAnchor = _points['anchor'].get_coordinates()
-
-        # xySpine['z'] = _points['z']
-        # xySpine['segmentID'] = _points['segmentID']
-        # xySpine['userType'] = _points['userType']
-        # xySpine['accept'] = _points['accept']
-        # xySpine['note'] = _points['note']
-
-        # xySpine['anchorX'] = xyAnchor['x']
-        # xySpine['anchorY'] = xyAnchor['y']
-
-        # allSpinesDf = xySpine
-
-        # v1
-        # this takes a super long time
-        # 20240502, after speaking with Suhayb, on Igor import, calling spines[:]
-        # then saving mmap will have ALL intensity columns computed !!!
-        
-        # logger.info('SLOW calling self.sessionMap[:]')
-        
-        # allSpinesDf = self.sessionMap[:]
-        allSpinesDf = self._fullMap.points[:]
-
-        # print('allSpinesDf:')
-        # print(allSpinesDf.columns)
-
-        # logger.info(f'done allSpinesDf:')
-        # print(allSpinesDf)
-
-        # reduce df index from tuple (spineID,session) to just spineID
-        # allSpinesDf = allSpinesDf.droplevel(1)
-
-        # logger.info(f'2 done allSpinesDf:')
-        # print(allSpinesDf)
-
-        # logger.info('')
-        # print('allSpinesDf.columns', allSpinesDf.columns)
-        # print('allSpinesDf')
-        # print(allSpinesDf)
-
-        # abb temporary fix
         allSpinesDf['roiType'] = 'spineROI'
-        # allSpinesDf['index'] = [int(index[0]) for index in allSpinesDf.index]
-
-        # allSpinesDf.insert(0,'index', allSpinesDf['spineID'])  # index is first column
         allSpinesDf.insert(0,'index', allSpinesDf.index)  # index is first column
-
-        # logger.info(f'allSpinesDf:{len(allSpinesDf)}')
 
         self._df = allSpinesDf
 
-        _stopSeconds = time.time()
-        logger.info(f'   {self._getClassName()} took {round(_stopSeconds-_startSec,3)} s')
+        # logger.info('_df is')
+        # print(self._df)
+
+        # _stopSeconds = time.time()
+        # logger.info(f'   {self._getClassName()} took {round(_stopSeconds-_startSec,3)} s')
 
     def getSpineLines(self):
         """Get df to plot spine lines from head to tail (anchor).
@@ -438,14 +374,23 @@ class LineAnnotationsCore(AnnotationsCore):
 
         _startSec = time.time()
 
-        # rebuild session map from full map
-        # self._buildSessionMap()
-        
         # this still has 't'
-        _lineSegments = self._fullMap.segments [:]       
+        # _lineSegments = self._fullMap.segments[:]       
         # print('_lineSegments:', _lineSegments)
 
-        df = self._fullMap.segments["segment"].get_coordinates(include_z=True)
+        # mapmanagercore.annotations.single_time_point.layers.AnnotationsLayers
+        # logger.info(f'self._fullMap:{type(self._fullMap)}')
+        
+        # logger.info(f'self._fullMap.segments["segment"]:{type(self._fullMap.segments["segment"])}')
+
+        try:
+            # self._fullMap.segments[:]
+            df = self._fullMap.segments['segment'].get_coordinates(include_z=True)
+        except (AttributeError) as e:
+            # AttributeError:'GeoSeries' object has no attribute 'set_index'
+            logger.error(f'AttributeError:{e}')
+            return
+        
         # print('columns:', df.columns)
         # print(df)
 
@@ -470,6 +415,8 @@ class LineAnnotationsCore(AnnotationsCore):
         logger.warning('left/right is slow, can we get this pre-built and saved into zarr')
         
         # TODO: 6/19 fix xyLeft and xyRight
+        # TODO: put ths back in, the backend changed. We no longer have "segmentLeft" or "segmentRight"
+        # 
         # xyLeft = self._fullMap.segments["segmentLeft"].get_coordinates(include_z=True)
         # TODO: replace zSlice, zPlusMinus, Radius Offset if this works
         # radiusOffset = 3
@@ -496,10 +443,13 @@ class LineAnnotationsCore(AnnotationsCore):
                        zSlice,
                        zPlusMinus,
                        radiusOffset
-                       ):
-        """Get a spine dataframe based on z
+                       ) -> pd.DataFrame:
+        """Get the left radius line (x,y,z) as a DataFrame
 
-        Used for plotting x/y/z scatter over image
+        Returns
+        -------
+        df : pd.DataFrame
+            The dataframe has columns ('x', 'y', 'z').
         """    
         # _startSlice = zSlice - zPlusMinus
         # _stopSlice = zSlice + zPlusMinus
