@@ -80,6 +80,14 @@ class PointLabels:
             else:
                 v.hide()
 
+    # abj
+    def hideAllLabels(self, labelIDs : List[str]):
+        """ Hide all labels. Used when user unchecks labels within top tool bar
+        """
+        for k, v in self._labels.items():
+            if k in labelIDs:
+                v.hide()
+
     def _makeAllLabels(self):
 
         if self.df is None:
@@ -981,15 +989,7 @@ class pointPlotWidget(annotationPlotWidget):
         # abj: check if we show label
         if self.showLabel:
             self._pointLabels.hidShowLabels(_rows)
-        # for labelIndex, label in enumerate(self._labels):
-            # for k, v in self._labels.items():
-        #     # labelIndex = int(labelIndex)  # some labels will not cast
-            #     if k in _rows:
-            #         v.show()
-            #     else:
-            #         v.hide()
 
-        #
         # mask and unmask spine lines based on sliceNumber
         _spineLineIndex = []
         for row in _rows:
@@ -1186,16 +1186,9 @@ class pointPlotWidget(annotationPlotWidget):
         _rows = self._dfPlot["index"].to_list()
  
         if self.showLabel:
-            # show only the labels that are within view
-            for labelIndex, label in enumerate(self._labels):
-                if labelIndex in _rows:
-                    label.show()
-                else:
-                    label.hide()
+            self._pointLabels.hidShowLabels(_rows)
         else:
-            for labels in self._labels:
-                labels.hide()
-
+            self._pointLabels.hideAllLabels(_rows)
 
 class linePlotWidget(annotationPlotWidget):
     _widgetName = "line plot"

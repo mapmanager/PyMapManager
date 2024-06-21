@@ -410,23 +410,13 @@ class LineAnnotationsCore(AnnotationsCore):
         self._buildSummaryDf()
 
         #
-        # left/right
-        
+        # left/right 
         logger.warning('left/right is slow, can we get this pre-built and saved into zarr')
         
         # TODO: 6/19 fix xyLeft and xyRight
         # TODO: put ths back in, the backend changed. We no longer have "segmentLeft" or "segmentRight"
-        # 
+ 
         # xyLeft = self._fullMap.segments["segmentLeft"].get_coordinates(include_z=True)
-        # TODO: replace zSlice, zPlusMinus, Radius Offset if this works
-        # radiusOffset = 3
-        # _startSlice = zSlice - zPlusMinus
-        # _stopSlice = zSlice + zPlusMinus
-
-        # segmentLines = clipLines(self._fullMap.segments['segment'], zRange = (_startSlice, _stopSlice))
-        # xyLeft = shapely.offset_curve(segmentLines, radiusOffset * -1)
-
-        # logger.info(f"xyLeft {xyLeft}")
         # self._xyLeftDf = xyLeft
         # # use to know how to connect when sequential points are in same segment but there is a gap
         # self._xyLeftDf['rowIndex'] = list(np.arange(len(xyLeft)))
@@ -458,9 +448,6 @@ class LineAnnotationsCore(AnnotationsCore):
         # logger.info(f"self._xyLeftDf  {df}")     
         # df = df[(df['z']>=_startSlice) & (df['z']<=_stopSlice)]
 
-        # TODO: replace zSlice, zPlusMinus, Radius Offset if this works
-        # move radius offset to arguments
-        # radiusOffset = 3
         _startSlice = zSlice - zPlusMinus
         _stopSlice = zSlice + zPlusMinus
 
@@ -468,7 +455,6 @@ class LineAnnotationsCore(AnnotationsCore):
         xyLeft = shapely.offset_curve(segmentLines, radiusOffset * -1)
         xyLeft = xyLeft.get_coordinates(include_z=True)
         xyLeft['rowIndex'] = list(np.arange(len(xyLeft)))
-
 
         return xyLeft
     
