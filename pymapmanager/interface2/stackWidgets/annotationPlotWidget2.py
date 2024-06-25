@@ -11,7 +11,7 @@ from pymapmanager.annotations.baseAnnotationsCore import SpineAnnotationsCore
 from .mmWidget2 import mmWidget2, pmmEventType, pmmEvent, pmmStates
 from pymapmanager.interface2.stackWidgets.event.spineEvent import AddSpineEvent, DeleteSpineEvent, MoveSpineEvent
 
-import seaborn as sns  # to color points with userType
+# import seaborn as sns  # to color points with userType
 
 from pymapmanager._logger import logger
 
@@ -173,9 +173,10 @@ class annotationPlotWidget(mmWidget2):
         self._allowClick = True
         # used in stateChangedEvent sigPointsClicked disconnect does not seem to work?
 
-        self._colorMap = sns.color_palette("husl", 10).as_hex()
-        logger.info(self._colorMap)
-        print('_colorMap:', self._colorMap)
+        # self._colorMap = sns.color_palette("husl", 10).as_hex()
+        # logger.info(self._colorMap)
+        # print('_colorMap:', self._colorMap)
+        self._colorMap = ['#f77189', '#dc8932', '#ae9d31', '#77ab31', '#33b07a', '#36ada4', '#38a9c5', '#6e9bf4', '#cc7af4', '#f565cc']
 
     def _getScatterConnect(self, df : pd.DataFrame):
         return None

@@ -5,7 +5,6 @@ from typing import List, Union, Optional
 import numpy as np
 import pandas as pd
 
-# from mapmanagercore.annotations.layers import AnnotationsLayers
 from mapmanagercore import MapAnnotations
 
 from pymapmanager._logger import logger

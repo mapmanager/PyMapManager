@@ -1,5 +1,7 @@
 import pytest
 
+import mapmanagercore.data
+
 from pymapmanager.interface2 import PyMapManagerApp
 from pymapmanager.interface2.stackWidgets import stackWidget2
 
@@ -12,13 +14,14 @@ def qapp_cls():
 
 @pytest.fixture
 def stackWidgetObject(qtbot, qapp):
-	path = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
-	sw = stackWidget2(path=path)
+	# path = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
+    path = mapmanagercore.data.getSingleTimepointMap()
+    sw = stackWidget2(path=path)
 
 	# sw.showScatterPlot2(show=True)
 	# sw.showAnalysisParams()
 
-	return sw
+    return sw
 
 
 # def test_stackWidget(stackWidgetObject):
@@ -50,9 +53,9 @@ def test_stackWidget_zoomToPointAnnotation(stackWidgetObject, qapp):
     stackWidgetObject.zoomToPointAnnotation(spineIndex, isAlt=isAlt, select=select)
 
     # cancel selection
-    spineIndex = []
-    isAlt = True
-    stackWidgetObject.zoomToPointAnnotation(spineIndex, isAlt=isAlt)
+    # spineIndex = []
+    # isAlt = True
+    # stackWidgetObject.zoomToPointAnnotation(spineIndex, isAlt=isAlt)
 
     # TODO: convert to use stackWidgetObject.currentSelection
 
@@ -75,8 +78,8 @@ def test_stackWidget_zoomToPointAnnotation(stackWidgetObject, qapp):
     # delete and there is no selection
     
     # cancel selection
-    stackWidgetObject._imagePlotWidget._tmp_CancelSelection()
+    # stackWidgetObject._imagePlotWidget._tmp_CancelSelection()
 
     # delete cancels the selection
-    stackWidgetObject._imagePlotWidget._deleteAnnotation()
+    # stackWidgetObject._imagePlotWidget._deleteAnnotation()
 

@@ -3,7 +3,7 @@
     This time it is its own widget and will be adapted by pmm
 """
 
-from typing import List, Union, Optional  # , Callable, Iterator
+from typing import List, Optional  # , Callable, Iterator
 import pandas as pd
 from qtpy import QtGui, QtCore, QtWidgets
 import enum
@@ -551,8 +551,10 @@ class ScatterPlotWidget(QtWidgets.QWidget):
 
         # add to dictionary
         # self.color = plt.get_cmap("cool")
-        self.color = sns.color_palette("Paired", 12).as_hex()
-        
+        # self.color = sns.color_palette("Paired", 12).as_hex()
+        # print('self.color:', self.color)
+        self.color = ['#a6cee3', '#1f78b4', '#b2df8a', '#33a02c', '#fb9a99', '#e31a1c', '#fdbf6f', '#ff7f00', '#cab2d6', '#6a3d9a', '#ffff99', '#b15928']
+
         if darkTheme:
             plt.style.use("dark_background")
         

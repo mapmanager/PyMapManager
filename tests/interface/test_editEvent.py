@@ -1,9 +1,10 @@
 import pytest
 
+import mapmanagercore.data
+
 from pymapmanager.interface2 import PyMapManagerApp
 from pymapmanager.interface2.stackWidgets import stackWidget2
-from pymapmanager.interface2.stackWidgets.mmWidget2 import EditSpinePropertyEvent, DeleteSpineEvent
-
+from pymapmanager.interface2.stackWidgets.event.spineEvent import EditSpinePropertyEvent, DeleteSpineEvent
 from pymapmanager._logger import logger
 
 # this makes qapp be our PyMapManagerApp, it is derived from QApplication
@@ -13,13 +14,14 @@ def qapp_cls():
 
 @pytest.fixture
 def stackWidgetObject(qtbot, qapp):
-	path = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
-	sw = stackWidget2(path=path)
+	# path = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
+    path = mapmanagercore.data.getSingleTimepointMap()
+    sw = stackWidget2(path=path)
 
 	# sw.showScatterPlot2(show=True)
 	# sw.showAnalysisParams()
 
-	return sw
+    return sw
 
 def test_deleteSpine(stackWidgetObject, qapp):
     spineID = 2
