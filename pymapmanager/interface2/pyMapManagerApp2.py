@@ -113,10 +113,6 @@ def loadPlugins(verbose=False, pluginType='stack') -> dict:
 
     return pluginDict
 
-class myApp(QtWidgets.QApplication):
-    def __init__(self, argv=[], deferFirstWindow=False):        
-        super().__init__(argv)
-
 class PyMapManagerApp(QtWidgets.QApplication):
     def __init__(self, argv=[], deferFirstWindow=False):        
         super().__init__(argv)

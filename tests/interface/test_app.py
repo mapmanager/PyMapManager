@@ -2,8 +2,7 @@ import pytest
 
 import mapmanagercore.data
 
-from pymapmanager.interface2 import myApp
-# from pymapmanager.interface2 import PyMapManagerApp
+from pymapmanager.interface2 import PyMapManagerApp
 from pymapmanager.interface2.stackWidgets import stackWidget2
 
 from pymapmanager._logger import logger
@@ -11,8 +10,7 @@ from pymapmanager._logger import logger
 # this makes qapp be our PyMapManagerApp, it is derived from QApplication
 @pytest.fixture(scope="session")
 def qapp_cls():
-    # return PyMapManagerApp
-    return myApp
+    return PyMapManagerApp
 
 def test_app(qtbot, qapp):
     logger.info(f'app:{qapp}')
