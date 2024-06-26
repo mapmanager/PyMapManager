@@ -113,11 +113,13 @@ def loadPlugins(verbose=False, pluginType='stack') -> dict:
 
     return pluginDict
 
-class PyMapManagerApp(QtWidgets.QApplication):
+class myApp(QtWidgets.QApplication):
     def __init__(self, argv=[], deferFirstWindow=False):        
         super().__init__(argv)
 
-        return
+class PyMapManagerApp(QtWidgets.QApplication):
+    def __init__(self, argv=[], deferFirstWindow=False):        
+        super().__init__(argv)
     
         self._config = pymapmanager.interface2.Preferences(self)
         # util class to save/load app preferences including recent paths

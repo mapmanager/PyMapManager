@@ -6,3 +6,5 @@ from .mainWindow import MainWindow
 from .preferences import Preferences
 
 from .appDisplayOptions import AppDisplayOptions
+
+from .pyMapManagerApp2 import myApp

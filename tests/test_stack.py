@@ -1,7 +1,7 @@
 
 import pymapmanager as pmm
 
-def test_init_stack():
+def _test_init_stack():
     return
     
     stackPath = '../PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
