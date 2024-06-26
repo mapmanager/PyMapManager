@@ -28,6 +28,7 @@ jobs:
       run: |
         # pip install .
         # pip install '.[tests]'
+        pip install qtpy
         pip install PyQt5
         pip install pytest
         pip install pytest-cov
