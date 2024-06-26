@@ -9,7 +9,7 @@ from pymapmanager.interface2.pyMapManagerApp2 import PyMapManagerApp
 from pymapmanager._logger import logger
 
 def run():
-    app = PyMapManagerApp()
+    app = PyMapManagerApp(sys.argv)
 
     # path = '../PyMapManager-Data/core-map/one-timepoint/oneTimepoint.mmap'
 

@@ -114,7 +114,8 @@ def loadPlugins(verbose=False, pluginType='stack') -> dict:
     return pluginDict
 
 class PyMapManagerApp(QtWidgets.QApplication):
-    def __init__(self, argv=[''], deferFirstWindow=False):
+    def __init__(self, argv, deferFirstWindow=False):
+        
         super().__init__(argv)
 
         self._config = pymapmanager.interface2.Preferences(self)
@@ -123,6 +124,8 @@ class PyMapManagerApp(QtWidgets.QApplication):
         # set the log level
         logLevel = self.getConfigDict()['logLevel']
         setLogLevel(logLevel)
+
+        logger.info(f'Starting PyMapManagerApp() logLevel:{logLevel} argv:{argv}')
 
         self.setTheme()
         # set theme to loaded config dict
@@ -452,50 +455,9 @@ def main():
     
     This is an entry point specified in setup.py and used by PyInstaller.
     """
-
-    # app = PyMapManagerApp()
-    # abj: previous instantiation created a __main__.PyMapManagerApp. 
-    # so it is classified as part of the main module, which does not allow for isinstance checking
-    app = pymapmanager.interface2.pyMapManagerApp2.PyMapManagerApp()
-    sys.exit(app.exec_())
-
-def tstSpineRun():
-    
-    path = '../PyMapManager-Data/maps/rr30a/rr30a.txt'
-
-    app = PyMapManagerApp()
-    _map = app.loadMap(path)
-    
-    app.openMapWidget(0)
-
-    # if 0:
-    #     # plot a run for tp 2, annotation 94
-    #     tp = 2
-    #     stack = _map.stacks[tp]
-    #     pa = stack.getPointAnnotations()
-    #     selPnt = [43]
-    #     isAlt = True
-    #     selectionEvent = pymapmanager.annotations.SelectionEvent(pa, selPnt, isAlt=isAlt, stack=stack)
-
-    #     app.slot_selectAnnotation(selectionEvent, plusMinus=1)
-
-    if 1:
-        # open one stack for given timepoint
-        timepoint = 2
-        bsw = app.openStack2(_map, timepoint)
-
-        spineIdx = 142
-        isAlt = False
-        bsw.zoomToPointAnnotation(spineIdx, isAlt=isAlt, select=True)
-        
-        # slot_setSlice() does nothing
-        # stack = bsw.getStack()
-        # pa = stack.getPointAnnotations()
-        # z = pa.getValue('z', spineIdx)
-        # bsw.slot_setSlice(20)
-
+    # logger.info('Starting PyMapManagerApp in main()')
+    app = PyMapManagerApp(sys.argv)
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
-    #tstSpineRun()
     main()
