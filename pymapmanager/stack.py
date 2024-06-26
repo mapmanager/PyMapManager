@@ -4,10 +4,12 @@ from typing import List, Union, Optional
 
 import numpy as np
 
-import pymapmanager
+# import pymapmanager
 # from pymapmanager.analysisParams import AnalysisParams
-from mapmanagercore import MapAnnotations, MMapLoader
-# from mapmanagercore import MapAnnotations
+from mapmanagercore import MapAnnotations  #, MMapLoader
+
+# from mapmanagercore.lazy_geo_pd_images.store import LazyImagesGeoPandas, ImageLoader
+
 from pymapmanager.annotations.baseAnnotationsCore import SpineAnnotationsCore, LineAnnotationsCore
 # from mapmanagercore.annotations.layers import AnnotationsLayers
 
@@ -39,7 +41,8 @@ class stack:
         _startSec = time.time()
         
         logger.info(f'loading core map from zar:{self._zarrPath}')
-        self._fullMap : MapAnnotations = MapAnnotations(MMapLoader(self._zarrPath).cached())
+        self._fullMap : MapAnnotations = MapAnnotations.load(self._zarrPath)  ## .cached())
+        # self._fullMap : MapAnnotations = MapAnnotations(MMapLoader(self._zarrPath).cached())
         # self._fullMap : MapAnnotations = MapAnnotations(MMapLoader(self._zarrPath))
         
         _stopSec = time.time()

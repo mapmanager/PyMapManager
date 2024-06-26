@@ -1,4 +1,3 @@
-# from mapmanagercore import MapAnnotations, MultiImageLoader, MMapLoader
 from pymapmanager import stack
 
 from pymapmanager._logger import logger, setLogLevel

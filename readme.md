@@ -15,9 +15,9 @@ PyMapManager is an ecosystem of tools to load and visualize time-series annotati
 
 PyMapManager has a modular architecture with the following components:
 
- - Backend API
- - Frontend desktop GUI
- - Frontend web interface
+ - Backend API is in [MapManagerCore](https://github.com/mapmanager/MapManagerCore)
+ - Frontend desktop GUI (this repo)
+ - Frontend web interface [WebMapManager](https://github.com/mapmanager/WebMapManager)
 
 ## Install
 
@@ -35,16 +35,10 @@ git clone git@github.com:mapmanager/PyMapManager.git
 cd PyMapManager
 ```
 
-Install the backend from source
+Install from source
 
 ```
 pip install -e .
-```
-
-Install the front-end desktop GUI and backend
-
-```
-pip install -e .[gui]
 ```
 
 If you are using the `zsh` shell, you need to install using quotes (") like
@@ -95,7 +89,6 @@ The server includes web based browsing and plotting of Map Manager annotations.
 
 <IMG SRC="docs/img/mmserver_leaflet.png" width=900>
 <IMG SRC="docs/img/mmserver_leaflet2.png" width=900>
-
 
 
 [redis]: https://redis.io/

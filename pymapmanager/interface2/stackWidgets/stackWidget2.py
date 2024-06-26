@@ -904,7 +904,7 @@ class stackWidget2(mmWidget2):
         self._colorLutDict['red'] = lut
         self._colorLutDict['r'] = lut
 
-        blueColor = np.array([[0,0,0,255], [0,0,128,255], [0,0,266,255]], dtype=np.ubyte)
+        blueColor = np.array([[0,0,0,255], [0,0,128,255], [0,0,255,255]], dtype=np.ubyte)
         map = pg.ColorMap(pos, blueColor)
         lut = map.getLookupTable(0.0, 1.0, 256)
         self._colorLutDict['blue'] = lut

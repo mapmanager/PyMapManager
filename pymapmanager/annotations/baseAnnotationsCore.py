@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 import shapely
 
-# from mapmanagercore.annotations.layers import AnnotationsLayers
 from mapmanagercore import MapAnnotations
 from mapmanagercore.layers.line import clipLines
 

@@ -3,12 +3,15 @@
 
 import sys
 
+import mapmanagercore.data
+
 from pymapmanager.interface2 import PyMapManagerApp
 
 def run():
     app = PyMapManagerApp()
 
-    path = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
+    # path = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
+    path = mapmanagercore.data.getSingleTimepointMap()
     
     sw2 = app.loadStackWidget(path)
     

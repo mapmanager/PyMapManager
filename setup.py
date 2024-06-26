@@ -55,7 +55,9 @@ setup(
     #    'pymapmanager.mmio'
     #],
     install_requires=[
-        "numpy==1.23.4",
+        "mapmanagercore",
+        # "numpy==1.23.4",
+        "numpy",
         "pandas",
         "scipy",
         "scikit-image",
@@ -63,24 +65,32 @@ setup(
         "geopandas",
         "shapely",
         "platformdirs",
-        # "brightest-path-lib",
+        # pip install will always instal gui (now that we have mapmanagercore)
+        'matplotlib',
+        'seaborn',
+        'qtpy',
+        'PyQt5',  # This will not work on macOS arm
+        'pyqtgraph',
+        'pyqtdarktheme',
+        # 'plotly'
     ],
 
-	extras_require={
-        'gui': [
-			'matplotlib',
-			'seaborn',
-            'qtpy',
-            'PyQt5',  # This will not work on macOS arm
-            'pyqtgraph',
-            'pyqtdarktheme',
-            'plotly'
-		],
+    extras_require={
+    	# 202406 depreciated
+        # 'gui': [
+		# 	'matplotlib',
+		# 	'seaborn',
+        #     'qtpy',
+        #     'PyQt5',  # This will not work on macOS arm
+        #     'pyqtgraph',
+        #     'pyqtdarktheme',
+        #     'plotly'
+		# ],
 
-        'napari': [
-            'napari',
-            'napari-layer-table'
-        ],
+        # 'napari': [
+        #     'napari',
+        #     'napari-layer-table'
+        # ],
 
         'docs': [
 			'mkdocs',
@@ -104,7 +114,7 @@ setup(
             'flake8'
 		],
         
-        'test': [
+        'tests': [
             'pytest',
             'pytest-cov',
             'pytest-qt',
