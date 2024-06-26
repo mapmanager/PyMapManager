@@ -3,7 +3,7 @@ import pytest
 from qtpy import QtGui, QtWidgets  # QtCore
 
 class myApp(QtWidgets.QApplication):
-    def __init__(self, argv=[], deferFirstWindow=False):        
+    def __init__(self, argv, deferFirstWindow=False):        
         super().__init__(argv)
 
 @pytest.fixture(scope="session")
