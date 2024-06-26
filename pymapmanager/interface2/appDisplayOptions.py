@@ -1,3 +1,5 @@
+from pymapmanager._logger import logger
+
 class AppDisplayOptions():
     """Class to encapsulate all display options.
     

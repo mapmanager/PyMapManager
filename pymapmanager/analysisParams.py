@@ -415,7 +415,7 @@ class _old_AnalysisParams():
 # Save button will send the signals to backend for whatever changed
 
 if __name__ == '__main__':
-    dp = AnalysisParams()
+    dp = _old_AnalysisParams()
     print(dp._getDocs())
 
     # dp.buildAnalysisParamUI()

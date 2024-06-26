@@ -66,14 +66,9 @@ class ImagePlotWidget(mmWidget2):
     """To allow linking windows.
     """
 
-    def __init__(self, stackWidget : "StackWidget"):
-                    # myStack : pymapmanager.stack,
-                    # contrastDict : dict,
-                    # colorLutDict : dict,
-                    # displayOptionsDict : dict,
-                    # name,
-                    # stackWidgetParent : "pymapmanager.interface2.stackWidget2",
-                    # parent=None):
+    def __init__(self, stackWidget):
+        """Widget to display an image, points, and lines.
+        """
         super().__init__(stackWidget)
         
         self._myStack = stackWidget.getStack()

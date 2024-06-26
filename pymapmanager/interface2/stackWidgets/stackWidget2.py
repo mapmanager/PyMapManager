@@ -1,3 +1,11 @@
+# circular import for typechecking
+# from pymapmanager.interface2 import PyMapManagerApp
+# see: https://stackoverflow.com/questions/39740632/python-type-hinting-without-cyclic-imports
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from pymapmanager.interface2 import PyMapManagerApp, AppDisplayOptions
+
 from typing import Optional  # List, Union, Tuple
 
 import numpy as np
@@ -16,6 +24,7 @@ from .imagePlotWidget2 import ImagePlotWidget
 # from .tracingWidget import tracingWidget
 # from .histogramWidget2 import HistogramWidget
 # from .searchWidget2 import SearchWidget2
+from pymapmanager.interface2.stackWidgets.event.spineEvent import AddSpineEvent, DeleteSpineEvent, UndoSpineEvent
 
 from pymapmanager._logger import logger
 
@@ -84,7 +93,7 @@ class stackWidget2(mmWidget2):
         self._buildUI()
         self._buildMenus()
 
-    def getDisplayOptions(self) -> "AppDisplayOptions":
+    def getDisplayOptions(self) -> AppDisplayOptions:
         return self._displayOptionsDict
     
     def closeEvent(self, event):
@@ -116,7 +125,7 @@ class stackWidget2(mmWidget2):
     #     """
     #     return self._timePoint
     
-    def getPyMapManagerApp(self) -> Optional["PyMapManagerApp"]:
+    def getPyMapManagerApp(self) -> Optional[PyMapManagerApp]:
         """Get the running PyMapManagerApp(QApplication).
         
         If not PyMapManagerApp, will return None.
@@ -450,7 +459,7 @@ class stackWidget2(mmWidget2):
 
         return True
 
-    def addedEvent(self, event : "AddSpineEvent") -> bool:
+    def addedEvent(self, event : AddSpineEvent) -> bool:
         """Add to backend.
         
         Currently only allows adding a spine annotation.
@@ -517,7 +526,7 @@ class stackWidget2(mmWidget2):
         logger.info(event)
         self.getStack().getPointAnnotations().editSpine(event)
 
-    def deletedEvent(self, event : "DeleteSpineEvent") -> bool:
+    def deletedEvent(self, event : DeleteSpineEvent) -> bool:
         """Delete items from backend.
         
         Returns
@@ -900,7 +909,8 @@ class stackWidget2(mmWidget2):
     def zoomToPointAnnotation(self,
                               idx : int,
                               isAlt : bool = False,
-                              select : bool = False):
+                              select : bool = False
+                              ):
         """Zoom to a point annotation.
         
         This should be called externally. For example,
@@ -994,7 +1004,6 @@ class stackWidget2(mmWidget2):
 
         self.getStack().undo()
 
-        from pymapmanager.interface2.stackWidgets.event.spineEvent import UndoSpineEvent
         undoSpineEvent = UndoSpineEvent(self)
         self.emitEvent(undoSpineEvent)
 

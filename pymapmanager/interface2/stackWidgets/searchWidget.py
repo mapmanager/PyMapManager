@@ -1,21 +1,20 @@
 
 from qtpy import QtGui, QtCore, QtWidgets
 
-from pymapmanager._logger import logger
-
 import pymapmanager.annotations
 
 from .mmWidget2 import mmWidget2
-# from .mmWidget2 import pmmEventType, pmmEvent, pmmStates
 
 from pymapmanager.interface2.core.search_widget import myQTableView
+
+from pymapmanager._logger import logger
 
 class SearchWidget(mmWidget2):
 
     _widgetName = 'Search Widget'
 
-    def __init__(self, stackWidget : "StackWidget"):
-        """
+    def __init__(self, stackWidget):
+        """Widget to display a search of point annotations.
         """
         super().__init__(stackWidget)
 

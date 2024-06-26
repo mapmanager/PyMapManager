@@ -7,12 +7,13 @@ import pandas as pd
 
 from mapmanagercore import MapAnnotations
 
+from pymapmanager.interface2.stackWidgets.event.spineEvent import EditSpinePropertyEvent
+
 from pymapmanager._logger import logger
 
 class AnnotationsCore:
     def __init__(self,
-                 mapAnnotations : "???",  # TODO: update on merge 20240513
-                #  analysisParams : "AnalysisParams",
+                 mapAnnotations : MapAnnotations,
                  sessionID = 0,
                  ):
         """
@@ -24,7 +25,7 @@ class AnnotationsCore:
         self._sessionID = sessionID
 
         # full map, multiple session ids (timepoint, t)
-        self._fullMap : "AnnotationsLayers" = mapAnnotations
+        self._fullMap : MapAnnotations = mapAnnotations
         # mapmanagercore.annotations.single_time_point.layers.AnnotationsLayers
 
         #filtered down to just sessionID
@@ -341,7 +342,7 @@ class SpineAnnotationsCore(AnnotationsCore):
 
         self._buildDataFrame()
 
-    def editSpine(self, editSpineProperty : "EditSpineProperty"):
+    def editSpine(self, editSpineProperty : EditSpinePropertyEvent):
         # spineID:117 col:isBad value:True
         # logger.info(editSpineProperty)
         logger.info(f"stack widget editSpineProperty {editSpineProperty}")
@@ -476,36 +477,3 @@ class LineAnnotationsCore(AnnotationsCore):
         yMedian = np.median(df['y'])
         zMedian = np.median(df['z'])
         return (int(xMedian), int(yMedian), int(zMedian) )
-
-if __name__ == '__main__':
-    from pymapmanager._logger import setLogLevel
-    setLogLevel()
-
-    # _testEditSpineProperty()
-
-    sys.exit(1)
-
-    zarrPath = '../MapManagerCore/data/rr30a_s0us.mmap'
-    map = MapAnnotations(MMapLoader(zarrPath).cached())
-
-    sac = SpineAnnotationsCore(map)
-
-    print(sac.getDataFrame().columns)
-
-    segmentID = None
-    roiTypes = None
-    zSlice = 20
-    zPlusMinus = 5
-    
-    value = sac.getValue('x', 2)
-    print(f'x:{value}')
-    value = sac.getValues('y', [2, 3, 4])
-    print(f'y:{value}')
-    print(type(value))
-
-    row = sac.getRow(2)
-    print('row')
-    print(row)
-
-    # spineDf = sac.getSegmentPlot(segmentID, roiTypes, zSlice, zPlusMinus)
-    # print(spineDf)

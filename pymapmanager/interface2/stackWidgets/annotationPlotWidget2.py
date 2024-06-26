@@ -1,3 +1,12 @@
+# circular import for typechecking
+# from pymapmanager.interface2 import PyMapManagerApp
+# see: https://stackoverflow.com/questions/39740632/python-type-hinting-without-cyclic-imports
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from pymapmanager.interface2.stackWidgets import stackWidget2
+    from pymapmanager.annotations.baseAnnotationsCore import AnnotationsCore, SpineAnnotationsCore, LineAnnotationsCore
+
 import time
 from typing import List, Optional
 
@@ -7,7 +16,6 @@ import pandas as pd
 from qtpy import QtGui, QtCore, QtWidgets
 import pyqtgraph as pg
 
-from pymapmanager.annotations.baseAnnotationsCore import SpineAnnotationsCore
 from .mmWidget2 import mmWidget2, pmmEventType, pmmEvent, pmmStates
 from pymapmanager.interface2.stackWidgets.event.spineEvent import AddSpineEvent, DeleteSpineEvent, MoveSpineEvent
 
@@ -115,8 +123,8 @@ class annotationPlotWidget(mmWidget2):
 
     def __init__(
         self,
-        stackWidget: "StackWidget",
-        annotations: "pymapmanager.annotations.baseAnnotations",
+        stackWidget: stackWidget2,
+        annotations: AnnotationsCore,
         pgView: pg.PlotWidget,
         displayOptions: dict,
     ):
@@ -299,7 +307,8 @@ class annotationPlotWidget(mmWidget2):
 
         self._selectAnnotation(dbIdx=dbIdx)
 
-    # abb 202405 turned off for now, core will accept a click (in image lpot) and then find the closest point
+    # abb 202405 turned off for now,
+    # core will accept a click (in image plot) and then find the closest point
     # abj
     def _on_highlighted_mouse_click(self, points, event):
         """Respond to user click on highlighted scatter plot.
@@ -329,7 +338,7 @@ class annotationPlotWidget(mmWidget2):
             dbIdx = self._highlightedPlotIndex[referenceHighlightedPlotIdx]
             # logger.info(f"highlightedPlotIdx {dbIdx}")
 
-            if isinstance(self._annotations, pymapmanager.annotations.lineAnnotations):
+            if isinstance(self._annotations, LineAnnotationsCore):
                 
                 eventType = pmmEventType.selection
                 event = pmmEvent(eventType, self)
@@ -380,9 +389,11 @@ class annotationPlotWidget(mmWidget2):
             eventType = pmmEventType.selection
             event = pmmEvent(eventType, self)
 
+            # abb we need this import here, otherwise we get circular imports
+            from pymapmanager.annotations.baseAnnotationsCore import SpineAnnotationsCore
+            
             if isinstance(
                 self._annotations,
-                # pymapmanager.annotations.baseAnnotationsCore.SpineAnnotationsCore,
                 SpineAnnotationsCore,
             ):
                 event.getStackSelection().setPointSelection(dbIdx)
@@ -457,29 +468,6 @@ class annotationPlotWidget(mmWidget2):
         self._scatterUserSelection.setData(xPlot, yPlot)
         # set data calls this?
         # self._view.update()
-
-    def slot_setDisplayType(self,
-                            roiTypeList: List["pymapmanager.annotations.pointTypes"]
-    ):
-        """Set the roiTypes to display in the plot.
-
-        Args:
-            roiTypeList: A list of roiType to display.
-
-        Notes:
-            This resets our state (_dfPlot) and requires a full refresh from the backend.
-        """
-        if not isinstance(roiTypeList, list):
-            roiTypeList = [roiTypeList]
-
-        logger.info(f"roiTypeList:{roiTypeList}")
-
-        self._roiTypes = []
-        for roiType in roiTypeList:
-            self._roiTypes.append(roiType.value)
-
-        self._dfPlot = None
-        self._refreshSlice()
 
     def _refreshSlice(self):
         # I don't think that the current slice is being updated, it will always pass in 0?
@@ -592,7 +580,7 @@ class pointPlotWidget(annotationPlotWidget):
 
     def __init__(
         self,
-        stackWidget: "StackWidget",
+        stackWidget: stackWidget2,
         #pointAnnotations: "pymapmanager.annotations.pointAnnotations",
         pgView,  # pymapmanager.interface.myPyQtGraphPlotWidget
         #displayOptions: dict,
@@ -1019,38 +1007,6 @@ class pointPlotWidget(annotationPlotWidget):
         self._pointLabels.updateLabel(rowIdx)
         return
 
-        oneLabel = self._labels[rowIdx]
-        oneLabel.setPos(QtCore.QPointF(x - 9, y - 9))
-        oneLabel.setText(str(rowIdx))
-
-        # update a spine line
-        _brightestIndex = self.pointAnnotations.getValue(["brightestIndex"], rowIdx)
-        xLeft = self.lineAnnotations.getValue(["xLeft"], _brightestIndex)
-        xRight = self.lineAnnotations.getValue(["xRight"], _brightestIndex)
-        yLeft = self.lineAnnotations.getValue(["yLeft"], _brightestIndex)
-        yRight = self.lineAnnotations.getValue(["yRight"], _brightestIndex)
-
-        leftRadiusPoint = (xLeft, yLeft)
-        rightRadiusPoint = (xRight, yRight)
-        spinePoint = (x, y)
-        closestPoint = pymapmanager.utils.getCloserPoint2(
-            spinePoint, leftRadiusPoint, rightRadiusPoint
-        )
-
-        realRow = rowIdx * 2
-
-        self._xSpineLines[realRow] = x  #  = np.append(self._xSpineLines, x)
-        self._xSpineLines[realRow + 1] = closestPoint[
-            0
-        ]  #  = np.append(self._xSpineLines, closestPoint[0])
-
-        self._ySpineLines[realRow] = y
-        self._ySpineLines[realRow + 1] = closestPoint[1]
-
-        # no need to update connection 0/1 (for pyqtgraph)
-        # self._spineLinesConnect = np.append(self._spineLinesConnect, 1)  # connect
-        # self._spineLinesConnect = np.append(self._spineLinesConnect, 0)  # don't connect
-
     def _old__newLabel(self, rowIdx, x, y):
         """Make a new label at (x,y) with text rowIdx.
 
@@ -1181,7 +1137,7 @@ class linePlotWidget(annotationPlotWidget):
 
     def __init__(
         self,
-        stackWidget: "StackWidget",
+        stackWidget: stackWidget2,
         # lineAnnotations: "pymapmanager.annotations.lineAnnotations",
         pgView,  # pymapmanager.interface.myPyQtGraphPlotWidget
         # displayOptions: dict,

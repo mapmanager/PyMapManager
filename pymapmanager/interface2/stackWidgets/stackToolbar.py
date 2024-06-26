@@ -1,6 +1,6 @@
 from qtpy import QtGui, QtCore, QtWidgets
 
-import pymapmanager.stack
+# from pymapmanager.stack import stack
 
 from pymapmanager._logger import logger
 
@@ -14,11 +14,16 @@ class StackToolBar(QtWidgets.QToolBar):
     signalRadiusChanged = QtCore.Signal(object)  # dict : {checked, upDownSlices}
 
     def __init__(self,
-					myStack :pymapmanager.stack,
-					displayOptionsDict : dict, parent=None):
+					myStack,
+					displayOptionsDict : dict,
+                    parent=None):
+        """
+        Parameters:
+        myStack : pymapmanager.stack
+        """
         super().__init__(parent)
 
-        self._myStack : pymapmanager.stack = myStack
+        self._myStack = myStack
         self._displayOptionsDict = displayOptionsDict
 
         # list of channel strings 1,2,3,...
@@ -48,11 +53,12 @@ class StackToolBar(QtWidgets.QToolBar):
         # refresh interface
         self._setStack(self._myStack)
 
-    def _setStack(self, theStack : pymapmanager.stack):
+    def _setStack(self, theStack):
         """Set the state of the interface based on a stack.
         
-        Args:
-            theStack (pymapmanager.stack): The stack to dislpay in the widget
+        Parameters:
+        theStack :pymapmanager.stack
+            The stack to dislpay in the widget
         """
         self._myStack = theStack
         

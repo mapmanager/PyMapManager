@@ -14,8 +14,9 @@ import qdarktheme
 # Enable HiDPI.
 qdarktheme.enable_hi_dpi()
 
-import pymapmanager as pmm
 import mapmanagercore
+
+import pymapmanager as pmm
 
 import pymapmanager.interface2
 
@@ -205,7 +206,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
 
         return _windowType
 
-    def closeStackWindow(self, theWindow : "stackWidget2"):
+    def closeStackWindow(self, stackWidget):
         """Remove theWindow from self._stackWidgetDict.
         
         """
@@ -215,7 +216,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
         #     theWindow.closeStackWindow()
         #     return
         
-        zarrPath = theWindow.getStack().getPath()
+        zarrPath = stackWidget.getStack().getPath()
         popThisKey = None
         for pathKey in self._stackWidgetDict.keys():
             if pathKey == zarrPath:
@@ -227,7 +228,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
             logger.info(f'popped {_theWindow}')
             # _theWindow.close()
         else:
-            logger.error(f'did not find stack widget in app {theWindow}')
+            logger.error(f'did not find stack widget in app {stackWidget}')
             logger.error('available keys are')
             logger.error(self._stackWidgetDict.keys())
 
@@ -303,11 +304,11 @@ class PyMapManagerApp(QtWidgets.QApplication):
             return
         self._mapWidgetDict[path].setVisible(visible)
 
-    def closeMapWindow(self, theWindow : "mapWidget"):
+    def closeMapWindow(self, mapWidget):
         """Remove theWindow from self._windowList.
         """
         logger.info('  remove _mapWidgetDict window from app list of windows')
-        mapPath = theWindow.getMap().filePath
+        mapPath = mapWidget.getMap().filePath
         popThisKey = None
         for pathKey in self._mapWidgetDict.keys():
             if pathKey == mapPath:

@@ -1,3 +1,10 @@
+# circular import for typechecking
+# from pymapmanager.interface2 import PyMapManagerApp
+# see: https://stackoverflow.com/questions/39740632/python-type-hinting-without-cyclic-imports
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from pymapmanager.interface2.stackWidgets import stackWidget2
 
 import copy
 from enum import Enum, auto
@@ -625,7 +632,7 @@ class mmWidget2(QtWidgets.QMainWindow):
         self.addDockWidget(position, dockWIdget)
         return dockWIdget
     
-    def getStackWidget(self) -> "StackWidget2":
+    def getStackWidget(self) -> stackWidget2:
         return self._stackWidget
     
     def getStack(self):

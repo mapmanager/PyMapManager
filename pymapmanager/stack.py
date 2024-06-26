@@ -4,14 +4,12 @@ from typing import List, Union, Optional
 
 import numpy as np
 
-# import pymapmanager
-# from pymapmanager.analysisParams import AnalysisParams
+import pymapmanager
 from mapmanagercore import MapAnnotations  #, MMapLoader
-
+from mapmanagercore.lazy_geo_pd_images import Metadata
 # from mapmanagercore.lazy_geo_pd_images.store import LazyImagesGeoPandas, ImageLoader
 
 from pymapmanager.annotations.baseAnnotationsCore import SpineAnnotationsCore, LineAnnotationsCore
-# from mapmanagercore.annotations.layers import AnnotationsLayers
 
 from pymapmanager._logger import logger
 
@@ -63,11 +61,11 @@ class stack:
                 _channel += 1
                 self.loadImages(channel=_channel)
 
-    def getMetadata(self) -> "MetaData":
+    def getMetadata(self) -> Metadata:
         """Get metadata from the core map.
         """
         return self._fullMap.metadata()
-
+    
     def _buildSessionMap(self):
         """Reduce full core map to a single session id.
         """

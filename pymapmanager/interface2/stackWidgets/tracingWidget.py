@@ -131,61 +131,6 @@ class tracingWidget(mmWidget2):
 
         return vControlLayout
 
-    def _old__updateTracingButton(self, selectionEvent : "pymapmanager.annotations.SelectionEvent"):
-        """Turn tracing button on/off depending on state.
-        """
-        #
-        # trace/cancel button should only be activated when there is
-        # 1) a point annotation controlPnt selection
-        # 2) it is not the first control pnt in a segmentID
-        # Need to run this code every time there is a new point selection
-        
-        # refactor aug 24, just emit and will get change in slot_selectAnnotation
-        # _doEditSegments = self._displayOptionsDict['doEditSegments']
-        # logger.info(f'_doEditSegments: {_doEditSegments}')
-
-        rows = selectionEvent.getRows()
-        isEditSegment = selectionEvent.isEditSegment
-
-        logger.info(f'  rows:{rows}')
-        if not isEditSegment or rows == []:
-           # no selection, always off
-           traceState = False
-        else:
-            rowIdx = rows[0]
-
-            pa = selectionEvent.getStack().getPointAnnotations()
-            isControlPnt = pa.rowColIs(rowIdx, 'roiType', 'controlPnt')
-            logger.info(f'  isControlPnt: {isControlPnt} {type(isControlPnt)}')
-            if not isControlPnt:
-                traceState = False
-            else:
-                logger.info(f'  checking if control point is > first in segment')
-                segmentID = pa.getValue('segmentID', rowIdx)
-                # if isControl pnt and not the first in a segmentID
-                logger.info(f'    segmentId:{segmentID}')
-                #la = self._stackWidget.getStack().getLineAnnotations()
-                # not the correct function,
-                # we need to determine if it is the first controlPnt in the point annotations
-                # startRow, _stopRow = la._segmentStartRow(segmentID)
-                # still not correct, we need just control pnt from one segmentID
-                # logger.error('fix this !!!')
-                # _idx = pa.getRoiType_col('index', pymapmanager.annotations.pointTypes.controlPnt)
-                _controlPnt = pymapmanager.annotations.pointTypes.controlPnt
-                
-                # get the first row that is a control pnt
-                _idx = pa.getTypeAndSegmentColumn('index', _controlPnt, segmentID)
-                _idx = _idx[0]
-                
-                logger.info(f'  first controlPnt is _idx: {_idx}')
-                logger.info(f'  user selected rowIdx: {rowIdx}')
-                
-                # make sure our rowID is not the first control point
-                traceState = rowIdx > _idx
-        #
-        logger.info(f'  traceState: {traceState}')
-        self._traceCancelButton.setEnabled(traceState)
-
     def on_segment_edit_checkbox(self, state : int):
         """Respond to user toggling segment edit checkbox.
 

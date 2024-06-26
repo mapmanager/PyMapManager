@@ -18,14 +18,7 @@ class HistogramWidget(mmWidget2):
     _widgetName = 'Histogram'
     # Name of the widget (must be unique)
 
-    def __init__(self, stackWidget : "StackWidget"):
-                #  myStack,
-                #  contrastDict : dict,
-                #  sliceNumber:int=0,
-                #  channel:int=1,
-                #  name = '',
-                #  annotations = None,
-                #  pmmParentWidget = None):
+    def __init__(self, stackWidget):
         """Histogram widget to show image intensities.
         """
         super().__init__(stackWidget)
@@ -302,7 +295,7 @@ class _histogram(QtWidgets.QWidget):
         
         self._sliceNumber = sliceNumber
         
-        channel = self._channel
+        channel = self._channel - 1  # core is 0 based
         self._sliceImage = self._myStack.getImageSlice(imageSlice=self._sliceNumber,
                                 channel=channel)
 

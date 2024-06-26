@@ -14,10 +14,6 @@ import scipy.misc
 import pymapmanager
 from pymapmanager._logger import logger
 
-# from pymapmanager.mmUtil import newplotdict
-# from pymapmanager.mmStack import mmStack
-# from pymapmanager.mmio import mmio
-
 """
 Utility functions and classes for PyMapManager.
 """
@@ -131,7 +127,7 @@ class mmMap():
         stackPath = os.path.join(_folder, stackName)
         return stackPath
     
-    def getStackTimepoint(self, thisStack : pymapmanager.stack) -> int:
+    def getStackTimepoint(self, thisStack : "pymapmanager.stack") -> int:
         """Given a stack, find the timepoint.
         """ 
         for idx, stack in enumerate(self.stacks):
@@ -207,13 +203,13 @@ class mmMap():
             self._folder = os.path.dirname(filePath) + '/'
             self.name = os.path.basename(filePath).strip('.txt')
             self.table = pd.read_table(filePath, index_col=0)
-        elif urlmap is not None:
-            doFile = False
-            # try loading from url
-            self.name = urlmap
-            self.server = mmio()
-            tmp = self.server.getfile('header', self.name)
-            self.table = pd.read_table(io.StringIO(tmp.decode('utf-8')), index_col=0)
+        # elif urlmap is not None:
+        #     doFile = False
+        #     # try loading from url
+        #     self.name = urlmap
+        #     self.server = mmio()
+        #     tmp = self.server.getfile('header', self.name)
+        #     self.table = pd.read_table(io.StringIO(tmp.decode('utf-8')), index_col=0)
 
         ###############################################################################
         # objMap (3d)
