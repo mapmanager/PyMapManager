@@ -7,6 +7,7 @@ import numpy as np
 import pymapmanager
 # from pymapmanager.analysisParams import AnalysisParams
 from mapmanagercore import MapAnnotations, MMapLoader
+# from mapmanagercore import MapAnnotations
 from pymapmanager.annotations.baseAnnotationsCore import SpineAnnotationsCore, LineAnnotationsCore
 # from mapmanagercore.annotations.layers import AnnotationsLayers
 
@@ -276,8 +277,10 @@ class stack:
         # _imgData = slices._image
 
         # logger.info(f'channel:{channel} imageSlice:{imageSlice} {type(imageSlice)}')
-
-        _imgData = self.sessionMap.getPixels(channel=channel, z=imageSlice)
+        
+        #abj: changed channel to channelIdx
+        _imgData = self.sessionMap.getPixels(channel=channelIdx, z=imageSlice)
+        # _imgData = self.sessionMap.getPixels(channel=channel, z=imageSlice)
         _imgData = _imgData._image
 
         # logger.info(f'_imgData: {type(_imgData)} {_imgData.shape}')

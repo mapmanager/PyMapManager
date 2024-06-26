@@ -361,8 +361,9 @@ class stackWidget2(mmWidget2):
         # self.signalSetStatus.connect(_statusToolbar.slot_setStatus)
         self.addToolBar(QtCore.Qt.BottomToolBarArea, self._statusToolbar)
 
-        #
+        # 
         # self._imagePlotWidget.signalMouseMove.connect(self._statusToolbar.slot_updateStatus)
+        self._widgetDict[imagePlotName].signalMouseMove.connect(self._statusToolbar.slot_updateStatus)
 
         self._topToolbar.signalChannelChange.connect(self.slot_setChannel)
 

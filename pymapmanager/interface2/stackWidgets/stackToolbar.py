@@ -226,7 +226,7 @@ class StackToolBar(QtWidgets.QToolBar):
         # menu.addAction("Center Line")
         # menu.addAction("Radius Lines")
         # menu.addAction("Labels")
-        plotMenuList = ["Spines", "Center Line", "Radius Lines", "Labels"]
+        plotMenuList = ["Spines", "Center Line", "Radius Lines", "Labels", "Image"]
 
         for plotName in plotMenuList:
             action = plotMenu.addAction(plotName)

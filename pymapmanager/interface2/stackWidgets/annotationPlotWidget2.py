@@ -1,3 +1,4 @@
+import math
 import time
 from typing import List, Optional
 
@@ -40,9 +41,38 @@ class PointLabels:
         """
         x = self.df.getValue('x', labelID)
         y = self.df.getValue('y', labelID)
-        self._labels[labelID].setPos(QtCore.QPointF(x - 9, y - 9))
+
+        # Check angle
+        # adjust + or - depending on angle
+        spineAngles = self._df.getDataFrame()["spineAngle"]
+        idSpineAngle = spineAngles[labelID]
+        logger.info(f"idSpineAngle {idSpineAngle}")
+        # self._labels[labelID].setPos(QtCore.QPointF(x - 9, y - 9))
+
+        adjustConstant = 2
+        adjustX = adjustConstant * math.cos(idSpineAngle * math.pi/180)
+        adjustY = adjustConstant * math.sin(idSpineAngle * math.pi/180)
+        adjustX = abs(adjustX)
+        adjustY = abs(adjustY)
+
+        if 0 <= abs(idSpineAngle) and abs(idSpineAngle) <= 90:
+            logger.info(f"labelID: {labelID}, newX: {x + adjustX}, newY: {y + adjustY}")
+            self._labels[labelID].setPos(QtCore.QPointF(x + adjustX, y + adjustY))
+        elif 90 <= abs(idSpineAngle) and abs(idSpineAngle) <= 180:
+            logger.info(f"labelID: {labelID}, newX: {x + adjustX}, newY: {y + adjustY}")
+            self._labels[labelID].setPos(QtCore.QPointF(x - adjustX, y + adjustY))
+        elif 180 <= idSpineAngle and idSpineAngle <= 270:
+            self._labels[labelID].setPos(QtCore.QPointF(x - adjustX, y - adjustY))
+        elif 270 <= idSpineAngle and idSpineAngle <= 360:
+            self._labels[labelID].setPos(QtCore.QPointF(x + adjustX, y - adjustY))
 
         # set font outline based on "accept" column
+        acceptColumn = self._df.getDataFrame()["accept"]
+        # logger.info(f"acceptColumn {acceptColumn}")
+        # logger.info(f"labelID {labelID} acceptVal {acceptColumn[labelID]}")
+        if not acceptColumn[labelID]:
+            logger.info("Changing label color")
+            self._labels[labelID].setColor(QtGui.QColor(255, 255, 255, 120))
 
     def addedLabel(self, labelID):
         """Add a new label.
@@ -101,9 +131,36 @@ class PointLabels:
     def _newLabel(self, labelID, x, y) -> pg.LabelItem:
         """Make a new label.
         """
-        label = pg.LabelItem("", **{"color": "#FFF", "size": "6pt"})
-        label.setPos(QtCore.QPointF(x - 9, y - 9))
+        # label = pg.LabelItem("", **{"color": "#FFF", "size": "6pt", "anchor": (1,1)})
+        label = pg.TextItem('', anchor=(0.5,0.5))
+        # label = QtWidgets.QLabel('labelID', self._plotItem)
+        # label.setPos(QtCore.QPointF(x - 9, y - 9))
+
+        spineAngles = self._df.getDataFrame()["spineAngle"]
+        idSpineAngle = spineAngles[labelID]
+        adjustConstant = 2
+
+        adjustX = adjustConstant * math.cos(idSpineAngle * math.pi/180)
+        adjustY = adjustConstant * math.sin(idSpineAngle * math.pi/180)
+        adjustX = abs(adjustX)
+        adjustY = abs(adjustY)
+
+        # logger.info(f"labelID: {labelID}, angle(rads): {rads}, angle(degs): {idSpineAngle}, adjustX: {adjustX}, adjustY: {adjustY}, newX: {x + adjustX}, newY: {y + adjustY}")
+        # label.setPos(QtCore.QPointF(x + adjustX, y + adjustY))
+        # DO the ranges: 0-90, 90-180, 180-270, 270-360
+        if 0 <= abs(idSpineAngle) and abs(idSpineAngle) <= 90:
+            label.setPos(QtCore.QPointF(x + adjustX, y + adjustY))
+        elif 90 <= abs(idSpineAngle) and abs(idSpineAngle) <= 180:
+            label.setPos(QtCore.QPointF(x - adjustX, y + adjustY))
+        elif 180 <= idSpineAngle and idSpineAngle <= 270:
+            label.setPos(QtCore.QPointF(x - adjustX, y - adjustY))
+        elif 270 <= idSpineAngle and idSpineAngle <= 360:
+            label.setPos(QtCore.QPointF(x + adjustX, y - adjustY))
+
         label.setText(str(labelID))
+        myFont=QtGui.QFont()
+        myFont.setBold(True)
+        label.setFont(myFont)
         label.hide()
         return label
     
@@ -392,6 +449,7 @@ class annotationPlotWidget(mmWidget2):
                 # pymapmanager.annotations.baseAnnotationsCore.SpineAnnotationsCore,
                 SpineAnnotationsCore,
             ):
+                logger.error('annotation plot widget emitting selection!!!!!!!!')
                 event.getStackSelection().setPointSelection(dbIdx)
                 event.setAlt(isAlt)
                 self.emitEvent(event, blockSlots=False)
@@ -597,6 +655,7 @@ class annotationPlotWidget(mmWidget2):
     
 class pointPlotWidget(annotationPlotWidget):
     _widgetName = "point plot"
+    # _widgetName = "Spines"
     # Name of the widget (must be unique)
 
     def __init__(
@@ -863,6 +922,16 @@ class pointPlotWidget(annotationPlotWidget):
 
     def editedEvent(self, event: pmmEvent):
 
+        # self._refreshSlice()
+
+        #abj: 6/25
+        for spine in event:
+            # update label
+            spineID = spine['spineID']
+            self._pointLabels.updateLabel(spineID)
+
+        # remake all spine lines
+        self._bMakeSpineLines()
         self._refreshSlice()
 
     def deletedEvent(self, event: pmmEvent):
@@ -1356,13 +1425,10 @@ class linePlotWidget(annotationPlotWidget):
         
         # startSec = time.time()
  
-        logger.warning(f'{self.getClassName()} TODO: turn radius line back on !!!')
-        
+        # logger.warning(f'{self.getClassName()} TODO: turn radius line back on !!!')
         # logger.info(f'slot set left and right radius')
 
-
-        # TODO: Change 3 to the zPlusMinus stored within DisplayOptions
-        zPlusMinus = self._displayOptions["zPlusMinus"] # 3
+        zPlusMinus = self._displayOptions["zPlusMinus"] 
         radiusOffset = self._displayOptions['radius'] 
         dfLeft = self._annotations.getLeftRadiusPlot(None, sliceNumber, zPlusMinus, radiusOffset)
         _lineConnect = self._getScatterConnect(dfLeft)

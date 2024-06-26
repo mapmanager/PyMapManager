@@ -1,4 +1,5 @@
 from qtpy import QtGui, QtCore, QtWidgets
+from pymapmanager._logger import logger
 
 class StatusToolbar(QtWidgets.QToolBar):
     """Status toolbar at bottom of stackWidget
@@ -20,6 +21,7 @@ class StatusToolbar(QtWidgets.QToolBar):
     def slot_updateStatus(self, statusDict):
         """Update the status in response to mouse move.
         """
+        # logger.info("updating position status")
         try:
             xVal = statusDict['x']
             yVal = statusDict['y']
