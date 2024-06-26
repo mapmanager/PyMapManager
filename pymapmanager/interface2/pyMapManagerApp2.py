@@ -116,6 +116,8 @@ def loadPlugins(verbose=False, pluginType='stack') -> dict:
 class PyMapManagerApp(QtWidgets.QApplication):
     def __init__(self, argv, deferFirstWindow=False):
         
+        print('xxx here xxx')
+        
         super().__init__(argv)
 
         self._config = pymapmanager.interface2.Preferences(self)
