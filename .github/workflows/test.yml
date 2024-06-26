@@ -35,7 +35,7 @@ jobs:
       run: |
         # exlude anything that requires large data (it is not included in PyPi)
         # pytest --cov=./tests --cov-report=xml --ignore=tests/test_gen_example_notebook.py
-        pytest --cov=./tests --cov-report=xml
+        pytest -s --cov=./tests --cov-report=xml
 
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v4.0.1
