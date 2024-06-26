@@ -26,8 +26,13 @@ jobs:
         cache-dependency-path: setup.py
     - name: Install dependencies
       run: |
-        pip install .
-        pip install '.[tests]'
+        # pip install .
+        # pip install '.[tests]'
+        pip install PyQt5
+        pip install pytest
+        pip install pytest-cov
+        pip install pytest-qt
+        pip install flake8
 
     - name: Run flake8
       run: |
