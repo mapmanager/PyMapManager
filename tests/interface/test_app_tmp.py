@@ -1,6 +1,6 @@
 import pytest
 
-from qtpy import QtGui, QtWidgets  # QtCore
+from qtpy import QtWidgets  # QtCore
 
 class myApp(QtWidgets.QApplication):
     def __init__(self, argv, deferFirstWindow=False):        
@@ -10,5 +10,5 @@ class myApp(QtWidgets.QApplication):
 def qapp_cls():
     return myApp
 
-def test_app(qtbot, qapp):
+def test_app(qapp):
     print(f'qapp is:{qapp}')
