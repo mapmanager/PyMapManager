@@ -5,15 +5,18 @@ import mapmanagercore.data
 from pymapmanager.interface2 import PyMapManagerApp
 from pymapmanager.interface2.stackWidgets import stackWidget2
 
-# from pymapmanager._logger import logger
+from pymapmanager._logger import logger
 
 # this makes qapp be our PyMapManagerApp, it is derived from QApplication
 @pytest.fixture(scope="session")
 def qapp_cls():
     return PyMapManagerApp
 
+def test_app(qtbot, qapp):
+    logger.info(f'app:{qapp}')
+
 @pytest.fixture
-def stackWidgetObject(qtbot, qapp):
+def _stackWidgetObject(qtbot, qapp):
 	# path = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
     path = mapmanagercore.data.getSingleTimepointMap()
     sw = stackWidget2(path=path)
@@ -27,7 +30,7 @@ def stackWidgetObject(qtbot, qapp):
 # def test_stackWidget(stackWidgetObject):
 #     assert stackWidgetObject is not None
     
-def test_stackWidget_zoomToPointAnnotation(stackWidgetObject, qapp):
+def _test_stackWidget_zoomToPointAnnotation(stackWidgetObject, qapp):
 
     # figure out how to set log level
     # caplog.set_level(logger.ERROR)

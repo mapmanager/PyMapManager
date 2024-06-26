@@ -3,7 +3,10 @@
 
 import sys
 
+import mapmanagercore.data
+
 from pymapmanager.interface2.pyMapManagerApp2 import PyMapManagerApp
+from pymapmanager._logger import logger
 
 def run():
     app = PyMapManagerApp()
@@ -28,6 +31,9 @@ def run():
     # from trySegment, works!
     # path = '/Users/cudmore/Desktop/trySeg.mmap'
 
+    path = mapmanagercore.data.getSingleTimepointMap()
+
+    logger.info(f'app.loadStackWidgeth: {path}')
     sw2 = app.loadStackWidget(path)
     
     # works
@@ -44,7 +50,7 @@ def run():
 
     sw2.zoomToPointAnnotation(0, isAlt=True)
 
-    sw2.runPlugin('Tracing', inDock=True)
+    # sw2.runPlugin('Tracing', inDock=True)
     
     # TODO: get this working
     # _map = sw2.getStack().sessionMap
