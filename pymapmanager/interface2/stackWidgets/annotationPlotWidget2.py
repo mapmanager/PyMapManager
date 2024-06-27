@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from pymapmanager.interface2.stackWidgets import stackWidget2
     from pymapmanager.annotations.baseAnnotationsCore import AnnotationsCore, SpineAnnotationsCore, LineAnnotationsCore
 
+import math
 import time
 from typing import List, Optional
 
