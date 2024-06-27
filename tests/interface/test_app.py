@@ -16,7 +16,7 @@ def test_app(qtbot, qapp):
     logger.info(f'app:{qapp}')
 
 @pytest.fixture
-def _stackWidgetObject(qtbot, qapp):
+def stackWidgetObject(qtbot, qapp):
 	# path = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
     path = mapmanagercore.data.getSingleTimepointMap()
     sw = stackWidget2(path=path)
@@ -30,7 +30,7 @@ def _stackWidgetObject(qtbot, qapp):
 # def test_stackWidget(stackWidgetObject):
 #     assert stackWidgetObject is not None
     
-def _test_stackWidget_zoomToPointAnnotation(stackWidgetObject, qapp):
+def test_stackWidget_zoomToPointAnnotation(stackWidgetObject, qapp):
 
     # figure out how to set log level
     # caplog.set_level(logger.ERROR)

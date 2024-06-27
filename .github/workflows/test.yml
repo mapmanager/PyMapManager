@@ -27,14 +27,8 @@ jobs:
         cache-dependency-path: setup.py
     - name: Install dependencies
       run: |
-        # pip install .
-        # pip install '.[tests]'
-        pip install qtpy
-        pip install PyQt5
-        pip install pytest
-        pip install pytest-cov
-        pip install pytest-qt
-        pip install flake8
+        pip install .
+        pip install '.[tests]'
 
     - name: Run flake8
       run: |
@@ -44,8 +38,8 @@ jobs:
       run: |
         # exlude anything that requires large data (it is not included in PyPi)
         # pytest --cov=./tests --cov-report=xml --ignore=tests/test_gen_example_notebook.py
-        # pytest -s --cov=./tests --cov-report=xml
-        pytest tests/interface/test_app_tmp.py
+        pytest -s --cov=./tests --cov-report=xml
+        # pytest tests/interface/test_app_tmp.py
 
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v4.0.1
