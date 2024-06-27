@@ -30,7 +30,7 @@ jobs:
         # pip install .
         pip install '.[tests]'
         # so we don't need to depend on pip install MapManagerCore
-        git clone git@github.com:mapmanager/MapManagerCore.git
+        git clone https://github.com/mapmanager/MapManagerCore.git
         pip install MapManagerCore/.
     - name: Run flake8
       run: |
