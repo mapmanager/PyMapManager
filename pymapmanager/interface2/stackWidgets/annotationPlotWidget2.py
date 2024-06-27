@@ -48,9 +48,38 @@ class PointLabels:
         """
         x = self.df.getValue('x', labelID)
         y = self.df.getValue('y', labelID)
-        self._labels[labelID].setPos(QtCore.QPointF(x - 9, y - 9))
+
+        # Check angle
+        # adjust + or - depending on angle
+        spineAngles = self._df.getDataFrame()["spineAngle"]
+        idSpineAngle = spineAngles[labelID]
+        logger.info(f"idSpineAngle {idSpineAngle}")
+        # self._labels[labelID].setPos(QtCore.QPointF(x - 9, y - 9))
+
+        adjustConstant = 2
+        adjustX = adjustConstant * math.cos(idSpineAngle * math.pi/180)
+        adjustY = adjustConstant * math.sin(idSpineAngle * math.pi/180)
+        adjustX = abs(adjustX)
+        adjustY = abs(adjustY)
+
+        if 0 <= abs(idSpineAngle) and abs(idSpineAngle) <= 90:
+            logger.info(f"labelID: {labelID}, newX: {x + adjustX}, newY: {y + adjustY}")
+            self._labels[labelID].setPos(QtCore.QPointF(x + adjustX, y + adjustY))
+        elif 90 <= abs(idSpineAngle) and abs(idSpineAngle) <= 180:
+            logger.info(f"labelID: {labelID}, newX: {x + adjustX}, newY: {y + adjustY}")
+            self._labels[labelID].setPos(QtCore.QPointF(x - adjustX, y + adjustY))
+        elif 180 <= idSpineAngle and idSpineAngle <= 270:
+            self._labels[labelID].setPos(QtCore.QPointF(x - adjustX, y - adjustY))
+        elif 270 <= idSpineAngle and idSpineAngle <= 360:
+            self._labels[labelID].setPos(QtCore.QPointF(x + adjustX, y - adjustY))
 
         # set font outline based on "accept" column
+        acceptColumn = self._df.getDataFrame()["accept"]
+        # logger.info(f"acceptColumn {acceptColumn}")
+        # logger.info(f"labelID {labelID} acceptVal {acceptColumn[labelID]}")
+        if not acceptColumn[labelID]:
+            logger.info("Changing label color")
+            self._labels[labelID].setColor(QtGui.QColor(255, 255, 255, 120))
 
     def addedLabel(self, labelID):
         """Add a new label.
@@ -88,6 +117,14 @@ class PointLabels:
             else:
                 v.hide()
 
+    # abj
+    def hideAllLabels(self, labelIDs : List[str]):
+        """ Hide all labels. Used when user unchecks labels within top tool bar
+        """
+        for k, v in self._labels.items():
+            if k in labelIDs:
+                v.hide()
+
     def _makeAllLabels(self):
 
         if self.df is None:
@@ -101,9 +138,36 @@ class PointLabels:
     def _newLabel(self, labelID, x, y) -> pg.LabelItem:
         """Make a new label.
         """
-        label = pg.LabelItem("", **{"color": "#FFF", "size": "6pt"})
-        label.setPos(QtCore.QPointF(x - 9, y - 9))
+        # label = pg.LabelItem("", **{"color": "#FFF", "size": "6pt", "anchor": (1,1)})
+        label = pg.TextItem('', anchor=(0.5,0.5))
+        # label = QtWidgets.QLabel('labelID', self._plotItem)
+        # label.setPos(QtCore.QPointF(x - 9, y - 9))
+
+        spineAngles = self._df.getDataFrame()["spineAngle"]
+        idSpineAngle = spineAngles[labelID]
+        adjustConstant = 2
+
+        adjustX = adjustConstant * math.cos(idSpineAngle * math.pi/180)
+        adjustY = adjustConstant * math.sin(idSpineAngle * math.pi/180)
+        adjustX = abs(adjustX)
+        adjustY = abs(adjustY)
+
+        # logger.info(f"labelID: {labelID}, angle(rads): {rads}, angle(degs): {idSpineAngle}, adjustX: {adjustX}, adjustY: {adjustY}, newX: {x + adjustX}, newY: {y + adjustY}")
+        # label.setPos(QtCore.QPointF(x + adjustX, y + adjustY))
+        # DO the ranges: 0-90, 90-180, 180-270, 270-360
+        if 0 <= abs(idSpineAngle) and abs(idSpineAngle) <= 90:
+            label.setPos(QtCore.QPointF(x + adjustX, y + adjustY))
+        elif 90 <= abs(idSpineAngle) and abs(idSpineAngle) <= 180:
+            label.setPos(QtCore.QPointF(x - adjustX, y + adjustY))
+        elif 180 <= idSpineAngle and idSpineAngle <= 270:
+            label.setPos(QtCore.QPointF(x - adjustX, y - adjustY))
+        elif 270 <= idSpineAngle and idSpineAngle <= 360:
+            label.setPos(QtCore.QPointF(x + adjustX, y - adjustY))
+
         label.setText(str(labelID))
+        myFont=QtGui.QFont()
+        myFont.setBold(True)
+        label.setFont(myFont)
         label.hide()
         return label
     
@@ -396,6 +460,7 @@ class annotationPlotWidget(mmWidget2):
                 self._annotations,
                 SpineAnnotationsCore,
             ):
+                logger.error('annotation plot widget emitting selection!!!!!!!!')
                 event.getStackSelection().setPointSelection(dbIdx)
                 event.setAlt(isAlt)
                 self.emitEvent(event, blockSlots=False)
@@ -492,6 +557,8 @@ class annotationPlotWidget(mmWidget2):
 
         # logger.info(f'plotting roiTypes:{roiTypes} for {type(self)}')
 
+
+        # TODO: (6/19/24) Change this to be connected to top tool bar zSlider
         zPlusMinus = self._displayOptions["zPlusMinus"]
 
         # abb removed 042024
@@ -576,6 +643,7 @@ class annotationPlotWidget(mmWidget2):
     
 class pointPlotWidget(annotationPlotWidget):
     _widgetName = "point plot"
+    # _widgetName = "Spines"
     # Name of the widget (must be unique)
 
     def __init__(
@@ -610,7 +678,8 @@ class pointPlotWidget(annotationPlotWidget):
         # self._roiTypes = ['spineROI', 'controlPnt']
         self._roiTypes = ["spineROI"]
 
-        self.labels = []
+        # self.labels = []
+        self.showLabel = True
 
         #self.lineAnnotations = lineAnnotations
         self.pointAnnotations = pointAnnotations
@@ -841,6 +910,16 @@ class pointPlotWidget(annotationPlotWidget):
 
     def editedEvent(self, event: pmmEvent):
 
+        # self._refreshSlice()
+
+        #abj: 6/25
+        for spine in event:
+            # update label
+            spineID = spine['spineID']
+            self._pointLabels.updateLabel(spineID)
+
+        # remake all spine lines
+        self._bMakeSpineLines()
         self._refreshSlice()
 
     def deletedEvent(self, event: pmmEvent):
@@ -963,16 +1042,11 @@ class pointPlotWidget(annotationPlotWidget):
 
         #
         # show and hide labels based on sliceNumber
-        self._pointLabels.hidShowLabels(_rows)
-        # for labelIndex, label in enumerate(self._labels):
-        # for k, v in self._labels.items():
-        #     # labelIndex = int(labelIndex)  # some labels will not cast
-        #     if k in _rows:
-        #         v.show()
-        #     else:
-        #         v.hide()
 
-        #
+        # abj: check if we show label
+        if self.showLabel:
+            self._pointLabels.hidShowLabels(_rows)
+
         # mask and unmask spine lines based on sliceNumber
         _spineLineIndex = []
         for row in _rows:
@@ -1131,6 +1205,15 @@ class pointPlotWidget(annotationPlotWidget):
                 color[index] = colorFormat
 
         return color
+    
+    def toggleLabels(self):
+        self.showLabel = not self.showLabel
+        _rows = self._dfPlot["index"].to_list()
+ 
+        if self.showLabel:
+            self._pointLabels.hidShowLabels(_rows)
+        else:
+            self._pointLabels.hideAllLabels(_rows)
 
 class linePlotWidget(annotationPlotWidget):
     _widgetName = "line plot"
@@ -1202,6 +1285,13 @@ class linePlotWidget(annotationPlotWidget):
 
         # logger.info(f'adding _rightRadiusLines to view: {self.__class__.__name__}')
         self._view.addItem(self._rightRadiusLines)
+
+    def toggleRadiusLines(self):
+        visible = not self._leftRadiusLines.isVisible()
+        self._leftRadiusLines.setVisible(visible)
+    
+        visible = not self._rightRadiusLines.isVisible()
+        self._rightRadiusLines.setVisible(visible)
 
     def _getScatterColor(self):
         logger.info(f'"{self.getClassName()}"')
@@ -1291,23 +1381,30 @@ class linePlotWidget(annotationPlotWidget):
         
         # startSec = time.time()
  
-        logger.warning(f'{self.getClassName()} TODO: turn radius line back on !!!')
-        
-        # dfLeft = self._annotations.getLeftRadiusPlot(None, sliceNumber, 1)
-        # _lineConnect = self._getScatterConnect(dfLeft)
-        # self._leftRadiusLines.setData(
-        #     dfLeft["x"].to_numpy(),
-        #     dfLeft["y"].to_numpy(),
-        #     connect=_lineConnect,
-        # )
+        # logger.warning(f'{self.getClassName()} TODO: turn radius line back on !!!')
+        # logger.info(f'slot set left and right radius')
+
+        zPlusMinus = self._displayOptions["zPlusMinus"] 
+        radiusOffset = self._displayOptions['radius'] 
+        dfLeft = self._annotations.getLeftRadiusPlot(None, sliceNumber, zPlusMinus, radiusOffset)
+        _lineConnect = self._getScatterConnect(dfLeft)
+
+        # logger.info(f'dfLeft["x"].to_numpy() {dfLeft["x"].to_numpy()}')
+        self._leftRadiusLines.setData(
+            dfLeft["x"].to_numpy(),
+            dfLeft["y"].to_numpy(),
+            connect=_lineConnect,
+        )
 
         # dfRight = self._annotations.getRightRadiusPlot(None, sliceNumber, 1)
-        # _lineConnect = self._getScatterConnect(dfRight)
-        # self._rightRadiusLines.setData(
-        #     dfRight["x"].to_numpy(),
-        #     dfRight["y"].to_numpy(),
-        #     connect=_lineConnect,
-        # )
+        
+        dfRight = self._annotations.getRightRadiusPlot(None, sliceNumber, zPlusMinus, radiusOffset)
+        _lineConnect = self._getScatterConnect(dfRight)
+        self._rightRadiusLines.setData(
+            dfRight["x"].to_numpy(),
+            dfRight["y"].to_numpy(),
+            connect=_lineConnect,
+        )
 
         # stopSec = time.time()
         # logger.info(f'{self.getClassName()} took {round(stopSec-startSec,4)} sec')

@@ -459,12 +459,13 @@ class ImagePlotWidget(mmWidget2):
         # x/y swapped stack is (row, col)
         
         # logger.warning('TURN BACK ON')
-        
-        return
-    
+        # return
+
+        #abj: 6/21 turned back on
         if self._channelIsRGB():
             intensity = float('nan')
         else:
+            # TODO: fix issue with intensity (mapmanagercore throwing errors)
             intensity = self._myStack.getPixel(self._displayThisChannel,
                             self._currentSlice,
                             y, x)
@@ -789,6 +790,24 @@ class ImagePlotWidget(mmWidget2):
         self._aPointPlot.toggleScatterPlot()
         self._aLinePlot.toggleScatterPlot()
 
+    def togglePlot(self, plotName):
+        """Show/hide tracing.
+        """
+
+        logger.info(f"toggling plotName {plotName}")
+        if plotName == "Spines":
+            self._aPointPlot.toggleScatterPlot()
+            # self.plotDict[plotName].toggleScatterPlot()
+        elif plotName == "Center Line":
+            self._aLinePlot.toggleScatterPlot()
+        elif plotName == "Radius Lines":
+            self._aLinePlot.toggleRadiusLines()
+        elif plotName == "Labels":
+            self._aPointPlot.toggleLabels()
+            # self.plotDict["Spines"].toggleLabels()
+        elif plotName == "Image":
+            self.toggleImageView()
+
     def slot_updateLineRadius(self, radius):
         """ Called whenever radius is updated
         """
@@ -887,6 +906,12 @@ class ImagePlotWidget(mmWidget2):
         lineAnnotations = self._myStack.getLineAnnotations()
         # _displayOptions = self._displayOptionsDict['pointDisplay']
         # _displayOptionsLine = self._displayOptionsDict['spineLineDisplay']
+
+        #
+        # self.plotDict = {}
+        # self.plotDict["points"] = pointPlotWidget(self.getStackWidget(),
+        #                                     self._plotWidget)
+
         self._aPointPlot = pointPlotWidget(self.getStackWidget(),
                                             #pointAnnotations,
                                             self._plotWidget,
