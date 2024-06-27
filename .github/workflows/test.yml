@@ -40,7 +40,9 @@ jobs:
       run: |
         # exlude anything that requires large data (it is not included in PyPi)
         # pytest --cov=./tests --cov-report=xml --ignore=tests/test_gen_example_notebook.py
-        pytest -s --cov=./tests --cov-report=xml
+        # need to specify tests/ folder because now we have a
+        # MapManagerCore folder which has its own tests/
+        pytest -s --cov=./tests --cov-report=xml tests/
         # pytest tests/interface/test_app_tmp.py
 
     - name: Upload coverage reports to Codecov
