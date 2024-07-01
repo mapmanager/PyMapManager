@@ -27,7 +27,8 @@ def run():
     # path ='\\Users\\johns\\Documents\\GitHub\\MapManagerCore\\sandbox\\data\\rr30a_s0.mmap'
     # path = 'C:\\Users\\johns\\Documents\\GitHub\\MapManagerCore\\data\\rr30a_s0u.mmap'
     path = '\\Users\\johns\\Documents\\GitHub\\MapManagerCore\\data\\rr30a_s0u.mmap'
-
+    # import mapmanagercore
+    # path = mapmanagercore.getSingleTimepointMap()
     sw2 = app.loadStackWidget(path)
     
     df = sw2.getStack().getPointAnnotations().getDataFrame()

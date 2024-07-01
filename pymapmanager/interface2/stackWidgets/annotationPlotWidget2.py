@@ -114,6 +114,7 @@ class PointLabels:
     def hideAllLabels(self, labelIDs : List[str]):
         """ Hide all labels. Used when user unchecks labels within top tool bar
         """
+        # logger.info("HIDING ALL LABELS")
         for k, v in self._labels.items():
             if k in labelIDs:
                 v.hide()
@@ -243,6 +244,8 @@ class annotationPlotWidget(mmWidget2):
         # print('_colorMap:', self._colorMap)
         self._colorMap = ['#f77189', '#dc8932', '#ae9d31', '#77ab31', '#33b07a', '#36ada4', '#38a9c5', '#6e9bf4', '#cc7af4', '#f565cc']
 
+        self.showScatter = True
+
     def _getScatterConnect(self, df : pd.DataFrame):
         return None
     
@@ -336,6 +339,8 @@ class annotationPlotWidget(mmWidget2):
         # abj
         visible = not self._scatterUserSelection.isVisible()
         self._scatterUserSelection.setVisible(visible)
+
+        self.showScatter = not self.showScatter
 
     def _on_mouse_hover(self, points, event):
         """Respond to mouse hover over scatter plot.
@@ -569,9 +574,6 @@ class annotationPlotWidget(mmWidget2):
         roiTypes = self._roiTypes
 
         # logger.info(f'plotting roiTypes:{roiTypes} for {type(self)}')
-
-
-        # TODO: (6/19/24) Change this to be connected to top tool bar zSlider
         zPlusMinus = self._displayOptions["zPlusMinus"]
 
         # abb removed 042024
@@ -600,10 +602,11 @@ class annotationPlotWidget(mmWidget2):
         _symbolBrush = self._getScatterColor()
         _connect = self._getScatterConnect(dfPlot)
 
-        self._scatter.setData(x, y,
-                              symbolBrush=_symbolBrush,
-                              connect=_connect)
-        
+        if self.showScatter:
+            self._scatter.setData(x, y,
+                                symbolBrush=_symbolBrush,
+                                connect=_connect)
+            
         # stopTime = time.time()
         # logger.info(f'base annotation plot widget ... {self.getClassName()} Took {round(stopTime-startTime,4)} sec')
 
@@ -1056,7 +1059,7 @@ class pointPlotWidget(annotationPlotWidget):
         #
         # show and hide labels based on sliceNumber
 
-        # abj: check if we show label
+        # abj: only plot if we show labels
         if self.showLabel:
             self._pointLabels.hidShowLabels(_rows)
 
@@ -1281,6 +1284,7 @@ class linePlotWidget(annotationPlotWidget):
         super().__init__(stackWidget, lineAnnotations, pgView, lineDisplayOptions)
 
         # define the roi types we will display, see: slot_setDisplayTypes()
+        self.showRadiusLines = True
         self._roiTypes = ["linePnt"]
         self._buildUI()
 
@@ -1337,6 +1341,8 @@ class linePlotWidget(annotationPlotWidget):
     
         visible = not self._rightRadiusLines.isVisible()
         self._rightRadiusLines.setVisible(visible)
+
+        self.showRadiusLines = not self.showRadiusLines
 
     def _getScatterColor(self):
         logger.info(f'"{self.getClassName()}"')
@@ -1429,27 +1435,28 @@ class linePlotWidget(annotationPlotWidget):
         # logger.warning(f'{self.getClassName()} TODO: turn radius line back on !!!')
         # logger.info(f'slot set left and right radius')
 
-        zPlusMinus = self._displayOptions["zPlusMinus"] 
-        radiusOffset = self._displayOptions['radius'] 
-        dfLeft = self._annotations.getLeftRadiusPlot(None, sliceNumber, zPlusMinus, radiusOffset)
-        _lineConnect = self._getScatterConnect(dfLeft)
+        if self.showRadiusLines:
+            zPlusMinus = self._displayOptions["zPlusMinus"] 
+            radiusOffset = self._displayOptions['radius'] 
+            dfLeft = self._annotations.getLeftRadiusPlot(None, sliceNumber, zPlusMinus, radiusOffset)
+            _lineConnect = self._getScatterConnect(dfLeft)
 
-        # logger.info(f'dfLeft["x"].to_numpy() {dfLeft["x"].to_numpy()}')
-        self._leftRadiusLines.setData(
-            dfLeft["x"].to_numpy(),
-            dfLeft["y"].to_numpy(),
-            connect=_lineConnect,
-        )
+            # logger.info(f'dfLeft["x"].to_numpy() {dfLeft["x"].to_numpy()}')
+            self._leftRadiusLines.setData(
+                dfLeft["x"].to_numpy(),
+                dfLeft["y"].to_numpy(),
+                connect=_lineConnect,
+            )
 
-        # dfRight = self._annotations.getRightRadiusPlot(None, sliceNumber, 1)
-        
-        dfRight = self._annotations.getRightRadiusPlot(None, sliceNumber, zPlusMinus, radiusOffset)
-        _lineConnect = self._getScatterConnect(dfRight)
-        self._rightRadiusLines.setData(
-            dfRight["x"].to_numpy(),
-            dfRight["y"].to_numpy(),
-            connect=_lineConnect,
-        )
+            # dfRight = self._annotations.getRightRadiusPlot(None, sliceNumber, 1)
+            
+            dfRight = self._annotations.getRightRadiusPlot(None, sliceNumber, zPlusMinus, radiusOffset)
+            _lineConnect = self._getScatterConnect(dfRight)
+            self._rightRadiusLines.setData(
+                dfRight["x"].to_numpy(),
+                dfRight["y"].to_numpy(),
+                connect=_lineConnect,
+            )
 
         # stopSec = time.time()
         # logger.info(f'{self.getClassName()} took {round(stopSec-startSec,4)} sec')

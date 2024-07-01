@@ -1055,7 +1055,7 @@ class StackSlider(QtWidgets.QSlider):
         
         # was this
         self.sliderMoved.connect(self._updateSlice)
-        self.valueChanged.connect(self._updateSlice) # abb 20200829
+        # self.valueChanged.connect(self._updateSlice) # abb 20200829
         
         #self.valueChanged.connect(self.sliceSliderValueChanged)
 
