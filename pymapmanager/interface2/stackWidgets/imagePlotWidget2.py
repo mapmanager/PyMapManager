@@ -162,8 +162,9 @@ class ImagePlotWidget(mmWidget2):
         # logger.info('')
 
         stackSelection = self.getStackWidget().getStackSelection()
+        logger.info(f'imagePlotWidget stackSelection {stackSelection}')
         hasPointSelection = stackSelection.hasPointSelection()
-
+        logger.info(f'imagePlotWidget hasPointSelection {hasPointSelection}')
         if not hasPointSelection:
             logger.warning('no selection -> no context menu')
             return
@@ -687,7 +688,9 @@ class ImagePlotWidget(mmWidget2):
         return 
 
     def refreshSlice(self):
-        self._setSlice(self._currentSlice, doEmit=False)
+        # logger.info(self._currentSlice)
+        # self._setSlice(self._currentSlice, doEmit=False)
+        self._setSlice(self._currentSlice, doEmit=True)
     
     def _setSlice(self, sliceNumber : int, doEmit = True):
         """
@@ -800,18 +803,27 @@ class ImagePlotWidget(mmWidget2):
         """
 
         logger.info(f"toggling plotName {plotName}")
+        visible = False
         if plotName == "Spines":
-            self._aPointPlot.toggleScatterPlot()
+            visible = self._aPointPlot.toggleScatterPlot()
+            self._aPointPlot.toggleSpineLines()
             # self.plotDict[plotName].toggleScatterPlot()
         elif plotName == "Center Line":
-            self._aLinePlot.toggleScatterPlot()
+            visible = self._aLinePlot.toggleScatterPlot()
         elif plotName == "Radius Lines":
-            self._aLinePlot.toggleRadiusLines()
-        elif plotName == "Labels":
+            visible = self._aLinePlot.toggleRadiusLines()
+        elif plotName == "UnRefreshed Labels": # Update Labels without Refreshing slice
             self._aPointPlot.toggleLabels()
+        elif plotName == "Labels":
+            visible = self._aPointPlot.toggleLabels()
             # self.plotDict["Spines"].toggleLabels()
         elif plotName == "Image":
-            self.toggleImageView()
+            visible = self.toggleImageView()
+
+        if visible:
+            self.refreshSlice()
+
+
 
     def slot_updateLineRadius(self, radius):
         """ Called whenever radius is updated
@@ -1054,8 +1066,8 @@ class StackSlider(QtWidgets.QSlider):
         # self.sliderReleased.connect(self._updateSlice)
         
         # was this
-        self.sliderMoved.connect(self._updateSlice)
-        # self.valueChanged.connect(self._updateSlice) # abb 20200829
+        # self.sliderMoved.connect(self._updateSlice)
+        self.valueChanged.connect(self._updateSlice) # abb 20200829
         
         #self.valueChanged.connect(self.sliceSliderValueChanged)
 

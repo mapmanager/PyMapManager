@@ -216,6 +216,7 @@ class StackToolBar(QtWidgets.QToolBar):
         plotMenu = QtWidgets.QMenu()
 
         plotMenuList = ["Spines", "Center Line", "Radius Lines", "Labels", "Image"]
+        self.actionMenuDict = {}
 
         for plotName in plotMenuList:
             action = plotMenu.addAction(plotName)
@@ -223,6 +224,7 @@ class StackToolBar(QtWidgets.QToolBar):
             isChecked = True # set true by default
             # logger.info(f"userType {userType} isChecked {isChecked}")
             action.setChecked(isChecked)
+            self.actionMenuDict[plotName] = action
 
         plotMenuButton.setMenu(plotMenu)
         # menu.triggered.connect(lambda action: print(action.text()))
@@ -234,8 +236,37 @@ class StackToolBar(QtWidgets.QToolBar):
         # self.colorPopup.addItems(colorList)
         # self.addWidget(self.colorPopup)
 
+    def labelBoxUpdate(self):
+        """ Part of plot menu Change
+
+        Logic for when spine box is changed to update label box
+        """
+        spinesAction = self.actionMenuDict["Spines"]
+        spineChecked = spinesAction.isChecked()
+
+        labelAction = self.actionMenuDict["Labels"]
+        labelChecked = labelAction.isChecked()
+
+        if not spineChecked and not labelChecked:
+            #
+            logger.info("entering edge case")
+            # keep them both off 
+            pass
+        elif not spineChecked:
+            labelAction.setChecked(False)
+            self.signalPlotCheckBoxChanged.emit("UnRefreshed Labels")
+        else:
+            # check if label box is changed  before setting checked
+            if labelAction.isChecked():
+                pass
+            else:
+                labelAction.setChecked(True)
+                self.signalPlotCheckBoxChanged.emit("UnRefreshed Labels")
+    
+
     def plotMenuChange(self, action):
 
+        logger.info(f"plotMenuChange {action.text()}")
         if action.text() == "Radius Lines":
             self._radiusSpinBox.setEnabled(action.isChecked())
             self.radiusLabel.setEnabled(action.isChecked())
@@ -244,6 +275,9 @@ class StackToolBar(QtWidgets.QToolBar):
             # self.slidingUpDownLabel.setEnabled(action.isChecked())
             # self.slidingUpDown.setEnabled(action.isChecked())
             # self.slidingCheckbox.setEnabled(action.isChecked())
+        
+        if action.text() == "Spines":
+            self.labelBoxUpdate()
        
         plotName = action.text()
         self.signalPlotCheckBoxChanged.emit(plotName)
@@ -253,13 +287,6 @@ class StackToolBar(QtWidgets.QToolBar):
             Value to change the radius of the left/ right points. When changed the points also change.
         """
         logger.info(f'Recalculate left/right given new radius {value}')
-        # call function to recaculate ALL left xy, right xy given a new radius
-        # la = self._myStack.getLineAnnotations()
-        # segmentID = None
-        # radius = value
-        # la.calculateAndStoreRadiusLines(segmentID = segmentID, radius = radius)
-
         # send signal to backend to refresh 
         # AnnotationPlotWidget that displays the radius line points
         self.signalRadiusChanged.emit(value)
-        # signalRadiusChanged

@@ -39,16 +39,21 @@ class PointLabels:
             2) Posiiton the label just beyond the point (Depends on 'spine angle'?).
 
         """
+        label = self._labels[labelID]
+        self.setLabelPos(labelID, label)
+
+        logger.info(f"check label update {label.x()}")
+        # set font outline based on "accept" column
+        acceptColumn = self._df.getDataFrame()["accept"]
+        if not acceptColumn[labelID]:
+            logger.info("Changing label color")
+            self._labels[labelID].setColor(QtGui.QColor(255, 255, 255, 120))
+
+    def setLabelPos(self, labelID, label):
         x = self.df.getValue('x', labelID)
         y = self.df.getValue('y', labelID)
-
-        # Check angle
-        # adjust + or - depending on angle
         spineAngles = self._df.getDataFrame()["spineAngle"]
         idSpineAngle = spineAngles[labelID]
-        logger.info(f"idSpineAngle {idSpineAngle}")
-        # self._labels[labelID].setPos(QtCore.QPointF(x - 9, y - 9))
-
         adjustConstant = 2
         adjustX = adjustConstant * math.cos(idSpineAngle * math.pi/180)
         adjustY = adjustConstant * math.sin(idSpineAngle * math.pi/180)
@@ -56,32 +61,24 @@ class PointLabels:
         adjustY = abs(adjustY)
 
         if 0 <= abs(idSpineAngle) and abs(idSpineAngle) <= 90:
-            logger.info(f"labelID: {labelID}, newX: {x + adjustX}, newY: {y + adjustY}")
-            self._labels[labelID].setPos(QtCore.QPointF(x + adjustX, y + adjustY))
+            label.setPos(QtCore.QPointF(x + adjustX, y + adjustY))
         elif 90 <= abs(idSpineAngle) and abs(idSpineAngle) <= 180:
-            logger.info(f"labelID: {labelID}, newX: {x + adjustX}, newY: {y + adjustY}")
-            self._labels[labelID].setPos(QtCore.QPointF(x - adjustX, y + adjustY))
+            label.setPos(QtCore.QPointF(x - adjustX, y + adjustY))
         elif 180 <= idSpineAngle and idSpineAngle <= 270:
-            self._labels[labelID].setPos(QtCore.QPointF(x - adjustX, y - adjustY))
+            label.setPos(QtCore.QPointF(x - adjustX, y - adjustY))
         elif 270 <= idSpineAngle and idSpineAngle <= 360:
-            self._labels[labelID].setPos(QtCore.QPointF(x + adjustX, y - adjustY))
+            label.setPos(QtCore.QPointF(x + adjustX, y - adjustY))
 
-        # set font outline based on "accept" column
-        acceptColumn = self._df.getDataFrame()["accept"]
-        # logger.info(f"acceptColumn {acceptColumn}")
-        # logger.info(f"labelID {labelID} acceptVal {acceptColumn[labelID]}")
-        if not acceptColumn[labelID]:
-            logger.info("Changing label color")
-            self._labels[labelID].setColor(QtGui.QColor(255, 255, 255, 120))
+        return label
 
     def addedLabel(self, labelID):
         """Add a new label.
 
         Called after new spine, among other things.
         """
-        x = self.df.getValue('x', labelID)
-        y = self.df.getValue('y', labelID)
-        newLabel = self._newLabel(labelID, x, y)
+        # x = self.df.getValue('x', labelID)
+        # y = self.df.getValue('y', labelID)
+        newLabel = self._newLabel(labelID)
         
         # add to pg plotItem
         self._plotItem.addItem(newLabel)
@@ -129,35 +126,15 @@ class PointLabels:
             labelID = row["index"]  # could use index, it is row label???
             self.addedLabel(labelID)
 
-    def _newLabel(self, labelID, x, y) -> pg.LabelItem:
+    def _newLabel(self, labelID) -> pg.LabelItem:
         """Make a new label.
         """
         # label = pg.LabelItem("", **{"color": "#FFF", "size": "6pt", "anchor": (1,1)})
         label = pg.TextItem('', anchor=(0.5,0.5))
         # label = QtWidgets.QLabel('labelID', self._plotItem)
         # label.setPos(QtCore.QPointF(x - 9, y - 9))
-
-        spineAngles = self._df.getDataFrame()["spineAngle"]
-        idSpineAngle = spineAngles[labelID]
-        adjustConstant = 2
-
-        adjustX = adjustConstant * math.cos(idSpineAngle * math.pi/180)
-        adjustY = adjustConstant * math.sin(idSpineAngle * math.pi/180)
-        adjustX = abs(adjustX)
-        adjustY = abs(adjustY)
-
-        # logger.info(f"labelID: {labelID}, angle(rads): {rads}, angle(degs): {idSpineAngle}, adjustX: {adjustX}, adjustY: {adjustY}, newX: {x + adjustX}, newY: {y + adjustY}")
-        # label.setPos(QtCore.QPointF(x + adjustX, y + adjustY))
-        # DO the ranges: 0-90, 90-180, 180-270, 270-360
-        if 0 <= abs(idSpineAngle) and abs(idSpineAngle) <= 90:
-            label.setPos(QtCore.QPointF(x + adjustX, y + adjustY))
-        elif 90 <= abs(idSpineAngle) and abs(idSpineAngle) <= 180:
-            label.setPos(QtCore.QPointF(x - adjustX, y + adjustY))
-        elif 180 <= idSpineAngle and idSpineAngle <= 270:
-            label.setPos(QtCore.QPointF(x - adjustX, y - adjustY))
-        elif 270 <= idSpineAngle and idSpineAngle <= 360:
-            label.setPos(QtCore.QPointF(x + adjustX, y - adjustY))
-
+        label = self.setLabelPos(labelID, label)
+ 
         label.setText(str(labelID))
         myFont=QtGui.QFont()
         myFont.setBold(True)
@@ -330,7 +307,9 @@ class annotationPlotWidget(mmWidget2):
 
             # self._scatterUserSelection.sigPointsClicked.connect(self._on_highlighted_mouse_click) 
 
-    def toggleScatterPlot(self):
+    def toggleScatterPlot(self) -> bool:
+        """
+        """
         logger.info("")
 
         visible = not self._scatter.isVisible()
@@ -341,6 +320,8 @@ class annotationPlotWidget(mmWidget2):
         self._scatterUserSelection.setVisible(visible)
 
         self.showScatter = not self.showScatter
+
+        return self.showScatter
 
     def _on_mouse_hover(self, points, event):
         """Respond to mouse hover over scatter plot.
@@ -1081,7 +1062,7 @@ class pointPlotWidget(annotationPlotWidget):
         else:
             self._spineConnections.setData(_xData, _yData)
 
-        # stopSec = time.time()
+        stopSec = time.time()
         # logger.info(f'{self.getClassName()} took {round(stopSec-startSec,4)} seconds')
 
     def _updateItem(self, rowIdx: int):
@@ -1262,6 +1243,15 @@ class pointPlotWidget(annotationPlotWidget):
             self._pointLabels.hidShowLabels(_rows)
         else:
             self._pointLabels.hideAllLabels(_rows)
+        return self.showLabel
+    
+    def areLabelsShown(self):
+        return self.showLabel
+
+    def toggleSpineLines(self):
+        visible = not self._spineConnections.isVisible()
+        self._spineConnections.setVisible(visible)
+        return visible
 
 class linePlotWidget(annotationPlotWidget):
     _widgetName = "line plot"
@@ -1343,6 +1333,8 @@ class linePlotWidget(annotationPlotWidget):
         self._rightRadiusLines.setVisible(visible)
 
         self.showRadiusLines = not self.showRadiusLines
+
+        return visible
 
     def _getScatterColor(self):
         logger.info(f'"{self.getClassName()}"')

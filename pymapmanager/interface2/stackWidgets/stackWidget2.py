@@ -352,7 +352,7 @@ class stackWidget2(mmWidget2):
         imagePlotName = ImagePlotWidget._widgetName
         _imagePlotWidget = ImagePlotWidget(self)
         hBoxLayout_main.addWidget(_imagePlotWidget)
-        self._widgetDict[imagePlotName] = _imagePlotWidget  # the dock, not the widget ???
+        self._widgetDict[imagePlotName] = _imagePlotWidget  # the dock, not the widget ??
 
         #
         # status toolbar (bottom)
@@ -432,7 +432,7 @@ class stackWidget2(mmWidget2):
         _eventSelection = event.getStackSelection()
 
         _state = self.getStackSelection().getState()
-        
+
         # logger.info(f'state is: {_state}')
         
         if _state == pmmStates.manualConnectSpine:
@@ -462,8 +462,14 @@ class stackWidget2(mmWidget2):
         
         # TODO: on spine selection, select segment
         if _eventSelection.hasPointSelection():
+
+            # Setting current selection in stack widget
+            logger.info(" Setting current selection in stack widget")
             _pointSelection = _eventSelection.getPointSelection()
             self.getStackSelection().setPointSelection(_pointSelection)
+
+            temp= self.getStackSelection().hasPointSelection()
+            logger.info(f"hasPointSelection {temp}")
 
             if len(_pointSelection) == 1:
                 _onePoint = _pointSelection[0]
@@ -476,6 +482,7 @@ class stackWidget2(mmWidget2):
                 logger.warning(f'not setting segment selection for multi point selection {_pointSelection}')
 
         else:
+            logger.info("No Selection - Setting current selection as [] in Stack Widget")
             self.getStackSelection().setPointSelection([])
 
         if not _eventSelection.hasPointSelection():
