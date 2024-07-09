@@ -325,6 +325,13 @@ class ImagePlotWidget(mmWidget2):
         elif event.key() == QtCore.Qt.Key_N:
             logger.info('open note setting dialog for selected annotation (todo: what is the selected annotation!!!')
 
+        elif event.key() in [QtCore.Qt.Key_Delete, QtCore.Qt.Key_Backspace]:
+            logger.info("deleting within imageplot widget")
+            # emit delete signal for points
+            self._aPointPlot._deleteSelection()
+
+            #TODO: Delete line/ segment points?
+
         else:
             # if not handled by *this, this will continue propogation
             event.setAccepted(False)

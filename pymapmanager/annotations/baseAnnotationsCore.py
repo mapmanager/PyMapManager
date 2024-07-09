@@ -165,6 +165,10 @@ class AnnotationsCore:
         # _moved = self._fullMap.moveSpine((spineID, self.sessionID), x=x, y=y, z=z)
         _moved = self._fullMap.moveSpine(spineID, x=x, y=y, z=z)
 
+        #abj: 7/5
+        #update background ROI
+        self._fullMap.snapBackgroundOffset(spineID)
+
         # rebuild df from mutated full map
         self._buildDataFrame()
 

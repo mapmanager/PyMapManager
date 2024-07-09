@@ -42,7 +42,7 @@ class PointLabels:
         label = self._labels[labelID]
         self.setLabelPos(labelID, label)
 
-        logger.info(f"check label update {label.x()}")
+        # logger.info(f"check label update {label.x()}")
         # set font outline based on "accept" column
         acceptColumn = self._df.getDataFrame()["accept"]
         if not acceptColumn[labelID]:
@@ -878,21 +878,12 @@ class pointPlotWidget(annotationPlotWidget):
         logger.info(event)
 
         for spine in event:
-            # self._addAnnotation(spineID)
-            # self._selectAnnotation([spineID])
-
             # update label
             spineID = spine['spineID']
-            # x = spine['x']
-            # y = spine['y']
-            # z = spine['z']
-            # self._labels[spineID].setPos(QtCore.QPointF(x - 9, y - 9))
             self._pointLabels.updateLabel(spineID)
 
         # remake all spine lines
         self._bMakeSpineLines()
-
-        
         self._refreshSlice()
 
     def addedEvent(self, event : AddSpineEvent):
@@ -921,58 +912,14 @@ class pointPlotWidget(annotationPlotWidget):
 
     def deletedEvent(self, event: pmmEvent):
         # order matters, call after we do our work
-        # super().deletedEvent(event)
+        super().deletedEvent(event)
 
-        logger.info(event)
-        logger.warning(f'todo: delete label from _pointLabels')
+        # Refresh selection to not show ROI
+        self._cancelSpineRoiSelection()
 
-        self._refreshSlice()
-
-        # for spineID in event.getSpines():
-
-        # _stackSelection = event.getStackSelection()
-        # if not _stackSelection.hasPointSelection():  # False if (None, [])
-        #     return
-
-        # _pointSelection = _stackSelection.getPointSelection()
-
-        # if len(_pointSelection) == 1:
-        #     oneIndex = _pointSelection[0]
-        #     logger.info(f"  deleting oneIndex {oneIndex}")
-
-        #     # remove the deleted annotation from our label list
-        #     popped_item = self._labels.pop(oneIndex)  # remove from list
-        #     self._view.removeItem(popped_item)  # remove from pyqtgraph view
-
-        #     # decriment all labels after (and including) oneIndex
-        #     for i in range(oneIndex, len(self._labels)):
-        #         self._labels[i].setText(str(i))
-
-        #     # delete spine line (TODO: we need a set slice for this to refresh)
-        #     realIdx = oneIndex * 2
-        #     logger.info(f"  deleting realIdx {realIdx}")
-
-        #     # x
-        #     self._xSpineLines = np.delete(self._xSpineLines, realIdx)
-        #     self._xSpineLines = np.delete(self._xSpineLines, realIdx)
-        #     # y
-        #     self._ySpineLines = np.delete(self._ySpineLines, realIdx)
-        #     self._ySpineLines = np.delete(self._ySpineLines, realIdx)
-        #     # connect
-        #     self._spineLinesConnect = np.delete(self._spineLinesConnect, realIdx)
-        #     self._spineLinesConnect = np.delete(self._spineLinesConnect, realIdx)
-
-        #     # TODO: we need a set slice to set the data of the spine lines
-
-        # else:
-        #     logger.error(
-        #         f"Does not correctly remove labels/lines when more than one annotation, got {len(_pointSelection)} annotations"
-        #     )
-
-        # # TODO: probably not necc. as we should (in theory) receive a slot_selectAnnotation with [] annotations to select
-        # self._cancelSpineRoiSelection()
-
-        # super().deletedEvent(event)
+        # logger.info(event)
+        # logger.warning(f'todo: delete label from _pointLabels')
+        # self._refreshSlice()
 
     def _cancelSpineRoiSelection(self):
         """Cancel spine ROI selection."""
@@ -1026,7 +973,6 @@ class pointPlotWidget(annotationPlotWidget):
         isAlt = event.isAlt()
         self._selectAnnotation(itemList, isAlt)
 
-    # TODO: Figure out where this is being called twice
     # NEEDED WITH pmmWidget v3 interface
     def slot_setSlice(self, sliceNumber: int):
         startSec = time.time()
