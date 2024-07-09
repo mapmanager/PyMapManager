@@ -31,9 +31,11 @@ def run():
     # from trySegment, works!
     # path = '/Users/cudmore/Desktop/trySeg.mmap'
 
+    # was working before switch to DirectoryStore
     path = mapmanagercore.data.getSingleTimepointMap()
 
-    logger.info(f'app.loadStackWidgeth: {path}')
+    # path = '/Users/cudmore/Sites/MapManagerCore/data/rr30a_s0u_v2.mmap'
+
     sw2 = app.loadStackWidget(path)
     
     # works

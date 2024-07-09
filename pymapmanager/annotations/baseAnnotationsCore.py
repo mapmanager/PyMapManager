@@ -113,7 +113,7 @@ class AnnotationsCore:
     def getValues(self,
                     colName : List[str],
                     rowIdx : Union[int, List[int], None] = None,
-                    ) -> Union[np.ndarray, None]:
+                    ) -> Optional[np.ndarray]:
         """Get value(s) from a column or list of columns.
 
         Parameters
@@ -131,17 +131,17 @@ class AnnotationsCore:
         # logger.info(f'{rowIdx} {type(rowIdx)}')
 
         df = self.getDataFrame()  # geopandas.geodataframe.GeoDataFrame
-        
-        # TODO: 042024 implement a list of columns
-        # if not isinstance(colName, list):
-        #     colName = [colName]
 
-        #if not self.columns.columnIsValid(colName):
+        # print('df:')
+        # print(df.index)
+
         if colName not in list(df.columns):
             logger.error(f'did not find column name "{colName}"')
             return
         
         if rowIdx is None:
+            # TODO: this won't work, need to get actual row labels
+            # some may be missing after delet
             rowIdx = range(self.numAnnotations)  # get all rows
         elif not isinstance(rowIdx, list):
             rowIdx = [rowIdx]
@@ -151,7 +151,7 @@ class AnnotationsCore:
             return ret
         
         except (KeyError):
-            logger.error(f'bad rowIdx(s) {rowIdx}, colName:{colName} range is 0...{len(self)-1}')
+            logger.error(f'bad rowIdx(s) {rowIdx}, colName:{colName} values are in row labels')
             return None
         
     def moveSpine(self, spineID :int, x, y, z):
@@ -359,6 +359,16 @@ class SpineAnnotationsCore(AnnotationsCore):
 
 class LineAnnotationsCore(AnnotationsCore):
 
+    @property
+    def numSegments(self):
+        return len(self._fullMap.segments[:])
+    
+    def newSegment(self):
+        return self._fullMap.newSegment()
+
+    def appendSegmentPoint(self, segmentID : int, x : int, y: int, z : int):
+        self._fullMap.appendSegmentPoint(segmentID, x, y, z)
+
     def getSummaryDf(self):
         """DataFrame with per segment info (one segment per ro)
         """
@@ -369,6 +379,11 @@ class LineAnnotationsCore(AnnotationsCore):
         """
         self._summaryDf = pd.DataFrame()
         self._summaryDf['segmentID'] = self._df['segmentID'].unique()
+
+        lengthList = []
+        for row in range(len(self._summaryDf)):
+            lengthList.append(self._fullMap.segments['segment'].loc[row].length)
+        self._summaryDf['length'] = lengthList
 
     def _buildDataFrame(self):  
 
@@ -411,7 +426,7 @@ class LineAnnotationsCore(AnnotationsCore):
 
         #
         # left/right 
-        logger.warning('left/right is slow, can we get this pre-built and saved into zarr')
+        # logger.warning('left/right is slow, can we get this pre-built and saved into zarr')
         
         # TODO: 6/19 fix xyLeft and xyRight
         # TODO: put ths back in, the backend changed. We no longer have "segmentLeft" or "segmentRight"

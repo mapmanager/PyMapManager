@@ -54,7 +54,7 @@ class PointLabels:
         # adjust + or - depending on angle
         spineAngles = self._df.getDataFrame()["spineAngle"]
         idSpineAngle = spineAngles[labelID]
-        logger.info(f"idSpineAngle {idSpineAngle}")
+        # logger.info(f"idSpineAngle {idSpineAngle}")
         # self._labels[labelID].setPos(QtCore.QPointF(x - 9, y - 9))
 
         adjustConstant = 2
@@ -64,10 +64,10 @@ class PointLabels:
         adjustY = abs(adjustY)
 
         if 0 <= abs(idSpineAngle) and abs(idSpineAngle) <= 90:
-            logger.info(f"labelID: {labelID}, newX: {x + adjustX}, newY: {y + adjustY}")
+            # logger.info(f"labelID: {labelID}, newX: {x + adjustX}, newY: {y + adjustY}")
             self._labels[labelID].setPos(QtCore.QPointF(x + adjustX, y + adjustY))
         elif 90 <= abs(idSpineAngle) and abs(idSpineAngle) <= 180:
-            logger.info(f"labelID: {labelID}, newX: {x + adjustX}, newY: {y + adjustY}")
+            # logger.info(f"labelID: {labelID}, newX: {x + adjustX}, newY: {y + adjustY}")
             self._labels[labelID].setPos(QtCore.QPointF(x - adjustX, y + adjustY))
         elif 180 <= idSpineAngle and idSpineAngle <= 270:
             self._labels[labelID].setPos(QtCore.QPointF(x - adjustX, y - adjustY))
@@ -78,9 +78,17 @@ class PointLabels:
         acceptColumn = self._df.getDataFrame()["accept"]
         # logger.info(f"acceptColumn {acceptColumn}")
         # logger.info(f"labelID {labelID} acceptVal {acceptColumn[labelID]}")
+        _font=QtGui.QFont()
+        _font.setBold(True)
         if not acceptColumn[labelID]:
-            logger.info("Changing label color")
+            # logger.info("Changing label color -> not accept")
             self._labels[labelID].setColor(QtGui.QColor(255, 255, 255, 120))
+            _font.setItalic(True)
+            self._labels[labelID].setFont(_font)
+        else:
+            # logger.info("Changing label color -> accept")
+            self._labels[labelID].setColor(QtGui.QColor(200, 200, 200, 255))
+            self._labels[labelID].setFont(_font)
 
     def addedLabel(self, labelID):
         """Add a new label.
@@ -96,7 +104,10 @@ class PointLabels:
         
         # add to dict
         self._labels[labelID] = newLabel
-    
+
+        # abb, this will update based on (accept, usertype)
+        self.updateLabel(labelID)
+
     def deleteLabel(self, labelID):
         """Delete a label.
 
@@ -140,7 +151,7 @@ class PointLabels:
         """Make a new label.
         """
         # label = pg.LabelItem("", **{"color": "#FFF", "size": "6pt", "anchor": (1,1)})
-        label = pg.TextItem('', anchor=(0.5,0.5))
+        label = pg.TextItem('', anchor=(0.5,0.5))  # border=pg.mkPen(width=5)
         # label = QtWidgets.QLabel('labelID', self._plotItem)
         # label.setPos(QtCore.QPointF(x - 9, y - 9))
 
@@ -331,7 +342,9 @@ class annotationPlotWidget(mmWidget2):
             self._scatterUserSelection.setZValue(
                 zorder
             )  # put it on top, may need to change '10'
-            self._view.addItem(self._scatterUserSelection)
+
+            # using 'self._view.plot', item is already added
+            # self._view.addItem(self._scatterUserSelection)
 
             # self._scatterUserSelection.sigPointsClicked.connect(self._on_highlighted_mouse_click) 
 
@@ -461,7 +474,7 @@ class annotationPlotWidget(mmWidget2):
                 self._annotations,
                 SpineAnnotationsCore,
             ):
-                logger.error('annotation plot widget emitting selection!!!!!!!!')
+                logger.info('annotation plot widget emitting selection!!!!!!!!')
                 event.getStackSelection().setPointSelection(dbIdx)
                 event.setAlt(isAlt)
                 self.emitEvent(event, blockSlots=False)
@@ -882,21 +895,13 @@ class pointPlotWidget(annotationPlotWidget):
         logger.info(event)
 
         for spine in event:
-            # self._addAnnotation(spineID)
-            # self._selectAnnotation([spineID])
-
             # update label
             spineID = spine['spineID']
-            # x = spine['x']
-            # y = spine['y']
-            # z = spine['z']
-            # self._labels[spineID].setPos(QtCore.QPointF(x - 9, y - 9))
             self._pointLabels.updateLabel(spineID)
 
         # remake all spine lines
         self._bMakeSpineLines()
 
-        
         self._refreshSlice()
 
     def addedEvent(self, event : AddSpineEvent):
@@ -911,9 +916,8 @@ class pointPlotWidget(annotationPlotWidget):
 
     def editedEvent(self, event: pmmEvent):
 
-        # self._refreshSlice()
-
-        #abj: 6/25
+        logger.warning(event)
+        
         for spine in event:
             # update label
             spineID = spine['spineID']
@@ -929,6 +933,9 @@ class pointPlotWidget(annotationPlotWidget):
 
         logger.info(event)
         logger.warning(f'todo: delete label from _pointLabels')
+
+        self._selectAnnotation([])
+        # self._cancelSpineRoiSelection()
 
         self._refreshSlice()
 
@@ -1146,8 +1153,14 @@ class pointPlotWidget(annotationPlotWidget):
 
         connect: Values of 1 indicate that the respective point will be connected to the next
         """
+        
+        # logger.warning('make sure this is not called more than once')
+        
         anchorDf = self._annotations.getSpineLines()
         
+        # print('anchorDf:')
+        # print(anchorDf)
+
         # logger.info(f'anchorDf:{type(anchorDf["x"])}')
         # print(anchorDf)
 
@@ -1285,7 +1298,8 @@ class linePlotWidget(annotationPlotWidget):
         )  # put it on top, may need to change '10'
 
         # logger.info(f'adding _rightRadiusLines to view: {self.__class__.__name__}')
-        self._view.addItem(self._rightRadiusLines)
+        # 'using "self._view.plot", item is already added
+        # self._view.addItem(self._rightRadiusLines)
 
     def toggleRadiusLines(self):
         visible = not self._leftRadiusLines.isVisible()
@@ -1295,10 +1309,8 @@ class linePlotWidget(annotationPlotWidget):
         self._rightRadiusLines.setVisible(visible)
 
     def _getScatterColor(self):
-        logger.info(f'"{self.getClassName()}"')
-        
-        # TODO: refactor this to not explicitly loop
-        
+        # logger.info(f'"{self.getClassName()}"')
+
         dfPlot = self._dfPlot
 
         # abb having trouble with pandas setting a slice on a copy
@@ -1307,28 +1319,13 @@ class linePlotWidget(annotationPlotWidget):
         # dfPlot.loc[:,'color'] = ['b'] * len(dfPlot)
         dfPlot['color'] = 'b'
 
-        # logger.info('')
-        # print(type(dfPlot))
-        # print(dfPlot)
-
         _stackSelection = self.getStackWidget().getStackSelection()
         _segmentSelection = _stackSelection.getSegmentSelection()
 
-        logger.info(f'{self.getClassName()} _segmentSelection:{_segmentSelection}')
-
-        # logger.info('dfPlot Before')
-        # print(dfPlot)
-
         if _segmentSelection is not None and len(_segmentSelection) > 0:
-            _tmp = dfPlot.loc[ dfPlot.index.isin(_segmentSelection) ]
-            
-            # print('   _tmp:', _tmp)
-            
+            _tmp = dfPlot.loc[ dfPlot.index.isin(_segmentSelection) ]            
             dfPlot.loc[_tmp.index, 'color'] = 'y'
         
-        # logger.info('dfPlot AFTER')
-        # print(dfPlot)
-
         return dfPlot['color'].tolist()
     
     # abj

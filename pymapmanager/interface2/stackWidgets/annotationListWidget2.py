@@ -195,7 +195,7 @@ class pointListWidget(annotationListWidget):
     def __init__(self, stackWidget : stackWidget2):
 
         annotations = stackWidget.getStack().getPointAnnotations()
-        logger.info(annotations)
+        # logger.info(annotations)
         
         super().__init__(stackWidget, annotations, name='pointListWidget')
 

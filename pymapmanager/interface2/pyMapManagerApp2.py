@@ -83,6 +83,10 @@ def loadPlugins(verbose=False, pluginType='stack') -> dict:
                 # logger.info(e)
                 continue
             
+            # don't add widgets with no specific name
+            if _widgetName == 'not assigned':
+                continue
+
             # _showInMenu = obj.showInMenu  # showInMenu is a static bool
             onePluginDict = {
                 "pluginClass": moduleName,
@@ -104,7 +108,7 @@ def loadPlugins(verbose=False, pluginType='stack') -> dict:
     pluginDict = dict(sorted(pluginDict.items()))
 
     # print the loaded plugins
-    logger.info(f'app loadPlugins loaded {len(pluginDict.keys())} plugins:')
+    logger.info(f'loaded {len(pluginDict.keys())} stack widget plugins:')
     if verbose:
         for k,v in pluginDict.items():
             logger.info(f'   {k}')
@@ -367,7 +371,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
             self._stackWidgetDict[path].show()
         else:
             # load stack and make widget
-            logger.info(f'loading stack widget from path: {path}')
+            # logger.info(f'loading stack widget from path: {path}')
             # _stackWidget = pmm.interface2.stackWidgets.stackWidget2(path)
             _stackWidget = stackWidget2(path)
 

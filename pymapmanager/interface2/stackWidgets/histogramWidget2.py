@@ -5,13 +5,9 @@ import numpy as np
 from qtpy import QtGui, QtCore, QtWidgets
 import pyqtgraph as pg
 
-from .mmWidget2 import mmWidget2, pmmEventType, pmmEvent, pmmStates
-# from mmWidget2 import mmWidget2
-# from mmWidget2 import pmmEventType, pmmEvent, pmmStates
-
+from .mmWidget2 import mmWidget2, pmmEvent
 from pymapmanager._logger import logger
 
-#class bHistogramWidget(QtWidgets.QToolBar):
 class HistogramWidget(mmWidget2):
     signalContrastChange = QtCore.Signal(object) # (contrast dict)
 
@@ -26,9 +22,13 @@ class HistogramWidget(mmWidget2):
         self._myStack = stackWidget._stack
         self._contrastDict = stackWidget._contrastDict
 
+        # logger.info('')
+        # print(self._contrastDict)
+
         self._sliceNumber = 0
         self._channel = 2
-        self._maxValue = 2**self._myStack.header['bitDepth']  # will default to 8 if not found
+        # self._maxValue = 2**self._myStack.header['bitDepth']  # will default to 8 if not found
+        self._maxValue = 2**self._contrastDict[1]['displayBitDepth']
         self._sliceImage = None  # set by 
 
         self.plotLogHist = True
@@ -58,16 +58,23 @@ class HistogramWidget(mmWidget2):
         sliceNumber = event.getSliceNumber()
         self._setSlice(sliceNumber)
 
+    def setColorChannelEvent(self, event):
+        colorChannel = event.getColorChannel()
+        # logger.info(f'{self.getClassName()} colorChannel:{colorChannel}')
+        self.slot_setChannel(colorChannel)
+
     def slot_setChannel(self, channel : int):
         """Show/hide channel buttons.
         """
         # logger.info(f'bHistogramWidget channel:{channel}')
+        
         self._channel = channel
         
         if channel in [1,2,3]:
             for histWidget in self.histWidgetList:
                 if histWidget._channel == channel:
                     histWidget.show()
+                    histWidget._refreshSlice()
                 else:
                     histWidget.hide()
         elif channel == 'rgb':
@@ -87,6 +94,8 @@ class HistogramWidget(mmWidget2):
             contrastDict: dictionary for one channel.
         """
         self.signalContrastChange.emit(contrastDict)
+
+        self.getStackWidget().slot_contrastChanged(contrastDict)
 
     def _checkbox_callback(self, isChecked):
         sender = self.sender()
@@ -117,7 +126,7 @@ class HistogramWidget(mmWidget2):
 
     def bitDepth_Callback(self, idx):
         newMaxValue = self._myBitDepths[idx]
-        logger.info(f'  newMaxValue: {newMaxValue}')
+        # logger.info(f'  newMaxValue: {newMaxValue}')
         self._maxValue = newMaxValue
 
         for histWidget in self.histWidgetList:
@@ -133,22 +142,18 @@ class HistogramWidget(mmWidget2):
         '''
 
     def _buildUI(self):
-        minVal = 0
-        maxVal = self._maxValue
-
         # as a toolbar
         #_tmpWidget = QtWidgets.QWidget()
 
         vBoxLayout = QtWidgets.QVBoxLayout() # main layout
-        #self.myGridLayout = QtWidgets.QGridLayout(self)
 
         self._makeCentralWidget(vBoxLayout)
 
-        spinBoxWidth = 64
+        # spinBoxWidth = 64
 
         # starts off as min/max intensity in stack
-        _minContrast = self._contrastDict[self._channel]['minContrast']
-        _maxContrast = self._contrastDict[self._channel]['maxContrast']
+        # _minContrast = self._contrastDict[self._channel]['minContrast']
+        # _maxContrast = self._contrastDict[self._channel]['maxContrast']
 
         # log checkbox
         self.logCheckbox = QtWidgets.QCheckBox('Log')
@@ -158,7 +163,12 @@ class HistogramWidget(mmWidget2):
         # bit depth
         # don't include 32, it causes an over-run
         self._myBitDepths = [2**x for x in range(1,17)]
+        # find in list
         bitDepthIdx = self._myBitDepths.index(self._maxValue) # will sometimes fail
+        # logger.info(f'_myBitDepths:{self._myBitDepths}')
+        # logger.info(f'_maxValue:{self._maxValue}')
+        # logger.info(f'bitDepthIdx:{bitDepthIdx}')
+        
         bitDepthLabel = QtWidgets.QLabel('Bit Depth')
         bitDepthComboBox = QtWidgets.QComboBox()
         #bitDepthComboBox.setMaximumWidth(spinBoxWidth)
@@ -167,6 +177,9 @@ class HistogramWidget(mmWidget2):
         bitDepthComboBox.setCurrentIndex(bitDepthIdx)
         bitDepthComboBox.currentIndexChanged.connect(self.bitDepth_Callback)
 
+        autoContrastButton = QtWidgets.QPushButton('Auto')
+        autoContrastButton.clicked.connect(self._onAutoContrast)
+
         _alignLeft = QtCore.Qt.AlignLeft
 
         # TODO: add 'histogram' checkbox to toggle histograms
@@ -174,19 +187,10 @@ class HistogramWidget(mmWidget2):
         hBoxLayout.addWidget(self.logCheckbox, alignment=_alignLeft)
         hBoxLayout.addWidget(bitDepthLabel, alignment=_alignLeft)
         hBoxLayout.addWidget(bitDepthComboBox, alignment=_alignLeft)
+        hBoxLayout.addWidget(autoContrastButton, alignment=_alignLeft)
         hBoxLayout.addStretch()
 
         vBoxLayout.addLayout(hBoxLayout)
-
-        '''
-        row = 0
-        col = 0
-        self.myGridLayout.addWidget(self.logCheckbox, row, col)
-        col += 1
-        self.myGridLayout.addWidget(bitDepthLabel, row, col)
-        col += 1
-        self.myGridLayout.addWidget(bitDepthComboBox, row, col)
-        '''
 
         hBoxLayout2 = QtWidgets.QHBoxLayout() # main layout
 
@@ -227,6 +231,25 @@ class HistogramWidget(mmWidget2):
         #colorComboBox.setEnabled(False)
         '''
 
+    def _onAutoContrast(self):
+        # theMin, theMax = self.getStack().getAutoContrast(self._channel)  # channel is 1 based, e.g. (1,2,3,...)
+
+        minAutoContrast = self._contrastDict[self._channel]['minAutoContrast']
+        maxAutoContrast = self._contrastDict[self._channel]['maxAutoContrast']
+        
+        # logger.info(f'channe:{self._channel} min:{minAutoContrast} max:{maxAutoContrast}')
+
+        self._contrastDict[self._channel]['minContrast'] = minAutoContrast
+        self._contrastDict[self._channel]['maxContrast'] = maxAutoContrast
+
+        _oneChannelContrast = self._contrastDict[self._channel]
+
+        self.getStackWidget().slot_contrastChanged(_oneChannelContrast)
+
+        # cludge, need to properly connect signal/slot
+        channelIdx = self._channel - 1
+        self.histWidgetList[channelIdx]._refreshContrast()
+
 #class _histogram(QtWidgets.QToolBar):
 class _histogram(QtWidgets.QWidget):
     """A histogram for one channel.
@@ -237,12 +260,20 @@ class _histogram(QtWidgets.QWidget):
 
     def __init__(self, myStack, contrastDict, channel) -> None:
         super().__init__()
+        
+        # logger.info(f'contrastDict:{contrastDict}')
+        
         self._myStack = myStack
         self._contrastDict = contrastDict
 
         self._sliceNumber = 0
         self._channel = channel
-        self._maxValue = 2**self._myStack.header['bitDepth']  # will default to 8 if not found
+        
+        # assuming multichannel images have same bit depth for all channels
+        # # TODO: pull this from ch 1 of contrast dict
+        # self._maxValue = 2**self._myStack.header['bitDepth']  # will default to 8 if not found
+        self._maxValue = 2 ** contrastDict[1]['displayBitDepth']
+
         self._sliceImage = None  # set by 
 
         self._plotLogHist = True
@@ -307,7 +338,7 @@ class _histogram(QtWidgets.QWidget):
         if self._plotLogHist:
             y = np.log10(y, where=y>0)
 
-        logger.info(f'self._sliceImage:{self._sliceImage.shape} x:{len(x)} y:{len(y)}')
+        # logger.info(f'self._sliceImage:{self._sliceImage.shape} x:{len(x)} y:{len(y)}')
 
         # abb windows
         # Exception: X and Y arrays must be the same shape--got (256,) and (255,).
@@ -335,12 +366,12 @@ class _histogram(QtWidgets.QWidget):
 
         _imageMin = np.min(self._sliceImage)
         _imageMax = np.max(self._sliceImage)
-        _imageMedian = np.median(self._sliceImage)
+        # _imageMedian = np.median(self._sliceImage)
         self.pgPlotWidget.setXRange(_imageMin, self._maxValue, padding=0)
 
         self.minIntensityLabel.setText(f'min:{_imageMin}')
         self.maxIntensityLabel.setText(f'max:{_imageMax}')
-        self.medianIntensityLabel.setText(f'med:{_imageMedian}')
+        # self.medianIntensityLabel.setText(f'med:{_imageMedian}')
 
         self.update()
 
@@ -378,6 +409,15 @@ class _histogram(QtWidgets.QWidget):
         if self.maxContrastSlider.value() > maxValue:
             self.maxContrastSlider.setValue(maxValue)
 
+        # update spin box
+        self.minSpinBox.setMaximum(maxValue)
+        self.maxSpinBox.setMaximum(maxValue)
+
+        if self.minSpinBox.value() > maxValue:
+            self.minSpinBox.setValue(maxValue)
+        if self.maxSpinBox.value() > maxValue:
+            self.maxSpinBox.setValue(maxValue)
+        
         # _imageMin = np.min(self._sliceImage)
         # self.pgPlotWidget.setXRange(_imageMin, self._maxValue, padding=0)
 
@@ -385,6 +425,19 @@ class _histogram(QtWidgets.QWidget):
 
         # update histogram
         self._refreshSlice()
+
+    def _refreshContrast(self):
+        minContrast = self._contrastDict[self._channel]['minContrast']
+        maxContrast = self._contrastDict[self._channel]['maxContrast']
+
+        self.minSpinBox.setValue(minContrast)
+        self.maxSpinBox.setValue(maxContrast)
+
+        self.minContrastSlider.setValue(minContrast)
+        self.maxContrastSlider.setValue(maxContrast)
+        
+        self.minContrastLine.setValue(minContrast)
+        self.maxContrastLine.setValue(maxContrast)
 
     def _buildUI(self):
         minVal = 0
@@ -488,13 +541,13 @@ class _histogram(QtWidgets.QWidget):
         _specialCol = 0
         self.minIntensityLabel = QtWidgets.QLabel('min:')
         self.maxIntensityLabel = QtWidgets.QLabel('max:')
-        self.medianIntensityLabel = QtWidgets.QLabel('median:')
+        # self.medianIntensityLabel = QtWidgets.QLabel('median:')
         _specialRow = row + 1
         self.myGridLayout.addWidget(self.minIntensityLabel, _specialRow, _specialCol)
         _specialRow += 1
         self.myGridLayout.addWidget(self.maxIntensityLabel, _specialRow, _specialCol)
         _specialRow += 1
-        self.myGridLayout.addWidget(self.medianIntensityLabel, _specialRow, _specialCol)
+        # self.myGridLayout.addWidget(self.medianIntensityLabel, _specialRow, _specialCol)
 
         row += 1
         specialCol = 1  # to skip column with spin boxes
