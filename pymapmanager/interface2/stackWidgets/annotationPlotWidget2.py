@@ -50,13 +50,22 @@ class PointLabels:
         label = self._labels[labelID]
         self.setLabelPos(labelID, label)
 
-        # logger.info(f"check label update {label.x()}")
-        # set font outline based on "accept" column
+         # set font outline based on "accept" column
         acceptColumn = self._df.getDataFrame()["accept"]
+        # logger.info(f"acceptColumn {acceptColumn}")
+        # logger.info(f"labelID {labelID} acceptVal {acceptColumn[labelID]}")
+        _font=QtGui.QFont()
+        _font.setBold(True)
         if not acceptColumn[labelID]:
-            logger.info("Changing label color")
+            # logger.info("Changing label color -> not accept")
             self._labels[labelID].setColor(QtGui.QColor(255, 255, 255, 120))
-
+            _font.setItalic(True)
+            self._labels[labelID].setFont(_font)
+        else:
+            # logger.info("Changing label color -> accept")
+            self._labels[labelID].setColor(QtGui.QColor(200, 200, 200, 255))
+            self._labels[labelID].setFont(_font)
+            
     def setLabelPos(self, labelID, label):
         x = self.df.getValue('x', labelID)
         y = self.df.getValue('y', labelID)
@@ -77,21 +86,6 @@ class PointLabels:
         elif 270 <= idSpineAngle and idSpineAngle <= 360:
             label.setPos(QtCore.QPointF(x + adjustX, y - adjustY))
 
-        # set font outline based on "accept" column
-        acceptColumn = self._df.getDataFrame()["accept"]
-        # logger.info(f"acceptColumn {acceptColumn}")
-        # logger.info(f"labelID {labelID} acceptVal {acceptColumn[labelID]}")
-        _font=QtGui.QFont()
-        _font.setBold(True)
-        if not acceptColumn[labelID]:
-            # logger.info("Changing label color -> not accept")
-            self._labels[labelID].setColor(QtGui.QColor(255, 255, 255, 120))
-            _font.setItalic(True)
-            self._labels[labelID].setFont(_font)
-        else:
-            # logger.info("Changing label color -> accept")
-            self._labels[labelID].setColor(QtGui.QColor(200, 200, 200, 255))
-            self._labels[labelID].setFont(_font)
         return label
 
     def addedLabel(self, labelID):
