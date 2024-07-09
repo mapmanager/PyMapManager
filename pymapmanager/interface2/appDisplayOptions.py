@@ -1,3 +1,5 @@
+from pymapmanager._logger import logger
+
 class AppDisplayOptions():
     """Class to encapsulate all display options.
     
@@ -43,6 +45,7 @@ class AppDisplayOptions():
         theDict['windowState']['height'] = 500  # position on screen
 
         # TODO: pass into imageplotwidget
+        theDict['windowState']['doSlidingZ'] = False  # added 20240706
         theDict['windowState']['zPlusMinus'] = 3
         
         # interface.pointPlotWidget
@@ -90,6 +93,5 @@ class AppDisplayOptions():
         theDict['lineDisplay']['zPlusMinus'] = 3
         # abj: 6/20
         theDict['lineDisplay']['radius'] = 3
-
 
         return theDict

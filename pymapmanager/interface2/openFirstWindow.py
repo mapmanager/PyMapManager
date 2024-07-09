@@ -1,10 +1,17 @@
+# circular import for typechecking
+# from pymapmanager.interface2 import PyMapManagerApp
+# see: https://stackoverflow.com/questions/39740632/python-type-hinting-without-cyclic-imports
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .pyMapManagerApp2 import PyMapManagerApp
+
 import os
 from functools import partial
 from typing import List
 
 from qtpy import QtCore, QtWidgets, QtGui
 
-# from .pyMapManagerApp2 import PyMapManagerApp
 import pymapmanager
 from pymapmanager.interface2.mainWindow import MainWindow
 
@@ -15,7 +22,7 @@ class OpenFirstWindow(MainWindow):
     
     Open this at app start and close once a file/folder is loaded
     """
-    def __init__(self, pyMapManagerApp : "PyMapManagerApp", parent=None):
+    def __init__(self, pyMapManagerApp : PyMapManagerApp, parent=None):
         super().__init__(parent)
 
         # self._app = pyMapManagerApp
@@ -184,7 +191,7 @@ def test():
 
     app = SanPyApp([])
     
-    of = openFirstWidget(app)
+    of = OpenFirstWindow(app)
     of.show()
 
     sys.exit(app.exec_())

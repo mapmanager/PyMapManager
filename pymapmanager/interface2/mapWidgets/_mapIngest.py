@@ -88,7 +88,7 @@ def point_addDist(pa : pd.DataFrame, la : pd.DataFrame):
 
         pa.loc[rowIdx, 'pDist'] = distance
 
-def addDistance(map : pmm.mmMap):
+def addDistance(map : "pmm.mmMap"):
     """Add distance to both line and point annotations.
     """
     for sessionIdx, stack in enumerate(map.stacks):

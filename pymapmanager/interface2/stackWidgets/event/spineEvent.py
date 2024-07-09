@@ -49,6 +49,11 @@ class _EditSpine(pmmEvent):
         # list of dict with keys in (spineID, col, value)
         self._list = []
 
+    def getName(self):
+        """Derived classes define this and is used in undo/redo menus.
+        """
+        return ''
+    
     def getSpines(self) -> List[int]:
         """Get list of spine id in the event.
         """
@@ -157,6 +162,9 @@ class AddSpineEvent(_EditSpine):
         # self.addAddSpine(segmentID, x, y, z)
         self.addAddSpine(x, y, z)
 
+    def getName(self):
+        return 'Add Spine'
+    
     def addAddSpine(self, x, y, z):
         self.addEdit(x=x, y=y, z=z)
 
@@ -173,13 +181,15 @@ class AddSpineEvent(_EditSpine):
             )
         return item
 
-class UndoSpineEvent(_EditSpine):
-    def __init__(self, mmWidget):
+class _old_UndoSpineEvent(_EditSpine):
+    def __init__(self, mmWidget, event : pmmEvent):
         super().__init__(pmmEventType.undoSpineEvent, mmWidget)
-   
-class RedoSpineEvent(_EditSpine):
-    def __init__(self, mmWidget):
+        self._undoEvent = event
+
+class _old_RedoSpineEvent(_EditSpine):
+    def __init__(self, mmWidget, event):
         super().__init__(pmmEventType.redoSpineEvent, mmWidget)
+        self._redoEvent = event
 
 class ManualConnectSpineEvent(_EditSpine):
     """Manual connect spine event.
@@ -200,6 +210,9 @@ class ManualConnectSpineEvent(_EditSpine):
             
         self.addEdit(spineID=spineID, x=x, y=y, z=z)
 
+    def getName(self):
+        return 'Manual Connect Spine'
+    
     def _getItem(self, item : SpineEdit) -> SpineEdit:
         """Get the meaningful keys for this edit type.
         """
@@ -212,7 +225,7 @@ class ManualConnectSpineEvent(_EditSpine):
             z=item['z']
             )
         return item
-    
+
 class MoveSpineEvent(_EditSpine):
     """Add spine event.
     
@@ -240,6 +253,9 @@ class MoveSpineEvent(_EditSpine):
             
         self.addEdit(spineID=spineID, x=x, y=y, z=z)
 
+    def getName(self):
+        return 'Move Spine'
+    
     def _getItem(self, item : SpineEdit) -> SpineEdit:
         """Get the meaningful keys for this edit type.
         """
@@ -270,9 +286,30 @@ class DeleteSpineEvent(_EditSpine):
         
         self.addDeleteSpine(spineID)
 
+    def getName(self):
+        return 'Delete Spine'
+    
     def addDeleteSpine(self, spineID : int):
         self.addEdit(spineID=spineID)
 
+    def _getItem(self, item : SpineEdit):
+        """Get the meaningful keys for this edit type.
+        """
+        item = SpineEdit(spineID=item['spineID'])
+        return item
+
+class EditedSpineEvent(_EditSpine):
+    """Used to undo and redo a spine change including:
+        - move
+        - move anchor
+        - edit property
+    """
+    def __init__(self,
+                 mmWidget : mmWidget2,
+                 spineID : int = None):
+        super().__init__(pmmEventType.refreshSpineEvent, mmWidget)
+        self.addEdit(spineID=spineID)
+             
     def _getItem(self, item : SpineEdit):
         """Get the meaningful keys for this edit type.
         """
@@ -296,6 +333,9 @@ class EditSpinePropertyEvent(_EditSpine):
         if spineID is not None:
             self.addEditProperty(spineID, col, value)
 
+    def getName(self):
+        return 'Edit Spine'
+    
     def addEditProperty(self,
                         spineID,
                         col,

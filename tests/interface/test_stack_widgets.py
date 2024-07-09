@@ -7,9 +7,9 @@ import mapmanagercore.data
 from pymapmanager.interface2.pyMapManagerApp2 import PyMapManagerApp
 from pymapmanager.interface2.stackWidgets import stackWidget2
 
-# from pymapmanager._logger import logger
+from pymapmanager._logger import logger
 
-# this makes qapp be our SanPyApp, it is derived from QApplication
+# this makes qapp be our PyMapManagerApp, it is derived from QApplication
 @pytest.fixture(scope="session")
 def qapp_cls():
     return PyMapManagerApp
@@ -36,6 +36,7 @@ def test_plugins(qtbot, qapp):
     
     mmapPath = mapmanagercore.data.getSingleTimepointMap()
 
+    logger.info(f'opening stack widget path {mmapPath}')
     stackWidgetWindow = stackWidget2(path=mmapPath)
 
     # get list of all stack widgets from app, keys are class of plugin
@@ -49,7 +50,10 @@ def test_plugins(qtbot, qapp):
             # stack widget is special
             continue
 
+        logger.info(f'running plugin: {pluginName}')
         stackWidgetWindow.runPlugin(pluginName)
+
+        stackWidgetWindow.zoomToPointAnnotation(5)
 
 if __name__ == '__main__':
     pass

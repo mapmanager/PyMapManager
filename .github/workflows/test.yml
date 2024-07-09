@@ -10,10 +10,12 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # runs-on: ubuntu-latest
+    runs-on: ${{ matrix.platform }}
     strategy:
       matrix:
-        platform: [ubuntu-latest, windows-latest, macos-latest]
+        # platform: [ubuntu-latest, windows-latest, macos-latest]
+        platform: [windows-latest, macos-latest]
         python-version: ["3.11"]
     steps:
     - uses: actions/checkout@v3
@@ -25,8 +27,11 @@ jobs:
         cache-dependency-path: setup.py
     - name: Install dependencies
       run: |
+        # pip install .
         pip install '.[tests]'
-
+        # so we don't need to depend on pip install MapManagerCore
+        git clone -b cudmore-dev https://github.com/mapmanager/MapManagerCore.git
+        pip install MapManagerCore/.
     - name: Run flake8
       run: |
         flake8 ./pymapmanager --count --select=E9,F63,F7,F82 --show-source --statistics
@@ -35,7 +40,10 @@ jobs:
       run: |
         # exlude anything that requires large data (it is not included in PyPi)
         # pytest --cov=./tests --cov-report=xml --ignore=tests/test_gen_example_notebook.py
-        pytest --cov=./tests --cov-report=xml
+        # need to specify tests/ folder because now we have a
+        # MapManagerCore folder which has its own tests/
+        pytest -s --cov=./tests --cov-report=xml tests/
+        # pytest tests/interface/test_app_tmp.py
 
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v4.0.1

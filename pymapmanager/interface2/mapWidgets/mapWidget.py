@@ -99,8 +99,12 @@ class mapWidget(MainWindow):
                 return stackWidget
         return None
     
-    def _findStackWidget2(self, thisStack : pmm.stack):
+    def _findStackWidget2(self, thisStack):
         """Find an open stack widget.
+
+        Parameters
+        ----------
+        thisStack : pymapmanager.stack
         """
         for stackWidget in self._stackWidgetList:
             stack = stackWidget.getStack()
@@ -184,7 +188,7 @@ class mapWidget(MainWindow):
 
     def openStack(self,
                   path = None,
-                  stack : pmm.stack = None,
+                  stack = None,
                   session = None,
                   posRect : List[int] = None,
                   ) -> "pmm.interface2.stackWidget":
@@ -193,7 +197,7 @@ class mapWidget(MainWindow):
         Parameters
         ==========
         path : str
-        stack :
+        stack : pymapmanager.stack
         session : int
         postRect : List[int]
             Position for the window [l, t, w, h]
@@ -384,20 +388,20 @@ class mapWidget(MainWindow):
         
         self.getApp().closeMapWindow(self)
 
-    def closeStackWindow(self, theWindow : "stackWidget2"):
-        """Remove theWindow from self._stackWidgetDict.
+    def closeStackWindow(self, stackWidget):
+        """Remove stackWidget from self._stackWidgetDict.
         
         """
         logger.info('  remove stackwidget window from map list of stack')
         
         _oldWindow = None
         for _idx, _window in enumerate(self._stackWidgetList):
-            if _window == theWindow:
+            if _window == stackWidget:
                 logger.info('removing from list')
                 _oldWindow = self._stackWidgetList.pop(_idx)
 
         if _oldWindow is None:
-            logger.error(f'did not find stack widget in map widget {theWindow}')
+            logger.error(f'did not find stack widget in map widget {stackWidget}')
             logger.error('available windows are')
             logger.error(self._stackWidgetList)
 

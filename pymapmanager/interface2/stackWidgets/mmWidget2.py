@@ -1,3 +1,10 @@
+# circular import for typechecking
+# from pymapmanager.interface2 import PyMapManagerApp
+# see: https://stackoverflow.com/questions/39740632/python-type-hinting-without-cyclic-imports
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from pymapmanager.interface2.stackWidgets import stackWidget2
 
 import copy
 from enum import Enum, auto
@@ -34,6 +41,9 @@ class pmmEventType(Enum):
 
     # acceptPoint = auto() # abj, used for setting isBad boolean
     # changeUserType = auto()
+
+    # added to refresh gui after modifying the core with undo and redo
+    refreshSpineEvent = auto()
 
     undoSpineEvent = auto()
     redoSpineEvent = auto()
@@ -367,7 +377,7 @@ class pmmEvent():
         """
         return self._dict['senderName']
     
-    def getSenderObject(self):
+    def getSenderObject(self) -> mmWidget2:
         return self._sender
     
     @property
@@ -625,7 +635,7 @@ class mmWidget2(QtWidgets.QMainWindow):
         self.addDockWidget(position, dockWIdget)
         return dockWIdget
     
-    def getStackWidget(self) -> "StackWidget2":
+    def getStackWidget(self) -> stackWidget2:
         return self._stackWidget
     
     def getStack(self):
@@ -722,6 +732,14 @@ class mmWidget2(QtWidgets.QMainWindow):
         elif event.type == pmmEventType.edit:
             acceptEvent = self.editedEvent(event)
         
+        elif event.type == pmmEventType.refreshSpineEvent:
+            # no backend (stackWidget) action
+            # event to update gui after core change (undo and redo)
+            if not self._iAmStackWidget:
+                acceptEvent = self.editedEvent(event)
+            else:
+                acceptEvent = True
+
         elif event.type == pmmEventType.stateChange:
             acceptEvent = self.stateChangedEvent(event)
         elif event.type == pmmEventType.moveAnnotation:

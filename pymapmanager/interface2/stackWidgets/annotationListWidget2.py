@@ -1,12 +1,15 @@
-"""Widgets to display lists of point and line annotations.
-"""
+# circular import for typechecking
+# from pymapmanager.interface2 import PyMapManagerApp
+# see: https://stackoverflow.com/questions/39740632/python-type-hinting-without-cyclic-imports
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from pymapmanager.interface2.stackWidgets import stackWidget2
 
 import sys
 from typing import List
 
 from qtpy import QtGui, QtCore, QtWidgets
-
-from pymapmanager._logger import logger
 
 import pymapmanager.annotations
 
@@ -16,12 +19,12 @@ from pymapmanager.interface2.core._data_model import pandasModel
 from pymapmanager.interface2.stackWidgets.mmWidget2  import mmWidget2, pmmEventType, pmmEvent, pmmStates
 from pymapmanager.interface2.stackWidgets.event.spineEvent import DeleteSpineEvent
 
-# from .mmWidget2 import pmmEventType, pmmEvent, pmmStates
+from pymapmanager._logger import logger
 
 class annotationListWidget(mmWidget2):
 
     def __init__(self,
-                    stackWidget : "StackWidget",
+                    stackWidget : stackWidget2,
                     annotations : "pymapmanager.annotations.baseAnnotations",
                     name : str = None):
         """
@@ -189,10 +192,10 @@ class pointListWidget(annotationListWidget):
 
     _widgetName = 'Point List'
 
-    def __init__(self, stackWidget : "pymapmanager.interface2.stackWidget.StackWidget2"):
+    def __init__(self, stackWidget : stackWidget2):
 
         annotations = stackWidget.getStack().getPointAnnotations()
-        logger.info(annotations)
+        # logger.info(annotations)
         
         super().__init__(stackWidget, annotations, name='pointListWidget')
 
@@ -263,7 +266,7 @@ class lineListWidget(annotationListWidget):
 
     _widgetName = 'Line List'
 
-    def __init__(self, stackWidget : "StackWidget"):
+    def __init__(self, stackWidget : stackWidget2):
         annotations = stackWidget.getStack().getLineAnnotations()
         super().__init__(stackWidget, annotations, name='lineListWidget')
 

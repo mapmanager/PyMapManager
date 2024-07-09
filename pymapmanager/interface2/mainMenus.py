@@ -63,19 +63,8 @@ class PyMapManagerMenus:
 
         #
         # edit
-        editMenu = mainMenu.addMenu("&Edit")
-
-        undoAction = QtWidgets.QAction("Undo", self.getApp())
-        undoAction.setCheckable(False)  # setChecked is True by default?
-        undoAction.setShortcut("Ctrl+Z")
-        undoAction.triggered.connect(self.getApp()._undo_action)
-        editMenu.addAction(undoAction)
-
-        redoAction = QtWidgets.QAction("Redo", self.getApp())
-        redoAction.setCheckable(False)  # setChecked is True by default?
-        redoAction.setShortcut("Shift+Ctrl+Z")
-        redoAction.triggered.connect(self.getApp()._redo_action)
-        editMenu.addAction(redoAction)
+        self.editMenu = mainMenu.addMenu("&Edit")
+        self.editMenu.aboutToShow.connect(self._refreshEditMenu)
 
         #
         # view, used by stack windows
@@ -299,6 +288,49 @@ class PyMapManagerMenus:
     def _onAboutMenuAction(self, name):
         logger.info(name)
         
+    def _refreshEditMenu(self):
+        """Manage undo/redo menus.
+        """
+        
+        self.editMenu.clear()
+
+        enableUndo = True
+        enableRedo = True
+        
+        from pymapmanager.interface2.stackWidgets import stackWidget2
+        frontWindow = self.getApp().getFrontWindow()
+        if isinstance(frontWindow, stackWidget2):
+            nextUndo = frontWindow.getUndoRedo().nextUndoStr()
+            nextRedo = frontWindow.getUndoRedo().nextRedoStr()
+            enableUndo = frontWindow.getUndoRedo().numUndo() > 0
+            enableRedo = frontWindow.getUndoRedo().numRedo() > 0
+        else:
+            nextUndo = ''
+            nextRedo = ''
+
+        # TODO: we want the undo and redo menu report (as str) what will be undone and redone
+        # like ('add spine', 'delete spine', 'move spine', etc)
+        # this requires using 'aboutToShow' and asking the app for the front window
+        # if front window is stack, then get the str !!!! for undo and redo
+        undoAction = QtWidgets.QAction("Undo " + nextUndo, self.getApp())
+        undoAction.setCheckable(False)  # setChecked is True by default?
+        undoAction.setShortcut("Ctrl+Z")
+        undoAction.setEnabled(enableUndo)
+        undoAction.triggered.connect(self.getApp()._undo_action)
+        self.editMenu.addAction(undoAction)
+
+        # turning off redo because 'redo delete' causes gui errors
+        # once we go to update the gui, spine does not exist and spine line stays in gui
+        # e.g. is stale
+        redoAction = QtWidgets.QAction("Redo " + nextRedo, self.getApp())
+        redoAction.setCheckable(False)  # setChecked is True by default?
+        redoAction.setShortcut("Shift+Ctrl+Z")
+        logger.warning('manually turning off redo')
+        enableRedo = False
+        redoAction.setEnabled(enableRedo)
+        redoAction.triggered.connect(self.getApp()._redo_action)
+        self.editMenu.addAction(redoAction)
+
     def _refreshSettingsMenu(self):
         logger.info('')
         

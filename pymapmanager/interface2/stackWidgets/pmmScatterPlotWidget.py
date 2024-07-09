@@ -22,10 +22,8 @@ class PmmScatterPlotWidget(mmWidget2):
 
     _widgetName = 'Scatter Plot'
 
-    def __init__(self, stackWidget : "StackWidget"):
-        """
-        Args:
-            parent:
+    def __init__(self, stackWidget):
+        """Widget to display a scatter plot of point annotations.
         """
         super().__init__(stackWidget)
         self.stackWidget = stackWidget

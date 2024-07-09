@@ -4,14 +4,12 @@ from typing import List, Union, Optional
 
 import numpy as np
 
-# import pymapmanager
-# from pymapmanager.analysisParams import AnalysisParams
+import pymapmanager
 from mapmanagercore import MapAnnotations  #, MMapLoader
-
+from mapmanagercore.lazy_geo_pd_images import Metadata
 # from mapmanagercore.lazy_geo_pd_images.store import LazyImagesGeoPandas, ImageLoader
 
 from pymapmanager.annotations.baseAnnotationsCore import SpineAnnotationsCore, LineAnnotationsCore
-# from mapmanagercore.annotations.layers import AnnotationsLayers
 
 from pymapmanager._logger import logger
 
@@ -40,7 +38,7 @@ class stack:
         # load the map
         _startSec = time.time()
         
-        logger.info(f'loading core map from zar:{self._zarrPath}')
+        # logger.info(f'loading core map from zar:{self._zarrPath}')
         self._fullMap : MapAnnotations = MapAnnotations.load(self._zarrPath)  ## .cached())
         # self._fullMap : MapAnnotations = MapAnnotations(MMapLoader(self._zarrPath).cached())
         # self._fullMap : MapAnnotations = MapAnnotations(MMapLoader(self._zarrPath))
@@ -63,11 +61,11 @@ class stack:
                 _channel += 1
                 self.loadImages(channel=_channel)
 
-    def getMetadata(self) -> "MetaData":
+    def getMetadata(self) -> Metadata:
         """Get metadata from the core map.
         """
         return self._fullMap.metadata()
-
+    
     def _buildSessionMap(self):
         """Reduce full core map to a single session id.
         """
@@ -76,11 +74,16 @@ class stack:
         return self._sessionMap
     
     def __str__(self):
-        x = self.header['x']
-        y = self.header['y']
+        x = self.header['xPixels']
+        y = self.header['yPixels']
         dtype = self.header['dtype']
         
-        str = f'{self.getFileName()} channels:{self.numChannels} slices:{self.numSlices} x:{x} y:{y} dtype:{dtype}'
+        numAnnotations = self.getPointAnnotations().numAnnotations
+        numSegments = self.getLineAnnotations().numSegments
+
+        str = f'{self.getFileName()}\n'
+        str += f'  channels:{self.numChannels} slices:{self.numSlices} x:{x} y:{y} dtype:{dtype}'
+        str += f' annotations:{numAnnotations} segments:{numSegments}'
         return str
     
     def _buildHeader(self):
@@ -117,7 +120,8 @@ class stack:
             'yPixels' : y,
         }
 
-        self.printHeader()
+        # self.printHeader()
+        logger.warning('TODO: hard coded some parts of the header')
 
     def printHeader(self):
         for k, v in self.header.items():
@@ -200,6 +204,11 @@ class stack:
             logger.warning(f'Max channel is {self.numChannels}, got channelIdx:{channelIdx}')
         return None
 
+    def getAutoContrast(self, channel):
+        channelIdx = channel - 1
+        _min, _max = self.sessionMap.getAutoContrast_qt(channel=channelIdx)
+        return _min, _max
+
     def loadImages(self, channel : int = None):
         """Load all images for one channel.
         """
@@ -258,57 +267,22 @@ class stack:
         """Get a single image slice from a channel.
 
         Args:
-            slice (int): Image slice. Zero based
-            channel (int): Channel number, one based
+            imageSlice (int): Image slice. Zero based
+            channel (int): Channel number. One based
         
         Returns:
             np.ndarray of image data, None if image is not loaded.
         """
-      
+
         channelIdx = channel - 1
         
         if not isinstance(imageSlice, int):
             imageSlice = int(imageSlice)
 
-        # TODO: implement a global stack option to either
-        #       - dynamically load from core
-        #       - load all image data once
-            
-        # core
-        # zRange = (imageSlice, imageSlice+1)
-        # slices = self.sessionMap.slices(time=0, channel=channelIdx, zRange=zRange)
-        # _imgData = slices._image
-
-        # logger.info(f'channel:{channel} imageSlice:{imageSlice} {type(imageSlice)}')
-        
-        #abj: changed channel to channelIdx
         _imgData = self.sessionMap.getPixels(channel=channelIdx, z=imageSlice)
-        # _imgData = self.sessionMap.getPixels(channel=channel, z=imageSlice)
         _imgData = _imgData._image
-
-        # logger.info(f'_imgData: {type(_imgData)} {_imgData.shape}')
     
         return _imgData
-    
-        #
-        # before properly using core
-        # _doInMemory = True
-        
-        # if _doInMemory:
-        #     channelIdx = channel - 1
-        #     if self._images[channelIdx] is None:
-        #         # image data not loaded
-        #         logger.error(f'channel index {channelIdx} is None')
-        #         return
-        #     _imgData =  self._images[channelIdx][imageSlice][:][:]
-        # else:
-        #     # core
-        #     _images = self.sessionMap.images
-        #     _imgData = _images.fetchSlices2(self.sessionID, channelIdx, (imageSlice, imageSlice+1))
-        #     _imgData = _imgData[0,:,:]
-        #     logger.info(f'_imgData: {_imgData.shape}')
-
-        # return _imgData
     
     def getMaxProjectSlice(self, 
                             imageSlice : int, 
@@ -343,7 +317,7 @@ class stack:
 
 
         zRange = (firstSlice, lastSlice)
-        slices = self.sessionMap.slices(time=0, channel=channelIdx, zRange=zRange)
+        slices = self.sessionMap.getPixels(channel=channelIdx, zRange=zRange)
 
         # logger.info(type(slices))
         # logger.info(f'{slices._image.shape}')
@@ -374,21 +348,24 @@ class stack:
 
         _beforeDf = self.getPointAnnotations().getDataFrame()
 
-        print('_beforeDf[115]')
-        print(_beforeDf.loc[115, ['x', 'y', 'z']])
+        # print('_beforeDf[115]')
+        # print(_beforeDf.loc[115, ['x', 'y', 'z']])
 
         _ret = self._fullMap.undo()
-        print(f'_ret:{_ret}')
+
+        # print(f'_ret:{_ret}')
 
         self.getPointAnnotations()._buildDataFrame()
 
-        _afterDf = self.getPointAnnotations().getDataFrame()
-        print('_afterDf[115]')
-        print(_afterDf.loc[115, ['x', 'y', 'z']])
-
+        # _afterDf = self.getPointAnnotations().getDataFrame()
+        # print('_afterDf[115]')
+        # print(_afterDf.loc[115, ['x', 'y', 'z']])
 
     def redo(self):
         logger.info('')
         _ret = self._fullMap.redo()
-        print(f'_ret:{_ret}')
+        # print(f'_ret:{_ret}')
+
+        self.getPointAnnotations()._buildDataFrame()
+
         

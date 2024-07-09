@@ -9,12 +9,13 @@ import shapely
 from mapmanagercore import MapAnnotations
 from mapmanagercore.layers.line import clipLines
 
+from pymapmanager.interface2.stackWidgets.event.spineEvent import EditSpinePropertyEvent
+
 from pymapmanager._logger import logger
 
 class AnnotationsCore:
     def __init__(self,
-                 mapAnnotations : "???",  # TODO: update on merge 20240513
-                #  analysisParams : "AnalysisParams",
+                 mapAnnotations : MapAnnotations,
                  sessionID = 0,
                  ):
         """
@@ -26,7 +27,7 @@ class AnnotationsCore:
         self._sessionID = sessionID
 
         # full map, multiple session ids (timepoint, t)
-        self._fullMap : "AnnotationsLayers" = mapAnnotations
+        self._fullMap : MapAnnotations = mapAnnotations
         # mapmanagercore.annotations.single_time_point.layers.AnnotationsLayers
 
         #filtered down to just sessionID
@@ -112,7 +113,7 @@ class AnnotationsCore:
     def getValues(self,
                     colName : List[str],
                     rowIdx : Union[int, List[int], None] = None,
-                    ) -> Union[np.ndarray, None]:
+                    ) -> Optional[np.ndarray]:
         """Get value(s) from a column or list of columns.
 
         Parameters
@@ -130,17 +131,17 @@ class AnnotationsCore:
         # logger.info(f'{rowIdx} {type(rowIdx)}')
 
         df = self.getDataFrame()  # geopandas.geodataframe.GeoDataFrame
-        
-        # TODO: 042024 implement a list of columns
-        # if not isinstance(colName, list):
-        #     colName = [colName]
 
-        #if not self.columns.columnIsValid(colName):
+        # print('df:')
+        # print(df.index)
+
         if colName not in list(df.columns):
             logger.error(f'did not find column name "{colName}"')
             return
         
         if rowIdx is None:
+            # TODO: this won't work, need to get actual row labels
+            # some may be missing after delet
             rowIdx = range(self.numAnnotations)  # get all rows
         elif not isinstance(rowIdx, list):
             rowIdx = [rowIdx]
@@ -150,7 +151,7 @@ class AnnotationsCore:
             return ret
         
         except (KeyError):
-            logger.error(f'bad rowIdx(s) {rowIdx}, colName:{colName} range is 0...{len(self)-1}')
+            logger.error(f'bad rowIdx(s) {rowIdx}, colName:{colName} values are in row labels')
             return None
         
     def moveSpine(self, spineID :int, x, y, z):
@@ -347,7 +348,7 @@ class SpineAnnotationsCore(AnnotationsCore):
 
         self._buildDataFrame()
 
-    def editSpine(self, editSpineProperty : "EditSpineProperty"):
+    def editSpine(self, editSpineProperty : EditSpinePropertyEvent):
         # spineID:117 col:isBad value:True
         # logger.info(editSpineProperty)
         logger.info(f"stack widget editSpineProperty {editSpineProperty}")
@@ -362,6 +363,16 @@ class SpineAnnotationsCore(AnnotationsCore):
 
 class LineAnnotationsCore(AnnotationsCore):
 
+    @property
+    def numSegments(self):
+        return len(self._fullMap.segments[:])
+    
+    def newSegment(self):
+        return self._fullMap.newSegment()
+
+    def appendSegmentPoint(self, segmentID : int, x : int, y: int, z : int):
+        self._fullMap.appendSegmentPoint(segmentID, x, y, z)
+
     def getSummaryDf(self):
         """DataFrame with per segment info (one segment per ro)
         """
@@ -372,6 +383,11 @@ class LineAnnotationsCore(AnnotationsCore):
         """
         self._summaryDf = pd.DataFrame()
         self._summaryDf['segmentID'] = self._df['segmentID'].unique()
+
+        lengthList = []
+        for row in range(len(self._summaryDf)):
+            lengthList.append(self._fullMap.segments['segment'].loc[row].length)
+        self._summaryDf['length'] = lengthList
 
     def _buildDataFrame(self):  
 
@@ -414,7 +430,7 @@ class LineAnnotationsCore(AnnotationsCore):
 
         #
         # left/right 
-        logger.warning('left/right is slow, can we get this pre-built and saved into zarr')
+        # logger.warning('left/right is slow, can we get this pre-built and saved into zarr')
         
         # TODO: 6/19 fix xyLeft and xyRight
         # TODO: put ths back in, the backend changed. We no longer have "segmentLeft" or "segmentRight"
@@ -499,36 +515,3 @@ class LineAnnotationsCore(AnnotationsCore):
         yMedian = np.median(df['y'])
         zMedian = np.median(df['z'])
         return (int(xMedian), int(yMedian), int(zMedian) )
-
-if __name__ == '__main__':
-    from pymapmanager._logger import setLogLevel
-    setLogLevel()
-
-    # _testEditSpineProperty()
-
-    sys.exit(1)
-
-    zarrPath = '../MapManagerCore/data/rr30a_s0us.mmap'
-    map = MapAnnotations(MMapLoader(zarrPath).cached())
-
-    sac = SpineAnnotationsCore(map)
-
-    print(sac.getDataFrame().columns)
-
-    segmentID = None
-    roiTypes = None
-    zSlice = 20
-    zPlusMinus = 5
-    
-    value = sac.getValue('x', 2)
-    print(f'x:{value}')
-    value = sac.getValues('y', [2, 3, 4])
-    print(f'y:{value}')
-    print(type(value))
-
-    row = sac.getRow(2)
-    print('row')
-    print(row)
-
-    # spineDf = sac.getSegmentPlot(segmentID, roiTypes, zSlice, zPlusMinus)
-    # print(spineDf)

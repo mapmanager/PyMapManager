@@ -1,9 +1,9 @@
 [![PyPI version](https://badge.fury.io/py/pymapmanager.svg)](https://badge.fury.io/py/pymapmanager)
-[![tests](https://github.com/mapmanager/PyMapManager/workflows/Test/badge.svg)](https://github.com/mapmanager/PyMapManager/actions)
+[![tests](https://github.com/mapmanager/PyMapManager/actions/workflows/test.yml/badge.svg)](https://github.com/mapmanager/PyMapManager/actions)
 [![codecov](https://codecov.io/gh/mapmanager/PyMapManager/branch/main/graph/badge.svg?token=UIRVU7IZG0)](https://codecov.io/gh/mapmanager/PyMapManager)
 <BR>
 [![OS](https://img.shields.io/badge/OS-Linux|Windows|macOS-blue.svg)]()
-[![Python](https://img.shields.io/badge/python-3.8|3.9|3.10|3.11-blue.svg)](https://www.python.org/downloads/release/python-3111/)
+[![Python](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3111/)
 [![License](https://img.shields.io/badge/license-GPLv3-blue)](https://github.com/cudmore/mapmanager/blob/master/LICENSE)
 
 

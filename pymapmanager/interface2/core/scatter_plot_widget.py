@@ -524,7 +524,9 @@ class ScatterPlotWidget(QtWidgets.QWidget):
         """
 
         super().__init__(parent=parent)
-        self._blockSlots : bool = False
+        
+        # abb not used
+        # self._blockSlots : bool = False
 
         self.dict = {"X Stat" : "", 
                      "Y Stat" : "",

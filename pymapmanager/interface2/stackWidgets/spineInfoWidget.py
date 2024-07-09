@@ -7,6 +7,7 @@ from pymapmanager._logger import logger
 
 from .mmWidget2 import mmWidget2
 from .event.spineEvent import  EditSpinePropertyEvent
+from .stackWidget2 import stackWidget2
 
 """
 To add a new display value, like spineLength (not editable)
@@ -27,7 +28,7 @@ class SpineInfoWidget(mmWidget2):
 
     _widgetName = 'Spine Info Widget'
 
-    def __init__(self, stackWidget : "StackWidget"):
+    def __init__(self, stackWidget : stackWidget2):
 
         super().__init__(stackWidget)
 

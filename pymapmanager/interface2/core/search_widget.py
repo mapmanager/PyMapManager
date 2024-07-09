@@ -1,5 +1,5 @@
-import sys
 from typing import List, Optional
+from contextlib import contextmanager
 
 import pandas as pd
 
@@ -335,6 +335,7 @@ class myQTableView(QtWidgets.QTableView):
         self.currentColName = ""
         self.currentSearchStr = ""
 
+        # used by _blockSlotsManager()
         self._blockSignalSelectionChanged = False
 
         # List to hold all column names within DF
@@ -500,7 +501,7 @@ class myQTableView(QtWidgets.QTableView):
 
     def _mySetModel(self):
 
-        logger.info(f'{self.getMyName()}')
+        # logger.info(f'{self.getMyName()}')
 
         if self.df is not None:   
             # abb removed
@@ -553,12 +554,11 @@ class myQTableView(QtWidgets.QTableView):
         # # logger.info(f'indexes: {indexes} ') #data {item.data()}
         # return indexes
 
-    def keyPressEvent(self, event : QtGui.QKeyEvent):
-        logger.info('THIS keyPressEvent DOES NOTHING')
-        super().keyPressEvent(event)
+    # def keyPressEvent(self, event : QtGui.QKeyEvent):
+    #     super().keyPressEvent(event)
 
-        # abb on_selectionChanged is not using its params
-        self.on_selectionChanged(None)
+    #     # abb on_selectionChanged is not using its params
+    #     # self.on_selectionChanged(None)
 
     def on_selectionChanged(self, item):
         """Respond to user selection.
@@ -575,7 +575,7 @@ class myQTableView(QtWidgets.QTableView):
         logger.info(f'{self.getMyName()}')
         
         if self._blockSignalSelectionChanged:
-            logger.info(f'  _blockSignalSelectionChanged -->> return')
+            # logger.info(f'  _blockSignalSelectionChanged -->> return')
             return
         
         # PyQt5.QtCore.Qt.KeyboardModifiers
@@ -678,7 +678,19 @@ class myQTableView(QtWidgets.QTableView):
         # # self.modelReset()
         # self.model.endResetModel()
 
-    
+    @contextmanager
+    def _blockSlotsManager(self):
+        try:
+            self._blockSignalSelectionChanged = True
+            yield self._blockSignalSelectionChanged
+        except Exception as e:
+            logger.error(e)
+            logger.error('setting block slot to False')
+            self._blockSignalSelectionChanged = False
+            raise e
+        finally:
+            self._blockSignalSelectionChanged = False
+            
     def _selectRow(self, rowList):
         """Programatically select rows of model via mySelectionModel
 
@@ -689,38 +701,38 @@ class myQTableView(QtWidgets.QTableView):
 
         logger.info(f'{self.getMyName()} rowList:{rowList}')
         
-        # abb was here
-        # self._blockSignalSelectionChanged = True
-
-        # Remove previously selected rows
-        super().clearSelection()
-        
         if rowList is None or len(rowList)==0:
             return
 
-        # abb moved here
-        self._blockSignalSelectionChanged = True
+        # here we will use a context manager to block slots
+        # if we get a runtime error within the 'with'
+        # the conext manager will set blockSlots to false
+        with self._blockSlotsManager():
+            # self._blockSignalSelectionChanged = True
 
-        # logger.info(f'rowList:{rowList}')
+            # Remove previously selected rows
+            super().clearSelection()
+            
+            # test context manager exception
+            # logger.info('testing raise ValueError')
+            # raise ValueError
         
-        # 2nd argument is column, here we default to zero since we will select the entire row regardless
-        for _idx, rowIdx in enumerate(rowList):
-            modelIndex = self.model.index(rowIdx, 0)
-        
-            # QModelIndex
-            proxyIndex = self.proxyModel.mapFromSource(modelIndex)
+            # 2nd argument is column
+            # here we default to zero since we will select the entire row regardless
+            for _idx, rowIdx in enumerate(rowList):
+                modelIndex = self.model.index(rowIdx, 0)
+            
+                # QModelIndex
+                proxyIndex = self.proxyModel.mapFromSource(modelIndex)
 
-            mode = QtCore.QItemSelectionModel.Select | QtCore.QItemSelectionModel.Rows
-            # self.selectionMode().select(proxyIndex, mode)
-            self.mySelectionModel.select(proxyIndex, mode)
+                mode = QtCore.QItemSelectionModel.Select | QtCore.QItemSelectionModel.Rows
+                self.mySelectionModel.select(proxyIndex, mode)
 
-            if _idx == 0:
-                # logger.info(f"{self.getMyName()} scrollTo proxyIndex {proxyIndex.row()} modelIndex:{modelIndex.row()}")
-                # logger.info(f'      {type(proxyIndex)} {type(modelIndex)}')
-                # self.scrollTo(proxyIndex, QtWidgets.QAbstractItemView.PositionAtTop) 
-                self.scrollTo(proxyIndex) 
+                # scroll the list to the first selection
+                if _idx == 0:
+                    self.scrollTo(proxyIndex) 
 
-        self._blockSignalSelectionChanged = False
+            # self._blockSignalSelectionChanged = False
 
     # abb 042024 to match expected api in annotationListWidget2
     def mySelectRows(self, rowIdx):

@@ -1,3 +1,15 @@
+# circular import for typechecking
+# from pymapmanager.interface2 import PyMapManagerApp
+# see: https://stackoverflow.com/questions/39740632/python-type-hinting-without-cyclic-imports
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+import pymapmanager.interface2
+import pymapmanager.interface2.stackWidgets
+import pymapmanager.interface2.stackWidgets.histogramWidget2
+if TYPE_CHECKING:
+    from pymapmanager.interface2 import PyMapManagerApp, AppDisplayOptions
+
 from typing import Optional  # List, Union, Tuple
 
 import numpy as np
@@ -16,6 +28,7 @@ from .imagePlotWidget2 import ImagePlotWidget
 # from .tracingWidget import tracingWidget
 # from .histogramWidget2 import HistogramWidget
 # from .searchWidget2 import SearchWidget2
+from pymapmanager.interface2.stackWidgets.event.spineEvent import AddSpineEvent, DeleteSpineEvent  #, UndoSpineEvent
 
 from pymapmanager._logger import logger
 
@@ -51,7 +64,8 @@ class stackWidget2(mmWidget2):
         if stack is not None:
             self._stack = stack
         else:
-            logger.info(f'loading stack from path: {path}')
+            logger.info('loading stack from path:')
+            logger.info(f'{path}')
             self._stack = pymapmanager.stack(path)
 
         # add 2/24 when implementing map/timeseries GUI
@@ -79,12 +93,15 @@ class stackWidget2(mmWidget2):
         # self._currentSelection.setImageChannel(_channel)
         """Keep track of the current selection"""
 
+        from pymapmanager.interface2.stackWidgets.event.undoRedo import UndoRedoEvent
+        self._undoRedo = UndoRedoEvent(self)
+
         self.setWindowTitle(path)
 
         self._buildUI()
         self._buildMenus()
-
-    def getDisplayOptions(self) -> "AppDisplayOptions":
+    
+    def getDisplayOptions(self) -> AppDisplayOptions:
         return self._displayOptionsDict
     
     def closeEvent(self, event):
@@ -116,7 +133,7 @@ class stackWidget2(mmWidget2):
     #     """
     #     return self._timePoint
     
-    def getPyMapManagerApp(self) -> Optional["PyMapManagerApp"]:
+    def getPyMapManagerApp(self) -> Optional[PyMapManagerApp]:
         """Get the running PyMapManagerApp(QApplication).
         
         If not PyMapManagerApp, will return None.
@@ -328,32 +345,42 @@ class stackWidget2(mmWidget2):
         self.addToolBar(QtCore.Qt.TopToolBarArea, self._topToolbar)
         self._widgetDict[topToobarName] = self._topToolbar
         
+        #  adding bottom contrast widget
+        # vBoxMainLayout = QtWidgets.QVBoxLayout()
+        # self._makeCentralWidget(vBoxMainLayout)
+
         # main h box to hold left control panel and image plot
         hBoxLayout_main = QtWidgets.QHBoxLayout()
         self._makeCentralWidget(hBoxLayout_main)
+
+        # vBoxMainLayout.addLayout(hBoxLayout_main)
 
         # left v-layout for point and line lists
         vLayout = QtWidgets.QVBoxLayout()
         hBoxLayout_main.addLayout(vLayout)
         
         #
-        pointListName = pointListWidget._widgetName
+        # pointListName = pointListWidget._widgetName
         plw = pointListWidget(self)
+        pointListName = plw._widgetName
         pointListDock = self._addDockWidget(plw, 'left', 'Points')
         self._widgetDict[pointListName] = pointListDock  # the dock, not the widget ???
 
         #
-        lineListName = lineListWidget._widgetName
+        # lineListName = lineListWidget._widgetName
         llw = lineListWidget(self)
+        lineListName = llw._widgetName
         lineListDock = self._addDockWidget(llw, 'left', 'Lines')
         self._widgetDict[lineListName] = lineListDock  # the dock, not the widget ???
 
         #
-        imagePlotName = ImagePlotWidget._widgetName
+        # imagePlotName = ImagePlotWidget._widgetName
         _imagePlotWidget = ImagePlotWidget(self)
+        imagePlotName = _imagePlotWidget._widgetName
         hBoxLayout_main.addWidget(_imagePlotWidget)
         self._widgetDict[imagePlotName] = _imagePlotWidget  # the dock, not the widget ??
 
+        self._imagePlotName = imagePlotName
         #
         # status toolbar (bottom)
         numSlices = self._stack.numSlices
@@ -367,6 +394,12 @@ class stackWidget2(mmWidget2):
 
         self._topToolbar.signalChannelChange.connect(self.slot_setChannel)
 
+        _histWidget = pymapmanager.interface2.stackWidgets.histogramWidget2.HistogramWidget(self)
+        _histWidgetName = _histWidget._widgetName
+        _histDock = self._addDockWidget(_histWidget, 'bottom', 'Histogram')
+        self._widgetDict[_histWidgetName] = _histWidget  # the dock, not the widget ???
+        self._widgetDict[_histWidgetName].hide()  # hide histogram by default
+
         #
         # plugin panel with tabs
         self.pluginDock1 = stackPluginDock(self)
@@ -378,20 +411,22 @@ class stackWidget2(mmWidget2):
             top tool bar
 
 
+
             Arguments: 
                 d = {
                     'checked': checked,
                     'upDownSlices': upDownSlices,
                     }
         """
+        self._displayOptionsDict['windowState']['doSlidingZ'] = d['checked']
         self._displayOptionsDict['windowState']['zPlusMinus'] = d["upDownSlices"]
-        temp = self._displayOptionsDict["windowState"]['zPlusMinus']
-        logger.info(f"self._displayOptionsDict['windowState']['zPlusMinus'] {temp}")
+        
         self._displayOptionsDict['pointDisplay']['zPlusMinus'] = d["upDownSlices"]
         self._displayOptionsDict['lineDisplay']['zPlusMinus'] = d["upDownSlices"]
 
         # Call to refresh other widgets
         # Simply use slice change
+        # self._widgetDict[self._imagePlotName].slot_setSlidingZ(d)
 
         _pmmEvent = pmmEvent(pmmEventType.setSlice, self)
         _pmmEvent.setSliceNumber(self._currentSliceNumber)
@@ -431,8 +466,8 @@ class stackWidget2(mmWidget2):
         _stackSelection = self.getStackSelection()
         _eventSelection = event.getStackSelection()
 
-        _state = self.getStackSelection().getState()
-
+        _state = _stackSelection.getState()
+        
         # logger.info(f'state is: {_state}')
         
         if _state == pmmStates.manualConnectSpine:
@@ -475,6 +510,7 @@ class stackWidget2(mmWidget2):
                 _onePoint = _pointSelection[0]
                 segmentIndex = self.getStack().getPointAnnotations().getValue("segmentID", _onePoint)
                 segmentIndex= [int(segmentIndex)]
+                
                 self.getStackSelection().setSegmentSelection(segmentIndex)
                 #
                 _eventSelection.setSegmentSelection(segmentIndex)
@@ -484,8 +520,6 @@ class stackWidget2(mmWidget2):
         else:
             logger.info("No Selection - Setting current selection as [] in Stack Widget")
             self.getStackSelection().setPointSelection([])
-
-        if not _eventSelection.hasPointSelection():
             if _eventSelection.hasSegmentSelection():
                 _segmentSelection = _eventSelection.getSegmentSelection()
                 self.getStackSelection().setSegmentSelection(_segmentSelection)
@@ -501,11 +535,9 @@ class stackWidget2(mmWidget2):
 
         return True
 
-    def addedEvent(self, event : "AddSpineEvent") -> bool:
+    def addedEvent(self, event : AddSpineEvent) -> bool:
         """Add to backend.
         
-        Currently only allows adding a spine annotation.
-
         Returns
         -------
         True if added, False otherwise
@@ -520,7 +552,6 @@ class stackWidget2(mmWidget2):
             return False
         
         segmentID = _stackSelection.firstSegmentSelection()
-        # segmentID = _stackSelection.getSegmentSelection()
 
         for _rowIdx, item in enumerate(event):
             logger.info(item)
@@ -536,17 +567,7 @@ class stackWidget2(mmWidget2):
             event._list[_rowIdx]['spineID'] = newSpineID
             event._list[_rowIdx]['segmentID'] = segmentID
 
-        return True
-    
-        x, y, z = event.getAddMovePosition()
-        newRow = self.getStack().getPointAnnotations().addSpine(x, y, z, segmentID, self._stack)
-        logger.info(f'   newRow:{newRow}')
-        
-        # make our new item selected
-        _stackSelection.setPointSelection([newRow])
-
-        # so children know whichi index to update
-        event.getStackSelection().setPointSelection([newRow])
+        self.getUndoRedo().addUndo(event)
 
         return True
 
@@ -568,7 +589,9 @@ class stackWidget2(mmWidget2):
         logger.info(event)
         self.getStack().getPointAnnotations().editSpine(event)
 
-    def deletedEvent(self, event : "DeleteSpineEvent") -> bool:
+        self.getUndoRedo().addUndo(event)
+
+    def deletedEvent(self, event : DeleteSpineEvent) -> bool:
         """Delete items from backend.
         
         Returns
@@ -581,6 +604,8 @@ class stackWidget2(mmWidget2):
         spineIDs = event.getSpines()
         for spineID in spineIDs:
             self.getStack().getPointAnnotations().deleteAnnotation(spineID)
+
+        self.getUndoRedo().addUndo(event)
 
         # # delete segment
         # _segmentSelection = _selection.getSegmentSelection()
@@ -694,30 +719,14 @@ class stackWidget2(mmWidget2):
         self.slot_setStatus('Ready')
 
     def moveAnnotationEvent(self, event : "pmmEvent"):
-        
-        # items = event.getSpines()  # [int]
-        # if len(items) == 0:
-        #     return
 
         logger.info('=== ===   STACK WIDGET PERFORMING Move   === ===')
 
         for item in event:
             logger.info(f'item:{item}')
 
-            # _eventSelection = event.getStackSelection()
-
-            # logger.info(f'event:{event} _eventSelection:{_eventSelection}')
-
-            # if not _eventSelection.hasPointSelection():
-            #     logger.warning('only works for single item selection')
-            #     return
-            
-            # itemList = _eventSelection.getPointSelection()
-            # item = itemList[0]
-            # x, y, z = event.getAddMovePosition()
             spineID = item['spineID']
-            # if len(spineID) > 0:
-            #     spineID = spineID[0]
+
             x = item['x']
             y = item['y']
             z = item['z']
@@ -725,30 +734,9 @@ class stackWidget2(mmWidget2):
             logger.info(f'   spineID:{spineID} x:{x} y:{y} z:{z}')
             _pointAnnotation = self.getStack().getPointAnnotations()
             _pointAnnotation.moveSpine(spineID=spineID, x=x, y=y, z=z)
-            # _pointAnnotation.setValue('x', spineID, x)
-            # _pointAnnotation.setValue('y', spineID, y)
-            # _pointAnnotation.setValue('z', spineID, z)
 
-            # force recalculation of brightest index
-            #_pointAnnotation.setValue('brightestIndex', item, np.nan)
+        self.getUndoRedo().addUndo(event)
 
-            # la = self.getStack().getLineAnnotations()
-            # channelNumber = 1
-            # _imageSlice = z
-            # imgSliceData = self._stack.getImageSlice(_imageSlice, channelNumber)
-            
-            # abb 202404, done by core
-            # _pointAnnotation.updateSpineInt2(
-            #                 item,
-            #                 self._stack)
-                                
-            #
-
-        # sliceNum = event.getSliceNumber()
-        # logger.info(f"moveAnnotationEvent sliceNum {sliceNum}")
-        
-        # logger.error('put call to _afterEdit back in')
-        
         self._afterEdit2(event)
         
     def manualConnectSpineEvent(self, event : pmmEvent):
@@ -768,50 +756,9 @@ class stackWidget2(mmWidget2):
             _pointAnnotation = self.getStack().getPointAnnotations()
             _pointAnnotation.manualConnectSpine(spineID=spineID, x=x, y=y, z=z)
 
+        self.getUndoRedo().addUndo(event)
+
         self._afterEdit2(event)
-
-        # OLD
-        # # _stackSelection = self.getStackSelection()
-        # _stackSelection = event.getStackSelection()
-        
-        # manuallyConnectSpine = _stackSelection.getManualConnectSpine()
-        # if manuallyConnectSpine is None or manuallyConnectSpine == []:
-        #     errStr = 'Did not get spine selection - can not make manual connection'
-        #     logger.error(f'{errStr} manuallyConnectSpine:{manuallyConnectSpine}')
-        #     self.slot_setStatus(errStr)
-        #     logger.error(f'_stackSelection: {_stackSelection}')
-        #     return
-        
-        # # user selected brightest index
-        # if not _stackSelection.hasSegmentPointSelection():
-        #     logger.error('got bad brightestIndex')
-        #     return
-        
-        # brightestIndex = _stackSelection.getSegmentPointSelection()
-        
-        # logger.info('=== ===   STACK WIDGET PERFORMING MANUAL CONNECT   === ===')
-        # logger.info(f'   manuallyConnectSpine:{manuallyConnectSpine} to brightestIndex:{brightestIndex}')
-
-        # # set backend
-        # _pointAnnotation = self.getStack().getPointAnnotations()
-        # _pointAnnotation.setValue('brightestIndex', manuallyConnectSpine, brightestIndex)
-        # _pointAnnotation.updateSpineInt2(manuallyConnectSpine, self.getStack())
-        
-        # #
-        # # need to transform event into a spine selection (it is currently a line selection)
-        # eventType = pmmEventType.selection
-        # newEvent = pmmEvent(eventType, self)
-        # newEvent.getStackSelection().setPointSelection(manuallyConnectSpine)
-        # sliceNum = event.getSliceNumber()
-        # newEvent.setSliceNumber(sliceNum)
-
-        # logger.info(f'manualConnectSpineEvent Slice number emit {sliceNum} ')
-        # # self.emitEvent(event, blockSlots=False)
-
-        # # Removed 3/6 since it causes looping of calls
-        # # self.slot_pmmEvent(newEvent)
-
-        # self._afterEdit(newEvent)
 
     def autoConnectSpineEvent(self, event):
         """Auto connect the currently selected spine.
@@ -917,41 +864,52 @@ class stackWidget2(mmWidget2):
         self._colorLutDict['blue'] = lut
         self._colorLutDict['b'] = lut
 
+    def slot_contrastChanged(self, contrastDict):
+        self._widgetDict[self._imagePlotName].slot_setContrast(contrastDict)
+
     def _setDefaultContrastDict(self):
         """Remember contrast setting and color LUT for each channel.
         """
-        logger.info(f'num channels is: {self._stack.numChannels}')
+        # logger.info(f'num channels is: {self._stack.numChannels}')
         self._contrastDict = {}
         for channelIdx in range(self._stack.numChannels):
             channelNumber = channelIdx + 1
             
-            logger.warning('removed on merge core 20240513')
+            _defaultDisplayBitDepth = 11
+            
+            # logger.warning('removed on merge core 20240513')
             # _stackData = self._stack.getImageChannel(channel=channelNumber)
-            minStackIntensity = 0  # np.min(_stackData)
-            maxStackIntensity = 2048  # np.max(_stackData)
 
-            if minStackIntensity is None:
-                minStackIntensity = 0
-            if maxStackIntensity is None:
-                maxStackIntensity = 255
-                
-            logger.warning('need to fix this when there is no image data')
-            logger.info(f'  channel {channelIdx} minStackIntensity:{minStackIntensity} maxStackIntensity:{maxStackIntensity}')
+            # minStackIntensity = 0  # np.min(_stackData)
+            # maxStackIntensity = 2**_defaultDisplayBitDepth  # 2048  # np.max(_stackData)
+
+            # if minStackIntensity is None:
+            #     minStackIntensity = 0
+            # if maxStackIntensity is None:
+            #     maxStackIntensity = 255
+
+            # logger.warning('need to fix this when there is no image data')
+            # logger.info(f'  channel {channelIdx} minStackIntensity:{minStackIntensity} maxStackIntensity:{maxStackIntensity}')
+
+            # expensive, get once
+            minAutoContrast, maxAutoContrast = self._stack.getAutoContrast(channel=channelIdx)
 
             self._contrastDict[channelNumber] = {
                 'channel': channelNumber,
                 'colorLUT': self._channelColor[channelIdx],
-                'minContrast': minStackIntensity,  # set by user
-                'maxContrast': maxStackIntensity,  # set by user
-                #'minStackIntensity': minStackIntensity,  # to set histogram/contrast slider guess
-                #'maxStackIntensity': maxStackIntensity,
-                'bitDepth': self._stack.header['bitDepth']
+                'minContrast': minAutoContrast,  # set by user
+                'maxContrast': maxAutoContrast,  # set by user
+                'minAutoContrast': minAutoContrast,
+                'maxAutoContrast': maxAutoContrast,
+                # 'bitDepth': self._stack.header['bitDepth']
+                'displayBitDepth': _defaultDisplayBitDepth
             }
 
     def zoomToPointAnnotation(self,
                               idx : int,
                               isAlt : bool = False,
-                              select : bool = False):
+                              select : bool = False
+                              ):
         """Zoom to a point annotation.
         
         This should be called externally. For example,
@@ -982,7 +940,7 @@ class stackWidget2(mmWidget2):
         sliceNum = self.getStack().getPointAnnotations().getValue("z", idx)
         event.setSliceNumber(sliceNum)
 
-        event.setAlt(True)
+        event.setAlt(isAlt)
         self.slot_pmmEvent(event)
         #self.emitEvent(event, blockSlots=False)
 
@@ -1038,6 +996,15 @@ class stackWidget2(mmWidget2):
 
         self._afterEdit(newEvent)
 
+    def getUndoRedo(self):
+        return self._undoRedo
+        
+    # abb 20240701, logic here is flawed. We might not need a class for undo/redo
+    # e.g. UndoSpineEvent and RedoSpineEvent
+    # might be sufficient to write code that emits event to properly update the GUI
+    # the core has taken care of actual undo
+    # for example, to undo an add spine
+
     def _undo_action(self):
         # logger.info('')
         #self.getStack().undo()
@@ -1045,9 +1012,10 @@ class stackWidget2(mmWidget2):
 
         self.getStack().undo()
 
-        from pymapmanager.interface2.stackWidgets.event.spineEvent import UndoSpineEvent
-        undoSpineEvent = UndoSpineEvent(self)
-        self.emitEvent(undoSpineEvent)
+        self.getUndoRedo().doUndo()
+
+        # undoSpineEvent = UndoSpineEvent(self, undoEvent)
+        # self.emitEvent(undoSpineEvent)
 
     def _redo_action(self):
         # logger.info('')
@@ -1056,6 +1024,8 @@ class stackWidget2(mmWidget2):
 
         self.getStack().redo()
 
-        from pymapmanager.interface2.stackWidgets.event.spineEvent import RedoSpineEvent
-        redoSpineEvent = RedoSpineEvent(self)
-        self.emitEvent(redoSpineEvent)
+        redoEvent = self.getUndoRedo().doRedo()
+
+        # from pymapmanager.interface2.stackWidgets.event.spineEvent import RedoSpineEvent
+        # redoSpineEvent = RedoSpineEvent(self, redoEvent)
+        # self.emitEvent(redoSpineEvent)

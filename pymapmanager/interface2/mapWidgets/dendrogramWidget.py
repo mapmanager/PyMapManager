@@ -10,13 +10,12 @@ import matplotlib.pyplot as plt
 
 from qtpy import QtCore, QtWidgets
 
-# import pymapmanager as pmm
 from pymapmanager.interface2.stackWidgets import mmWidget2
 from pymapmanager.interface2.stackWidgets.mmWidget2 import pmmEventType, pmmEvent
 
 from .mmMapPlot import getPlotDict
 from .mmMapPlot import mmMapPlot
-from .mapWidget import mapWidget, MapSelection
+from .mapWidget import mapWidget
 
 from pymapmanager._logger import logger
 
@@ -194,7 +193,7 @@ class dendrogramWidget(mmWidget2):
 
     # main mapmanager signal/slot
         
-    def selectedEvent(self, event : "pymapmanager.interface2.mmWidget2.pmmEvent"):
+    def selectedEvent(self, event : pmmEvent):
         """Respond to a user selection.
         """
         # logger.info(f'event:{event}')

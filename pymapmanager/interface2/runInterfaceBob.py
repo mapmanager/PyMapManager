@@ -3,10 +3,13 @@
 
 import sys
 
+import mapmanagercore.data
+
 from pymapmanager.interface2.pyMapManagerApp2 import PyMapManagerApp
+from pymapmanager._logger import logger
 
 def run():
-    app = PyMapManagerApp()
+    app = PyMapManagerApp(sys.argv)
 
     # path = '../PyMapManager-Data/core-map/one-timepoint/oneTimepoint.mmap'
 
@@ -28,6 +31,11 @@ def run():
     # from trySegment, works!
     # path = '/Users/cudmore/Desktop/trySeg.mmap'
 
+    # was working before switch to DirectoryStore
+    path = mapmanagercore.data.getSingleTimepointMap()
+
+    # path = '/Users/cudmore/Sites/MapManagerCore/data/rr30a_s0u_v2.mmap'
+
     sw2 = app.loadStackWidget(path)
     
     # works
@@ -44,7 +52,7 @@ def run():
 
     sw2.zoomToPointAnnotation(0, isAlt=True)
 
-    sw2.runPlugin('Tracing', inDock=True)
+    # sw2.runPlugin('Tracing', inDock=True)
     
     # TODO: get this working
     # _map = sw2.getStack().sessionMap
