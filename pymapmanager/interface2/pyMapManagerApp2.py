@@ -294,6 +294,43 @@ class PyMapManagerApp(QtWidgets.QApplication):
         logger.info('')
         pass
 
+    def saveFile(self):
+        """ Save new changes to current file
+        """
+        # zarrPath = self.stackWidget.getStack().getPath()
+        # <pymapmanager.interface2.stackWidgets.stackWidget2.stackWidget2 object at 0x00000194F144C790>
+        # temp = self._stackWidgetDict['\\Users\\johns\\Documents\\GitHub\\MapManagerCore\\data\\rr30a_s0u.mmap']
+        # logger.info(f'Saving file at path: {temp}')
+      
+        logger.info(f'Saving file at path: {  self._stackWidgetDict.keys()}')
+        for key in self._stackWidgetDict.keys():
+            # looping through every path in stackWidgetDict
+            # key = path of current stack
+            stackWidget = self._stackWidgetDict[key]
+            stackWidget.save(key)
+
+    def saveAsFile(self):
+        """ Save change to a new file
+
+        2 Scenarios:
+            1.) mmap file has not been created yet and we need to save a new one
+            2.) There is already a mmap file and user wants to create a new one
+                - in this scenario, after creating a new one, save would still save on the old one,
+                until user loads in that new file
+        """
+        logger.info(f'Saving as file {  self._stackWidgetDict.keys()}')
+
+        # scenario 1) Should be called when something is dragged and dropped, new file is loaded in
+        # this is handled in loadTifFile
+        # scenario 2) 
+        if len(self._stackWidgetDict) > 0:
+            for key in self._stackWidgetDict.keys():
+                # looping through every path in stackWidgetDict
+                # key = path of current stack
+                stackWidget = self._stackWidgetDict[key]
+                stackWidget.fileSaveAs(key)
+                # stackWidget.saveAs(key)
+
     def _undo_action(self):
         self.getFrontWindow()._undo_action()
         # logger.info('')
@@ -358,6 +395,58 @@ class PyMapManagerApp(QtWidgets.QApplication):
 
         return self._mapWidgetDict[path]
     
+    def loadTifFile(self, path : str):
+        """Load a stack from tif from a path.
+        Only happens on first load/ drag and drop
+        Create stackwidget/ mmap from tif file
+        
+        Parameters
+        ----------
+        path : str
+            Full path to tif file
+        """
+        from mapmanagercore import MapAnnotations, MultiImageLoader
+        from mapmanagercore.lazy_geo_pandas import LazyGeoFrame
+        from mapmanagercore.schemas import Segment, Spine
+
+        loader = MultiImageLoader()
+        # path = "C:\\Users\\johns\\Documents\\GitHub\\PyMapManager-Data\\one-timepoint\\rr30a_s0_ch1.tif"
+    
+        try: # Check if path is a tif file
+            # TODO: detect channel, move channel to parameter
+            loader.read(path, channel=0)
+            logger.info("loading tif file!")
+        except Exception as e: # else return error message
+            logger.info(f"Exeception when reading tif file: {e}")
+            return
+        import pandas as pd
+        import geopandas
+        lineSegments = geopandas.GeoDataFrame()
+        points = geopandas.GeoDataFrame()
+
+
+        # Might no be necessary, example.ipynb works with empty geodataframes
+        # self._segments = LazyGeoFrame(
+        #     Segment, data=lineSegments, store=self)
+        # self._points = LazyGeoFrame(Spine, data=points, store=self)
+
+        map = MapAnnotations(loader.build(),
+                            lineSegments=lineSegments,
+                            points=points)
+        
+        # Save new mmap file in same directory as tif file
+        import os
+        pathParse = os.path.splitext(path)[0] # without extension
+        newMapPath = pathParse + ".mmap"
+        logger.info("Save new Map from tif file")
+        map.save(newMapPath)
+
+        self.loadStackWidget(newMapPath)
+        # map.points[:]
+        # need to save zarr file first. so that we can create a stack from it within stackwidget
+        # need to create stackwidget from new map
+        #only save when user clicks save as
+               
     def loadStackWidget(self, path : str):
         """Load a stack from a path.
         

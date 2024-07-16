@@ -6,7 +6,11 @@ import numpy as np
 import pandas as pd
 import shapely
 
+import mapmanagercore
 from mapmanagercore import MapAnnotations
+# from mapmanagercore import MapAnnotations, MultiImageLoader
+# from mapmanagercore.annotations.single_time_point.base import SingleTimePointFrame
+# from mapmanagercore import single_time_point
 from mapmanagercore.layers.line import clipLines
 
 from pymapmanager.interface2.stackWidgets.event.spineEvent import EditSpinePropertyEvent
@@ -267,10 +271,15 @@ class SpineAnnotationsCore(AnnotationsCore):
             logger.warning(e)
             return
         
-        # add (x, y) if it does not exists
-        xyCoord = allSpinesDf['point'].get_coordinates()
-        allSpinesDf['x'] = xyCoord['x']
-        allSpinesDf['y'] = xyCoord['y']
+        # abj:
+        # check if points are empty:
+        if len(allSpinesDf) > 0:
+            logger.info(f"allSpinesDf {type(allSpinesDf)}") # <class 'geopandas.geodataframe.GeoDataFrame'>
+            # logger.info(f"allSpinesDf['point'] {type(allSpinesDf['point'])}")
+            # add (x, y) if it does not exists
+            xyCoord = allSpinesDf['point'].get_coordinates()
+            allSpinesDf['x'] = xyCoord['x']
+            allSpinesDf['y'] = xyCoord['y']
 
         allSpinesDf['roiType'] = 'spineROI'
         allSpinesDf.insert(0,'index', allSpinesDf.index)  # index is first column
@@ -398,10 +407,20 @@ class LineAnnotationsCore(AnnotationsCore):
         # print('_lineSegments:', _lineSegments)
 
         # mapmanagercore.annotations.single_time_point.layers.AnnotationsLayers
-        # logger.info(f'self._fullMap:{type(self._fullMap)}')
+        logger.info(f'self._fullMap type:{type(self._fullMap)}')
+        logger.info(f'self._fullMap:{self._fullMap}')
         
         # logger.info(f'self._fullMap.segments["segment"]:{type(self._fullMap.segments["segment"])}')
 
+        # abj try only if df is not empty
+        segments = self._fullMap.segments
+        logger.info(f"segments {segments}")
+        logger.info(f"segments type {type(segments)}")
+
+        segmentDF = self._fullMap.segments['segment']
+        logger.info(f"segmentDF {segmentDF}")
+        logger.info(f"segmentDF type {type(segmentDF)}")
+        # if len(segmentDF) > 0:
         try:
             # self._fullMap.segments[:]
             df = self._fullMap.segments['segment'].get_coordinates(include_z=True)
@@ -409,7 +428,7 @@ class LineAnnotationsCore(AnnotationsCore):
             # AttributeError:'GeoSeries' object has no attribute 'set_index'
             logger.error(f'AttributeError:{e}')
             return
-        
+    
         # print('columns:', df.columns)
         # print(df)
 

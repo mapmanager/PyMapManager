@@ -1029,3 +1029,23 @@ class stackWidget2(mmWidget2):
         # from pymapmanager.interface2.stackWidgets.event.spineEvent import RedoSpineEvent
         # redoSpineEvent = RedoSpineEvent(self, redoEvent)
         # self.emitEvent(redoSpineEvent)
+
+    def save(self, path):
+        """ Stack Widget saves changes to its Zarr file
+        """
+        self.getStack().save(path)
+
+    # def old_saveAs(self, path):
+    #     """ Stack Widget saves changes to a new zarr file path
+    #     """
+    #     self.fileSaveAs(path)
+    #     # self.getStack().saveAs(path)
+
+    def fileSaveAs(self):
+        """
+        saveAsPath = path chosen by user to save new mmap file
+        """
+        # ('C:/Users/johns/Documents/GitHub/MapManagerCore/data/test', 'All Files (*)')
+        saveAsPath = QtWidgets.QFileDialog.getSaveFileName(None, 'Save File')[0]
+        logger.info(f"name {saveAsPath}")
+        self.getStack().save(saveAsPath)
