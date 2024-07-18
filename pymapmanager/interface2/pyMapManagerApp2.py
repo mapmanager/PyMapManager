@@ -328,7 +328,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
                 # looping through every path in stackWidgetDict
                 # key = path of current stack
                 stackWidget = self._stackWidgetDict[key]
-                stackWidget.fileSaveAs(key)
+                stackWidget.fileSaveAs()
                 # stackWidget.saveAs(key)
 
     def _undo_action(self):
