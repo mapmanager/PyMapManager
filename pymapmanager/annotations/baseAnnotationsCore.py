@@ -92,8 +92,12 @@ class AnnotationsCore:
         _stopSlice = zSlice + zPlusMinus
 
         df = self.getDataFrame()
+        # logger.info(f"df: {df}")
         df['rowIndex'] = list(np.arange(len(df)))
-        df = df[(df['z']>=_startSlice) & (df['z']<=_stopSlice)]
+
+        #abj: 7/17/24
+        if not df.empty:
+            df = df[(df['z']>=_startSlice) & (df['z']<=_stopSlice)]
 
         return df
     
@@ -264,15 +268,15 @@ class SpineAnnotationsCore(AnnotationsCore):
         """
         
         # _startSec = time.time()
-        
+        # logger.info(f"self._fullMap.points {self._fullMap.points}")
+        # logger.info(f"type self._fullMap.points {type(self._fullMap.points)}")
         try:
             allSpinesDf = self._fullMap.points[:]
         except (KeyError) as e:
             logger.warning(e)
             return
         
-        # abj:
-        # check if points are empty:
+        #abj: check if points are empty:
         if len(allSpinesDf) > 0:
             logger.info(f"allSpinesDf {type(allSpinesDf)}") # <class 'geopandas.geodataframe.GeoDataFrame'>
             # logger.info(f"allSpinesDf['point'] {type(allSpinesDf['point'])}")
@@ -305,6 +309,11 @@ class SpineAnnotationsCore(AnnotationsCore):
         1        382.0  250.0 NaN
         """
         # anchorDf = self._sessionMap['anchors'].get_coordinates(include_z=True)
+
+        # test= self._fullMap.points['anchorLine']
+        # logger.info(f"getSpineLines test {test}")
+        # logger.info(f"getSpineLines test type {type(test)}")
+
         anchorDf = self._fullMap.points['anchorLine'].get_coordinates(include_z=True)
         return anchorDf
     
@@ -407,20 +416,11 @@ class LineAnnotationsCore(AnnotationsCore):
         # print('_lineSegments:', _lineSegments)
 
         # mapmanagercore.annotations.single_time_point.layers.AnnotationsLayers
-        logger.info(f'self._fullMap type:{type(self._fullMap)}')
-        logger.info(f'self._fullMap:{self._fullMap}')
+        # logger.info(f'self._fullMap type:{type(self._fullMap)}')
+        # logger.info(f'self._fullMap:{self._fullMap}')
         
         # logger.info(f'self._fullMap.segments["segment"]:{type(self._fullMap.segments["segment"])}')
-
-        # abj try only if df is not empty
-        segments = self._fullMap.segments
-        logger.info(f"segments {segments}")
-        logger.info(f"segments type {type(segments)}")
-
-        segmentDF = self._fullMap.segments['segment']
-        logger.info(f"segmentDF {segmentDF}")
-        logger.info(f"segmentDF type {type(segmentDF)}")
-        # if len(segmentDF) > 0:
+    
         try:
             # self._fullMap.segments[:]
             df = self._fullMap.segments['segment'].get_coordinates(include_z=True)

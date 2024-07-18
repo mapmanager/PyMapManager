@@ -76,6 +76,7 @@ class ImagePlotWidget(mmWidget2):
         
         self._currentSlice = 0
         
+        # TODO: 7/17 - change this to detect amount of channels?
         _channel = self._displayOptionsDict['windowState']['defaultChannel']
 
         self._displayThisChannel = _channel  # 1->0, 2->1, 3->2, etc
