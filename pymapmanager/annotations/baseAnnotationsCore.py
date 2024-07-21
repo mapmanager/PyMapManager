@@ -6,7 +6,11 @@ import numpy as np
 import pandas as pd
 import shapely
 
+import mapmanagercore
 from mapmanagercore import MapAnnotations
+# from mapmanagercore import MapAnnotations, MultiImageLoader
+# from mapmanagercore.annotations.single_time_point.base import SingleTimePointFrame
+# from mapmanagercore import single_time_point
 from mapmanagercore.layers.line import clipLines
 from mapmanagercore.lazy_geo_pandas import LazyGeoFrame
 
@@ -89,8 +93,12 @@ class AnnotationsCore:
         _stopSlice = zSlice + zPlusMinus
 
         df = self.getDataFrame()
+        # logger.info(f"df: {df}")
         df['rowIndex'] = list(np.arange(len(df)))
-        df = df[(df['z']>=_startSlice) & (df['z']<=_stopSlice)]
+
+        #abj: 7/17/24
+        if not df.empty:
+            df = df[(df['z']>=_startSlice) & (df['z']<=_stopSlice)]
 
         return df
     
@@ -164,6 +172,10 @@ class AnnotationsCore:
                 
         # _moved = self._fullMap.moveSpine((spineID, self.sessionID), x=x, y=y, z=z)
         _moved = self._fullMap.moveSpine(spineID, x=x, y=y, z=z)
+
+        #abj: 7/5
+        #update background ROI
+        self._fullMap.snapBackgroundOffset(spineID)
 
         # rebuild df from mutated full map
         self._buildDataFrame()
@@ -252,17 +264,22 @@ class SpineAnnotationsCore(AnnotationsCore):
         """
         
         # _startSec = time.time()
-        
+        # logger.info(f"self._fullMap.points {self._fullMap.points}")
+        # logger.info(f"type self._fullMap.points {type(self._fullMap.points)}")
         try:
             allSpinesDf = self._fullMap.points[:]
         except (KeyError) as e:
             logger.warning(e)
             return
         
-        # add (x, y) if it does not exists
-        xyCoord = allSpinesDf['point'].get_coordinates()
-        allSpinesDf['x'] = xyCoord['x']
-        allSpinesDf['y'] = xyCoord['y']
+        #abj: check if points are empty:
+        if len(allSpinesDf) > 0:
+            logger.info(f"allSpinesDf {type(allSpinesDf)}") # <class 'geopandas.geodataframe.GeoDataFrame'>
+            # logger.info(f"allSpinesDf['point'] {type(allSpinesDf['point'])}")
+            # add (x, y) if it does not exists
+            xyCoord = allSpinesDf['point'].get_coordinates()
+            allSpinesDf['x'] = xyCoord['x']
+            allSpinesDf['y'] = xyCoord['y']
 
         allSpinesDf['roiType'] = 'spineROI'
         allSpinesDf.insert(0,'index', allSpinesDf.index)  # index is first column
@@ -295,6 +312,11 @@ class SpineAnnotationsCore(AnnotationsCore):
         1        382.0  250.0 NaN
         """
         # anchorDf = self._sessionMap['anchors'].get_coordinates(include_z=True)
+
+        # test= self._fullMap.points['anchorLine']
+        # logger.info(f"getSpineLines test {test}")
+        # logger.info(f"getSpineLines test type {type(test)}")
+
         anchorDf = self._fullMap.points['anchorLine'].get_coordinates(include_z=True)
         
         # for undo delete, we need to re-assing row lables to match points self._df

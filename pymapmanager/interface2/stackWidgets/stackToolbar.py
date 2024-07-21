@@ -158,7 +158,7 @@ class StackToolBar(QtWidgets.QToolBar):
         _defaultChannel = self._displayOptionsDict['windowState']['defaultChannel']
 
         # make ['1', '2', '3', 'rgb'] disjoint selections
-        channelActionGroup = QtWidgets.QActionGroup(self)
+        self.channelActionGroup = QtWidgets.QActionGroup(self)
 
         self._actionList = []
         _channelList = ['1', '2', '3', 'rgb']
@@ -185,7 +185,7 @@ class StackToolBar(QtWidgets.QToolBar):
             # add action
             self._actionList.append(theAction)
             self.addAction(theAction)
-            channelActionGroup.addAction(theAction)
+            self.channelActionGroup.addAction(theAction)
 
             #logger.info('TODO: implement slot_setStack(theStack) to show/hide based on channels')
             # if toolIndex==1:
@@ -197,23 +197,23 @@ class StackToolBar(QtWidgets.QToolBar):
         self.slidingCheckbox.stateChanged.connect(self._on_slidingz_checkbox)
         self.addWidget(self.slidingCheckbox)
 
-        slidingUpDownLabel = QtWidgets.QLabel('+/-')
+        self.slidingUpDownLabel = QtWidgets.QLabel('+/-')
         self.slidingUpDown = QtWidgets.QSpinBox()
         self.slidingUpDown.setMaximum(self._myStack.numSlices)
         self.slidingUpDown.setValue(3)
         self.slidingUpDown.setEnabled(False)
         self.slidingUpDown.valueChanged.connect(self._on_slidingz_value_changed)
-        self.addWidget(slidingUpDownLabel)
+        self.addWidget(self.slidingUpDownLabel)
         self.addWidget(self.slidingUpDown)
 
         # add radius
-        radiusLabel = QtWidgets.QLabel('radius')
+        self.radiusLabel = QtWidgets.QLabel('radius')
         self._radiusSpinBox = QtWidgets.QSpinBox()
         self._radiusSpinBox.setMaximum(10)
         self._radiusSpinBox.setValue(3)
         self._radiusSpinBox.setEnabled(True)
         self._radiusSpinBox.valueChanged.connect(self._on_radius_value_changed)
-        self.addWidget(radiusLabel)
+        self.addWidget(self.radiusLabel)
         self.addWidget(self._radiusSpinBox)
 
         # Drop Box to hide different parts of plot
@@ -221,18 +221,8 @@ class StackToolBar(QtWidgets.QToolBar):
         self.addWidget(plotMenuButton)
         plotMenu = QtWidgets.QMenu()
 
-        # Need to get current state of plots (checked or unchecked)
-        # Can i get that here?
-        # Might be easier to do logic in annotationPlotWidget class?
-        # Easiest method. Have actions send signal 
-        # Signal is sent to stackwidget -> imageplotwidget
-        # Image plot widget handles unchecking
-        # states can be kept in this class (by default start off showing)
-        # menu.addAction("Spines")
-        # menu.addAction("Center Line")
-        # menu.addAction("Radius Lines")
-        # menu.addAction("Labels")
         plotMenuList = ["Spines", "Center Line", "Radius Lines", "Labels", "Image"]
+        self.actionMenuDict = {}
 
         for plotName in plotMenuList:
             action = plotMenu.addAction(plotName)
@@ -240,32 +230,69 @@ class StackToolBar(QtWidgets.QToolBar):
             isChecked = True # set true by default
             # logger.info(f"userType {userType} isChecked {isChecked}")
             action.setChecked(isChecked)
+            self.actionMenuDict[plotName] = action
 
         plotMenuButton.setMenu(plotMenu)
         # menu.triggered.connect(lambda action: print(action.text()))
-        plotMenu.triggered.connect(lambda action: self.plotMenuChange(action.text()))
+        # plotMenu.triggered.connect(lambda action: self.plotMenuChange(action.text()))
+        plotMenu.triggered.connect(lambda action: self.plotMenuChange(action))
 
         # colorList = ['Gray', 'Gray Inverted', 'Green', 'Red', 'Blue']
         # self.colorPopup = QtWidgets.QComboBox()
         # self.colorPopup.addItems(colorList)
         # self.addWidget(self.colorPopup)
 
-    def plotMenuChange(self, plotName):
-        self.signalPlotCheckBoxChanged.emit(plotName)
+    def labelBoxUpdate(self):
+        """ Part of plot menu Change
 
+        Logic for when spine box is changed to update label box
+        """
+        spinesAction = self.actionMenuDict["Spines"]
+        spineChecked = spinesAction.isChecked()
+
+        labelAction = self.actionMenuDict["Labels"]
+        labelChecked = labelAction.isChecked()
+
+        if not spineChecked and not labelChecked:
+            #
+            logger.info("entering edge case")
+            # keep them both off 
+            pass
+        elif not spineChecked:
+            labelAction.setChecked(False)
+            self.signalPlotCheckBoxChanged.emit("UnRefreshed Labels")
+        else:
+            # check if label box is changed  before setting checked
+            if labelAction.isChecked():
+                pass
+            else:
+                labelAction.setChecked(True)
+                self.signalPlotCheckBoxChanged.emit("UnRefreshed Labels")
+    
+
+    def plotMenuChange(self, action):
+
+        logger.info(f"plotMenuChange {action.text()}")
+        if action.text() == "Radius Lines":
+            self._radiusSpinBox.setEnabled(action.isChecked())
+            self.radiusLabel.setEnabled(action.isChecked())
+        elif action.text() == "Image":
+            self.channelActionGroup.setEnabled(action.isChecked())
+            # self.slidingUpDownLabel.setEnabled(action.isChecked())
+            # self.slidingUpDown.setEnabled(action.isChecked())
+            # self.slidingCheckbox.setEnabled(action.isChecked())
+        
+        if action.text() == "Spines":
+            self.labelBoxUpdate()
+       
+        plotName = action.text()
+        self.signalPlotCheckBoxChanged.emit(plotName)
 
     def _on_radius_value_changed(self, value):
         """
             Value to change the radius of the left/ right points. When changed the points also change.
         """
         logger.info(f'Recalculate left/right given new radius {value}')
-        # call function to recaculate ALL left xy, right xy given a new radius
-        # la = self._myStack.getLineAnnotations()
-        # segmentID = None
-        # radius = value
-        # la.calculateAndStoreRadiusLines(segmentID = segmentID, radius = radius)
-
         # send signal to backend to refresh 
         # AnnotationPlotWidget that displays the radius line points
         self.signalRadiusChanged.emit(value)
-        # signalRadiusChanged

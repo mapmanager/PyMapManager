@@ -25,7 +25,7 @@ class OpenFirstWindow(MainWindow):
     def __init__(self, pyMapManagerApp : PyMapManagerApp, parent=None):
         super().__init__(parent)
 
-        # self._app = pyMapManagerApp
+        self._app = pyMapManagerApp
 
         self.recentStackList = self.getApp().getConfigDict().getRecentStacks()
         self.recentMapList = self.getApp().getConfigDict().getRecentMaps()
@@ -160,6 +160,13 @@ class OpenFirstWindow(MainWindow):
         aButton.clicked.connect(partial(self._on_open_button_click, name))
         hBoxLayout.addWidget(aButton, alignment=QtCore.Qt.AlignLeft)
 
+        name = 'Drag and Drop'
+        aButton = DragAndDropWidget(name, self._app)
+        aButton.setFixedSize(QtCore.QSize(200, 60))
+        aButton.setToolTip('Drag and Drop Tif File.')
+        # aButton.clicked.connect(partial(self._on_open_button_click, name))
+        hBoxLayout.addWidget(aButton, alignment=QtCore.Qt.AlignLeft)
+
         # recent files and tables
         recent_vBoxLayout = QtWidgets.QVBoxLayout()
 
@@ -184,6 +191,33 @@ class OpenFirstWindow(MainWindow):
         recent_vBoxLayout.addWidget(recentFolderTable)
 
         _mainVLayout.addLayout(recent_vBoxLayout)
+
+# QtWidgets.QPushButton
+# QtWidgets.QMainWindow
+class DragAndDropWidget(QtWidgets.QPushButton):
+    def __init__(self, name, app: PyMapManagerApp):
+        super().__init__(name)
+        self.setWindowTitle("Drag and Drop")
+        self.resize(720, 480)
+        self.setAcceptDrops(True)
+
+        self._app = app
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.accept()
+        else:
+            event.ignore()
+
+    def dropEvent(self, event):
+        files = [u.toLocalFile() for u in event.mimeData().urls()]
+        for tifFile in files:
+            # print(f)
+            logger.info(f"loading file {tifFile}")
+            self._app.loadTifFile(tifFile)
+            # Create new image loader iwth path
+            # emit f = path to file
+             
 
 def test():
     import sys

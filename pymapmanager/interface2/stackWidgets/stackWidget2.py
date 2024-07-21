@@ -381,7 +381,7 @@ class stackWidget2(mmWidget2):
         _imagePlotWidget = ImagePlotWidget(self)
         imagePlotName = _imagePlotWidget._widgetName
         hBoxLayout_main.addWidget(_imagePlotWidget)
-        self._widgetDict[imagePlotName] = _imagePlotWidget  # the dock, not the widget ???
+        self._widgetDict[imagePlotName] = _imagePlotWidget  # the dock, not the widget ??
 
         self._imagePlotName = imagePlotName
         #

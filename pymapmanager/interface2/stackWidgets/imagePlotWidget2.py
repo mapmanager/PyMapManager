@@ -78,6 +78,7 @@ class ImagePlotWidget(mmWidget2):
         
         self._currentSlice = 0
         
+        # TODO: 7/17 - change this to detect amount of channels?
         _channel = self._displayOptionsDict['windowState']['defaultChannel']
 
         self._displayThisChannel = _channel  # 1->0, 2->1, 3->2, etc
@@ -159,8 +160,9 @@ class ImagePlotWidget(mmWidget2):
         # logger.info('')
 
         stackSelection = self.getStackWidget().getStackSelection()
+        logger.info(f'imagePlotWidget stackSelection {stackSelection}')
         hasPointSelection = stackSelection.hasPointSelection()
-
+        logger.info(f'imagePlotWidget hasPointSelection {hasPointSelection}')
         if not hasPointSelection:
             logger.warning('no selection -> no context menu')
             return
@@ -322,6 +324,13 @@ class ImagePlotWidget(mmWidget2):
 
         elif event.key() == QtCore.Qt.Key_N:
             logger.info('open note setting dialog for selected annotation (todo: what is the selected annotation!!!')
+
+        elif event.key() in [QtCore.Qt.Key_Delete, QtCore.Qt.Key_Backspace]:
+            logger.info("deleting within imageplot widget")
+            # emit delete signal for points
+            self._aPointPlot._deleteSelection()
+
+            #TODO: Delete line/ segment points?
 
         else:
             # if not handled by *this, this will continue propogation
@@ -725,18 +734,27 @@ class ImagePlotWidget(mmWidget2):
         """
 
         logger.info(f"toggling plotName {plotName}")
+        visible = False
         if plotName == "Spines":
-            self._aPointPlot.toggleScatterPlot()
+            visible = self._aPointPlot.toggleScatterPlot()
+            self._aPointPlot.toggleSpineLines()
             # self.plotDict[plotName].toggleScatterPlot()
         elif plotName == "Center Line":
-            self._aLinePlot.toggleScatterPlot()
+            visible = self._aLinePlot.toggleScatterPlot()
         elif plotName == "Radius Lines":
-            self._aLinePlot.toggleRadiusLines()
-        elif plotName == "Labels":
+            visible = self._aLinePlot.toggleRadiusLines()
+        elif plotName == "UnRefreshed Labels": # Update Labels without Refreshing slice
             self._aPointPlot.toggleLabels()
+        elif plotName == "Labels":
+            visible = self._aPointPlot.toggleLabels()
             # self.plotDict["Spines"].toggleLabels()
         elif plotName == "Image":
-            self.toggleImageView()
+            visible = self.toggleImageView()
+
+        if visible:
+            self.refreshSlice()
+
+
 
     def slot_updateLineRadius(self, radius):
         """ Called whenever radius is updated
@@ -980,7 +998,7 @@ class StackSlider(QtWidgets.QSlider):
         # self.sliderReleased.connect(self._updateSlice)
         
         # was this
-        self.sliderMoved.connect(self._updateSlice)
+        # self.sliderMoved.connect(self._updateSlice)
         self.valueChanged.connect(self._updateSlice) # abb 20200829
         
         #self.valueChanged.connect(self.sliceSliderValueChanged)

@@ -368,4 +368,17 @@ class stack:
 
         self.getPointAnnotations()._buildDataFrame()
 
+    #abj
+    def save(self, path):
+        """ Stack saves changes to its Zarr file
+        """
+        logger.info(f"Entering Stack save")
+        self._fullMap.save(path)
+    
+    # def saveAs(self, path):
+    #     """ Stack saves changes to to a new zarr file path
+    #     """
+    #     self._fullMap.save(path)
+
+
         
