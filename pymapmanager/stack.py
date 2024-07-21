@@ -14,13 +14,24 @@ from pymapmanager.annotations.baseAnnotationsCore import SpineAnnotationsCore, L
 from pymapmanager._logger import logger
 
 class stack:
-    def __init__(self, path : str,
+    def __init__(self, path : str = None,
                 loadImageData : bool = True,
+                zarrMap = None,  # in memory MapAnnotations (multiple timepoints)
                 mmMap : "pymapmanager.mmMap" = None,
                 mmMapSession : int = 0):
-        
-        logger.info(f'loading zarr path: {path}')
-        
+        """Load a stack from a .mmap zarr file or an in memory core MapAnnotations.
+
+        Parameters
+        ----------
+        path : str
+            Path to .mmap zarr file.
+        zarrMap : core MapAnnotations
+            In memory core MapAnnotations
+        mmMap : pymapmanager.mmMap
+            A PyMapManager multi-timepoint map
+        mmMapSessio : int
+            When mmMap is specified, this is the timepoint in mmMap
+        """
         # full path to zarr file
         self._zarrPath = path
 
@@ -38,11 +49,17 @@ class stack:
         # load the map
         _startSec = time.time()
         
-        # logger.info(f'loading core map from zar:{self._zarrPath}')
-        self._fullMap : MapAnnotations = MapAnnotations.load(self._zarrPath)  ## .cached())
-        # self._fullMap : MapAnnotations = MapAnnotations(MMapLoader(self._zarrPath).cached())
-        # self._fullMap : MapAnnotations = MapAnnotations(MMapLoader(self._zarrPath))
-        
+        if path is not None:
+            # load from .mmap
+            logger.info(f'loading zarr path: {path}')
+            self._filename = os.path.split(path)[1]
+            self._fullMap : MapAnnotations = MapAnnotations.load(self._zarrPath)
+        elif zarrMap is not None:
+            # load from in memory map
+            logger.info(f'loading map from memory: {zarrMap}')
+            self._filename = 'Untitled'
+            self._fullMap = zarrMap
+
         _stopSec = time.time()
         logger.info(f'loaded map in {round(_stopSec-_startSec,3)} sec')
 
@@ -81,7 +98,7 @@ class stack:
         numAnnotations = self.getPointAnnotations().numAnnotations
         numSegments = self.getLineAnnotations().numSegments
 
-        str = f'{self.getFileName()}\n'
+        str = f'PyMapManager.stack: {self.getFileName()}\n'
         str += f'  channels:{self.numChannels} slices:{self.numSlices} x:{x} y:{y} dtype:{dtype}'
         str += f' annotations:{numAnnotations} segments:{numSegments}'
         return str
@@ -121,7 +138,7 @@ class stack:
         }
 
         # self.printHeader()
-        logger.warning('TODO: hard coded some parts of the header')
+        logger.warning('TODO: hard coded some parts of the header. In particular numChannels = 2')
 
     def printHeader(self):
         for k, v in self.header.items():
@@ -140,8 +157,13 @@ class stack:
         # TODO (cudmore): implement this in the backend
         return self.header['numChannels']
     
-    def getFileName(self):
-        return os.path.split(self._zarrPath)[1]
+    def getFileName(self) -> str:
+        return self._filename
+        
+        # if self._zarrPath is None:
+        #     return 'None'
+        # else:
+        #     return os.path.split(self._zarrPath)[1]
     
     def getPath(self):
         return self._zarrPath
@@ -180,13 +202,15 @@ class stack:
         """Load point annotations.
         """
         # self._annotations = SpineAnnotationsCore(self.sessionMap, analysisParams = self._analysisParams)
-        self._annotations = SpineAnnotationsCore(self.sessionMap)
+        defaultColums = self._fullMap.points[:].columns
+        self._annotations = SpineAnnotationsCore(self.sessionMap, defaultColums=defaultColums)
 
     def loadLines(self) -> None:
         """Load line annotations.
         """
         # self._lines = LineAnnotationsCore(self.sessionMap, analysisParams = self._analysisParams)
-        self._lines = LineAnnotationsCore(self.sessionMap)
+        defaultColums = self._fullMap.segments[:].columns
+        self._lines = LineAnnotationsCore(self.sessionMap, defaultColums=defaultColums)
 
     def _old_getImageChannel(self,
                         channel : int = 1
@@ -279,6 +303,8 @@ class stack:
         if not isinstance(imageSlice, int):
             imageSlice = int(imageSlice)
 
+        # logger.info(f'fetching channelIdx:{channelIdx}')
+        
         _imgData = self.sessionMap.getPixels(channel=channelIdx, z=imageSlice)
         _imgData = _imgData._image
     
@@ -319,10 +345,6 @@ class stack:
         zRange = (firstSlice, lastSlice)
         slices = self.sessionMap.getPixels(channel=channelIdx, zRange=zRange)
 
-        # logger.info(type(slices))
-        # logger.info(f'{slices._image.shape}')
-
-        # return slices.data()
         return slices._image
 
     def getPixel(self, channel : int, imageSlice : int, y, x) -> int:

@@ -20,7 +20,8 @@ from pymapmanager._logger import logger
 
 class AnnotationsCore:
     def __init__(self,
-                 mapAnnotations : MapAnnotations,
+                 mapAnnotations : MapAnnotations,  # single timepoint
+                 defaultColums : List[str],
                  sessionID = 0,
                  ):
         """
@@ -28,6 +29,8 @@ class AnnotationsCore:
         ----------
         mapAnnotations : AnnotationsLayers, e.g. MapAnnotations
             The object loaded from zarr file.
+        defaultColums : List[str]
+            Default columns for core dataframe, needed when creating a new map with no points
         """
         self._sessionID = sessionID
 
@@ -35,11 +38,9 @@ class AnnotationsCore:
         self._fullMap : MapAnnotations = mapAnnotations
         # mapmanagercore.annotations.single_time_point.layers.AnnotationsLayers
 
-        #filtered down to just sessionID
-
         self._df = None
 
-        # self._analasisParams = analysisParams
+        self._defaultColums = defaultColums
 
         self._buildDataFrame()
     
@@ -261,36 +262,45 @@ class SpineAnnotationsCore(AnnotationsCore):
         """Dataframe representing backend spines, one row per spine.
         
         Needs to be regenerated on any edit/mutation.
+
+        Notes
+        -----
+        When no (0) spines, self._fullMap.points[:] == None
         """
         
         # _startSec = time.time()
         # logger.info(f"self._fullMap.points {self._fullMap.points}")
         # logger.info(f"type self._fullMap.points {type(self._fullMap.points)}")
         try:
+            # logger.info(f'self._fullMap:{self._fullMap}')
+
             allSpinesDf = self._fullMap.points[:]
+
+            # logger.info(f'allSpinesDf:')
+            # print(allSpinesDf)
+
         except (KeyError) as e:
             logger.warning(e)
             return
         
-        #abj: check if points are empty:
-        if len(allSpinesDf) > 0:
-            logger.info(f"allSpinesDf {type(allSpinesDf)}") # <class 'geopandas.geodataframe.GeoDataFrame'>
-            # logger.info(f"allSpinesDf['point'] {type(allSpinesDf['point'])}")
-            # add (x, y) if it does not exists
-            xyCoord = allSpinesDf['point'].get_coordinates()
-            allSpinesDf['x'] = xyCoord['x']
-            allSpinesDf['y'] = xyCoord['y']
+        if allSpinesDf is None:
+            # single timepoint with no spines, gives None point[:] df
+            allSpinesDf = pd.DataFrame(columns=self._defaultColums)
+            allSpinesDf['x'] = None
+            allSpinesDf['y'] = None
+            allSpinesDf['roiType'] = None
+            allSpinesDf.insert(0,'index', None)  # index is first column
 
-        allSpinesDf['roiType'] = 'spineROI'
-        allSpinesDf.insert(0,'index', allSpinesDf.index)  # index is first column
+        else:
+            if len(allSpinesDf) > 0:
+                xyCoord = allSpinesDf['point'].get_coordinates()
+                allSpinesDf['x'] = xyCoord['x']
+                allSpinesDf['y'] = xyCoord['y']
+
+            allSpinesDf['roiType'] = 'spineROI'
+            allSpinesDf.insert(0,'index', allSpinesDf.index)  # index is first column
 
         self._df = allSpinesDf
-
-        # logger.info('_df is')
-        # print(self._df)
-
-        # _stopSeconds = time.time()
-        # logger.info(f'   {self._getClassName()} took {round(_stopSeconds-_startSec,3)} s')
 
     def getSpineLines(self):
         """Get df to plot spine lines from head to tail (anchor).
@@ -317,7 +327,12 @@ class SpineAnnotationsCore(AnnotationsCore):
         # logger.info(f"getSpineLines test {test}")
         # logger.info(f"getSpineLines test type {type(test)}")
 
-        anchorDf = self._fullMap.points['anchorLine'].get_coordinates(include_z=True)
+        _anchorLines = self._fullMap.points['anchorLine']
+        if len(_anchorLines) == 0:
+            # no spines
+            anchorDf = pd.DataFrame(columns=['x', 'y', 'z'])
+        else:
+            anchorDf = _anchorLines.get_coordinates(include_z=True)
         
         # for undo delete, we need to re-assing row lables to match points self._df
         # logger.warning('anchorDf')
@@ -392,7 +407,11 @@ class LineAnnotationsCore(AnnotationsCore):
 
     @property
     def numSegments(self):
-        return len(self._fullMap.segments[:])
+        _segments = self._fullMap.segments[:]
+        if _segments is None:
+            return 0
+        else:
+            return len(_segments)
     
     @property
     def numSpines(self, segmentID : int) -> int:
@@ -435,8 +454,8 @@ class LineAnnotationsCore(AnnotationsCore):
 
         self._buildDataFrame()
 
-        print('dataframe is now:')
-        print(self.getDataFrame())
+        # print('dataframe is now:')
+        # print(self.getDataFrame())
 
     def getSummaryDf(self):
         """DataFrame with per segment info (one segment per ro)
@@ -447,16 +466,19 @@ class LineAnnotationsCore(AnnotationsCore):
         """Get a summary dataframe, one segment per row.
         """
         self._summaryDf = pd.DataFrame()
-        # self._summaryDf['segmentID'] = self._df['segmentID'].unique()
-        self._summaryDf['segmentID'] = self._fullMap.segments['segment'].index.unique()
-
-        lengthList = []
-        for row in range(len(self._summaryDf)):
-            _len = self._fullMap.segments['segment'].loc[row].length
-            if _len > 0:
-                _len = round(_len,2)
-            lengthList.append(_len)
-        self._summaryDf['length'] = lengthList
+        try:
+            self._summaryDf['segmentID'] = self._fullMap.segments['segment'].index.unique()
+        except (AttributeError) as e:
+            # when no segments
+            self._summaryDf['length'] = None
+        else:
+            lengthList = []
+            for row in range(len(self._summaryDf)):
+                _len = self._fullMap.segments['segment'].loc[row].length
+                if _len > 0:
+                    _len = round(_len,2)
+                lengthList.append(_len)
+            self._summaryDf['length'] = lengthList
 
     def _buildDataFrame(self):  
         """Build dataframe for plotting.
@@ -475,12 +497,14 @@ class LineAnnotationsCore(AnnotationsCore):
         try:
             # self._fullMap.segments[:]
             df = self._fullMap.segments['segment'].get_coordinates(include_z=True)
+            df['segmentID'] = df.index
         except (AttributeError) as e:
+            # when no segment
             # AttributeError:'GeoSeries' object has no attribute 'set_index'
-            logger.error(f'AttributeError:{e}')
-            return
-
-        df['segmentID'] = df.index
+            # logger.error(f'AttributeError:{e}')
+            # make an empty df
+            df = pd.DataFrame(columns=self._defaultColums)
+            df['segmentID'] = None       
 
         # logger.info(f"   self._fullMap.segments['segment']:{self._fullMap.segments['segment']}")
 
@@ -489,28 +513,36 @@ class LineAnnotationsCore(AnnotationsCore):
         # summary, one row per segment        
         self._buildSummaryDf()
 
+    def getNumSegments(self) -> int:
+        if self._fullMap.segments[:] is None:
+            return 0
+        else:
+            return len(self._fullMap.segments[:])
+        
     def getLeftRadiusPlot(self, segmentID,
                        zSlice,
                        zPlusMinus,
                        radiusOffset
-                       ) -> pd.DataFrame:
+                       ) -> Optional[pd.DataFrame]:
         """Get the left radius line (x,y,z) as a DataFrame
 
         Returns
         -------
         df : pd.DataFrame
             The dataframe has columns ('x', 'y', 'z').
-        """    
-        # _startSlice = zSlice - zPlusMinus
-        # _stopSlice = zSlice + zPlusMinus
+            Return None if no segments (num segments = 0)
+        """
 
-        # df = self._xyLeftDf 
-        # logger.info(f"self._xyLeftDf  {df}")     
-        # df = df[(df['z']>=_startSlice) & (df['z']<=_stopSlice)]
-
+        # abb
+        if self.getNumSegments() == 0:
+            return None
+        
         _startSlice = zSlice - zPlusMinus
         _stopSlice = zSlice + zPlusMinus
 
+        # logger.info(f"self._fullMap.segments['segment']:{self._fullMap.segments['segment']}")
+        logger.info(f"self._fullMap.segments:{self._fullMap.segments[:]}")
+        
         segmentLines = clipLines(self._fullMap.segments['segment'], zRange = (_startSlice, _stopSlice))
         xyLeft = shapely.offset_curve(segmentLines, radiusOffset * -1)
         xyLeft = xyLeft.get_coordinates(include_z=True)

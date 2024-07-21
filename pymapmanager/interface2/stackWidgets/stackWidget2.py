@@ -84,6 +84,8 @@ class stackWidget2(mmWidget2):
         self._stackSelection = StackSelection(self._stack)
         """One stack selection (state) shared by all children mmWidget2."""
         
+        self._currentSliceNumber = 0
+
         self._channelColor = ['g', 'r', 'b']
         self._buildColorLut()
         
@@ -91,14 +93,6 @@ class stackWidget2(mmWidget2):
         self._setDefaultContrastDict()
 
         self._displayOptionsDict : pymapmanager.interface2.AppDisplayOptions = pymapmanager.interface2.AppDisplayOptions()
-
-        # self._currentSelection = pymapmanager.annotations.SelectionEvent(
-        #                                                 annotation=self._stack.getPointAnnotations(),
-        #                                                 stack=self._stack)
-
-        # _channel = self._displayOptionsDict['windowState']['defaultChannel']
-        # self._currentSelection.setImageChannel(_channel)
-        """Keep track of the current selection"""
 
         from pymapmanager.interface2.stackWidgets.event.undoRedo import UndoRedoEvent
         self._undoRedo = UndoRedoEvent(self)
@@ -520,9 +514,6 @@ class stackWidget2(mmWidget2):
         newSegmentID = self.getStack().getLineAnnotations().newSegment()
         
         logger.info(f'ADDING newSegmentID:{newSegmentID}')
-        
-        print('   BEFORE addAddSegment')
-        print(event)
 
         event.addAddSegment(segmentID=newSegmentID)
 
@@ -885,8 +876,11 @@ class stackWidget2(mmWidget2):
         # logger.info(f'num channels is: {self._stack.numChannels}')
         self._contrastDict = {}
         for channelIdx in range(self._stack.numChannels):
-            channelNumber = channelIdx + 1
             
+            # abb 20240721 not sure if is index or index  +1 
+            channelNumber = channelIdx + 1
+            # channelNumber = channelIdx
+
             _defaultDisplayBitDepth = 11
             
             # logger.warning('removed on merge core 20240513')

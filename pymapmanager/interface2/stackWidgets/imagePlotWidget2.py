@@ -488,7 +488,8 @@ class ImagePlotWidget(mmWidget2):
             intensity = float('nan')
         else:
             # TODO: fix issue with intensity (mapmanagercore throwing errors)
-            intensity = self._myStack.getPixel(self._displayThisChannel,
+            _channelIdx = self._displayThisChannel - 1
+            intensity = self._myStack.getPixel(_channelIdx,
                             self._currentSlice,
                             y, x)
 
@@ -581,7 +582,9 @@ class ImagePlotWidget(mmWidget2):
         # rgb uses its own (r,g,b) LUT
         if not self._channelIsRGB():
             channel= self._displayThisChannel
-            colorStr = self._contrastDict[channel]['colorLUT']
+            channelIdx = channel - 1
+            colorStr = self._contrastDict[channelIdx]['colorLUT']
+            
             colorLut = self._colorLutDict[colorStr] # like (green, red, blue, gray, gray_r, ...)
             #logger.info(f'colorStr:{colorStr}')
             self._myImage.setLookupTable(colorLut, update=update)
@@ -615,8 +618,9 @@ class ImagePlotWidget(mmWidget2):
             self._myImage.setLevels(levelList, update=True)
         else:
             # one channel
-            minContrast = self._contrastDict[self._displayThisChannel]['minContrast']
-            maxContrast = self._contrastDict[self._displayThisChannel]['maxContrast']
+            _channelIdx = self._displayThisChannel - 1
+            minContrast = self._contrastDict[_channelIdx]['minContrast']
+            maxContrast = self._contrastDict[_channelIdx]['maxContrast']
             
             #logger.info(f'channel {self._displayThisChannel} minContrast:{minContrast} maxContrast:{maxContrast}')
             
@@ -679,8 +683,9 @@ class ImagePlotWidget(mmWidget2):
         elif _doSlidingZ:
             upDownSlices = self._displayOptionsDict['windowState']['zPlusMinus']
             # logger.warning(f're-implement with core upDownSlices:{upDownSlices}')
+            channelIdx = self._displayThisChannel - 1
             sliceImage = self._myStack.getMaxProjectSlice(sliceNumber,
-                                    self._displayThisChannel,
+                                    channelIdx,
                                     upDownSlices, upDownSlices,
                                     func=np.max)
         else:

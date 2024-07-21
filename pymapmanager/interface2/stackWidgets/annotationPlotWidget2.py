@@ -543,8 +543,9 @@ class annotationPlotWidget(mmWidget2):
             x = dfPlot["x"].tolist()  # x is pandas.core.series.Series
             y = dfPlot["y"].tolist()
         except (KeyError) as e:
-            logger.error(f'did not find x/y, avail columns are: {dfPlot.columns}')
-            logger.error(dfPlot)
+            # this happens when the dataframe is empty (no points or segments)
+            logger.error(f'{self.getClassName()} did not find x/y, avail columns are: {dfPlot.columns.to_list()}')
+            # logger.error(dfPlot)
             return
         
         # TODO: Can get rid of this and just use dfPlot, use dfPlot at index 
@@ -1250,15 +1251,15 @@ class linePlotWidget(annotationPlotWidget):
     
     def slot_setSlice(self, sliceNumber: int):
         
-        # logger.info(f'{self.getClassName()} sliceNumber:{sliceNumber}')
+        # startSec = time.time()
+
+        # abb
+        if self._annotations.getNumSegments() == 0:
+            return
 
         super().slot_setSlice(sliceNumber)  # draws centerline
         
-        # startSec = time.time()
- 
-        # logger.warning(f'{self.getClassName()} TODO: turn radius line back on !!!')
-        # logger.info(f'slot set left and right radius')
-
+        
         if self.showRadiusLines:
             zPlusMinus = self._displayOptions["zPlusMinus"] 
             radiusOffset = self._displayOptions['radius'] 

@@ -145,6 +145,9 @@ class PyMapManagerApp(QtWidgets.QApplication):
         # abb put this back in
         # self._appDisplayOptions : pymapmanager.interface.AppDisplayOptions = pymapmanager.interface2.AppDisplayOptions()
 
+        # used to name new maps (created by dragging a tiff file)
+        self._untitledNumber = 0
+
         self._mapWidgetDict = {}
         # dictionary of open map widgets
         # keys are full path to map
@@ -164,6 +167,12 @@ class PyMapManagerApp(QtWidgets.QApplication):
         self._openFirstWindow = None
         self.openFirstWindow()
 
+    def getNewUntitledNumber(self) -> int:
+        """Get a unique number for each new map (From tiff file).
+        """
+        self._untitledNumber += 1
+        return self._untitledNumber
+    
     def setTheme(self, theme = None):
         #theme in ['dark', 'light', 'auto']
         if theme is None:
@@ -394,6 +403,37 @@ class PyMapManagerApp(QtWidgets.QApplication):
 
         return self._mapWidgetDict[path]
     
+    def loadTifFile2(self, path : str):
+        import pandas as pd
+        from mapmanagercore import MapAnnotations, MultiImageLoader
+        from pymapmanager import stack
+
+        # check that path exists and is .tif file
+        if not os.path.isfile(path):
+            logger.warning(f'file not found: {path}')
+            return
+        _ext = os.path.splitext(path)[1]
+        if _ext != '.tif':
+            logger.warning(f'can only load files with .tif extension, got extension "{_ext}"')
+            return 
+
+        loader = MultiImageLoader()
+        loader.read(path, channel=0)
+
+        map = MapAnnotations(loader.build(),
+                            lineSegments=pd.DataFrame(),
+                            points=pd.DataFrame())
+        
+        logger.info(f'map from tif file is {map}')
+
+        # make a stack
+        aStack = stack(zarrMap=map)
+        aStack.header['numChannels'] = 1
+                      
+        print(aStack)
+
+        self.stackWidgetFromStack(aStack)
+
     def loadTifFile(self, path : str):
         """Load a stack from tif from a path.
         Only happens on first load/ drag and drop
@@ -445,7 +485,33 @@ class PyMapManagerApp(QtWidgets.QApplication):
         # need to save zarr file first. so that we can create a stack from it within stackwidget
         # need to create stackwidget from new map
         #only save when user clicks save as
-               
+    
+    def stackWidgetFromStack(self, newStack : "pymapmanager.stack"):
+        """Open a stack widget from an in memory stack.
+        
+        The newStack is created when user drops a tiff file.
+        """
+
+        _stackWidget = stackWidget2(path=None, stack=newStack)
+
+        # cludge
+        _stackWidget.getDisplayOptions()['windowState']['defaultChannel'] = 1
+
+        geometryRect = self.getConfigDict().getStackWindowGeometry()
+        left = geometryRect[0]
+        top = geometryRect[1]
+        width = geometryRect[2]
+        height = geometryRect[3]
+        
+        _stackWidget.setGeometry(left, top, width, height)
+
+        _stackWidget.show()
+
+        # add to runtime dict so it shows up in menus
+        newUntitledNumber = self.getNewUntitledNumber()
+        stackTitle = 'Image' + str(newUntitledNumber)
+        self._stackWidgetDict[stackTitle] = _stackWidget
+        
     def loadStackWidget(self, path : str):
         """Load a stack from a path.
         
@@ -474,6 +540,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
 
             _stackWidget.show()
             
+            # add to runtime dict so it shows up in menus
             self._stackWidgetDict[path] = _stackWidget
 
         self._openFirstWindow.hide()

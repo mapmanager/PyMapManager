@@ -773,8 +773,10 @@ class mmWidget2(QtWidgets.QMainWindow):
         # abb 20240716
         # segment events
         elif event.type == pmmEventType.addSegment:
+            # stack widget needs to select new segment
             acceptEvent = self.addedSegmentEvent(event)
         elif event.type == pmmEventType.deleteSegment:
+            # stack widget needs to cancel segment selection
             acceptEvent = self.deletedSegmentEvent(event)
         elif event.type == pmmEventType.addSegmentPoint:
             acceptEvent = self.addedSegmentPointEvent(event)
@@ -839,6 +841,10 @@ class mmWidget2(QtWidgets.QMainWindow):
                     _selectionEvent.getStackSelection().setSegmentSelection(_origSegmentSelection)
                                         
                     self.emitEvent(_selectionEvent, blockSlots=False)
+
+                # segments
+                elif event.type == pmmEventType.addSegment:
+                    logger.warning('TODO: need to select new segment (no spine selection)')
 
                 elif event.type == pmmEventType.undoSpineEvent:
                     undoEvent = event.getUndoEvent()
