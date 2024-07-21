@@ -295,11 +295,10 @@ class PyMapManagerApp(QtWidgets.QApplication):
         pass
 
     def _undo_action(self):
-        self.getFrontWindow()._undo_action()
-        # logger.info('')
+        self.getFrontWindow().emitUndoEvent()
         
     def _redo_action(self):
-        self.getFrontWindow()._redo_action()
+        self.getFrontWindow().emitRedoEvent()
         # logger.info('')
         
     def toggleMapWidget(self, path : str, visible : bool):

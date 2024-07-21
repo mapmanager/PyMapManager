@@ -52,7 +52,7 @@ def run():
 
     sw2.zoomToPointAnnotation(0, isAlt=True)
 
-    # sw2.runPlugin('Tracing', inDock=True)
+    sw2.runPlugin('Tracing', inDock=True)
     
     # TODO: get this working
     # _map = sw2.getStack().sessionMap

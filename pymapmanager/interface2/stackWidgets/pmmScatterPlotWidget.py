@@ -165,7 +165,7 @@ class PmmScatterPlotWidget(mmWidget2):
     def deletedEvent(self, event : pmmEvent):
         """ Refresh dataframe then unselected all points within highlighter
         """
-        logger.warning(f'{self.getClassName()} base class called ????????????')
+        # logger.warning(f'{self.getClassName()} base class called ????????????')
         # pass
         refreshDf = self.stackWidget.getStack().getPointAnnotations().getDataFrame()
         self._scatterPlotWidget._updatedRow(refreshDf)

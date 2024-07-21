@@ -86,7 +86,7 @@ def test_qt_segments():
     # see if 1 point segment works
     # new segment does not show up until it has 2x points
     segments._buildDataFrame()
-    segments._buildSummaryDf()
+    # segments._buildSummaryDf()
 
     print(segments.getDataFrame())
     print(segments.getSummaryDf())
