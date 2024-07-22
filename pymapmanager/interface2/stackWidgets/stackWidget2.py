@@ -709,7 +709,7 @@ class stackWidget2(mmWidget2):
         stateEvent = pmmEvent(pmmEventType.stateChange, self)
         stateEvent.setType(pmmEventType.stateChange)
         stateEvent.setStateChange(pmmStates.edit)
-        self.slot_pmmEvent(selectionEvent)
+        self.slot_pmmEvent(stateEvent)
 
         # select the point annotation
         _spines = event.getSpines()

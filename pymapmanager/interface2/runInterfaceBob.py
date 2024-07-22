@@ -20,7 +20,8 @@ def run():
     
     # a single timepoint tif file
     path = mapmanagercore.data.getTiffChannel_1()
-    app.loadTifFile2(path)  # simulate user drag/drop a tiff image
+    # app.loadTifFile2(path)  # simulate user drag/drop a tiff image
+    app.loadStackWidget(path)
 
     sys.exit(app.exec_())
 

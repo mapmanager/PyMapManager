@@ -53,9 +53,8 @@ def test_segment():
     print('tp.segments[:]')
     print(tp.segments[:])
 
-    # s = gpd.GeoSeries.from_wkt(tp.segments[:]['segment'])
-    print('segment length:', tp.segments[:]['segment'].loc[0].length)
-    print('rough tracing length:', tp.segments[:]['roughTracing'].loc[0].length)
+    # when there is just one segment, we get a LineString, not a df of linestring?
+    print('rough tracing length:', tp.segments[:]['roughTracing'].length)
 
 def test_qt_segments():
     """Load zarr, test core segment

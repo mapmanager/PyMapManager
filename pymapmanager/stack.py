@@ -45,12 +45,14 @@ class stack:
         # load the map
         _startSec = time.time()
         
+        # load from file
+        # TODO: in the future we will load from more file types
         if path is not None:
             _ext = os.path.splitext(path)[1]
-            if _ext == '.mmap'
+            if _ext == '.mmap':
                 self._load_zarr()
             elif _ext == '.tif':
-                self._load_tiff()
+                self._import_tiff()
 
         # elif zarrMap is not None:
         #     # load from in memory map
@@ -74,10 +76,17 @@ class stack:
         _stopSec = time.time()
         logger.info(f'loaded stack in {round(_stopSec-_startSec,3)} sec')
 
+        logger.info('loaded core metedata is')
+        print(self.getMetadata())
+
+        # TODO: cludge, remove
+        if os.path.splitext(self.path)[1] == '.tif':
+            self.header['numChannels'] = 1
+
     def _load_zarr(self):
         """Load from mmap file.
         """
-        path = self._zarrPath
+        path = self.path
         logger.info(f'loading zarr path: {path}')
         self._filename = os.path.split(path)[1]
         self._fullMap : MapAnnotations = MapAnnotations.load(path)
@@ -85,10 +94,10 @@ class stack:
         # Reduce full core map to a single session id.
         # self._sessionMap = self._fullMap.getTimePoint(self.sessionID)
 
-    def _load_tiff(self):
+    def _import_tiff(self):
         """Load from tif file.
         """
-        path = self._zarrPath
+        path = self.path
 
         loader = MultiImageLoader()
         loader.read(path, channel=0)
@@ -96,16 +105,18 @@ class stack:
         map = MapAnnotations(loader.build(),
                             lineSegments=pd.DataFrame(),
                             points=pd.DataFrame())
-        
+
+        self._fullMap : MapAnnotations = map
+
         logger.info(f'map from tif file is {map}')
 
         # TODO: need to actually check the number of image channels
-        self.header['numChannels'] = 1
-
+        # self.header['numChannels'] = 1
+              
     def getMetadata(self) -> Metadata:
         """Get metadata from the core map.
         """
-        return self._fullMap.metadata()
+        return self.sessionMap.metadata()
     
     def _buildSessionMap(self):
         """Reduce full core map to a single session id.
@@ -190,11 +201,12 @@ class stack:
         #     return os.path.split(self._zarrPath)[1]
     
     def getPath(self):
-        return self._zarrPath
+        return self.path
 
     @property
     def sessionMap(self) -> MapAnnotations:
         """Get backend core map manager map.
+            One timepoint (Session)
         """
         return self._sessionMap
 
@@ -235,22 +247,6 @@ class stack:
         # self._lines = LineAnnotationsCore(self.sessionMap, analysisParams = self._analysisParams)
         defaultColums = self._fullMap.segments[:].columns
         self._lines = LineAnnotationsCore(self.sessionMap, defaultColums=defaultColums)
-
-    def _old_getImageChannel(self,
-                        channel : int = 1
-                        ) -> Optional[np.ndarray]:
-        """Get the full image volume for one color channel.
-        """
-        
-        # if channel is None:
-        #     channel = 1
-        
-        channelIdx = channel - 1
-        try:
-            return self._images[channelIdx]
-        except (IndexError):
-            logger.warning(f'Max channel is {self.numChannels}, got channelIdx:{channelIdx}')
-        return None
 
     def getAutoContrast(self, channel):
         channelIdx = channel - 1
@@ -413,14 +409,17 @@ class stack:
         # print(f'_ret:{_ret}')
 
         self.getPointAnnotations()._buildDataFrame()
-
+        
     #abj
-    def save(self, path):
+    def save(self):
         """ Stack saves changes to its Zarr file
         """
-        logger.info(f"Entering Stack save")
-        self._fullMap.save(path)
-    
+        if os.path.splitext(self.path)[1] == '.mmap':
+            self._fullMap.save(self.path)
+        else:
+            # TO: save as zarr (prompt user for an mmap file path/name)
+            pass
+
     # def saveAs(self, path):
     #     """ Stack saves changes to to a new zarr file path
     #     """

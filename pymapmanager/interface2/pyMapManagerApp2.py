@@ -488,7 +488,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
     #     self.stackWidgetFromStack(aStack)
 
     # abj
-    def loadTifFile(self, path : str):
+    def _old_loadTifFile(self, path : str):
         """Load a stack from tif from a path.
         Only happens on first load/ drag and drop
         Create stackwidget/ mmap from tif file
@@ -567,12 +567,13 @@ class PyMapManagerApp(QtWidgets.QApplication):
         self._stackWidgetDict[stackTitle] = _stackWidget
         
     def loadStackWidget(self, path : str):
-        """Load a stack from a zarr path.
+        """Load a stack from a path.
+            Path can be from (.mmap, .tif)
         
         Parameters
         ----------
         path : str
-            Full path to zarr file
+            Full path to (zarr, tif) file
         """
         if path in self._stackWidgetDict.keys():
             logger.info('showing already create stack widget')
