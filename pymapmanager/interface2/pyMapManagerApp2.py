@@ -369,14 +369,67 @@ class PyMapManagerApp(QtWidgets.QApplication):
             self._mapWidgetDict.pop(popThisKey, None)
 
         # check if there are any more windows and show load window
-        # activeWindow = self.activeWindow()
-        # logger.info(f'activeWindow:{activeWindow}')
-        # if activeWindow is None:
-        #     self._openFirstWindow.show()
-
         if len(self._stackWidgetDict.keys()) == 0 and \
                             len(self._mapWidgetDict.keys()) == 0:
             self._openFirstWindow.show()
+
+    def showMapOrStack(self, path):
+        """Show an already opened map or stack widget.
+
+        Stack widgets here are standalone, no map.
+        """
+        logger.info(path)
+        if path in self._stackWidgetDict.keys():
+            self._stackWidgetDict[path].show()
+            self._stackWidgetDict[path].raise_()
+            self._stackWidgetDict[path].activateWindow()
+        elif path in self._mapWidgetDict.keys():
+            self._mapWidgetDict[path].show()
+            self._mapWidgetDict[path].raise_()
+            self._mapWidgetDict[path].activateWindow()
+        else:
+            logger.warning('did not find opened map or stack with path')
+            logger.warning(f'   {path}')
+
+    def getScreenGrid(self, numItems : int, itemsPerRow : int) -> List[List[int]]:
+        """Get screen coordiates for a grid of windows.
+        """
+        
+        # seperate each window in the grid by a little
+        hSpace = 32
+        vSpace = 32
+
+        screen = self.primaryScreen()  # will change in PyQt6
+        availableGeometry = screen.availableGeometry()
+        screenLeft = availableGeometry.left()
+        screenTop = availableGeometry.top()
+        screenWidth = availableGeometry.right() - availableGeometry.left()
+        screenHeight = availableGeometry.bottom() - availableGeometry.top()
+
+        numRows = math.ceil(numItems / itemsPerRow)
+        numRows = int(numRows)
+
+        windowWidth = screenWidth / itemsPerRow
+        windowWidth -= hSpace * itemsPerRow
+        windowWidth = int(windowWidth)
+
+        windowHeight = screenHeight / numRows
+        windowHeight -= vSpace * numRows
+        windowHeight = int(windowHeight)
+
+        # print('screenWidth:', screenWidth, 'screenHeight:', screenHeight, 'numRows:', numRows)
+
+        posList = []
+        currentTop = screenTop
+        for row in range(numRows):
+            currentLeft = screenLeft
+            for col in range(itemsPerRow):
+                pos = [currentLeft, currentTop, windowWidth, windowHeight]
+                posList.append(pos)
+                currentLeft += windowWidth + hSpace
+            currentTop += windowHeight + vSpace
+        
+        return posList
 
     def loadMapWidget(self, path):
         """Load the main map widget from a path.
@@ -403,37 +456,38 @@ class PyMapManagerApp(QtWidgets.QApplication):
 
         return self._mapWidgetDict[path]
     
-    def loadTifFile2(self, path : str):
-        import pandas as pd
-        from mapmanagercore import MapAnnotations, MultiImageLoader
-        from pymapmanager import stack
+    # def loadTifFile2(self, path : str):
+    #     import pandas as pd
+    #     from mapmanagercore import MapAnnotations, MultiImageLoader
+    #     from pymapmanager import stack
 
-        # check that path exists and is .tif file
-        if not os.path.isfile(path):
-            logger.warning(f'file not found: {path}')
-            return
-        _ext = os.path.splitext(path)[1]
-        if _ext != '.tif':
-            logger.warning(f'can only load files with .tif extension, got extension "{_ext}"')
-            return 
+    #     # check that path exists and is .tif file
+    #     if not os.path.isfile(path):
+    #         logger.warning(f'file not found: {path}')
+    #         return
+    #     _ext = os.path.splitext(path)[1]
+    #     if _ext != '.tif':
+    #         logger.warning(f'can only load files with .tif extension, got extension "{_ext}"')
+    #         return 
 
-        loader = MultiImageLoader()
-        loader.read(path, channel=0)
+    #     loader = MultiImageLoader()
+    #     loader.read(path, channel=0)
 
-        map = MapAnnotations(loader.build(),
-                            lineSegments=pd.DataFrame(),
-                            points=pd.DataFrame())
+    #     map = MapAnnotations(loader.build(),
+    #                         lineSegments=pd.DataFrame(),
+    #                         points=pd.DataFrame())
         
-        logger.info(f'map from tif file is {map}')
+    #     logger.info(f'map from tif file is {map}')
 
-        # make a stack
-        aStack = stack(zarrMap=map)
-        aStack.header['numChannels'] = 1
+    #     # make a stack
+    #     aStack = stack(zarrMap=map)
+    #     aStack.header['numChannels'] = 1
                       
-        print(aStack)
+    #     print(aStack)
 
-        self.stackWidgetFromStack(aStack)
+    #     self.stackWidgetFromStack(aStack)
 
+    # abj
     def loadTifFile(self, path : str):
         """Load a stack from tif from a path.
         Only happens on first load/ drag and drop
@@ -513,7 +567,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
         self._stackWidgetDict[stackTitle] = _stackWidget
         
     def loadStackWidget(self, path : str):
-        """Load a stack from a path.
+        """Load a stack from a zarr path.
         
         Parameters
         ----------
@@ -550,64 +604,6 @@ class PyMapManagerApp(QtWidgets.QApplication):
 
         return self._stackWidgetDict[path]
     
-    def showMapOrStack(self, path):
-        """Show an already opened map or stack widget.
-
-        Stack widgets here are standalone, no map.
-        """
-        logger.info(path)
-        if path in self._stackWidgetDict.keys():
-            self._stackWidgetDict[path].show()
-            self._stackWidgetDict[path].raise_()
-            self._stackWidgetDict[path].activateWindow()
-        elif path in self._mapWidgetDict.keys():
-            self._mapWidgetDict[path].show()
-            self._mapWidgetDict[path].raise_()
-            self._mapWidgetDict[path].activateWindow()
-        else:
-            logger.warning('did not find opened map or stack with path')
-            logger.warning(f'   {path}')
-
-    def getScreenGrid(self, numItems : int, itemsPerRow : int) -> List[List[int]]:
-        """Get screen coordiates for a grid of windows.
-        """
-        
-        # seperate each window in the grid by a little
-        hSpace = 32
-        vSpace = 32
-
-        screen = self.primaryScreen()  # will change in PyQt6
-        availableGeometry = screen.availableGeometry()
-        screenLeft = availableGeometry.left()
-        screenTop = availableGeometry.top()
-        screenWidth = availableGeometry.right() - availableGeometry.left()
-        screenHeight = availableGeometry.bottom() - availableGeometry.top()
-
-        numRows = math.ceil(numItems / itemsPerRow)
-        numRows = int(numRows)
-
-        windowWidth = screenWidth / itemsPerRow
-        windowWidth -= hSpace * itemsPerRow
-        windowWidth = int(windowWidth)
-
-        windowHeight = screenHeight / numRows
-        windowHeight -= vSpace * numRows
-        windowHeight = int(windowHeight)
-
-        # print('screenWidth:', screenWidth, 'screenHeight:', screenHeight, 'numRows:', numRows)
-
-        posList = []
-        currentTop = screenTop
-        for row in range(numRows):
-            currentLeft = screenLeft
-            for col in range(itemsPerRow):
-                pos = [currentLeft, currentTop, windowWidth, windowHeight]
-                posList.append(pos)
-                currentLeft += windowWidth + hSpace
-            currentTop += windowHeight + vSpace
-        
-        return posList
-
 def main():
     """Run the PyMapMAnager app.
     

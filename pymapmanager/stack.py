@@ -3,12 +3,13 @@ import time
 from typing import List, Union, Optional
 
 import numpy as np
+import pandas as pd
 
-import pymapmanager
-from mapmanagercore import MapAnnotations  #, MMapLoader
+from mapmanagercore import MapAnnotations, MultiImageLoader
 from mapmanagercore.lazy_geo_pd_images import Metadata
 # from mapmanagercore.lazy_geo_pd_images.store import LazyImagesGeoPandas, ImageLoader
 
+import pymapmanager
 from pymapmanager.annotations.baseAnnotationsCore import SpineAnnotationsCore, LineAnnotationsCore
 
 from pymapmanager._logger import logger
@@ -16,7 +17,7 @@ from pymapmanager._logger import logger
 class stack:
     def __init__(self, path : str = None,
                 loadImageData : bool = True,
-                zarrMap = None,  # in memory MapAnnotations (multiple timepoints)
+                # zarrMap = None,  # in memory MapAnnotations (multiple timepoints)
                 mmMap : "pymapmanager.mmMap" = None,
                 mmMapSession : int = 0):
         """Load a stack from a .mmap zarr file or an in memory core MapAnnotations.
@@ -32,40 +33,32 @@ class stack:
         mmMapSessio : int
             When mmMap is specified, this is the timepoint in mmMap
         """
-        # full path to zarr file
-        self._zarrPath = path
+        # full path to file, can be (mmap zarr, image tif)
+        self.path = path
 
-        # pymapmanager map
+        # pymapmanager map (not core map)
         self._mmMap : pymapmanager.mmMap = mmMap
         self._mmMapSession = mmMapSession
 
         self.maxNumChannels = 4  # TODO: put into backend core
         
-        # self._images = [None] * self.maxNumChannels
-
-        # TODO: in the future have analysis params be passed in so that each stack shares the same params.
-        # self._analysisParams = AnalysisParams()
-        
         # load the map
         _startSec = time.time()
         
         if path is not None:
-            # load from .mmap
-            logger.info(f'loading zarr path: {path}')
-            self._filename = os.path.split(path)[1]
-            self._fullMap : MapAnnotations = MapAnnotations.load(self._zarrPath)
-        elif zarrMap is not None:
-            # load from in memory map
-            logger.info(f'loading map from memory: {zarrMap}')
-            self._filename = 'Untitled'
-            self._fullMap = zarrMap
+            _ext = os.path.splitext(path)[1]
+            if _ext == '.mmap'
+                self._load_zarr()
+            elif _ext == '.tif':
+                self._load_tiff()
 
-        _stopSec = time.time()
-        logger.info(f'loaded map in {round(_stopSec-_startSec,3)} sec')
+        # elif zarrMap is not None:
+        #     # load from in memory map
+        #     logger.info(f'loading map from memory: {zarrMap}')
+        #     self._filename = 'Untitled'
+        #     self._fullMap = zarrMap
 
-        # logger.info('building session map ...')
         self._buildSessionMap()
-        # logger.info('done')
                     
         # TODO (cudmore) we should add an option to defer loading until explicitly called
         self.loadAnnotations()
@@ -77,6 +70,37 @@ class stack:
             for _channel in range(self.numChannels):
                 _channel += 1
                 self.loadImages(channel=_channel)
+
+        _stopSec = time.time()
+        logger.info(f'loaded stack in {round(_stopSec-_startSec,3)} sec')
+
+    def _load_zarr(self):
+        """Load from mmap file.
+        """
+        path = self._zarrPath
+        logger.info(f'loading zarr path: {path}')
+        self._filename = os.path.split(path)[1]
+        self._fullMap : MapAnnotations = MapAnnotations.load(path)
+
+        # Reduce full core map to a single session id.
+        # self._sessionMap = self._fullMap.getTimePoint(self.sessionID)
+
+    def _load_tiff(self):
+        """Load from tif file.
+        """
+        path = self._zarrPath
+
+        loader = MultiImageLoader()
+        loader.read(path, channel=0)
+
+        map = MapAnnotations(loader.build(),
+                            lineSegments=pd.DataFrame(),
+                            points=pd.DataFrame())
+        
+        logger.info(f'map from tif file is {map}')
+
+        # TODO: need to actually check the number of image channels
+        self.header['numChannels'] = 1
 
     def getMetadata(self) -> Metadata:
         """Get metadata from the core map.
