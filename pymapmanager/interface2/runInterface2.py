@@ -15,7 +15,7 @@ def run():
     
     sw2 = app.loadStackWidget(path)
     
-    sw2.runPlugin('Spine Info Widget', inDock=True)
+    sw2.runPlugin('Spine Info', inDock=True)
 
     # sw2 = stackWidget2(path, app=app)
     # sw2.show()	

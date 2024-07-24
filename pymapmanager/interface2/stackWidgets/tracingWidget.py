@@ -1,5 +1,5 @@
 import sys
-from typing import List, Union  # , Callable, Iterator, Optional
+from typing import List, Optional, Union  # , Callable, Iterator
 
 from qtpy import QtGui, QtCore, QtWidgets
 
@@ -8,40 +8,8 @@ from pymapmanager._logger import logger
 from .mmWidget2 import mmWidget2
 from .mmWidget2 import pmmEventType, pmmEvent, pmmStates
 
-# taken from image plot widget
-
-        # a mask of A* tracing progress
-        # logger.info('todo: fix logic of _myTracingMask, this recreates on each set slice')
-        # _imageLabel = self._stack.copy()
-        # _imageLabel[:] = 0
-        # _imageLabel[200:300,300:600] = 255
-        # # self._imageLabel = _imageLabel  # update self._imageLabel with tracing results and self.update()
-        # self._myTracingMask.setImage(_imageLabel, opacity=0.5)
-
-# taken from image plot widget
-    # def showTracingResults(self, x, y, z):
-    #     """Given a x/y/z tracing results, show it in the viewer.
-    #     """
-    #     logger.info(f'making temporary tracing result lineAnnotation with {len(x)} points')
-    #     # add line plot of lineAnnotations
-    #     #lineAnnotations = self._myStack.getLineAnnotations()
-    #     self._tracingLineAnnotations = pymapmanager.annotations.lineAnnotations(path=None)
-    #     self._tracingLineAnnotations.addEmptySegment()
-    #     segmentID = 0
-    #     for idx in range(len(x)):
-    #         self._tracingLineAnnotations.addToSegment(x[idx], y[idx], z[idx], segmentID)
-        
-    #     df = self._tracingLineAnnotations.getSegment(segmentID=segmentID)
-    #     print(df)
-        
-    #     _displayOptions = self._displayOptionsDict['lineDisplay']
-    #     self._aLinePlot_tmp = pymapmanager.interface2.linePlotWidget(self._tracingLineAnnotations,
-    #                                                             self._plotWidget,
-    #                                                             _displayOptions)
-
-    #     #self._aLinePlot_tmp.signalAnnotationClicked2.connect(self.slot_selectAnnotation2)
-    #     #self.signalAnnotationSelection2.connect(self._aLinePlot.slot_selectAnnotation2)
-    #     self.signalUpdateSlice.connect(self._aLinePlot_tmp.slot_setSlice)
+from pymapmanager.interface2.stackWidgets.event.segmentEvent import (
+    AddSegmentEvent, DeleteSegmentEvent)
 
 class tracingWidget(mmWidget2):
     _widgetName = 'Tracing'
@@ -61,11 +29,11 @@ class tracingWidget(mmWidget2):
         bool: If True then edit segment is on, otherwise off.
     """
     
-    signalAddSegment = QtCore.Signal()
+    # signalAddSegment = QtCore.Signal()
     """Signal emitted when user clicks add ('+') segment button.
     """
     
-    signalDeletingSegment = QtCore.Signal(object)
+    # signalDeletingSegment = QtCore.Signal(object)
     """Signal emmited when user clicks delete ('-') segment button.
     Args:
         int: segment ID to delete.
@@ -84,6 +52,7 @@ class tracingWidget(mmWidget2):
         _alignLeft = QtCore.Qt.AlignLeft
 
         vControlLayout = QtWidgets.QVBoxLayout()  #super()._initToolbar()
+        vControlLayout.setAlignment(QtCore.Qt.AlignTop)
         self._makeCentralWidget(vControlLayout)
 
         # add line annotation interface
@@ -141,7 +110,9 @@ class tracingWidget(mmWidget2):
         state = state > 0
 
         self._addSegmentButton.setEnabled(state)
-        self._deleteSegmentButton.setEnabled(state)
+        
+        self.setGui()
+        # self._deleteSegmentButton.setEnabled(state)
         
         # get current selected point
         # rowIdx, rowDict = self._stackWidget.annotationSelection.getPointSelection()
@@ -158,15 +129,57 @@ class tracingWidget(mmWidget2):
 
     def on_segment_button_clicked(self, state, buttonName : str):
         logger.info(f'buttonName is: "{buttonName}"')
+        
         if buttonName == '+':
-            logger.info(f'  -->> emit signalAddSegment()')
-            self.signalAddSegment.emit()
+            logger.info(f'{self.getClassName()}  -->> emit AddSegmentEvent')
+            addSegmentEvent = AddSegmentEvent(self)
+            self.emitEvent(addSegmentEvent)
+
         elif buttonName == '-':
-            # TODO (cudmore): get list of selected segments from list
-            _segment = [None]
-            logger.info(f'  -->> emit signalDeletingSegment() segment:{_segment}')
-            self.signalDeletingSegment.emit(_segment)
+            # delete the selected segment
+            segmentID = self.getSelectedSegment()
+            logger.info(f'  {self.getClassName()} -->> emit DeleteSegmentEvent segmentID:{segmentID}')
+            if segmentID is not None:
+                deleteSegmentEvent = DeleteSegmentEvent(self, segmentID=segmentID)
+                self.emitEvent(deleteSegmentEvent)
+            else:
+                logger.warning(f'{self.getClassName()} is expecting a segment selection')
+                return
+        
         elif buttonName =='trace_cancel':
             logger.info('trace or cancel !!! implement this')
+
         else:
             logger.warning(f'did not understand buttonName:{buttonName}')
+
+    def setGui(self):
+        segmentID = self.getSelectedSegment()
+            
+        self._deleteSegmentButton.setEnabled(segmentID is not None)
+
+    def selectedEvent(self, event: pmmEvent):
+        """
+        """
+
+        self.setGui()
+        return
+    
+        _stackSelection = event.getStackSelection()
+        
+        if _stackSelection.hasSegmentSelection():
+            _selectedSegments = _stackSelection.getSegmentSelection()
+            
+            logger.info(f'"{self.getClassName()}" _selectedSegments:{_selectedSegments}')
+            
+            # self._selectSegment(_selectedSegments)
+
+        else:
+            logger.info(f'   "{self.getClassName()}" NO SEGMENT SELECTION')
+
+    def getSelectedSegment(self) -> Optional[int]:
+        """Get selected segment from stack widget.
+        """
+        _selection = self.getStackWidget().getStackSelection()
+        if _selection.hasSegmentSelection():
+            segmentID = _selection.getSegmentSelection()
+            return segmentID

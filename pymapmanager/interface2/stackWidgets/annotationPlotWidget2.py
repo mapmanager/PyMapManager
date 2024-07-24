@@ -18,7 +18,10 @@ from qtpy import QtGui, QtCore, QtWidgets
 import pyqtgraph as pg
 
 from .mmWidget2 import mmWidget2, pmmEventType, pmmEvent, pmmStates
-from pymapmanager.interface2.stackWidgets.event.spineEvent import AddSpineEvent, DeleteSpineEvent, MoveSpineEvent
+from pymapmanager.interface2.stackWidgets.event.spineEvent import (AddSpineEvent,
+                                                                   DeleteSpineEvent,
+                                                                   MoveSpineEvent,
+                                                                   UndoSpineEvent)
 
 # import seaborn as sns  # to color points with userType
 
@@ -299,7 +302,7 @@ class annotationPlotWidget(mmWidget2):
             width = self._displayOptions["widthUserSelection"]
             color = self._displayOptions["colorUserSelection"]
             symbol = self._displayOptions["symbolUserSelection"]
-            size = self._displayOptions["sizeUserSelection"]
+            # size = self._displayOptions["sizeUserSelection"]
             zorder = self._displayOptions["zorderUserSelection"]
 
             # this scatter plot get updated when user click an annotation
@@ -375,7 +378,7 @@ class annotationPlotWidget(mmWidget2):
     # abb 202405 turned off for now,
     # core will accept a click (in image plot) and then find the closest point
     # abj
-    def _on_highlighted_mouse_click(self, points, event):
+    def _old_on_highlighted_mouse_click(self, points, event):
         """Respond to user click on highlighted scatter plot.
         This is only used for manual connect on a highlighted segment Point
         
@@ -466,40 +469,6 @@ class annotationPlotWidget(mmWidget2):
                 event.setAlt(isAlt)
                 self.emitEvent(event, blockSlots=False)
 
-                # sliceNum = self.getStack().getPointAnnotations().getValue("z", dbIdx)
-
-                # logger.error('todo: move segment selection logic into stackwidget.selectionEvent()')
-                # segmentIndex = self.getStack().getPointAnnotations().getValue("segmentID", dbIdx)
-                # segmentIndex= [int(segmentIndex)]
-                # event.getStackSelection().setSegmentSelection(segmentIndex)
-
-                # logger.info(f'SpineAnnotationsCore selection segmentIndex:{segmentIndex}')
-
-                # with new core, do not need a line point selection
-                # this logic moves up into imagePlotWidget
-                # elif isinstance(self._annotations, pymapmanager.annotations.lineAnnotations):
-                    
-                #     # abj 3/12
-                #     # need to check if we are in manual connect, else there will be errors
-                #     currentState = self.getStackWidget().getStackSelection().getState()
-                #     # logger.info(f'currentState {currentState}')
-                #     if currentState.name != pmmEventType.manualConnectSpine.name:
-                #         logger.info(f'not manual connect state - returning now, state is: {currentState}')
-                #         return
-
-                #     logger.info(f'line segment selected')
-                #     # used to manually connect a spine to segment
-                #     event.getStackSelection().setSegmentPointSelection(dbIdx)
-                #     sliceNum = self.getStackWidget().getStackSelection().getCurrentStackSlice() # gets current stacks slice selection
-                # else:
-                #     logger.error(
-                #         f"did not understand type of annotations {type(self._annotations)}"
-                #     )
-                #     return
-
-                # event.setAlt(isAlt)
-                # self.emitEvent(event, blockSlots=False)
-
     def _selectAnnotation(self, dbIdx: List[int], isAlt: bool = False):
         """Select annotations as 'yellow'
 
@@ -536,18 +505,16 @@ class annotationPlotWidget(mmWidget2):
         # self._view.update()
 
     def _refreshSlice(self):
-        # I don't think that the current slice is being updated, it will always pass in 0?
-        # logger.info(f'_currentSlice: {self._currentSlice}')
         self.slot_setSlice(self._currentSlice)
 
     def slot_setSlice(self, sliceNumber: int):
-        """
+        """Refresh the scatter df by pulling from the backend.
 
         Args:
             sliceNumber:
         """
         
-        logger.info(f'{self.getClassName()} sliceNumber:{sliceNumber}')
+        # logger.info(f'{self.getClassName()} sliceNumber:{sliceNumber}')
 
         # startTime = time.time()
 
@@ -556,7 +523,7 @@ class annotationPlotWidget(mmWidget2):
         # theseSegments = None  # None for all segments
         roiTypes = self._roiTypes
 
-        # logger.info(f'plotting roiTypes:{roiTypes} for {type(self)}')
+        # TODO: (6/19/24) Change this to be connected to top tool bar zSlider
         zPlusMinus = self._displayOptions["zPlusMinus"]
 
         # abb removed 042024
@@ -568,14 +535,17 @@ class annotationPlotWidget(mmWidget2):
             segmentIDList, roiTypes, sliceNumber, zPlusMinus=zPlusMinus
         )
 
+        # logger.warning(f'dfPlot has {len(dfPlot)}')
+        
         self._dfPlot = dfPlot
 
         try:
             x = dfPlot["x"].tolist()  # x is pandas.core.series.Series
             y = dfPlot["y"].tolist()
         except (KeyError) as e:
-            logger.error(f'did not find x/y, avail columns are: {dfPlot.columns}')
-            logger.error(dfPlot)
+            # this happens when the dataframe is empty (no points or segments)
+            logger.error(f'{self.getClassName()} did not find x/y, avail columns are: {dfPlot.columns.to_list()}')
+            # logger.error(dfPlot)
             return
         
         # TODO: Can get rid of this and just use dfPlot, use dfPlot at index 
@@ -594,16 +564,7 @@ class annotationPlotWidget(mmWidget2):
         # logger.info(f'base annotation plot widget ... {self.getClassName()} Took {round(stopTime-startTime,4)} sec')
 
     def deletedEvent(self, event: pmmEvent):
-        # cancel selection (yellow)
-        self._selectAnnotation([])
-
-        # refresh scatter
-        self._refreshSlice()
-
-    def undoEvent(self, event: pmmEvent):
-        # return super().undoEvent(event)
-        logger.info('')
-        self._refreshSlice()
+        return
 
     def stateChangedEvent(self, event):
         super().stateChangedEvent(event)
@@ -807,7 +768,7 @@ class pointPlotWidget(annotationPlotWidget):
         width = self._displayOptionsLines["width"]
         color = self._displayOptionsLines["color"]
         symbol = self._displayOptionsLines["symbol"]
-        size = self._displayOptionsLines["size"]
+        # size = self._displayOptionsLines["size"]
         zorder = self._displayOptionsLines["zorder"]
 
         # logger.info(f'width:{width}')
@@ -890,20 +851,9 @@ class pointPlotWidget(annotationPlotWidget):
         
         self._refreshSlice()
 
-    def addedEvent(self, event : AddSpineEvent):
-        
-        logger.info(event)
-        
-        for spineID in event.getSpines():
-            self._addAnnotation(spineID)
-            self._selectAnnotation([spineID])
-
-        self._refreshSlice()
-
-    def editedEvent(self, event: pmmEvent):
-
-        logger.warning(event)
-        
+    def manualConnectSpineEvent(self, event : pmmEvent):
+        """Update plots on manual connect spine event.
+        """
         for spine in event:
             # update label
             spineID = spine['spineID']
@@ -911,31 +861,75 @@ class pointPlotWidget(annotationPlotWidget):
 
         # remake all spine lines
         self._bMakeSpineLines()
+
+        self._refreshSlice()
+
+    def undoEvent(self, event : UndoSpineEvent):
+        """
+        """
+
+        # logger.info(f'event:{event}')
+        
+        _undoEvent = event.getUndoEvent()
+
+        if _undoEvent.type == pmmEventType.moveAnnotation:
+            # TODO: on undo move, redraw label
+            for spine in _undoEvent:
+                # update label
+                spineID = spine['spineID']
+                self._pointLabels.updateLabel(spineID)
+
+        self._bMakeSpineLines()
+
+        self._refreshSlice()
+    
+    def redoEvent(self, event : UndoSpineEvent):
+        """
+        """
+
+        # logger.info(f'event:{event}')
+        
+        # TODO: on undo move, redraw label
+        for spine in event.getRedoEvent():
+            # update label
+            spineID = spine['spineID']
+            self._pointLabels.updateLabel(spineID)
+
+        self._bMakeSpineLines()
+
+        self._refreshSlice()
+
+    def addedEvent(self, event : AddSpineEvent):        
+        
+        for spineID in event.getSpines():
+            # add new spine to markers and spine lines
+            self._addAnnotation(spineID)
+
         self._refreshSlice()
 
     def deletedEvent(self, event: pmmEvent):
-        # order matters, call after we do our work
-        super().deletedEvent(event)
 
-        logger.info(event)
-        logger.warning(f'todo: delete label from _pointLabels')
+        # intentionally not deleting labels
+        # dururing runtime they will be recycled, allows edit and then undo
+        # for spineID in event.getSpines():
+        #     self._pointLabels.deleteLabel(spineID)
 
-        self._selectAnnotation([])
-        # self._cancelSpineRoiSelection()
+        # remake all spine lines (from backend)
+        self._bMakeSpineLines()
 
         self._refreshSlice()
 
-        # for spineID in event.getSpines():
+    def editedEvent(self, event: pmmEvent):
 
-        # _stackSelection = event.getStackSelection()
-        # if not _stackSelection.hasPointSelection():  # False if (None, [])
-        #     return
+        for spine in event:
+            # update label
+            spineID = spine['spineID']
+            self._pointLabels.updateLabel(spineID)
 
-        # _pointSelection = _stackSelection.getPointSelection()
-
-        # logger.info(event)
-        # logger.warning(f'todo: delete label from _pointLabels')
-        # self._refreshSlice()
+        # remake all spine lines
+        self._bMakeSpineLines()
+        
+        self._refreshSlice()
 
     def _cancelSpineRoiSelection(self):
         """Cancel spine ROI selection."""
@@ -989,37 +983,61 @@ class pointPlotWidget(annotationPlotWidget):
         isAlt = event.isAlt()
         self._selectAnnotation(itemList, isAlt)
 
-    # NEEDED WITH pmmWidget v3 interface
     def slot_setSlice(self, sliceNumber: int):
-        startSec = time.time()
+        # startSec = time.time()
+
+        # logger.info(f'{self.getClassName()} sliceNumber:{sliceNumber}')
 
         super().slot_setSlice(sliceNumber=sliceNumber)
 
-        # abb 042024, may cause problems with core, row index is string
+        # this will have missing values after delete
         _rows = self._dfPlot["index"].to_list()
-        # _rows = self._dfPlot.index.to_list()
 
         #
         # show and hide labels based on sliceNumber
 
-        # abj: only plot if we show labels
         if self.showLabel:
             self._pointLabels.hidShowLabels(_rows)
 
         # mask and unmask spine lines based on sliceNumber
-        _spineLineIndex = []
-        for row in _rows:
-            realRow = row * 2
-            _spineLineIndex.append(realRow)
-            _spineLineIndex.append(realRow + 1)
-            # _spineLineIndex.append(realRow+2)
+        # _spineLineIndex = []
+        # for _idx, row in enumerate(_rows):
+        #     realRow = row * 2
+        #     # realRow = _idx * 2
+        #     _spineLineIndex.append(realRow)
+        #     _spineLineIndex.append(realRow + 1)
 
         try:
-            _xData = self._xSpineLines[_spineLineIndex]
-            _yData = self._ySpineLines[_spineLineIndex]
-            # _connect = self._spineLinesConnect[_spineLineIndex]
+            # x/y spine lines come directly from the core
+            # _xData = self._xSpineLines[_spineLineIndex]
+            # _yData = self._ySpineLines[_spineLineIndex]
+
+            _xData = self._spineLineDf.loc[_rows]['x'].to_list()
+            _yData = self._spineLineDf.loc[_rows]['y'].to_list()
+
+        except KeyError as e:
+            logger.error('!!! my KeyError: _spineLineDf did not contain a _rows')
+            logger.error(e)
+            print('self._spineLineDf')
+            print(self._spineLineDf)
+            print('_rows:')
+            print(_rows)
+
         except IndexError as e:
-            logger.error(f"my IndexError {e}")
+            logger.error(f"!!! my IndexError {e}")
+            # logger.error(f'self._xSpineLines:{len(self._xSpineLines)}')
+            # # print(self._xSpineLines)
+            # logger.error(f'self._ySpineLines:{len(self._ySpineLines)}')
+            # # print(self._ySpineLines)
+
+            # logger.error(f'_rows:{len(_rows)}')
+            # logger.error(f'_spineLineIndex:{len(_spineLineIndex)}')
+            # print(_spineLineIndex)
+
+            # print('self._spineLinesIndex:')
+            # print(self._spineLinesIndex)
+
+            # logger.error('>>>><<<<<>>>><<<')
 
         else:
             self._spineConnections.setData(_xData, _yData)
@@ -1031,127 +1049,26 @@ class pointPlotWidget(annotationPlotWidget):
         """Update one item (both labels and spine line).
         """
         
-        # abb on switch to core
-        self._bMakeSpineLines()
-    
-        # x = self._annotations.getValue("x", rowIdx)
-        # y = self._annotations.getValue("y", rowIdx)
-
         self._pointLabels.updateLabel(rowIdx)
+
+        self._bMakeSpineLines()
+        
         return
 
-    def _old__newLabel(self, rowIdx, x, y):
-        """Make a new label at (x,y) with text rowIdx.
-
-        Notes
-        -----
-        Need to dynamically set pnt size to user option.
-        """
-        label = pg.LabelItem("", **{"color": "#FFF", "size": "6pt"})
-        label.setPos(QtCore.QPointF(x - 9, y - 9))
-        label.setText(str(rowIdx))
-        label.hide()
-        return label
-
     def _addAnnotation(self, addedRow : int):
-        """Add new annotations in response to shift+click.
-        """
-        
-        # xSpine = self._annotations.getValue("x", addedRow)
-        # ySpine = self._annotations.getValue("y", addedRow)
-
-        logger.info(f'adding spine row {addedRow}')
-        
+        """Add a new annotation (label, spine lines)
+        """        
         # add a label
         self._pointLabels.addedLabel(addedRow)
-        # newLabel = self._newLabel(addedRow, xSpine, ySpine)
-        # self._view.addItem(newLabel)
-        # # self._labels.append(newLabel)  # our own list
-        # self._labels[addedRow] = newLabel  # our own list
 
         # remake all spine lines
         self._bMakeSpineLines()
 
-        # add a spine line
-        # _brightestIndex = self.pointAnnotations.getValue(["brightestIndex"], addedRow)
-        # xLeft = self.lineAnnotations.getValue(["xLeft"], _brightestIndex)
-        # xRight = self.lineAnnotations.getValue(["xRight"], _brightestIndex)
-        # yLeft = self.lineAnnotations.getValue(["yLeft"], _brightestIndex)
-        # yRight = self.lineAnnotations.getValue(["yRight"], _brightestIndex)
-
-        # leftRadiusPoint = (xLeft, yLeft)
-        # rightRadiusPoint = (xRight, yRight)
-        # spinePoint = (xSpine, ySpine)
-        # closestPoint = pymapmanager.utils.getCloserPoint2(
-        #     spinePoint, leftRadiusPoint, rightRadiusPoint
-        # )
-
-        # logger.info(f"   xSpine:{xSpine}")
-        # logger.info(f"   ySpine:{ySpine}")
-        # logger.info(f"   closestPoint:{closestPoint}")
-
-        # self._xSpineLines = np.append(self._xSpineLines, xSpine)
-        # self._xSpineLines = np.append(self._xSpineLines, closestPoint[0])
-
-        # self._ySpineLines = np.append(self._ySpineLines, ySpine)
-        # self._ySpineLines = np.append(self._ySpineLines, closestPoint[1])
-
-        # self._spineLinesConnect = np.append(self._spineLinesConnect, 1)  # connect
-        # self._spineLinesConnect = np.append(self._spineLinesConnect, 0)  # don't connect
-
     def _bMakeSpineLines(self):
         """Make a spine line for each spine in df.
-
-        connect: Values of 1 indicate that the respective point will be connected to the next
-        """
+        """        
         
-        # logger.warning('make sure this is not called more than once')
-        
-        anchorDf = self._annotations.getSpineLines()
-        
-        # print('anchorDf:')
-        # print(anchorDf)
-
-        # logger.info(f'anchorDf:{type(anchorDf["x"])}')
-        # print(anchorDf)
-
-        self._xSpineLines = anchorDf['x'].to_numpy()
-        self._ySpineLines = anchorDf['y'].to_numpy()
-
-        # 202404, we now use connect='pairs', not need for this !!!
-        # 1 is connect to next, 0 is not connect to next
-        # self._spineLinesConnect = np.ndarray(len(anchorDf))
-        # self._spineLinesConnect[::2] = 1
-        # self._spineLinesConnect[1::2] = 0
-
-    def _old__bMakeLabels(self):
-        """Make a label for each point annotations.
-
-        Need to update this list on slot_deletedAnnotation, slot_AddedAnnotation
-
-        TODO:
-            - Add user interface option to set font size, hard coded at 6pt.
-            - Use +/- offsets based on spine side in (left, right)
-        """
-        # start = time.time()
-
-        df = self._annotations.getDataFrame()
-
-        self._labels = {}
-        for index, row in df.iterrows():
-            # if row['roiType'] != pymapmanager.annotations.pointTypes.spineROI.value:
-            #     continue
-
-            label_value = pg.LabelItem("", **{"color": "#FFF", "size": "6pt"})
-            label_value.setPos(QtCore.QPointF(row["x"] - 9, row["y"] - 9))
-            label_value.setText(str(row["index"]))
-            label_value.hide()
-            # label_value.setText(str(row['index']), rotateAxis=(1, 0), angle=90)
-            self._view.addItem(label_value)
-            self._labels[index] = label_value  # our own list
-
-        # stop = time.time()
-        # logger.info(f'took {round(stop-start,3)} seconds')  # 0.304
+        self._spineLineDf = self._annotations.getSpineLines()
 
     def _getScatterColor(self):
         # TODO: refactor this to not explicitly loop
@@ -1195,9 +1112,7 @@ class linePlotWidget(annotationPlotWidget):
     def __init__(
         self,
         stackWidget: stackWidget2,
-        # lineAnnotations: "pymapmanager.annotations.lineAnnotations",
         pgView,  # pymapmanager.interface.myPyQtGraphPlotWidget
-        # displayOptions: dict,
     ):
         """
         Args:
@@ -1258,10 +1173,6 @@ class linePlotWidget(annotationPlotWidget):
             zorder
         )  # put it on top, may need to change '10'
 
-        # logger.info(f'adding _rightRadiusLines to view: {self.__class__.__name__}')
-        # 'using "self._view.plot", item is already added
-        # self._view.addItem(self._rightRadiusLines)
-
     def toggleRadiusLines(self):
         visible = not self._leftRadiusLines.isVisible()
         self._leftRadiusLines.setVisible(visible)
@@ -1294,7 +1205,7 @@ class linePlotWidget(annotationPlotWidget):
         return dfPlot['color'].tolist()
     
     # abj
-    def _selectSegment(self, segmentID: Optional[List[int]]):
+    def _old__selectSegment(self, segmentID: Optional[List[int]]):
         """Visually select an entire segment"""
         return
     
@@ -1340,13 +1251,15 @@ class linePlotWidget(annotationPlotWidget):
     
     def slot_setSlice(self, sliceNumber: int):
         
+        # startSec = time.time()
+
+        # abb
+        if self._annotations.getNumSegments() == 0:
+            return
+
         super().slot_setSlice(sliceNumber)  # draws centerline
         
-        # startSec = time.time()
- 
-        # logger.warning(f'{self.getClassName()} TODO: turn radius line back on !!!')
-        # logger.info(f'slot set left and right radius')
-
+        
         if self.showRadiusLines:
             zPlusMinus = self._displayOptions["zPlusMinus"] 
             radiusOffset = self._displayOptions['radius'] 
@@ -1382,37 +1295,25 @@ class linePlotWidget(annotationPlotWidget):
             that is the new connection point   !!!
         """
 
-        # logger.info(f'{self.getClassName()} event:{event}')
+        # refresh slice in case segment has changed
+        # this updates color of selected segment
+        self.slot_setSlice(self._currentSlice)
 
-        _stackSelection = event.getStackSelection()
-        # logger.info(f"linePlotWidget _stackSelection: {_stackSelection}")
+        # _stackSelection = event.getStackSelection()
         
-        if _stackSelection.hasSegmentSelection():
-            _selectedSegments = _stackSelection.getSegmentSelection()
+        # if _stackSelection.hasSegmentSelection():
+        #     _selectedSegments = _stackSelection.getSegmentSelection()
             
-            logger.info(f'"{self.getClassName()}" _selectedSegments:{_selectedSegments}')
+        #     logger.info(f'"{self.getClassName()}" _selectedSegments:{_selectedSegments}')
             
-            self._selectSegment(_selectedSegments)
+        #     # super().selectedEvent(event)
 
-            # super().selectedEvent(event)
-
-        else:
-            logger.info(f'   "{self.getClassName()}" NO SEGMENT SELECTION')
-
-        # _state = event.getStackSelection().getState()
-        # _stackSelection = self.getStackWidget().getStackSelection()
-        
-        # if _stackSelection.getState() == pmmStates.manualConnectSpine:
-        #     _selectedAnnotations = event.getStackSelection().getSegmentPointSelection()
-        #     logger.info(
-        #         f"   -->> emit pmmEventType.manualConnectSpine with segmentpointselection:{_selectedAnnotations}"
-        #     )
-
-        #     manualConnectEvent = event.getCopy()
-        #     manualConnectEvent.setType(pmmEventType.manualConnectSpine)
-        #     manualConnectEvent.getStackSelection().setSegmentPointSelection(_selectedAnnotations)
-        #     self.emitEvent(manualConnectEvent, blockSlots=True)
+        # else:
+        #     logger.info(f'   "{self.getClassName()}" NO SEGMENT SELECTION')
 
     def stateChangedEvent(self, event):
         if event.getStateChange() == pmmStates.manualConnectSpine:
             self._allowClick = True
+
+    def addedSegmentPointEvent(self, event):
+        self._refreshSlice()

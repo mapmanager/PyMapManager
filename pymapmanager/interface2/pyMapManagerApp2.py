@@ -145,6 +145,9 @@ class PyMapManagerApp(QtWidgets.QApplication):
         # abb put this back in
         # self._appDisplayOptions : pymapmanager.interface.AppDisplayOptions = pymapmanager.interface2.AppDisplayOptions()
 
+        # used to name new maps (created by dragging a tiff file)
+        self._untitledNumber = 0
+
         self._mapWidgetDict = {}
         # dictionary of open map widgets
         # keys are full path to map
@@ -164,6 +167,12 @@ class PyMapManagerApp(QtWidgets.QApplication):
         self._openFirstWindow = None
         self.openFirstWindow()
 
+    def getNewUntitledNumber(self) -> int:
+        """Get a unique number for each new map (From tiff file).
+        """
+        self._untitledNumber += 1
+        return self._untitledNumber
+    
     def setTheme(self, theme = None):
         #theme in ['dark', 'light', 'auto']
         if theme is None:
@@ -333,11 +342,10 @@ class PyMapManagerApp(QtWidgets.QApplication):
                 # stackWidget.saveAs(key)
 
     def _undo_action(self):
-        self.getFrontWindow()._undo_action()
-        # logger.info('')
+        self.getFrontWindow().emitUndoEvent()
         
     def _redo_action(self):
-        self.getFrontWindow()._redo_action()
+        self.getFrontWindow().emitRedoEvent()
         # logger.info('')
         
     def toggleMapWidget(self, path : str, visible : bool):
@@ -362,129 +370,10 @@ class PyMapManagerApp(QtWidgets.QApplication):
             self._mapWidgetDict.pop(popThisKey, None)
 
         # check if there are any more windows and show load window
-        # activeWindow = self.activeWindow()
-        # logger.info(f'activeWindow:{activeWindow}')
-        # if activeWindow is None:
-        #     self._openFirstWindow.show()
-
         if len(self._stackWidgetDict.keys()) == 0 and \
                             len(self._mapWidgetDict.keys()) == 0:
             self._openFirstWindow.show()
 
-    def loadMapWidget(self, path):
-        """Load the main map widget from a path.
-        """
-        if path in self._mapWidgetDict.keys():
-            self._mapWidgetDict[path].show()
-        else:
-            # load map and make widget
-            logger.info(f'loading mmMap from path: {path}')
-            _map = pmm.mmMap(path)
-            logger.info(f'   {_map}')
-            _mapWidget = pmm.interface2.mapWidgets.mapWidget(_map)
-            self._mapWidgetDict[path] = _mapWidget
-
-        self._mapWidgetDict[path].show()
-        self._mapWidgetDict[path].raise_()
-        self._mapWidgetDict[path].activateWindow()
-
-        # always hide the open first window
-        self._openFirstWindow.hide()
-
-        # add to recent opened windows
-        self.getConfigDict().addMapPath(path)
-
-        return self._mapWidgetDict[path]
-    
-    def loadTifFile(self, path : str):
-        """Load a stack from tif from a path.
-        Only happens on first load/ drag and drop
-        Create stackwidget/ mmap from tif file
-        
-        Parameters
-        ----------
-        path : str
-            Full path to tif file
-        """
-        from mapmanagercore import MapAnnotations, MultiImageLoader
-        from mapmanagercore.lazy_geo_pandas import LazyGeoFrame
-        from mapmanagercore.schemas import Segment, Spine
-
-        loader = MultiImageLoader()
-        # path = "C:\\Users\\johns\\Documents\\GitHub\\PyMapManager-Data\\one-timepoint\\rr30a_s0_ch1.tif"
-    
-        try: # Check if path is a tif file
-            # TODO: detect channel, move channel to parameter
-            loader.read(path, channel=0)
-            logger.info("loading tif file!")
-        except Exception as e: # else return error message
-            logger.info(f"Exeception when reading tif file: {e}")
-            return
-        import pandas as pd
-        import geopandas
-        lineSegments = geopandas.GeoDataFrame()
-        points = geopandas.GeoDataFrame()
-
-
-        # Might no be necessary, example.ipynb works with empty geodataframes
-        # self._segments = LazyGeoFrame(
-        #     Segment, data=lineSegments, store=self)
-        # self._points = LazyGeoFrame(Spine, data=points, store=self)
-
-        map = MapAnnotations(loader.build(),
-                            lineSegments=lineSegments,
-                            points=points)
-        
-        # Save new mmap file in same directory as tif file
-        import os
-        pathParse = os.path.splitext(path)[0] # without extension
-        newMapPath = pathParse + ".mmap"
-        logger.info("Save new Map from tif file")
-        map.save(newMapPath)
-
-        self.loadStackWidget(newMapPath)
-        # map.points[:]
-        # need to save zarr file first. so that we can create a stack from it within stackwidget
-        # need to create stackwidget from new map
-        #only save when user clicks save as
-               
-    def loadStackWidget(self, path : str):
-        """Load a stack from a path.
-        
-        Parameters
-        ----------
-        path : str
-            Full path to zarr file
-        """
-        if path in self._stackWidgetDict.keys():
-            logger.info('showing already create stack widget')
-            self._stackWidgetDict[path].show()
-        else:
-            # load stack and make widget
-            # logger.info(f'loading stack widget from path: {path}')
-            # _stackWidget = pmm.interface2.stackWidgets.stackWidget2(path)
-            _stackWidget = stackWidget2(path)
-
-            geometryRect = self.getConfigDict().getStackWindowGeometry()
-            
-            left = geometryRect[0]
-            top = geometryRect[1]
-            width = geometryRect[2]
-            height = geometryRect[3]
-            
-            _stackWidget.setGeometry(left, top, width, height)
-
-            _stackWidget.show()
-            
-            self._stackWidgetDict[path] = _stackWidget
-
-        self._openFirstWindow.hide()
-
-        # add to recent opened windows
-        self.getConfigDict().addStackPath(path)
-
-        return self._stackWidgetDict[path]
-    
     def showMapOrStack(self, path):
         """Show an already opened map or stack widget.
 
@@ -543,6 +432,180 @@ class PyMapManagerApp(QtWidgets.QApplication):
         
         return posList
 
+    def loadMapWidget(self, path):
+        """Load the main map widget from a path.
+        """
+        if path in self._mapWidgetDict.keys():
+            self._mapWidgetDict[path].show()
+        else:
+            # load map and make widget
+            logger.info(f'loading mmMap from path: {path}')
+            _map = pmm.mmMap(path)
+            logger.info(f'   {_map}')
+            _mapWidget = pmm.interface2.mapWidgets.mapWidget(_map)
+            self._mapWidgetDict[path] = _mapWidget
+
+        self._mapWidgetDict[path].show()
+        self._mapWidgetDict[path].raise_()
+        self._mapWidgetDict[path].activateWindow()
+
+        # always hide the open first window
+        self._openFirstWindow.hide()
+
+        # add to recent opened windows
+        self.getConfigDict().addMapPath(path)
+
+        return self._mapWidgetDict[path]
+    
+    # def loadTifFile2(self, path : str):
+    #     import pandas as pd
+    #     from mapmanagercore import MapAnnotations, MultiImageLoader
+    #     from pymapmanager import stack
+
+    #     # check that path exists and is .tif file
+    #     if not os.path.isfile(path):
+    #         logger.warning(f'file not found: {path}')
+    #         return
+    #     _ext = os.path.splitext(path)[1]
+    #     if _ext != '.tif':
+    #         logger.warning(f'can only load files with .tif extension, got extension "{_ext}"')
+    #         return 
+
+    #     loader = MultiImageLoader()
+    #     loader.read(path, channel=0)
+
+    #     map = MapAnnotations(loader.build(),
+    #                         lineSegments=pd.DataFrame(),
+    #                         points=pd.DataFrame())
+        
+    #     logger.info(f'map from tif file is {map}')
+
+    #     # make a stack
+    #     aStack = stack(zarrMap=map)
+    #     aStack.header['numChannels'] = 1
+                      
+    #     print(aStack)
+
+    #     self.stackWidgetFromStack(aStack)
+
+    # abj
+    def _old_loadTifFile(self, path : str):
+        """Load a stack from tif from a path.
+        Only happens on first load/ drag and drop
+        Create stackwidget/ mmap from tif file
+        
+        Parameters
+        ----------
+        path : str
+            Full path to tif file
+        """
+        from mapmanagercore import MapAnnotations, MultiImageLoader
+        from mapmanagercore.lazy_geo_pandas import LazyGeoFrame
+        from mapmanagercore.schemas import Segment, Spine
+
+        loader = MultiImageLoader()
+        # path = "C:\\Users\\johns\\Documents\\GitHub\\PyMapManager-Data\\one-timepoint\\rr30a_s0_ch1.tif"
+    
+        try: # Check if path is a tif file
+            # TODO: detect channel, move channel to parameter
+            loader.read(path, channel=0)
+            logger.info("loading tif file!")
+        except Exception as e: # else return error message
+            logger.info(f"Exeception when reading tif file: {e}")
+            return
+        import pandas as pd
+        import geopandas
+        lineSegments = geopandas.GeoDataFrame()
+        points = geopandas.GeoDataFrame()
+
+
+        # Might no be necessary, example.ipynb works with empty geodataframes
+        # self._segments = LazyGeoFrame(
+        #     Segment, data=lineSegments, store=self)
+        # self._points = LazyGeoFrame(Spine, data=points, store=self)
+
+        map = MapAnnotations(loader.build(),
+                            lineSegments=lineSegments,
+                            points=points)
+        
+        # Save new mmap file in same directory as tif file
+        import os
+        pathParse = os.path.splitext(path)[0] # without extension
+        newMapPath = pathParse + ".mmap"
+        logger.info("Save new Map from tif file")
+        map.save(newMapPath)
+
+        self.loadStackWidget(newMapPath)
+        # map.points[:]
+        # need to save zarr file first. so that we can create a stack from it within stackwidget
+        # need to create stackwidget from new map
+        #only save when user clicks save as
+    
+    def stackWidgetFromStack(self, newStack : "pymapmanager.stack"):
+        """Open a stack widget from an in memory stack.
+        
+        The newStack is created when user drops a tiff file.
+        """
+
+        _stackWidget = stackWidget2(path=None, stack=newStack)
+
+        # cludge
+        _stackWidget.getDisplayOptions()['windowState']['defaultChannel'] = 1
+
+        geometryRect = self.getConfigDict().getStackWindowGeometry()
+        left = geometryRect[0]
+        top = geometryRect[1]
+        width = geometryRect[2]
+        height = geometryRect[3]
+        
+        _stackWidget.setGeometry(left, top, width, height)
+
+        _stackWidget.show()
+
+        # add to runtime dict so it shows up in menus
+        newUntitledNumber = self.getNewUntitledNumber()
+        stackTitle = 'Image' + str(newUntitledNumber)
+        self._stackWidgetDict[stackTitle] = _stackWidget
+        
+    def loadStackWidget(self, path : str):
+        """Load a stack from a path.
+            Path can be from (.mmap, .tif)
+        
+        Parameters
+        ----------
+        path : str
+            Full path to (zarr, tif) file
+        """
+        if path in self._stackWidgetDict.keys():
+            logger.info('showing already create stack widget')
+            self._stackWidgetDict[path].show()
+        else:
+            # load stack and make widget
+            # logger.info(f'loading stack widget from path: {path}')
+            # _stackWidget = pmm.interface2.stackWidgets.stackWidget2(path)
+            _stackWidget = stackWidget2(path)
+
+            geometryRect = self.getConfigDict().getStackWindowGeometry()
+            
+            left = geometryRect[0]
+            top = geometryRect[1]
+            width = geometryRect[2]
+            height = geometryRect[3]
+            
+            _stackWidget.setGeometry(left, top, width, height)
+
+            _stackWidget.show()
+            
+            # add to runtime dict so it shows up in menus
+            self._stackWidgetDict[path] = _stackWidget
+
+        self._openFirstWindow.hide()
+
+        # add to recent opened windows
+        self.getConfigDict().addStackPath(path)
+
+        return self._stackWidgetDict[path]
+    
 def main():
     """Run the PyMapMAnager app.
     

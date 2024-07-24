@@ -49,7 +49,7 @@ class _EditSpine(pmmEvent):
         # list of dict with keys in (spineID, col, value)
         self._list = []
 
-    def getName(self):
+    def getName(self) -> str:
         """Derived classes define this and is used in undo/redo menus.
         """
         return ''
@@ -58,6 +58,11 @@ class _EditSpine(pmmEvent):
         """Get list of spine id in the event.
         """
         return [item['spineID'] for item in self._list]
+
+    def getSegments(self) -> List[int]:
+        """Get list of segment id in the event.
+        """
+        return [item['segmentID'] for item in self._list]
 
     def addEdit(self,
                 spineID : int = None,
@@ -140,6 +145,38 @@ class _EditSpine(pmmEvent):
             # derived classes define _getItem to return relevant keys
             return self._getItem(self._list[self._iterIdx])
 
+class UndoSpineEvent(_EditSpine):
+    def __init__(self,
+                 mmWidget : mmWidget2,
+                 undoEvent : pmmEvent
+                 ):
+                
+        super().__init__(pmmEventType.undoSpineEvent, mmWidget)
+
+        self._undoEvent = undoEvent
+    
+    def setUndoEvent(self, event : pmmEvent):
+        self._undoEvent = event
+        
+    def getUndoEvent(self) -> pmmEvent:
+        return self._undoEvent
+    
+class RedoSpineEvent(_EditSpine):
+    def __init__(self,
+                 mmWidget : mmWidget2,
+                 redoEvent : pmmEvent
+                 ):
+                
+        super().__init__(pmmEventType.redoSpineEvent, mmWidget)
+
+        self._redoEvent = redoEvent
+    
+    def setRedoEvent(self, event : pmmEvent):
+        self._redoEvent = event
+        
+    def getRedoEvent(self) -> pmmEvent:
+        return self._redoEvent
+    
 class AddSpineEvent(_EditSpine):
     """Add spine event.
     
@@ -162,7 +199,7 @@ class AddSpineEvent(_EditSpine):
         # self.addAddSpine(segmentID, x, y, z)
         self.addAddSpine(x, y, z)
 
-    def getName(self):
+    def getName(self) -> str:
         return 'Add Spine'
     
     def addAddSpine(self, x, y, z):
@@ -181,15 +218,34 @@ class AddSpineEvent(_EditSpine):
             )
         return item
 
-class _old_UndoSpineEvent(_EditSpine):
-    def __init__(self, mmWidget, event : pmmEvent):
-        super().__init__(pmmEventType.undoSpineEvent, mmWidget)
-        self._undoEvent = event
+class DeleteSpineEvent(_EditSpine):
+    """Delete spine event.
+    
+    Parameters
+    ----------
+    mmWidget : mmWidget2
+    spineID : int
+    """
+    def __init__(self,
+                 mmWidget : mmWidget2,
+                 spineID : int
+                 ):
+                
+        super().__init__(pmmEventType.delete, mmWidget)
+        
+        self.addDeleteSpine(spineID)
 
-class _old_RedoSpineEvent(_EditSpine):
-    def __init__(self, mmWidget, event):
-        super().__init__(pmmEventType.redoSpineEvent, mmWidget)
-        self._redoEvent = event
+    def getName(self) -> str:
+        return 'Delete Spine'
+    
+    def addDeleteSpine(self, spineID : int):
+        self.addEdit(spineID=spineID)
+
+    def _getItem(self, item : SpineEdit):
+        """Get the meaningful keys for this edit type.
+        """
+        item = SpineEdit(spineID=item['spineID'])
+        return item
 
 class ManualConnectSpineEvent(_EditSpine):
     """Manual connect spine event.
@@ -205,12 +261,12 @@ class ManualConnectSpineEvent(_EditSpine):
         super().__init__(pmmEventType.manualConnectSpine, mmWidget)
 
         if isinstance(spineID, list):
-            logger.warning(f'expecting spineID as int, got list of spineID:{spineID}')
+            # logger.warning(f'expecting spineID as int, got list of spineID:{spineID}')
             spineID = spineID[0]
             
         self.addEdit(spineID=spineID, x=x, y=y, z=z)
 
-    def getName(self):
+    def getName(self) -> str:
         return 'Manual Connect Spine'
     
     def _getItem(self, item : SpineEdit) -> SpineEdit:
@@ -248,12 +304,12 @@ class MoveSpineEvent(_EditSpine):
         super().__init__(pmmEventType.moveAnnotation, mmWidget)
 
         if isinstance(spineID, list):
-            logger.warning(f'expecting spineID as int, got list of spineID:{spineID}')
+            # logger.warning(f'expecting spineID as int, got list of spineID:{spineID}')
             spineID = spineID[0]
             
         self.addEdit(spineID=spineID, x=x, y=y, z=z)
 
-    def getName(self):
+    def getName(self) -> str:
         return 'Move Spine'
     
     def _getItem(self, item : SpineEdit) -> SpineEdit:
@@ -267,35 +323,6 @@ class MoveSpineEvent(_EditSpine):
             y=item['y'],
             z=item['z']
             )
-        return item
-
-class DeleteSpineEvent(_EditSpine):
-    """Delete spine event.
-    
-    Parameters
-    ----------
-    mmWidget : mmWidget2
-    spineID : int
-    """
-    def __init__(self,
-                 mmWidget : mmWidget2,
-                 spineID : int
-                 ):
-                
-        super().__init__(pmmEventType.delete, mmWidget)
-        
-        self.addDeleteSpine(spineID)
-
-    def getName(self):
-        return 'Delete Spine'
-    
-    def addDeleteSpine(self, spineID : int):
-        self.addEdit(spineID=spineID)
-
-    def _getItem(self, item : SpineEdit):
-        """Get the meaningful keys for this edit type.
-        """
-        item = SpineEdit(spineID=item['spineID'])
         return item
 
 class EditedSpineEvent(_EditSpine):
@@ -333,7 +360,7 @@ class EditSpinePropertyEvent(_EditSpine):
         if spineID is not None:
             self.addEditProperty(spineID, col, value)
 
-    def getName(self):
+    def getName(self) -> str:
         return 'Edit Spine'
     
     def addEditProperty(self,

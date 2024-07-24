@@ -26,7 +26,7 @@ class SpineInfoWidget(mmWidget2):
     Some information can be altered by the user.
     """
 
-    _widgetName = 'Spine Info Widget'
+    _widgetName = 'Spine Info'
 
     def __init__(self, stackWidget : stackWidget2):
 
@@ -66,7 +66,9 @@ class SpineInfoWidget(mmWidget2):
         """
         
         finalLayout = QtWidgets.QVBoxLayout()
+        finalLayout.setAlignment(QtCore.Qt.AlignTop)
         vLayout = QtWidgets.QGridLayout()
+        vLayout.setAlignment(QtCore.Qt.AlignTop)
         finalLayout.addLayout(vLayout)
 
         col = 0

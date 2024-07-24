@@ -214,7 +214,13 @@ class DragAndDropWidget(QtWidgets.QPushButton):
         for tifFile in files:
             # print(f)
             logger.info(f"loading file {tifFile}")
-            self._app.loadTifFile(tifFile)
+            
+            # abj
+            # self._app.loadTifFile(tifFile)
+            
+            # abb
+            self._app.loadStackWidget(tifFile)
+            
             # Create new image loader iwth path
             # emit f = path to file
              

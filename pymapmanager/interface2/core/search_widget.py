@@ -381,9 +381,6 @@ class myQTableView(QtWidgets.QTableView):
         # hide all cols
         cols = self.getDF().columns.tolist()
 
-        # print('available cols are:')
-        # print(cols)
-
         self.hideColumns(cols)
 
         # show cols in colList
@@ -422,7 +419,6 @@ class myQTableView(QtWidgets.QTableView):
 
         # Refresh DF displayed
         self.doSearch(self.currentSearchStr)
-
 
     def updateComparisonSymbol(self, newCompSymbol):
         """ Called wheenver signal is received to update comparison symbol
@@ -529,7 +525,7 @@ class myQTableView(QtWidgets.QTableView):
             
             # if remakeSelection:
             if 1 or self.mySelectionModel is None:
-                logger.info(f'{self.getMyName()} remaking selection model')
+                # logger.info(f'{self.getMyName()} remaking selection model')
                 self.mySelectionModel = self.selectionModel()  # QItemSelectionModel
                 self.mySelectionModel.selectionChanged.connect(self.on_selectionChanged)
                 
@@ -572,10 +568,10 @@ class myQTableView(QtWidgets.QTableView):
         Not actually using item parameter? Using self.selectedIndexes()?
         """
         
-        logger.info(f'{self.getMyName()}')
+        # logger.info(f'{self.getMyName()}')
         
         if self._blockSignalSelectionChanged:
-            # logger.info(f'  _blockSignalSelectionChanged -->> return')
+            # logger.info(f'{self.getMyName()}  _blockSignalSelectionChanged -->> return')
             return
         
         # PyQt5.QtCore.Qt.KeyboardModifiers
@@ -594,7 +590,7 @@ class myQTableView(QtWidgets.QTableView):
         # reduce to list of unique values (selected indices are often repeated?)
         selectedIndexes = list(set(selectedIndexes))
 
-        logger.info(f'-->> "{self.getMyName()}" signalSelectionChanged.emit selectedIndexes:{selectedIndexes} isAlt:{isAlt}')
+        # logger.info(f'-->> "{self.getMyName()}" signalSelectionChanged.emit selectedIndexes:{selectedIndexes} isAlt:{isAlt}')
 
         self.signalSelectionChanged.emit(selectedIndexes, isAlt)
 
@@ -702,6 +698,8 @@ class myQTableView(QtWidgets.QTableView):
         logger.info(f'{self.getMyName()} rowList:{rowList}')
         
         if rowList is None or len(rowList)==0:
+            with self._blockSlotsManager():
+                super().clearSelection()
             return
 
         # here we will use a context manager to block slots

@@ -17,7 +17,9 @@ from pymapmanager.interface2.core.search_widget import myQTableView
 from pymapmanager.interface2.core._data_model import pandasModel
 
 from pymapmanager.interface2.stackWidgets.mmWidget2  import mmWidget2, pmmEventType, pmmEvent, pmmStates
+
 from pymapmanager.interface2.stackWidgets.event.spineEvent import DeleteSpineEvent
+from pymapmanager.interface2.stackWidgets.event.segmentEvent import AddSegmentEvent, DeleteSegmentEvent
 
 from pymapmanager._logger import logger
 
@@ -40,6 +42,16 @@ class annotationListWidget(mmWidget2):
         self._buildGui(name=name)
         self._setModel()
     
+    def undoEvent(self, event):
+        # TODO: make distinction between undo spine and segment edits
+        # possibly make distinction between undo (add, delet, edit)
+        self._setModel()
+
+    def redoEvent(self, event):
+        # TODO: make distinction between undo spine and segment edits
+        # possibly make distinction between undo (add, delet, edit)
+        self._setModel()
+
     def deletedEvent(self, event):
         # logger.info('')
         self._setModel()
@@ -56,12 +68,8 @@ class annotationListWidget(mmWidget2):
     def addedEvent(self, event):
         # logger.info('')
         self._setModel()
-        # v1
-        # itemList = event.getListOfItems()
-        # v2
-        # self.myQTableView._selectNewRow()
-        spineIDs = event.getSpines()
-        self._myTableView.mySelectRows(spineIDs)
+        # spineIDs = event.getSpines()
+        # self._myTableView.mySelectRows(spineIDs)
 
     def stateChangedEvent(self, event):
         super().stateChangedEvent(event)
@@ -177,7 +185,7 @@ class annotationListWidget(mmWidget2):
             rowList: List of rows that were selected
             isAlt: True if keyboard Alt is down
         """
-        logger.warning('BASE CLASS CALLED')
+        # logger.warning('BASE CLASS CALLED')
         return
 
         logger.info(f'{self.getClassName()} rowList:{itemList} isAlt:{isAlt}')
@@ -247,10 +255,6 @@ class pointListWidget(annotationListWidget):
         event.getStackSelection().setPointSelection(itemList)
         event.setAlt(isAlt)
 
-        # 2/9/24 - added slice to maintain slice while plotting
-        # Might be easier to get slice directly from stack
-        # event.setSliceNumber(self.currentSlice)
-
         self.emitEvent(event, blockSlots=False)        
 
     def _deleteSelected(self):
@@ -270,6 +274,14 @@ class lineListWidget(annotationListWidget):
         annotations = stackWidget.getStack().getLineAnnotations()
         super().__init__(stackWidget, annotations, name='lineListWidget')
 
+    def stateChangedEvent(self, event):
+        super().stateChangedEvent(event)
+                
+        if event.getStateChange() in [pmmStates.edit, pmmStates.tracingSegment]:
+            self._myTableView.setEnabled(True)
+        else:
+            self._myTableView.setEnabled(False)
+    
     def selectedEvent(self, event):
         # logger.info(event)
         
@@ -317,6 +329,33 @@ class lineListWidget(annotationListWidget):
         event = pmmEvent(eventType, self)
         event.getStackSelection().setSegmentSelection(deletedRows)
         self.emitEvent(event)
+
+    def addedSegmentEvent(self, event : AddSegmentEvent):
+        # for segment in event:
+        #     logger.info(f'segment:{segment}')
+
+        self._setModel()
+        segmentID = event.getSegments()
+        self._myTableView.mySelectRows(segmentID)
+
+    def deletedSegmentEvent(self, event : DeleteSegmentEvent):
+        for segment in event:
+            logger.info(f'segment:{segment}')
+
+    def addedSegmentPointEvent(self, event):
+        self._setModel()
+
+    def deletedSegmentPointEvent(self, event):
+        self._setModel()
+
+    def _deleteSelected(self):
+        """Delete currently selected annotations.
+        """
+        items = self._myTableView.getSelectedRows()
+        logger.info(f'items:{items}')
+        
+        deleteSegmentEvent = DeleteSegmentEvent(self, items)
+        self.emitEvent(deleteSegmentEvent)
 
 if __name__ == '__main__':
     import pymapmanager

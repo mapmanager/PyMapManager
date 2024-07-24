@@ -1,5 +1,3 @@
-import enum
-
 import numpy as np
 import pyqtgraph as pg
 
@@ -13,6 +11,10 @@ from pymapmanager.interface2.stackWidgets.event.spineEvent import (
                 AddSpineEvent,
                 MoveSpineEvent,
                 ManualConnectSpineEvent)
+
+from pymapmanager.interface2.stackWidgets.event.segmentEvent import (
+    AddSegmentPoint
+)
 
 from .mmWidget2 import mmWidget2, pmmEventType, pmmEvent, pmmStates
 from .annotationPlotWidget2 import pointPlotWidget, linePlotWidget
@@ -140,7 +142,8 @@ class ImagePlotWidget(mmWidget2):
                 if newSlice > self._myStack.numSlices-1:
                     newSlice -= 1
 
-            self._setSlice(newSlice)
+            # self._setSlice(newSlice)
+            self._emitSetSlice(newSlice)
 
     def contextMenuEvent(self, event : QtGui.QContextMenuEvent):
         """Show a right-click menu.
@@ -274,7 +277,7 @@ class ImagePlotWidget(mmWidget2):
             event: QtGui.QKeyEvent
         """
 
-        logger.info(f'{self.getClassName()} {event.text()}')
+        # logger.info(f'{self.getClassName()} {event.text()}')
         
         if event.key() in [QtCore.Qt.Key_Enter, QtCore.Qt.Key_Return]:
             self._setFullView()
@@ -304,7 +307,8 @@ class ImagePlotWidget(mmWidget2):
             if newSlice < 0:
                 newSlice = 0
             logger.info(f'  up slice to new slice {newSlice}')
-            self._setSlice(newSlice)
+            # self._setSlice(newSlice)
+            self._emitSetSlice(newSlice)
 
         elif event.key() in [QtCore.Qt.Key_Down]:
             # down one slice
@@ -312,7 +316,8 @@ class ImagePlotWidget(mmWidget2):
             if newSlice > self._myStack.numSlices-1:
                 newSlice -= 1
             logger.info(f'  down slice to new slice {newSlice}')
-            self._setSlice(newSlice)
+            # self._setSlice(newSlice)
+            self._emitSetSlice(newSlice)
 
         #elif event.key() == QtCore.Qt.Key_I:
         #    self._myStack.printHeader()
@@ -435,7 +440,16 @@ class ImagePlotWidget(mmWidget2):
                 y = int(imagePos.y())
                 z = self._currentSlice
                 
-                logger.info(f'TODO: add new tracing point at {x} {y} {z}')
+                # logger.info(f'TODO: add new tracing point at {x} {y} {z}')
+                if not self.getStackWidget().getStackSelection().hasSegmentSelection():
+                    logger.error('no segment selection???')
+                    return
+                else:
+                    _segmentID = self.getStackWidget().getStackSelection().getSegmentSelection()
+                    _segmentID = _segmentID[0]
+                    logger.info(f'-->> emit AddSegmentPoint segmentID:{_segmentID} x:{x} y:{y} z:{z}')
+                    addSegmentPoint = AddSegmentPoint(self, segmentID=_segmentID, x=x, y=y, z=z)
+                    self.emitEvent(addSegmentPoint)
 
         elif isShift:
             # make a new spine
@@ -474,7 +488,8 @@ class ImagePlotWidget(mmWidget2):
             intensity = float('nan')
         else:
             # TODO: fix issue with intensity (mapmanagercore throwing errors)
-            intensity = self._myStack.getPixel(self._displayThisChannel,
+            _channelIdx = self._displayThisChannel - 1
+            intensity = self._myStack.getPixel(_channelIdx,
                             self._currentSlice,
                             y, x)
 
@@ -526,7 +541,7 @@ class ImagePlotWidget(mmWidget2):
 
     def setSliceEvent(self, event):
         sliceNumber = event.getSliceNumber()
-        logger.info(f'sliceNumber:{sliceNumber}')
+        # logger.info(f'sliceNumber:{sliceNumber}')
         self._setSlice(sliceNumber, doEmit=False)
 
     def slot_setSlice(self, sliceNumber, doEmit=True):
@@ -546,26 +561,6 @@ class ImagePlotWidget(mmWidget2):
     def slot_setChannel(self, channel):
         logger.info(f'channel:{channel}')
         self._setChannel(channel, doEmit=False)
-
-    def _old_slot_setSlidingZ(self, d):
-        """
-        Args:
-            d: dictionary of (checked, upDownSlices)
-        """
-
-    
-        checked = d['checked']
-        upDownSlices = d['upDownSlices']
-        logger.info(f'checked:{checked} upDownSlices:{upDownSlices}')
-        self._doSlidingZ = checked
-
-        # self._upDownSlices = upDownSlices
-        # self._displayOptionsDict['windowState']['zPlusMinus'] = upDownSlices
-        # self._displayOptionsDict['pointDisplay']['zPlusMinus'] = upDownSlices
-        # self._displayOptionsDict['lineDisplay']['zPlusMinus'] = upDownSlices
-        # print("self._displayOptionsDict['windowState']['zPlusMinus']", self._displayOptionsDict['windowState']['zPlusMinus'])
-
-        # self.refreshSlice()
 
     def _setChannel(self, channel, doEmit=True):
         """
@@ -587,7 +582,9 @@ class ImagePlotWidget(mmWidget2):
         # rgb uses its own (r,g,b) LUT
         if not self._channelIsRGB():
             channel= self._displayThisChannel
-            colorStr = self._contrastDict[channel]['colorLUT']
+            channelIdx = channel - 1
+            colorStr = self._contrastDict[channelIdx]['colorLUT']
+            
             colorLut = self._colorLutDict[colorStr] # like (green, red, blue, gray, gray_r, ...)
             #logger.info(f'colorStr:{colorStr}')
             self._myImage.setLookupTable(colorLut, update=update)
@@ -621,8 +618,9 @@ class ImagePlotWidget(mmWidget2):
             self._myImage.setLevels(levelList, update=True)
         else:
             # one channel
-            minContrast = self._contrastDict[self._displayThisChannel]['minContrast']
-            maxContrast = self._contrastDict[self._displayThisChannel]['maxContrast']
+            _channelIdx = self._displayThisChannel - 1
+            minContrast = self._contrastDict[_channelIdx]['minContrast']
+            maxContrast = self._contrastDict[_channelIdx]['maxContrast']
             
             #logger.info(f'channel {self._displayThisChannel} minContrast:{minContrast} maxContrast:{maxContrast}')
             
@@ -632,9 +630,14 @@ class ImagePlotWidget(mmWidget2):
             self._myImage.setLevels(levelList, update=True)
 
     def refreshSlice(self):
-        # logger.info(self._currentSlice)
-        # self._setSlice(self._currentSlice, doEmit=False)
-        self._setSlice(self._currentSlice, doEmit=True)
+        """Refresh the image, do not change (or emit) a slice change.
+        
+        Notes
+        -----
+        Used when image has changed, e.g. (channel, contrast, sliding z)
+            Also used when radius changes
+        """
+        self._setSlice(self._currentSlice, doEmit=False)
     
     def _setSlice(self, sliceNumber : int, doEmit = True):
         """
@@ -644,7 +647,9 @@ class ImagePlotWidget(mmWidget2):
         
         TODO: get rid of doEmit, use _blockSlots
         """
-                
+        
+        logger.info(f'xxx EXPENSIVE ONLY CALL ONCE sliceNumber:{sliceNumber} doEmit:{doEmit}')
+
         if isinstance(sliceNumber, float):
             sliceNumber = int(sliceNumber)
 
@@ -678,8 +683,9 @@ class ImagePlotWidget(mmWidget2):
         elif _doSlidingZ:
             upDownSlices = self._displayOptionsDict['windowState']['zPlusMinus']
             # logger.warning(f're-implement with core upDownSlices:{upDownSlices}')
+            channelIdx = self._displayThisChannel - 1
             sliceImage = self._myStack.getMaxProjectSlice(sliceNumber,
-                                    self._displayThisChannel,
+                                    channelIdx,
                                     upDownSlices, upDownSlices,
                                     func=np.max)
         else:
@@ -708,6 +714,14 @@ class ImagePlotWidget(mmWidget2):
             logger.info(f'  -->> emit signalUpdateSlice() _currentSlice:{self._currentSlice}')
             self.emitEvent(_pmmEvent, blockSlots=True)
 
+    def _emitSetSlice(self, newSlice):
+            _pmmEvent = pmmEvent(pmmEventType.setSlice, self)
+            # _pmmEvent.setSliceNumber(self._currentSlice)
+            _pmmEvent.setSliceNumber(newSlice)
+
+            logger.info(f'  -->> emit signalUpdateSlice() _currentSlice:{newSlice}')
+            self.emitEvent(_pmmEvent, blockSlots=True)
+    
     def toggleImageView(self):
         """Show/hide image.
         """
@@ -913,12 +927,16 @@ class ImagePlotWidget(mmWidget2):
              - TODO: For segment selection,
                 select the median z value of the first selected segment
         """        
+        if not event.isAlt():
+            # children will select, this is just to zoom and set slice (on alt)
+            return
+        
         if event.getStackSelection().hasPointSelection():  # False on (None, [])
             # if not event.isAlt():
             #     return
             
             oneItem = event.getStackSelection().firstPointSelection()
-
+            
             _pointAnnotations = self.getStackWidget().getStack().getPointAnnotations()
             x = _pointAnnotations.getValue('x', oneItem)
             y = _pointAnnotations.getValue('y', oneItem)
@@ -928,22 +946,21 @@ class ImagePlotWidget(mmWidget2):
                 logger.info(f"spine: zoom to coordinates x:{x} y:{y}")
                 self._zoomToPoint(x, y)
         
-            self._currentSlice = z
-            doEmit = True
-            self._setSlice(z, doEmit=doEmit)
+            self._emitSetSlice(z)
 
         elif event.getStackSelection().hasSegmentSelection():
             oneSegmentID = event.getStackSelection().firstSegmentSelection()
             _lineAnnotations = self.getStackWidget().getStack().getLineAnnotations()
-            x, y, z = _lineAnnotations.getMedianZ(oneSegmentID)
+            _numPnts = _lineAnnotations.getNumPnts(oneSegmentID)
+            logger.warning(f'oneSegmentID:{oneSegmentID} _numPnts:{_numPnts}')
+            if _numPnts > 2:
+                x, y, z = _lineAnnotations.getMedianZ(oneSegmentID)
 
-            if event.isAlt():
-                logger.info(f"segment: zoom to coordinates x:{x} y:{y}")
-                self._zoomToPoint(x, y)
+                if event.isAlt():
+                    logger.info(f"segment: zoom to coordinates x:{x} y:{y}")
+                    self._zoomToPoint(x, y)
 
-            self._currentSlice = z
-            doEmit = True
-            self._setSlice(z, doEmit=doEmit)
+                self._emitSetSlice(z)
 
     def setColorChannelEvent(self, event : pmmEvent):
         # logger.info(event)

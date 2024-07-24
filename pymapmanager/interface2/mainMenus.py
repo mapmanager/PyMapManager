@@ -339,8 +339,8 @@ class PyMapManagerMenus:
         redoAction = QtWidgets.QAction("Redo " + nextRedo, self.getApp())
         redoAction.setCheckable(False)  # setChecked is True by default?
         redoAction.setShortcut("Shift+Ctrl+Z")
-        logger.warning('manually turning off redo')
-        enableRedo = False
+        logger.warning('manually turning on redo')
+        enableRedo = True
         redoAction.setEnabled(enableRedo)
         redoAction.triggered.connect(self.getApp()._redo_action)
         self.editMenu.addAction(redoAction)
