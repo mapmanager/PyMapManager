@@ -307,7 +307,8 @@ class PyMapManagerApp(QtWidgets.QApplication):
             # looping through every path in stackWidgetDict
             # key = path of current stack
             stackWidget = self._stackWidgetDict[key]
-            stackWidget.save(key)
+            # stackWidget.save(key)
+            stackWidget.save()
 
     def saveAsFile(self):
         """ Save change to a new file

@@ -369,16 +369,24 @@ class stack:
         self.getPointAnnotations()._buildDataFrame()
 
     #abj
-    def save(self, path):
-        """ Stack saves changes to its Zarr file
+    def save(self):
+        """ Stack saves changes to its .mmap Zarr file that is stored
         """
         logger.info(f"Entering Stack save")
+       
+        path =  self.getPath()
+        ext = os.path.splitext(path)[1]
+
+        if ext == ".mmap":
+            self._fullMap.save(self.getPath())
+        else:
+            logger.info("Not an .mmap file - No save occurred")
+
+    def saveAs(self, path):
+        """ Stack saves changes to to a new zarr file path
+            that user types in through dialog
+        """
         self._fullMap.save(path)
-    
-    # def saveAs(self, path):
-    #     """ Stack saves changes to to a new zarr file path
-    #     """
-    #     self._fullMap.save(path)
 
 
         

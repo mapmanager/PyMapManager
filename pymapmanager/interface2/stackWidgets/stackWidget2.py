@@ -2,6 +2,7 @@
 # from pymapmanager.interface2 import PyMapManagerApp
 # see: https://stackoverflow.com/questions/39740632/python-type-hinting-without-cyclic-imports
 from __future__ import annotations
+import os
 from typing import TYPE_CHECKING
 
 import pymapmanager.interface2
@@ -1030,10 +1031,19 @@ class stackWidget2(mmWidget2):
         # redoSpineEvent = RedoSpineEvent(self, redoEvent)
         # self.emitEvent(redoSpineEvent)
 
-    def save(self, path):
+    def save(self):
         """ Stack Widget saves changes to its Zarr file
         """
-        self.getStack().save(path)
+        # self.getStack().save()
+
+        path = self.getStack.getPath()
+        ext = os.path.splitext(path)[1]
+        if ext == ".mmap":
+            self.getStack().save()
+        elif ext == "tif":
+            self.fileSaveAs()
+        else:
+            logger.info("Extension not understood, nothing is saved")
 
     # def old_saveAs(self, path):
     #     """ Stack Widget saves changes to a new zarr file path
@@ -1048,4 +1058,4 @@ class stackWidget2(mmWidget2):
         # ('C:/Users/johns/Documents/GitHub/MapManagerCore/data/test', 'All Files (*)')
         saveAsPath = QtWidgets.QFileDialog.getSaveFileName(None, 'Save File')[0]
         logger.info(f"name {saveAsPath}")
-        self.getStack().save(saveAsPath)
+        self.getStack().saveAs(saveAsPath)
