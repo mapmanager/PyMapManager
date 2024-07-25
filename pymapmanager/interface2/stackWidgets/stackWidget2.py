@@ -1034,7 +1034,7 @@ class stackWidget2(mmWidget2):
 
         logger.info(f'event:{event}')
         logger.info(f'redoEvent:{redoEvent}')
-        
+
         return True
     
     def emitUndoEvent(self):
@@ -1054,7 +1054,7 @@ class stackWidget2(mmWidget2):
         """
         # self.getStack().save()
 
-        path = self.getStack.getPath()
+        path = self.getStack().getPath()
         ext = os.path.splitext(path)[1]
         if ext == ".mmap":
             self.getStack().save()
