@@ -1052,13 +1052,13 @@ class stackWidget2(mmWidget2):
     def save(self):
         """ Stack Widget saves changes to its Zarr file
         """
-        # self.getStack().save()
 
         path = self.getStack().getPath()
         ext = os.path.splitext(path)[1]
+        # logger.info(f"ext {ext}")
         if ext == ".mmap":
             self.getStack().save()
-        elif ext == "tif":
+        elif ext == ".tif":
             self.fileSaveAs()
         else:
             logger.info("Extension not understood, nothing is saved")
