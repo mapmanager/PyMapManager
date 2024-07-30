@@ -94,7 +94,7 @@ class StackSelection:
     def setState(self, state : pmmStates):
         self._dict['state'] = state
     
-    # ABJ
+    #abj
     def getCurrentPointSlice(self):
         pointSelections = self.getPointSelection()
 
@@ -183,6 +183,9 @@ class StackSelection:
         return len(self.getPointSelection()) > 0
 
     def firstPointSelection(self) -> Optional[int]:
+        """
+            returns index of first point selection
+        """
         _points = self.getPointSelection()
         if len(_points) > 0:
             return _points[0]

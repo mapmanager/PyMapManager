@@ -5,6 +5,8 @@ from __future__ import annotations
 import os
 from typing import TYPE_CHECKING
 
+from shapely import Point
+
 import pymapmanager.interface2
 import pymapmanager.interface2.stackWidgets
 import pymapmanager.interface2.stackWidgets.histogramWidget2
@@ -693,6 +695,7 @@ class stackWidget2(mmWidget2):
 
         # reselect spine
         spines = event.getSpines()  # [int]
+        # logger.info(f"afterEdit2 spines: {spines}")
         self.zoomToPointAnnotation(spines)
 
         self.slot_setStatus('Ready')
@@ -782,29 +785,26 @@ class stackWidget2(mmWidget2):
         logger.warning('=== ===   STACK WIDGET PERFORMING AUTO CONNECT   === ===')
         logger.error('TODO (Cudmore) need to implement auto connect')
 
-        # set backend
+        segmentID = _stackSelection.firstSegmentSelection()
 
-        # Getting channel and img from stack
-        # channel = self.getStack().getImageChannel()
-
-        # TODO: Need to get color channel from stack
-        channel = 2
-        # channel = event.getColorChannel()
-        logger.info(f"channel {channel}")
-        z = _stackSelection.getCurrentPointSlice() # this might need to be checked, currently getting slice point selected
-        img = self.getStack().getImageSlice(z, channel=channel)
         _pointAnnotations = self.getStack().getPointAnnotations()
-        _lineAnnotations = self.getStack().getLineAnnotations()
-        autoBrightestIndex = _pointAnnotations.calculateSingleBrightestIndex(channel, spineIndex, _lineAnnotations, img)
-        _pointAnnotations.setValue('brightestIndex', spineIndex, autoBrightestIndex)
-        _pointAnnotations.updateSpineInt2(spineIndex, self.getStack())
+        x = _pointAnnotations.getValue('x', spineIndex)
+        y = _pointAnnotations.getValue('y', spineIndex)
+        z = _pointAnnotations.getValue('z', spineIndex)
+        # point = _pointAnnotations.getValue("point", spineIndex)
+
+        point = Point(x, y, z)
+        # logger.info(f"point {point}")
+
+        z = _stackSelection.getCurrentPointSlice() # this might need to be checked, currently getting slice point selected
+        _pointAnnotations = self.getStack().getPointAnnotations()
+        _pointAnnotations.autoResetBrightestIndex(spineIndex, segmentID, point, True)
+
+        #abj TODO: Check if spine intensity is being updated
+        # _pointAnnotations.updateSpineInt2(spineIndex, self.getStack())
         
-        newEvent = pmmEvent(pmmEventType.selection, self)
-        newEvent.getStackSelection().setPointSelection(items)
-        sliceNum = event.getSliceNumber()
-        logger.info(f"autoConnect sliceNum {sliceNum}")
-        newEvent.setSliceNumber(sliceNum)
-        self._afterEdit(newEvent)
+        self.getUndoRedo().addUndo(event)
+        self._afterEdit2(event)
 
     def setSliceEvent(self, event):
         # logger.info(event)

@@ -10,7 +10,9 @@ from pymapmanager.interface2.stackWidgets.event.spineEvent import (
                 EditSpinePropertyEvent,
                 AddSpineEvent,
                 MoveSpineEvent,
-                ManualConnectSpineEvent)
+                ManualConnectSpineEvent,
+                AutoConnectSpineEvent #abj
+                )
 
 from pymapmanager.interface2.stackWidgets.event.segmentEvent import (
     AddSegmentPoint
@@ -240,12 +242,20 @@ class ImagePlotWidget(mmWidget2):
 
         elif action == autoConnectAction:
             logger.warning('Auto Connecting Spine')
-            # Dont need to acquire any new data,
-            #everything should be known because of the current selection
-            eventType = pmmEventType.autoConnectSpine
-            event = pmmEvent(eventType, self)
-            event.setSliceNumber(self._currentSlice)
-            self.emitEvent(event, blockSlots=True)
+
+            # pass in ID
+            # possible x,y,z to simplify stackwidget function
+            acs = AutoConnectSpineEvent(self, firstPointSelection)
+            self.emitEvent(acs)
+
+            # eventType = pmmEventType.autoConnectSpine
+            # event = pmmEvent(eventType, self)
+            # event.setSliceNumber(self._currentSlice)
+            # self.emitEvent(event)
+
+            # event = pmmEvent(pmmEventType.stateChange, self)
+            # # event.setStateChange(pmmStates.autoConnectSpine)
+            # self.emitEvent(event, blockSlots=True)
 
         elif action == deleteAction:
             logger.warning('deleting the selected annotation')

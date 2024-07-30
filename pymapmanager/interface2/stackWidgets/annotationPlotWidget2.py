@@ -864,6 +864,19 @@ class pointPlotWidget(annotationPlotWidget):
 
         self._refreshSlice()
 
+    def autoConnectSpineEvent(self, event : pmmEvent):
+        """Update plots on auto connect spine event.
+        """
+        for spine in event:
+            # update label
+            spineID = spine['spineID']
+            self._pointLabels.updateLabel(spineID)
+
+        # remake all spine lines
+        self._bMakeSpineLines()
+
+        self._refreshSlice()
+
     def undoEvent(self, event : UndoSpineEvent):
         """
         """

@@ -53,5 +53,5 @@ def run2():
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
-    # run()
-    run2()
+    run()
+    # run2()

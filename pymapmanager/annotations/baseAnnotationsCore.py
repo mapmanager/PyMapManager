@@ -196,6 +196,20 @@ class AnnotationsCore:
         # rebuild df from mutated full map
         self._buildDataFrame()
 
+    #abj
+    def autoResetBrightestIndex(self, spineID, segmentID, point, findBrightest : bool = True):
+
+        if not isinstance(spineID, int):
+            logger.error(f'got bad spineID:{spineID}, expecting int')
+            return
+        
+        # Update brightest path
+        brightestIdx = self._fullMap.autoConnectBrightestIndex(spineID, segmentID, point, findBrightest)
+        logger.info(f"brightestIdx {brightestIdx}")
+
+        # refreshDataFrame
+        self._buildDataFrame()
+
     def setValue(self, colName : str, row : int, value):
         """Set a single value in a row and column.
         
@@ -541,7 +555,7 @@ class LineAnnotationsCore(AnnotationsCore):
         _stopSlice = zSlice + zPlusMinus
 
         # logger.info(f"self._fullMap.segments['segment']:{self._fullMap.segments['segment']}")
-        logger.info(f"self._fullMap.segments:{self._fullMap.segments[:]}")
+        # logger.info(f"self._fullMap.segments:{self._fullMap.segments[:]}")
         
         segmentLines = clipLines(self._fullMap.segments['segment'], zRange = (_startSlice, _stopSlice))
         xyLeft = shapely.offset_curve(segmentLines, radiusOffset * -1)
