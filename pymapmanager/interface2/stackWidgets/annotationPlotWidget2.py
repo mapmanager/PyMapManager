@@ -1263,7 +1263,7 @@ class linePlotWidget(annotationPlotWidget):
         return dfRet
     
     def slot_setSlice(self, sliceNumber: int):
-        
+        logger.info("setting slice in line plot")
         # startSec = time.time()
 
         # abb
@@ -1272,7 +1272,13 @@ class linePlotWidget(annotationPlotWidget):
 
         super().slot_setSlice(sliceNumber)  # draws centerline
         
+        self.refreshRadiusLines(sliceNumber)
         
+        # stopSec = time.time()
+        # logger.info(f'{self.getClassName()} took {round(stopSec-startSec,4)} sec')
+
+    def refreshRadiusLines(self, sliceNumber: int):
+                
         if self.showRadiusLines:
             zPlusMinus = self._displayOptions["zPlusMinus"] 
             radiusOffset = self._displayOptions['radius'] 
@@ -1285,8 +1291,6 @@ class linePlotWidget(annotationPlotWidget):
                 dfLeft["y"].to_numpy(),
                 connect=_lineConnect,
             )
-
-            # dfRight = self._annotations.getRightRadiusPlot(None, sliceNumber, 1)
             
             dfRight = self._annotations.getRightRadiusPlot(None, sliceNumber, zPlusMinus, radiusOffset)
             _lineConnect = self._getScatterConnect(dfRight)
@@ -1295,9 +1299,6 @@ class linePlotWidget(annotationPlotWidget):
                 dfRight["y"].to_numpy(),
                 connect=_lineConnect,
             )
-
-        # stopSec = time.time()
-        # logger.info(f'{self.getClassName()} took {round(stopSec-startSec,4)} sec')
 
     def selectedEvent(self, event: pmmEvent):
         """

@@ -3,6 +3,7 @@ from functools import partial
 from qtpy import QtWidgets
 
 from pymapmanager._logger import logger, setLogLevel
+from pymapmanager.interface2.stackWidgets import stackWidget2
 
 class PyMapManagerMenus:
     """Main app menus including loaded map and stack widgets.
@@ -25,55 +26,56 @@ class PyMapManagerMenus:
         
         #
         # file
-        fileMenu = mainMenu.addMenu("&File")
+        self.fileMenu = mainMenu.addMenu("&File")
+        self.fileMenu.aboutToShow.connect(self._refreshFileMenu)
 
-        loadFileAction = QtWidgets.QAction("Open...", self.getApp())
-        loadFileAction.setCheckable(False)  # setChecked is True by default?
-        loadFileAction.setShortcut("Ctrl+O")
-        loadFileAction.triggered.connect(self.getApp().openFile)
-        fileMenu.addAction(loadFileAction)
+        # loadFileAction = QtWidgets.QAction("Open...", self.getApp())
+        # loadFileAction.setCheckable(False)  # setChecked is True by default?
+        # loadFileAction.setShortcut("Ctrl+O")
+        # loadFileAction.triggered.connect(self.getApp().openFile)
+        # fileMenu.addAction(loadFileAction)
         
-        loadFolderAction = QtWidgets.QAction("Open Time-Series...", self.getApp())
-        loadFolderAction.setCheckable(False)  # setChecked is True by default?
-        loadFolderAction.triggered.connect(self.getApp().openTimeSeries)
-        fileMenu.addAction(loadFolderAction)
+        # loadFolderAction = QtWidgets.QAction("Open Time-Series...", self.getApp())
+        # loadFolderAction.setCheckable(False)  # setChecked is True by default?
+        # loadFolderAction.triggered.connect(self.getApp().openTimeSeries)
+        # fileMenu.addAction(loadFolderAction)
 
-        # like the help menu, this gets rerouted to the main python/sanp menu
-        # settingsMenu = fileMenu.addMenu('Settings...')
-        # name = "Settings..."
-        # action = QtWidgets.QAction(name, self.getApp())
-        # # action.aboutToShow.connect(self._refreshSettingsMenu)
-        # action.triggered.connect(self._on_settings_menu_action)
-        # settingsMenu.aboutToShow.connect(self._refreshSettingsMenu)
-        # settingsMenu.addAction(action)
+        # # like the help menu, this gets rerouted to the main python/sanp menu
+        # # settingsMenu = fileMenu.addMenu('Settings...')
+        # # name = "Settings..."
+        # # action = QtWidgets.QAction(name, self.getApp())
+        # # # action.aboutToShow.connect(self._refreshSettingsMenu)
+        # # action.triggered.connect(self._on_settings_menu_action)
+        # # settingsMenu.aboutToShow.connect(self._refreshSettingsMenu)
+        # # settingsMenu.addAction(action)
 
-        fileMenu.addSeparator()
+        # fileMenu.addSeparator()
 
-        # abj
-        saveFileAction = QtWidgets.QAction("Save", self.getApp())
-        saveFileAction.setCheckable(False)  # setChecked is True by default?
-        saveFileAction.setShortcut("Ctrl+S")
-        saveFileAction.triggered.connect(self.getApp().saveFile)
-        fileMenu.addAction(saveFileAction)
+        # # abj
+        # saveFileAction = QtWidgets.QAction("Save", self.getApp())
+        # saveFileAction.setCheckable(False)  # setChecked is True by default?
+        # saveFileAction.setShortcut("Ctrl+S")
+        # saveFileAction.triggered.connect(self.getApp().saveFile)
+        # fileMenu.addAction(saveFileAction)
         
-        saveAsFileAction = QtWidgets.QAction("Save As", self.getApp())
-        saveAsFileAction.setCheckable(False)  # setChecked is True by default?
-        saveAsFileAction.triggered.connect(self.getApp().saveAsFile)
-        fileMenu.addAction(saveAsFileAction)
+        # saveAsFileAction = QtWidgets.QAction("Save As", self.getApp())
+        # saveAsFileAction.setCheckable(False)  # setChecked is True by default?
+        # saveAsFileAction.triggered.connect(self.getApp().saveAsFile)
+        # fileMenu.addAction(saveAsFileAction)
 
-        fileMenu.addSeparator()
+        # fileMenu.addSeparator()
 
-        # open recent (submenu) will show two lists, one for files and then one for folders
-        self.openRecentMenu = QtWidgets.QMenu("Open Recent ...")
-        self.openRecentMenu.aboutToShow.connect(self._refreshOpenRecent)
-        fileMenu.addMenu(self.openRecentMenu)
+        # # open recent (submenu) will show two lists, one for files and then one for folders
+        # self.openRecentMenu = QtWidgets.QMenu("Open Recent ...")
+        # self.openRecentMenu.aboutToShow.connect(self._refreshOpenRecent)
+        # fileMenu.addMenu(self.openRecentMenu)
 
-        fileMenu.addSeparator()
+        # fileMenu.addSeparator()
         
-        self.settingsMenu = fileMenu.addMenu('User Options...')
-        # _emptyAction = QtWidgets.QAction("None", self.getApp())
-        # self.settingsMenu.addAction(_emptyAction)
-        self.settingsMenu.aboutToShow.connect(self._refreshSettingsMenu)
+        # self.settingsMenu = fileMenu.addMenu('User Options...')
+        # # _emptyAction = QtWidgets.QAction("None", self.getApp())
+        # # self.settingsMenu.addAction(_emptyAction)
+        # self.settingsMenu.aboutToShow.connect(self._refreshSettingsMenu)
 
         #
         # edit
@@ -311,7 +313,7 @@ class PyMapManagerMenus:
         enableUndo = True
         enableRedo = True
         
-        from pymapmanager.interface2.stackWidgets import stackWidget2
+        # from pymapmanager.interface2.stackWidgets import stackWidget2
         frontWindow = self.getApp().getFrontWindow()
         if isinstance(frontWindow, stackWidget2):
             nextUndo = frontWindow.getUndoRedo().nextUndoStr()
@@ -405,6 +407,56 @@ class PyMapManagerMenus:
 
         else:
             logger.warning(f'did not understand "{text}" action?')
+
+    #abj
+    def _refreshFileMenu(self):
+        """ Dynamically generate the file stack/map menu.
+        """
+        self.fileMenu.clear()
+        
+        loadFileAction = QtWidgets.QAction("Open...", self.getApp())
+        loadFileAction.setCheckable(False)  # setChecked is True by default?
+        loadFileAction.setShortcut("Ctrl+O")
+        loadFileAction.triggered.connect(self.getApp().openFile)
+        self.fileMenu.addAction(loadFileAction)
+        
+        loadFolderAction = QtWidgets.QAction("Open Time-Series...", self.getApp())
+        loadFolderAction.setCheckable(False)  # setChecked is True by default?
+        loadFolderAction.triggered.connect(self.getApp().openTimeSeries)
+        self.fileMenu.addAction(loadFolderAction)
+        self.fileMenu.addSeparator()
+
+        # abj
+        frontWindow = self.getApp().getFrontWindow()
+        if isinstance(frontWindow, stackWidget2):
+            enableUndo = frontWindow.getUndoRedo().numUndo() > 0
+            enableRedo = frontWindow.getUndoRedo().numRedo() > 0
+            isDirty = frontWindow.getDirty()
+            logger.info(f"isDirty: {isDirty}")
+
+        saveFileAction = QtWidgets.QAction("Save", self.getApp())
+        saveFileAction.setCheckable(False)  # setChecked is True by default?
+        saveFileAction.setShortcut("Ctrl+S")
+        # saveFileAction.setEnabled(enableUndo and isDirty)
+        saveFileAction.setEnabled(isDirty and (enableUndo or enableRedo))
+
+        saveFileAction.triggered.connect(self.getApp().saveFile)
+        self.fileMenu.addAction(saveFileAction)
+        
+        saveAsFileAction = QtWidgets.QAction("Save As", self.getApp())
+        saveAsFileAction.setCheckable(False)  # setChecked is True by default?
+        saveAsFileAction.triggered.connect(self.getApp().saveAsFile)
+        self.fileMenu.addAction(saveAsFileAction)
+        self.fileMenu.addSeparator()
+
+        # open recent (submenu) will show two lists, one for files and then one for folders
+        self.openRecentMenu = QtWidgets.QMenu("Open Recent ...")
+        self.openRecentMenu.aboutToShow.connect(self._refreshOpenRecent)
+        self.fileMenu.addMenu(self.openRecentMenu)
+        self.fileMenu.addSeparator()
+        
+        self.settingsMenu = self.fileMenu.addMenu('User Options...')
+        self.settingsMenu.aboutToShow.connect(self._refreshSettingsMenu)
 
     def _refreshOpenRecent(self):
         """Dynamically generate the open recent stack/map menu.

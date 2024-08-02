@@ -554,6 +554,14 @@ class ImagePlotWidget(mmWidget2):
         # logger.info(f'sliceNumber:{sliceNumber}')
         self._setSlice(sliceNumber, doEmit=False)
 
+    #abj 
+    def setRadiusEvent(self, event):
+        """ only called by line Plot to update segments' radius lines
+        """
+        logger.info("updating radius line")
+        sliceNumber = event.getSliceNumber()
+        self._aLinePlot.refreshRadiusLines(sliceNumber)
+
     def slot_setSlice(self, sliceNumber, doEmit=True):
         logger.warning(f'sliceNumber:{sliceNumber} doEmit:{doEmit}')
         if self.slotsBlocked():
@@ -592,7 +600,9 @@ class ImagePlotWidget(mmWidget2):
         # rgb uses its own (r,g,b) LUT
         if not self._channelIsRGB():
             channel= self._displayThisChannel
-            channelIdx = channel - 1
+            # channelIdx = channel - 1
+            channelIdx = channel #abj
+
             colorStr = self._contrastDict[channelIdx]['colorLUT']
             
             colorLut = self._colorLutDict[colorStr] # like (green, red, blue, gray, gray_r, ...)
@@ -606,6 +616,7 @@ class ImagePlotWidget(mmWidget2):
             tmpLevelList = []  # list of [min,max]
             for channelIdx in range(self._myStack.numChannels):
                 channelNumber = channelIdx + 1
+                # channelNumber = channelIdx #abj
                 oneMinContrast = self._contrastDict[channelNumber]['minContrast']
                 oneMaxContrast = self._contrastDict[channelNumber]['maxContrast']
 
@@ -628,7 +639,8 @@ class ImagePlotWidget(mmWidget2):
             self._myImage.setLevels(levelList, update=True)
         else:
             # one channel
-            _channelIdx = self._displayThisChannel - 1
+            # _channelIdx = self._displayThisChannel - 1
+            _channelIdx = self._displayThisChannel #abj
             minContrast = self._contrastDict[_channelIdx]['minContrast']
             maxContrast = self._contrastDict[_channelIdx]['maxContrast']
             
@@ -769,15 +781,14 @@ class ImagePlotWidget(mmWidget2):
         if visible:
             self.refreshSlice()
 
-
-
-    def slot_updateLineRadius(self, radius):
-        """ Called whenever radius is updated
-        """
-        la = self._myStack.getLineAnnotations()
-        segmentID = None
-        la.calculateAndStoreRadiusLines(segmentID = segmentID, radius = radius)
-        self.refreshSlice()
+    # OLD
+    # def slot_updateLineRadius(self, radius):
+    #     """ Called whenever radius is updated
+    #     """
+    #     la = self._myStack.getLineAnnotations()
+    #     segmentID = None
+    #     la.calculateAndStoreRadiusLines(segmentID = segmentID, radius = radius)
+    #     self.refreshSlice()
 
     def _old_monkeyPatchMouseMove(self, event, emit=True):
         # PyQt5.QtGui.QMouseEvent

@@ -384,10 +384,13 @@ class AutoConnectSpineEvent(_EditSpine):
     """
     def __init__(self,
                  mmWidget : mmWidget2,
-                 spineID : int = None):
+                 spineID : int):
         super().__init__(pmmEventType.autoConnectSpine, mmWidget)
-        if spineID is not None:
-            self.addEdit(spineID=spineID)
+        # if spineID is not None:
+        self.addEdit(spineID=spineID)
+
+    def getName(self) -> str:
+        return 'Auto Connect Spine'
              
     def _getItem(self, item : SpineEdit):
         """Get the meaningful keys for this edit type.

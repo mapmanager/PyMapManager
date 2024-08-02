@@ -38,6 +38,7 @@ class pmmEventType(Enum):
 
     setSlice = auto()
     setColorChannel = auto()
+    setRadius = auto() # abj
 
     # acceptPoint = auto() # abj, used for setting isBad boolean
     # changeUserType = auto()
@@ -773,6 +774,10 @@ class mmWidget2(QtWidgets.QMainWindow):
         # elif event.type == pmmEventType.redoSpineEvent:
         #     acceptEvent = self.redoEvent(event)
 
+        #abj
+        elif event.type == pmmEventType.setRadius:
+            acceptEvent = self.setRadiusEvent(event)
+
         # abb 20240716
         # segment events
         elif event.type == pmmEventType.addSegment:
@@ -1018,6 +1023,11 @@ class mmWidget2(QtWidgets.QMainWindow):
     def redoEvent(self, event : pmmEvent):
         pass
     
+    #abj
+    def setRadiusEvent(self, event : pmmEvent):
+        # logger.warning(f'{self.getClassName()} base class called')
+        pass
+
     # def _deleteSelection(self):
     #     """Delete the current selection.
     #     """
@@ -1075,7 +1085,6 @@ class mmWidget2(QtWidgets.QMainWindow):
             
         # elif event.key() in [QtCore.Qt.Key_Delete, QtCore.Qt.Key_Backspace]:
         #     self._deleteSelection()
-
 
 if __name__ == '__main__':
     from pymapmanager._logger import setLogLevel

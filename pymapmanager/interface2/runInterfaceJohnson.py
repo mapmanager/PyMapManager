@@ -28,17 +28,33 @@ def run():
     # path = 'C:\\Users\\johns\\Documents\\GitHub\\MapManagerCore\\data\\rr30a_s0u.mmap'
     # path = '\\Users\\johns\\Documents\\GitHub\\MapManagerCore\\data\\rr30a_s0u.mmap'
     # path = '/Users/johns/Documents/GitHub/MapManagerCore/data/rr30a_s0u.mmap'
-    path = '/Users/johns/Documents/GitHub/MapManagerCore/data/test2.mmap'
+
+
+    path = '/Users/johns/Documents/GitHub/MapManagerCore/data/rr30a_s0u_v3.mmap'
+    # path = '/Users/johns/Documents/GitHub/MapManagerCore/data/test2.mmap'
     # path = '/Users/johns/Documents/GitHub/PyMapManager-Data/one-timepoint/rr30a_s0_ch1.mmap'
     # import mapmanagercore
+
+    # pooch path
+    import mapmanagercore.data
     # path = mapmanagercore.getSingleTimepointMap()
+    # path = mapmanagercore.data.getSingleTimepointMap()
+    print("path", path)
     sw2 = app.loadStackWidget(path)
+
+    # from mapmanagercore.data import getSingleTimepointMap
+
+    # path = getSingleTimepointMap()
+    # print("path: ", path)
+    # # sys.exit()
+    # sw2 = app.loadStackWidget(path)
+
     
-    df = sw2.getStack().getPointAnnotations().getDataFrame()
+    # df = sw2.getStack().getPointAnnotations().getDataFrame()
     # df['userType'] = 1
     # sw2.getStack().getPointAnnotations().intializeIsBad()
     # sw2.getStack().getPointAnnotations().intializeUserType()
-    
+
     sw2.zoomToPointAnnotation(120, isAlt=True)
     # sw2.runPlugin('Scatter Plot', inDock=True)
 
@@ -53,5 +69,5 @@ def run2():
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
-    run()
-    # run2()
+    # run()
+    run2()

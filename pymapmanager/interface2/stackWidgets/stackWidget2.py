@@ -435,14 +435,23 @@ class stackWidget2(mmWidget2):
         self.emitEvent(_pmmEvent, blockSlots=True)
 
     def updateRadius(self, newRadius):
+        """ event that only  updates radius within linePlotWidget
+        """
         self._displayOptionsDict['lineDisplay']['radius'] = newRadius
 
-        _pmmEvent = pmmEvent(pmmEventType.setSlice, self)
+        # _pmmEvent = pmmEvent(pmmEventType.setSlice, self)
+        # _pmmEvent.setSliceNumber(self._currentSliceNumber)
+        # self.emitEvent(_pmmEvent, blockSlots=True)
+
+        _pmmEvent = pmmEvent(pmmEventType.setRadius, self)
         _pmmEvent.setSliceNumber(self._currentSliceNumber)
         self.emitEvent(_pmmEvent, blockSlots=True)
 
+
+
     def updatePlotBoxes(self, plotName):
-        # problem would have to directly send to imagePlotWidget
+        """ update check boxes that displays individual plots in ImagePlotWidget
+        """
         imagePlotName = ImagePlotWidget._widgetName
         imagePlotWidget = self._widgetDict[imagePlotName]
         imagePlotWidget.togglePlot(plotName)
@@ -877,7 +886,7 @@ class stackWidget2(mmWidget2):
         # logger.info(f'num channels is: {self._stack.numChannels}')
         self._contrastDict = {}
         for channelIdx in range(self._stack.numChannels):
-            
+            # logger.info(f"channelidx {channelIdx}")
             # abb 20240721 not sure if is index or index  +1 
             channelNumber = channelIdx + 1
             # channelNumber = channelIdx
@@ -1021,6 +1030,8 @@ class stackWidget2(mmWidget2):
         logger.info(f'event:{event}')
         logger.info(f'undoEvent:{undoEvent}')
 
+        self.setDirtyTrue() # abj
+
         return True
     
     def redoEvent(self, event : RedoSpineEvent):
@@ -1028,12 +1039,17 @@ class stackWidget2(mmWidget2):
         logger.warning('=== ===   STACK WIDGET PERFORMING Redo   === ===')
 
         self.getStack().redo()
+
+        # TODO: redo is currently only resetting point annotations 
+        # add support for line annotations
         redoEvent = self.getUndoRedo().doRedo()
         
         event.setRedoEvent(redoEvent)
 
         logger.info(f'event:{event}')
         logger.info(f'redoEvent:{redoEvent}')
+
+        self.setDirtyTrue() # abj
 
         return True
     
@@ -1058,6 +1074,7 @@ class stackWidget2(mmWidget2):
         # logger.info(f"ext {ext}")
         if ext == ".mmap":
             self.getStack().save()
+            self.setDirtyFalse()
         elif ext == ".tif":
             self.fileSaveAs()
         else:
@@ -1069,3 +1086,44 @@ class stackWidget2(mmWidget2):
         logger.info(f"name {saveAsPath}")
         self.getStack().saveAs(saveAsPath)
 
+    def setDirtyFalse(self):
+        """ Set dirty as False after a save
+        """
+        pa = self.getStack().getPointAnnotations()
+        la = self.getStack().getLineAnnotations()
+
+        pa._setDirty(False)
+        la._setDirty(False)
+
+    def setDirtyTrue(self):
+        """ Set dirty as False after a save
+        """
+
+        # TODO: add support with line annotations
+        # after updating stack.undo()
+        pa = self.getStack().getPointAnnotations()
+        # la = self.getStack().getLineAnnotations()
+
+        pa._setDirty(True)
+        # la._setDirty(False)
+
+    #abj
+    def getDirty(self):
+        """Check if spineannotations or lineannotations are dirty
+
+        Return:
+            True if dirty
+            False if not
+        """
+
+        # access stack
+        pa = self.getStack().getPointAnnotations()
+        la = self.getStack().getLineAnnotations()
+
+        isPaDirty = pa.getDirty()
+        isLaDirty = la.getDirty()
+
+        if isPaDirty or isLaDirty:
+            return True
+        else:
+            return False
