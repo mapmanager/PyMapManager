@@ -582,7 +582,15 @@ class PyMapManagerApp(QtWidgets.QApplication):
             # load stack and make widget
             # logger.info(f'loading stack widget from path: {path}')
             # _stackWidget = pmm.interface2.stackWidgets.stackWidget2(path)
-            _stackWidget = stackWidget2(path)
+            
+            # for example
+            # loadTheseExtension = pymapmanager.stack.loadTheseExtension
+            # _ext = os.path.splitext(path)[1]
+            # if not _Ext in loadTheseExtension:
+            #     logger.error("can't load extension '{_ext}', extension must be in {loadTheseExtension}'")
+            
+            mmMapSession = 1
+            _stackWidget = stackWidget2(path, mmMapSession=mmMapSession)
 
             geometryRect = self.getConfigDict().getStackWindowGeometry()
             

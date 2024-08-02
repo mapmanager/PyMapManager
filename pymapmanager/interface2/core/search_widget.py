@@ -164,7 +164,7 @@ class TableModel(QAbstractTableModel):
     # TODO: Modify rows 
     
     # Adding a new spine always appends to end of dataframe
-    def old_insertRows(self, position, rows, QModelIndex, rowContent):
+    def _old_insertRows(self, position, rows, QModelIndex, rowContent):
         """
         Called when a new spine point is created 
 
@@ -191,7 +191,7 @@ class TableModel(QAbstractTableModel):
         # self.layoutChanged.emit()
         # return True
 
-    def old_removeRows(self, position, rows, parent = QModelIndex()):
+    def _old_removeRows(self, position, rows, parent = QModelIndex()):
         """ Called when a spine is deleted from the backend
 
         Args:
@@ -658,22 +658,6 @@ class myQTableView(QtWidgets.QTableView):
     #     # self.model.setData(row, col, value)
     #     self.update_data()
 
-    # DEFUNCT
-    def _old_updateModel(self):
-        """
-            called whenever backend DF is updated (ex: value changes, new spine added)
-        """
-        self.model.layoutChanged.emit()
-
-    # DEFUNCT
-    def _old_update_data(self):
-        self.model.update_data()
-
-        # self.model.beginResetModel()
-        # # self.setModel(self.proxyModel)
-        # # self.modelReset()
-        # self.model.endResetModel()
-
     @contextmanager
     def _blockSlotsManager(self):
         try:
@@ -695,7 +679,7 @@ class myQTableView(QtWidgets.QTableView):
         Called by parent like annotationListWidget.
         """
 
-        logger.info(f'{self.getMyName()} rowList:{rowList}')
+        # logger.info(f'{self.getMyName()} rowList:{rowList}')
         
         if rowList is None or len(rowList)==0:
             with self._blockSlotsManager():
@@ -706,7 +690,6 @@ class myQTableView(QtWidgets.QTableView):
         # if we get a runtime error within the 'with'
         # the conext manager will set blockSlots to false
         with self._blockSlotsManager():
-            # self._blockSignalSelectionChanged = True
 
             # Remove previously selected rows
             super().clearSelection()
@@ -718,10 +701,18 @@ class myQTableView(QtWidgets.QTableView):
             # 2nd argument is column
             # here we default to zero since we will select the entire row regardless
             for _idx, rowIdx in enumerate(rowList):
-                modelIndex = self.model.index(rowIdx, 0)
-            
+                # modelIndex = self.model.index(rowIdx, 0)
+                # modelSeries = self.model._data.loc[rowIdx]  # pandas.core.series.Series
                 # QModelIndex
+                # proxyIndex = self.proxyModel.mapFromSource(modelIndex)
+                
+                _get_loc = self.model._data.index.get_loc(rowIdx)  # abb new
+                modelIndex = self.model.index(_get_loc, 0)
                 proxyIndex = self.proxyModel.mapFromSource(modelIndex)
+
+                # works
+                # logger.warning(f'_get_loc:{_get_loc}')
+                # logger.warning(f'proxyIndex.row():{proxyIndex.row()}')
 
                 mode = QtCore.QItemSelectionModel.Select | QtCore.QItemSelectionModel.Rows
                 self.mySelectionModel.select(proxyIndex, mode)
@@ -729,8 +720,6 @@ class myQTableView(QtWidgets.QTableView):
                 # scroll the list to the first selection
                 if _idx == 0:
                     self.scrollTo(proxyIndex) 
-
-            # self._blockSignalSelectionChanged = False
 
     # abb 042024 to match expected api in annotationListWidget2
     def mySelectRows(self, rowIdx):
@@ -744,16 +733,9 @@ class myQTableView(QtWidgets.QTableView):
         logger.info(f"_selectNewRow rowIdx: {rowIdx-1}")
         self._selectRow(rowIdx-1)
 
-    def _selectModelRow(self, rowIdx):
+    def _old__selectModelRow(self, rowIdx):
         """ Selects a given row by index
         """
         logger.info(f"_selectModelRow rowIdx: {rowIdx}")
         self._selectRow(rowIdx)
 
-    def _old_updateDF(self, df):
-        """
-            Update the model's df,
-            Currently this is being used whenever we add, delete, change underlying data.
-            This is a guaranteed way to refresh the data, but might prove slow for large amounts of data
-        """
-        self.model.updateDF(df)

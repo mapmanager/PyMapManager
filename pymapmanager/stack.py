@@ -15,6 +15,10 @@ from pymapmanager.annotations.baseAnnotationsCore import SpineAnnotationsCore, L
 from pymapmanager._logger import logger
 
 class stack:
+
+    # the file types that we can load
+    loadTheseExtension = ['.mmap', '.tif']
+
     def __init__(self, path : str = None,
                 loadImageData : bool = True,
                 # zarrMap = None,  # in memory MapAnnotations (multiple timepoints)
@@ -25,7 +29,7 @@ class stack:
         Parameters
         ----------
         path : str
-            Path to .mmap zarr file.
+            Path to either (1) .mmap zarr to open, or (2) .tif file import
         zarrMap : core MapAnnotations
             In memory core MapAnnotations
         mmMap : pymapmanager.mmMap
@@ -74,25 +78,20 @@ class stack:
                 self.loadImages(channel=_channel)
 
         _stopSec = time.time()
-        logger.info(f'loaded stack in {round(_stopSec-_startSec,3)} sec')
+        # logger.info(f'loaded stack in {round(_stopSec-_startSec,3)} sec')
 
-        logger.info('loaded core metedata is')
-        print(self.getMetadata())
-
-        # TODO: cludge, remove
-        if os.path.splitext(self.path)[1] == '.tif':
-            self.header['numChannels'] = 1
-
+        logger.info(f'loaded stack session map: {self._sessionMap}')
+        # logger.info(f'metadata is: {self.getMetadata()}')
+        
     def _load_zarr(self):
-        """Load from mmap file.
+        """Load from mmap zarr file.
         """
         path = self.path
         logger.info(f'loading zarr path: {path}')
         self._filename = os.path.split(path)[1]
         self._fullMap : MapAnnotations = MapAnnotations.load(path)
 
-        # Reduce full core map to a single session id.
-        # self._sessionMap = self._fullMap.getTimePoint(self.sessionID)
+        logger.info(f'loaded full map:{self._fullMap}')
 
     def _import_tiff(self):
         """Load from tif file.
@@ -101,17 +100,15 @@ class stack:
 
         loader = MultiImageLoader()
         loader.read(path, channel=0)
+        
+        # TEMPORARY, fake second channel, to debug single channel stack
+        # loader.read(path, channel=1)
 
         map = MapAnnotations(loader.build(),
                             lineSegments=pd.DataFrame(),
                             points=pd.DataFrame())
 
         self._fullMap : MapAnnotations = map
-
-        logger.info(f'map from tif file is {map}')
-
-        # TODO: need to actually check the number of image channels
-        # self.header['numChannels'] = 1
               
     def getMetadata(self) -> Metadata:
         """Get metadata from the core map.
@@ -147,33 +144,32 @@ class stack:
         "physicalSize": { "x": 122.88, "y": 122.88, "unit": "µm" }
         }
         """
-        # abb 20240513
-        # sessions, numChannels, numSlices, x, y = self.sessionMap.images.shape()
-        
-        sessionNumber = self.getMapSession()
-        if sessionNumber is None:
-            sessionNumber = 0
-        
-        # image0 = self.sessionMap.images.loadSlice(sessionNumber, 0, 0)
-        # image0 = self.sessionMap.getPixels(channel=0, z=0)
-
-        # x,y = image0.shape
-        x = 1024
-        y = 1024
 
         bitDepth = 8
+
+        # TODO: cludge, remove
+        _shape = self.sessionMap.shape
+
+        #_numChannels = self.sessionMap.numChannels
+        _numChannels = _shape[0]
+        z = _shape[1]
+        x = _shape[2]
+        y = _shape[3]
 
         self._header = {
             'dtype' : "Uint16",  # image0._image.dtype,
             'bitDepth' : bitDepth,
-            'numChannels' : 2,  # numChannels,
-            'numSlices' : 70,  # numSlices,
+            'numChannels' : _numChannels,
+            'numSlices' : z,
             'xPixels' : x,
             'yPixels' : y,
         }
-
-        # self.printHeader()
-        logger.warning('TODO: hard coded some parts of the header. In particular numChannels = 2')
+        
+        # TODO: cludge, setting analysis channel to 0 for 1 channel, and to 1 for 2 channel
+        analysisChannelIdx = _numChannels - 1  # 0 based
+        self.sessionMap.analysisParams.setValue('channel', analysisChannelIdx)
+        # logger.info('analysis parms is:')
+        # print(self.sessionMap.analysisParams.printDict())
 
     def printHeader(self):
         for k, v in self.header.items():
@@ -210,13 +206,16 @@ class stack:
         """
         return self._sessionMap
 
-    def getMap(self):
-        """Get mmMap when in a map, otherwise None.
-        """
-        return self._mmMap
+    def getCoreMap(self):
+        return self._fullMap
+    
+    # def getMap(self):
+    #     """Get full mmMap.
+    #     """
+    #     return self._mmMap
 
     def getMapSession(self):
-        """Get stack session when in a map, otherwise None.
+        """Get stack session.
         
         See sessionID property
         """
@@ -238,15 +237,15 @@ class stack:
         """Load point annotations.
         """
         # self._annotations = SpineAnnotationsCore(self.sessionMap, analysisParams = self._analysisParams)
-        defaultColums = self._fullMap.points[:].columns
-        self._annotations = SpineAnnotationsCore(self.sessionMap, defaultColums=defaultColums)
+        # defaultColums = self._fullMap.points[:].columns
+        self._annotations = SpineAnnotationsCore(self.sessionMap)  #, defaultColums=defaultColums)
 
     def loadLines(self) -> None:
         """Load line annotations.
         """
         # self._lines = LineAnnotationsCore(self.sessionMap, analysisParams = self._analysisParams)
-        defaultColums = self._fullMap.segments[:].columns
-        self._lines = LineAnnotationsCore(self.sessionMap, defaultColums=defaultColums)
+        # defaultColums = self._fullMap.segments[:].columns
+        self._lines = LineAnnotationsCore(self.sessionMap)  #, defaultColums=defaultColums)
 
     def getAutoContrast(self, channel):
         channelIdx = channel - 1
@@ -386,9 +385,9 @@ class stack:
         return _intensity
     
     def undo(self):
-        logger.info('')
+        # logger.info('')
 
-        _beforeDf = self.getPointAnnotations().getDataFrame()
+        # _beforeDf = self.getPointAnnotations().getDataFrame()
 
         # print('_beforeDf[115]')
         # print(_beforeDf.loc[115, ['x', 'y', 'z']])
@@ -404,7 +403,7 @@ class stack:
         # print(_afterDf.loc[115, ['x', 'y', 'z']])
 
     def redo(self):
-        logger.info('')
+        # logger.info('')
         _ret = self._fullMap.redo()
         # print(f'_ret:{_ret}')
 

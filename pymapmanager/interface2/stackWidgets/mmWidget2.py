@@ -833,18 +833,30 @@ class mmWidget2(QtWidgets.QMainWindow):
 
                 elif event.type == pmmEventType.delete:
                     # cancel spine selection
+                    # logger.warning('RE-EMIT NO SELECTION AFTER DELETE !!!!!!!!!!!')
+                    
                     _spines = []
                     _selectionEvent = pmmEvent(pmmEventType.selection, self)
                     _selectionEvent.getStackSelection().setPointSelection(_spines)
                     
                     _origSegmentSelection = event.getSegments()
                     _selectionEvent.getStackSelection().setSegmentSelection(_origSegmentSelection)
-                                        
-                    self.emitEvent(_selectionEvent, blockSlots=False)
+
+                    # print(_selectionEvent)
+                    # print('')
+
+                    self.slot_pmmEvent(_selectionEvent)
 
                 # segments
                 elif event.type == pmmEventType.addSegment:
                     logger.warning('TODO: need to select new segment (no spine selection)')
+                    itemList = event.getSegments()
+                    
+                    _selectionEvent = pmmEvent(pmmEventType.selection, self)
+                    _selectionEvent.getStackSelection().setSegmentSelection(itemList)
+                    # logger.info(f'-->> "{self.getClassName()}" emit selection event {itemList}')
+                    # print(f'EMITING _selectionEvent:{_selectionEvent}')
+                    self.slot_pmmEvent(_selectionEvent)
 
                 elif event.type == pmmEventType.undoSpineEvent:
                     undoEvent = event.getUndoEvent()
@@ -857,7 +869,7 @@ class mmWidget2(QtWidgets.QMainWindow):
                         _origSegmentSelection = undoEvent.getSegments()
                         _selectionEvent.getStackSelection().setSegmentSelection(_origSegmentSelection)
                                             
-                        self.emitEvent(_selectionEvent, blockSlots=False)
+                        self.slot_pmmEvent(_selectionEvent)
 
                     elif undoEvent.type in [pmmEventType.delete,
                                             pmmEventType.moveAnnotation,
@@ -880,7 +892,7 @@ class mmWidget2(QtWidgets.QMainWindow):
                         _origSegmentSelection = redoEvent.getSegments()
                         _selectionEvent.getStackSelection().setSegmentSelection(_origSegmentSelection)
                                             
-                        self.emitEvent(_selectionEvent, blockSlots=False)
+                        self.slot_pmmEvent(_selectionEvent)
                         
                     elif redoEvent.type in [pmmEventType.add,
                                             pmmEventType.moveAnnotation,

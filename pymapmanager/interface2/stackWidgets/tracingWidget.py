@@ -1,7 +1,6 @@
-import sys
 from typing import List, Optional, Union  # , Callable, Iterator
 
-from qtpy import QtGui, QtCore, QtWidgets
+from qtpy import QtCore, QtWidgets
 
 from pymapmanager._logger import logger
 
@@ -11,33 +10,8 @@ from .mmWidget2 import pmmEventType, pmmEvent, pmmStates
 from pymapmanager.interface2.stackWidgets.event.segmentEvent import (
     AddSegmentEvent, DeleteSegmentEvent)
 
-class tracingWidget(mmWidget2):
+class TracingWidget(mmWidget2):
     _widgetName = 'Tracing'
-
-    # signalSelectSegment = QtCore.Signal(int, bool)
-    """Signal emitted when user selects a row (segment).
-    
-    Args:
-        int: segmentID
-        bool: True if keyboard Alt is pressed
-    """
-
-    # signalEditSegments = QtCore.Signal(bool)
-    """Signal emitted when user toggle the 'edit segment' checkbox.
-
-    Args:
-        bool: If True then edit segment is on, otherwise off.
-    """
-    
-    # signalAddSegment = QtCore.Signal()
-    """Signal emitted when user clicks add ('+') segment button.
-    """
-    
-    # signalDeletingSegment = QtCore.Signal(object)
-    """Signal emmited when user clicks delete ('-') segment button.
-    Args:
-        int: segment ID to delete.
-    """
 
     def __init__(self, stackWidget):
         super().__init__(stackWidget)
@@ -49,6 +23,10 @@ class tracingWidget(mmWidget2):
         Returns:
             vLayout: VBoxLayout
         """
+
+        # stack widget state
+        _editSegment = self.getStackWidget().getState() == pmmStates.tracingSegment
+
         _alignLeft = QtCore.Qt.AlignLeft
 
         vControlLayout = QtWidgets.QVBoxLayout()  #super()._initToolbar()
@@ -59,37 +37,31 @@ class tracingWidget(mmWidget2):
         hBoxLayout = QtWidgets.QHBoxLayout()
         vControlLayout.addLayout(hBoxLayout)
 
-        # refactor aug 24
-        # _editSegment = self._displayOptionsDict['doEditSegments']
-
-        # edit checkbox
-        aCheckbox = QtWidgets.QCheckBox('Edit')
-        # aCheckbox.setChecked(_editSegment)
-        aCheckbox.setChecked(False)
-        # aCheckbox.setChecked(True)  # will get updated on slot_selectAnnotation
+        # edit segment checkbox
+        aCheckbox = QtWidgets.QCheckBox('Edit Segment')
+        aCheckbox.setToolTip('Toggle tracing on/off')
+        aCheckbox.setChecked(_editSegment)
         aCheckbox.stateChanged.connect(self.on_segment_edit_checkbox)
         hBoxLayout.addWidget(aCheckbox, alignment=_alignLeft)
-        # aLabel = QtWidgets.QLabel('Edit')
-        # hBoxLayout.addWidget(aLabel, alignment=_alignLeft)
 
         # new line segment button
         self._addSegmentButton = QtWidgets.QPushButton('+')
-        # self._addSegmentButton.setEnabled(_editSegment)
-        self._addSegmentButton.setEnabled(False)
+        self._addSegmentButton.setToolTip('Add new segment')
+        self._addSegmentButton.setEnabled(_editSegment)
         _callback = lambda state, buttonName='+': self.on_segment_button_clicked(state, buttonName)
         self._addSegmentButton.clicked.connect(_callback)
         hBoxLayout.addWidget(self._addSegmentButton, alignment=_alignLeft)
 
         # delete line segment button
-        self._deleteSegmentButton = QtWidgets.QPushButton('-')
+        # self._deleteSegmentButton = QtWidgets.QPushButton('-')
         # self._deleteSegmentButton.setEnabled(_editSegment)
-        self._deleteSegmentButton.setEnabled(False)
-        _callback = lambda state, buttonName='-': self.on_segment_button_clicked(state, buttonName)
-        self._deleteSegmentButton.clicked.connect(_callback)
-        hBoxLayout.addWidget(self._deleteSegmentButton, alignment=_alignLeft)
+        # _callback = lambda state, buttonName='-': self.on_segment_button_clicked(state, buttonName)
+        # self._deleteSegmentButton.clicked.connect(_callback)
+        # hBoxLayout.addWidget(self._deleteSegmentButton, alignment=_alignLeft)
 
         # trace and cancel (A*)
-        self._traceCancelButton = QtWidgets.QPushButton('trace')  # toggle b/w trace/cancel
+        self._traceCancelButton = QtWidgets.QPushButton('Cancel')  # toggle b/w trace/cancel
+        self._traceCancelButton.setToolTip('Cancel Tracing')
         # self._traceCancelButton.setEnabled(_editSegment)
         self._traceCancelButton.setEnabled(False)
         _callback = lambda state, buttonName='trace_cancel': self.on_segment_button_clicked(state, buttonName)
@@ -112,18 +84,13 @@ class tracingWidget(mmWidget2):
         self._addSegmentButton.setEnabled(state)
         
         self.setGui()
-        # self._deleteSegmentButton.setEnabled(state)
-        
-        # get current selected point
-        # rowIdx, rowDict = self._stackWidget.annotationSelection.getPointSelection()
-        
-        # self._updateTracingButton(rowIdx)
 
         event = pmmEvent(pmmEventType.stateChange, self)
         if state:
             event.setStateChange(pmmStates.tracingSegment)
         else:
             event.setStateChange(pmmStates.edit)
+
         logger.info(f'  -->> emit {event.getStateChange()}')
         self.emitEvent(event)
 
@@ -155,7 +122,7 @@ class tracingWidget(mmWidget2):
     def setGui(self):
         segmentID = self.getSelectedSegment()
             
-        self._deleteSegmentButton.setEnabled(segmentID is not None)
+        # self._deleteSegmentButton.setEnabled(segmentID is not None)
 
     def selectedEvent(self, event: pmmEvent):
         """

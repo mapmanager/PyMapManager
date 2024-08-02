@@ -13,15 +13,19 @@ def run():
 
     #
     # open a single tmiepoint map with segments and spines
-    # path = mapmanagercore.data.getSingleTimepointMap()
-    # sw2 = app.loadStackWidget(path)
+    path = mapmanagercore.data.getSingleTimepointMap()
+    path = '/Users/cudmore/Desktop/multi_timepoint_map.mmap'
+    path = '/Users/cudmore/Desktop/multi_timepoint_map_seg_connected.mmap'
+
+    sw2 = app.loadStackWidget(path)
+    
     # sw2.zoomToPointAnnotation(0, isAlt=True)
-    # sw2.runPlugin('Tracing', inDock=True)
     
     # a single timepoint tif file
-    path = mapmanagercore.data.getTiffChannel_1()
-    # app.loadTifFile2(path)  # simulate user drag/drop a tiff image
-    app.loadStackWidget(path)
+    # path = mapmanagercore.data.getTiffChannel_1()
+    # sw2 = app.loadStackWidget(path)
+
+    # sw2.runPlugin('Tracing', inDock=True)
 
     sys.exit(app.exec_())
 

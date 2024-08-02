@@ -43,10 +43,10 @@ class stackWidget2(mmWidget2):
     _widgetName = 'Stack Widget'
 
     def __init__(self,
-                 path,
-                 stack : pymapmanager.stack = None,
-                 mapWidget : "pymapmanager.interface2.mapWidget.mapWidget" = None,
-                #  timePoint : int = None,
+                    path,
+                    stack : pymapmanager.stack = None,
+                    mapWidget : "pymapmanager.interface2.mapWidget.mapWidget" = None,
+                    mmMapSession : int = 0,
     ):
         """Main stack widget that is parent to all other mmWidget2 widgets.
         
@@ -73,7 +73,7 @@ class stackWidget2(mmWidget2):
         else:
             logger.info('loading stack from path:')
             logger.info(f'{path}')
-            self._stack = pymapmanager.stack(path)
+            self._stack = pymapmanager.stack(path, mmMapSession=mmMapSession)
 
         # add 2/24 when implementing map/timeseries GUI
         self._mapWidget : Optional["pymapmanager.interface2.mapWidgets.mapWidget"] = mapWidget
@@ -149,6 +149,9 @@ class stackWidget2(mmWidget2):
         """Get the backend stack.
         """
         return self._stack
+    
+    def getState(self) -> pmmStates:
+        return self.getStackSelection().getState()
     
     def _cancelSelection(self):
         """Cancel the current stack selection.
@@ -463,6 +466,11 @@ class stackWidget2(mmWidget2):
         _eventSelection = event.getStackSelection()
         _stackSelection = self.getStackSelection()
 
+        # logger.info('stack selection received _eventSelection:')
+        # print(_eventSelection)
+        # logger.info('stack selection _stackSelection _stackSelection:')
+        # print(_stackSelection)
+
         if _stackSelection.getState() == pmmStates.manualConnectSpine:
             if not _eventSelection.hasSegmentPointSelection():
                 errStr = 'Need line point selection to connect brightest point'
@@ -494,11 +502,13 @@ class stackWidget2(mmWidget2):
             _stackSelection.setPointSelection([])
             if _eventSelection.hasSegmentSelection():
                 _segmentSelection = _eventSelection.getSegmentSelection()
+                logger.info(f'no point selection, selecting segment:{_segmentSelection}')
                 _stackSelection.setSegmentSelection(_segmentSelection)
             else:
+                logger.info(f'no _segmentSelection:{[]}')
                 _stackSelection.setSegmentSelection([])
         
-        # logger.error('finish')
+        # logger.error('FINISHED STACK SELECTION')
         # print('_eventSelection')
         # print(_eventSelection)
         # print('_stackSelection')
@@ -511,41 +521,58 @@ class stackWidget2(mmWidget2):
     def addedSegmentEvent(self, event : AddSegmentEvent):
         """Derived classes need to perform action of selection event.
         """
+        logger.warning('=== ===   STACK WIDGET PERFORMING ADD Segment   === ===')
+
         newSegmentID = self.getStack().getLineAnnotations().newSegment()
         
         logger.info(f'ADDING newSegmentID:{newSegmentID}')
 
         event.addAddSegment(segmentID=newSegmentID)
 
+        event.getStackSelection().setSegmentSelection(newSegmentID)
+
         print('   AFTER addAddSegment')
         print(event)
 
-        self.getUndoRedo().addUndo(event)
+        # self.getUndoRedo().addUndo(event)
 
         return True
 
     def deletedSegmentEvent(self, event : DeleteSegmentEvent):
         """Derived classes need to perform action of selection event.
         """
+        logger.warning('=== ===   STACK WIDGET PERFORMING DELETE Segment   === ===')
+
         for segmentID in event.getSegments():
             _deleted = self.getStack().getLineAnnotations().deleteSegment(segmentID)
-        self.getUndoRedo().addUndo(event)
-        return True
+        
+        # self.getUndoRedo().addUndo(event)
+        
+        return _deleted
     
     def addedSegmentPointEvent(self, event : pmmEvent):
         """Derived classes need to perform action of selection event.
         """
+        logger.warning('=== ===   STACK WIDGET PERFORMING ADD SEGMENT POINT   === ===')
+
         logger.info(event)
+
         for item in event:
             segmentID = item['segmentID']
             x = item['x']
             y = item['y']
             z = item['z']
             logger.info(f' adding point to segmentID:{segmentID} x:{x} y:{y} z:{z}')
-            self.getStack().getLineAnnotations().appendSegmentPoint(segmentID, x, y, z)
+            _added = self.getStack().getLineAnnotations().appendSegmentPoint(segmentID, x, y, z)
 
-        self.getUndoRedo().addUndo(event)
-        return True
+        if _added is None:
+            self.slot_setStatus('No point added, click a bit closer to the last point')
+        else:
+            self.slot_setStatus('Added point to segment tracing')
+        
+        # self.getUndoRedo().addUndo(event)
+        
+        return _added is not None
     
     def deletedSegmentPointEvent(self, event : pmmEvent):
         """Derived classes need to perform action of selection event.
@@ -566,7 +593,7 @@ class stackWidget2(mmWidget2):
         -------
         True if added, False otherwise
         """
-        logger.warning('=== ===   STACK WIDGET PERFORMING ADD   === ===')
+        logger.warning('=== ===   STACK WIDGET PERFORMING ADD SPINE   === ===')
         
         # check if we have a segment selection, if not then veto add
         _stackSelection = self.getStackSelection()
@@ -577,9 +604,12 @@ class stackWidget2(mmWidget2):
         
         segmentID = _stackSelection.firstSegmentSelection()
 
-        # check that the segment has >2 (3 ?) points
-        logger.error('check that the segment has >2 (3?) points, if not then abort add')
-
+        # check that the segment has >=2 points
+        _numPntsInSegment = self.getStack().getLineAnnotations().getNumPnts(segmentID)
+        if _numPntsInSegment < 2:
+            logger.warning(f'not added, segment needs >=2 points but has {_numPntsInSegment} points')
+            return False
+        
         for _rowIdx, item in enumerate(event):
             logger.info(item)
             x = item['x']
@@ -605,7 +635,7 @@ class stackWidget2(mmWidget2):
         -------
         True if deleted, False otherwise
         """
-        # logger.info('=== ===   STACK WIDGET PERFORMING DELETE   === ===')
+        logger.warning('=== ===   STACK WIDGET PERFORMING DELETE SPINE  === ===')
         # logger.info(event)
         
         for _rowIdx, item in enumerate(event):
@@ -617,18 +647,18 @@ class stackWidget2(mmWidget2):
             segmentID = segmentID[0]            
             segmentID = int(segmentID)
 
-            self.getStack().getPointAnnotations().deleteAnnotation(deleteSpineID)
+            _deleted = self.getStack().getPointAnnotations().deleteAnnotation(deleteSpineID)
 
             # fill in newSpineID and segmentID
             # event._list[_rowIdx]['spineID'] = deleteSpineID
             event._list[_rowIdx]['segmentID'] = segmentID
 
-        # logger.error('end delete event is')
-        # print(event)
+        # logger.warning(f'_deleted:{_deleted}')
+        
+        if _deleted:
+            self.getUndoRedo().addUndo(event)
 
-        self.getUndoRedo().addUndo(event)
-
-        return True
+        return _deleted
     
     def editedEvent(self, event : pmmEvent) -> bool:
         """A spine has been edited, set it in the backend.
@@ -644,7 +674,7 @@ class stackWidget2(mmWidget2):
          - move spine
          - autoconnect and manual connect (tail)
         """
-        logger.info('=== ===   STACK WIDGET PERFORMING edited   === ===')
+        logger.info('=== ===   STACK WIDGET PERFORMING edited spine   === ===')
         logger.info(event)
         self.getStack().getPointAnnotations().editSpine(event)
 
@@ -656,25 +686,27 @@ class stackWidget2(mmWidget2):
                 
         if _state == pmmStates.manualConnectSpine:
             # store the current point selection for connecting later
-            logger.info('store point selection for later')
+            # logger.info('store point selection for later')
             _stackSelection = self.getStackSelection()
             if not _stackSelection.hasPointSelection():
                 errStr = 'Did not switch state, need spine selection'
                 logger.error(errStr)
                 self.slot_setStatus(errStr)
-                return
+                return False
             items = _stackSelection.getPointSelection()
             _stackSelection.setManualConnectSpine(items)
-            logger.info(f'  stored {items} using setManualConnectSpine()')
+            # logger.info(f'  stored {items} using setManualConnectSpine()')
 
         self.getStackSelection().setState(_state)
 
         if _state == pmmStates.edit:
-            self.slot_setStatus('Ready')
+            self.slot_setStatus('')
         elif _state == pmmStates.movingPnt:
-            self.slot_setStatus('Click the new position of the point, esc to cancel')
+            self.slot_setStatus('Click the new position of the spine, esc to cancel')
         elif _state == pmmStates.manualConnectSpine:
-            self.slot_setStatus('Click the line to specify the new connection point, esc to cancel')
+            self.slot_setStatus('Click the line to specify the new spine connection point, esc to cancel')
+        elif _state == pmmStates.tracingSegment:
+            self.slot_setStatus('Shift+click to create a new segment tracing points')
 
         return True
     
@@ -927,15 +959,20 @@ class stackWidget2(mmWidget2):
             select: if True then select the point
         """
 
-        logger.info(f'stackWiget2 zoomToPointAnnotation idx:{idx} isAlt:{isAlt} select:{select}')
+        # logger.info(f'stackWiget2 zoomToPointAnnotation idx:{idx} isAlt:{isAlt} select:{select}')
         
         if isinstance(idx, list):
             idx = idx[0]
 
         _pointAnnotations = self._stack.getPointAnnotations()
         
-        if idx > (_pointAnnotations.numAnnotations-1):
-            logger.warning(f'bad point index, max value is {_pointAnnotations.numAnnotations-1}')
+        # TODO: add to annotation core as 'pointHasIndex(index)
+        # abb do not test length, test membership in index
+        # if idx > (_pointAnnotations.numAnnotations-1):
+        _indexList = _pointAnnotations.getDataFrame().index.to_list()
+        if not idx in _indexList:
+            logger.warning(f'bad point index {idx}')
+            logger.warning(f'available index is: {_indexList}')
             return
         
         event = pmmEvent(pmmEventType.selection, self)
@@ -1017,10 +1054,10 @@ class stackWidget2(mmWidget2):
         
         event.setUndoEvent(undoEvent)
 
-        logger.info(f'event:{event}')
-        logger.info(f'undoEvent:{undoEvent}')
+        # logger.info(f'event:{event}')
+        # logger.info(f'undoEvent:{undoEvent}')
 
-        return True
+        return undoEvent is not None
     
     def redoEvent(self, event : RedoSpineEvent):
 
@@ -1031,10 +1068,10 @@ class stackWidget2(mmWidget2):
         
         event.setRedoEvent(redoEvent)
 
-        logger.info(f'event:{event}')
-        logger.info(f'redoEvent:{redoEvent}')
+        # logger.info(f'event:{event}')
+        # logger.info(f'redoEvent:{redoEvent}')
 
-        return True
+        return redoEvent is not None
     
     def emitUndoEvent(self):
         """

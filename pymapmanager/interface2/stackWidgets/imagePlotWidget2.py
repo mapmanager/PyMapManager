@@ -354,18 +354,13 @@ class ImagePlotWidget(mmWidget2):
         isShift = modifiers == QtCore.Qt.ShiftModifier
         #isAlt = modifiers == QtCore.Qt.AltModifier
 
-        # change the position of the current SpineROI to the new one
-        # Also recaculate brightest index and left/right points
+
         pos = event.pos()
         imagePos : QtCore.QPointF = self._myImage.mapFromScene(pos)
-        # print('  imagePos:', imagePos)
-
         x = int(imagePos.x())
         y = int(imagePos.y())
         z = self._currentSlice
                 
-        # _addAnnotationEvent.setAddedRow(addedRowIdx)
-
         # logger.info(f'-->> selectionEvent.type {_selectionEvent.type}')
         # logger.info(f'-->> check type.emit {pymapmanager.annotations.lineAnnotations}')
             
@@ -376,22 +371,12 @@ class ImagePlotWidget(mmWidget2):
             if _stackSelection.hasPointSelection():
                 items = _stackSelection.getPointSelection()
                 
-                # v2
                 event = MoveSpineEvent(self, spineID=items, x=x, y=y, z=z)
                 logger.info(f'-->> EMIT: {event}')
                 self.emitEvent(event, blockSlots=True)
 
-                # v1
-                # eventType = pmmEventType.moveAnnotation
-                # event = pmmEvent(eventType, self)
-                # event.setAddMovePosition(x, y, z)
-                # event.getStackSelection().setPointSelection(items)
-                # event.setSliceNumber(self._currentSlice)
-                # self.emitEvent(event, blockSlots=True)
-
         elif _state == pmmStates.manualConnectSpine:
 
-            # v2
             _stackSelection = self.getStackWidget().getStackSelection()
             if _stackSelection.hasPointSelection():
                 items = _stackSelection.getPointSelection()
@@ -399,37 +384,6 @@ class ImagePlotWidget(mmWidget2):
                 event = ManualConnectSpineEvent(self, spineID=items, x=x, y=y, z=z)
                 logger.info(f'-->> EMIT: {event}')
                 self.emitEvent(event, blockSlots=True)
-
-            # v1
-            # # logger.warning('todo: need to wait for user clicking on line annotation plot.')
-            # # NOTE: This is only called when segment is highlighted
-            # logger.info("Manual connect emit is done with AnnotationPlotWidget2")
-            # _stackSelection = self.getStackWidget().getStackSelection()
-            # items = _stackSelection.getPointSelection()
-            # eventType = pmmEventType.manualConnectSpine
-            # event = pmmEvent(eventType, self)
-            # # event.getStackSelection().setPointSelection(items)
-            # event.getStackSelection().setManualConnectSpine(items)
-            # brightestIndex = _stackSelection.getSegmentPointSelection()
-            # logger.info(f"brightestIndex {brightestIndex}")
-            # event.getStackSelection().setSegmentPointSelection(brightestIndex)
-            # logger.info(event)
-            # self.emitEvent(event, blockSlots=True)
-            
-            # _stackSelection = self.getStackWidget().getStackSelection()
-            # # Check for selection on segment point
-            # if _stackSelection.hasSegmentPointSelection():
-            #     # items = _stackSelection.getPointSelection()
-            #     eventType = pmmEventType.manualConnectSpine
-            #     event = pmmEvent(eventType, self)
-
-            #     # retrieve current spine
-            #     spineSelection = _stackSelection.getManualConnectSpine()
-            #     logger.info(f"manual spine: {spineSelection}")
-            #     # set it within new event that is to be emitted
-            #     # event.getStackSelection().setManualConnectSpine(spineSelection)
-            #     # # event.getStackSelection().setPointSelection(items)
-            #     # self.emitEvent(event, blockSlots=True)
 
         elif _state == pmmStates.tracingSegment:
             if isShift:
@@ -440,7 +394,8 @@ class ImagePlotWidget(mmWidget2):
                 y = int(imagePos.y())
                 z = self._currentSlice
                 
-                # logger.info(f'TODO: add new tracing point at {x} {y} {z}')
+                # logger.info(f'stack selection is: {self.getStackWidget().getStackSelection()}')
+                
                 if not self.getStackWidget().getStackSelection().hasSegmentSelection():
                     logger.error('no segment selection???')
                     return
@@ -582,12 +537,16 @@ class ImagePlotWidget(mmWidget2):
         # rgb uses its own (r,g,b) LUT
         if not self._channelIsRGB():
             channel= self._displayThisChannel
-            channelIdx = channel - 1
-            colorStr = self._contrastDict[channelIdx]['colorLUT']
+            # channelIdx = channel - 1
             
-            colorLut = self._colorLutDict[colorStr] # like (green, red, blue, gray, gray_r, ...)
-            #logger.info(f'colorStr:{colorStr}')
-            self._myImage.setLookupTable(colorLut, update=update)
+            try:
+                colorStr = self._contrastDict[channel]['colorLUT']
+                colorLut = self._colorLutDict[colorStr] # like (green, red, blue, gray, gray_r, ...)
+                #logger.info(f'colorStr:{colorStr}')
+                self._myImage.setLookupTable(colorLut, update=update)
+            except (KeyError) as e:
+                logger.error(e)
+                print(self._contrastDict)
 
     def _setContrast(self):
         # rgb
@@ -618,9 +577,9 @@ class ImagePlotWidget(mmWidget2):
             self._myImage.setLevels(levelList, update=True)
         else:
             # one channel
-            _channelIdx = self._displayThisChannel - 1
-            minContrast = self._contrastDict[_channelIdx]['minContrast']
-            maxContrast = self._contrastDict[_channelIdx]['maxContrast']
+            # _channelIdx = self._displayThisChannel - 1
+            minContrast = self._contrastDict[self._displayThisChannel]['minContrast']
+            maxContrast = self._contrastDict[self._displayThisChannel]['maxContrast']
             
             #logger.info(f'channel {self._displayThisChannel} minContrast:{minContrast} maxContrast:{maxContrast}')
             
@@ -952,7 +911,7 @@ class ImagePlotWidget(mmWidget2):
             oneSegmentID = event.getStackSelection().firstSegmentSelection()
             _lineAnnotations = self.getStackWidget().getStack().getLineAnnotations()
             _numPnts = _lineAnnotations.getNumPnts(oneSegmentID)
-            logger.warning(f'oneSegmentID:{oneSegmentID} _numPnts:{_numPnts}')
+            # logger.warning(f'oneSegmentID:{oneSegmentID} _numPnts:{_numPnts}')
             if _numPnts > 2:
                 x, y, z = _lineAnnotations.getMedianZ(oneSegmentID)
 

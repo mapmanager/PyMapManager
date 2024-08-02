@@ -68,6 +68,8 @@ class annotationListWidget(mmWidget2):
     def addedEvent(self, event):
         # logger.info('')
         self._setModel()
+
+        # reselect previous selection
         # spineIDs = event.getSpines()
         # self._myTableView.mySelectRows(spineIDs)
 
@@ -153,7 +155,11 @@ class annotationListWidget(mmWidget2):
         # name is already in DockWidget
         # aLabel = QtWidgets.QLabel(self._title)
         #vControlLayout.addWidget(aLabel)
-        
+
+        # from pymapmanager.interface2.stackWidgets import TracingWidget
+        # tracingWidget = TracingWidget(self.getStackWidget())
+        # vControlLayout.addWidget(tracingWidget)
+
         return vControlLayout
 
     def _buildGui(self, name):
@@ -175,6 +181,30 @@ class annotationListWidget(mmWidget2):
         self._myTableView.signalSelectionChanged.connect(self.on_table_selection)
         
         vLayout.addWidget(self._myTableView)
+
+    # abb 20240725
+    def _getSelectedRowLabels(self):
+        """Get selected row labels (points or segment) using row labels (index).
+        """
+        selectedRows = self._myTableView.getSelectedRows()
+        
+        logger.warning(f'searching for selectedRows:{selectedRows}')
+        
+        rowLabelList = []
+        for row in selectedRows:
+            # row index label into df
+            # rowLabel = self._myTableView.df.iloc[row]['Segment']
+            try:
+                # rowLabel = self._myTableView.model._data.index.get_loc(row)  # abb new
+                rowLabel = self._myTableView.model._data.index[row]  # abb new
+                rowLabel = int(rowLabel)
+                rowLabelList.append(rowLabel)
+            except (KeyError) as e:
+                logger.error(f'{self.getClassName()} did not find row label: {row}')
+                print('df is:')
+                print(self._myTableView.model._data)
+
+        return rowLabelList
 
     def on_table_selection(self, itemList : List[int], isAlt : bool = False):
         """Respond to user selection in table (myTableView).
@@ -245,14 +275,17 @@ class pointListWidget(annotationListWidget):
             isAlt: True if keyboard Alt is down
         """
 
-        # logger.info(f'{self.getClassName()} itemList:{itemList} isAlt:{isAlt}')
+        logger.info(f'{self.getClassName()} itemList:{itemList} isAlt:{isAlt}')
 
-        if itemList is None:
-            itemList = []
+        # if itemList is None:
+        #     itemList = []
         
+        rowLabelList = self._getSelectedRowLabels()
+        logger.warning(f'{self.getClassName()} rowLabelList:{rowLabelList}')
+
         eventType = pmmEventType.selection
         event = pmmEvent(eventType, self)
-        event.getStackSelection().setPointSelection(itemList)
+        event.getStackSelection().setPointSelection(rowLabelList)
         event.setAlt(isAlt)
 
         self.emitEvent(event, blockSlots=False)        
@@ -263,8 +296,12 @@ class pointListWidget(annotationListWidget):
         items = self._myTableView.getSelectedRows()
         logger.info(f'items:{items}')
         
-        deleteSpineEvent = DeleteSpineEvent(self, items)
-        self.emitEvent(deleteSpineEvent)
+        spineLabelList = self._getSelectedRowLabels()
+        logger.info(f'  delete spine label list:{spineLabelList}')
+
+        if len(items) > 0:
+            deleteSpineEvent = DeleteSpineEvent(self, spineLabelList)
+            self.emitEvent(deleteSpineEvent)
 
 class lineListWidget(annotationListWidget):
 
@@ -283,11 +320,13 @@ class lineListWidget(annotationListWidget):
             self._myTableView.setEnabled(False)
     
     def selectedEvent(self, event):
-        # logger.info(event)
+        # logger.warning(f'{self.getClassName()} event stack selection is:')
+        # logger.warning(f'{event.getStackSelection()}')
         
         segmentSelection = event.getStackSelection().getSegmentSelection()        
+        # logger.warning(f'selecting segmentSelection:{segmentSelection}')
         self._myTableView._selectRow(segmentSelection)
-
+    
     def on_table_selection(self, itemList : List[int], isAlt : bool = False):
         """Respond to user selection in table (myTableView).
         
@@ -296,23 +335,31 @@ class lineListWidget(annotationListWidget):
         Args:
             rowList: List of rows that were selected
             isAlt: True if keyboard Alt is down
+
+        Notes:
+        Don't use itemList, use getSelectedRows()
         """
 
-        # logger.info(f'{self.getClassName()} itemList:{itemList} isAlt:{isAlt}')
+        logger.info(f'{self.getClassName()} itemList:{itemList} isAlt:{isAlt}')
 
-        if itemList is None:
-            itemList = []
+        # abb 20240724
+        # get segment from segment column
+        segmentList = self._getSelectedRowLabels()
+        
+        # logger.info(f'   selected segmentList:{segmentList}')
+    
+        # abb
+        # self._myTableView.mySelectRows(segmentList)
 
         eventType = pmmEventType.selection
         event = pmmEvent(eventType, self)
-        event.getStackSelection().setSegmentSelection(itemList)
+        event.getStackSelection().setSegmentSelection(segmentList)
         event.setAlt(isAlt)
 
-        logger.info(f'-->> "{self.getClassName()}" emit selection event {itemList}')
+        logger.info(f'-->> "{self.getClassName()}" emit segment selection event {segmentList}')
         self.emitEvent(event, blockSlots=False)
 
-    # not sure if this is used ???
-    def deleteSelected(self):
+    def _deleteSelected(self):
         """Delete currently selected line annotations.
         """
         # selectedRows is [QtCore.QModelIndex]
@@ -335,12 +382,15 @@ class lineListWidget(annotationListWidget):
         #     logger.info(f'segment:{segment}')
 
         self._setModel()
+        
+        # select last row
         segmentID = event.getSegments()
         self._myTableView.mySelectRows(segmentID)
 
     def deletedSegmentEvent(self, event : DeleteSegmentEvent):
-        for segment in event:
-            logger.info(f'segment:{segment}')
+        self._setModel()
+        # for segment in event:
+        #     logger.info(f'segment:{segment}')
 
     def addedSegmentPointEvent(self, event):
         self._setModel()
@@ -351,12 +401,37 @@ class lineListWidget(annotationListWidget):
     def _deleteSelected(self):
         """Delete currently selected annotations.
         """
-        items = self._myTableView.getSelectedRows()
-        logger.info(f'items:{items}')
-        
-        deleteSegmentEvent = DeleteSegmentEvent(self, items)
-        self.emitEvent(deleteSegmentEvent)
+        # items = self._myTableView.getSelectedRows()
+        # logger.info(f'items:{items}')
 
+        segmentList = self._getSelectedRowLabels()
+        logger.info(f'  delete segmentList:{segmentList}')
+
+        if len(segmentList) > 0:
+            deleteSegmentEvent = DeleteSegmentEvent(self, segmentList)
+            self.emitEvent(deleteSegmentEvent)
+
+    def _initToolbar(self) -> QtWidgets.QVBoxLayout:
+        """Initialize the toolbar with controls.
+
+        Derived funstion can define this method to add controls
+            to the vertical layout of the toolbar.
+
+        Returns:
+            vLayout: VBoxLayout
+        """
+        vControlLayout = QtWidgets.QVBoxLayout()
+        
+        # name is already in DockWidget
+        # aLabel = QtWidgets.QLabel(self._title)
+        #vControlLayout.addWidget(aLabel)
+
+        from pymapmanager.interface2.stackWidgets import TracingWidget
+        tracingWidget = TracingWidget(self.getStackWidget())
+        vControlLayout.addWidget(tracingWidget)
+
+        return vControlLayout
+    
 if __name__ == '__main__':
     import pymapmanager
     

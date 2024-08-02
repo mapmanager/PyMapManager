@@ -26,7 +26,7 @@ class HistogramWidget(mmWidget2):
         # print(self._contrastDict)
 
         self._sliceNumber = 0
-        self._channel = 2
+        self._channel = 1
         # self._maxValue = 2**self._myStack.header['bitDepth']  # will default to 8 if not found
         self._maxValue = 2**self._contrastDict[1]['displayBitDepth']
         self._sliceImage = None  # set by 
@@ -258,7 +258,7 @@ class _histogram(QtWidgets.QWidget):
     """
     signalContrastChange = QtCore.Signal(object) # (contrast dict)
 
-    def __init__(self, myStack, contrastDict, channel) -> None:
+    def __init__(self, myStack, contrastDict : dict, channel : int) -> None:
         super().__init__()
         
         # logger.info(f'contrastDict:{contrastDict}')
@@ -280,6 +280,8 @@ class _histogram(QtWidgets.QWidget):
 
         self._buildUI()
 
+        self._refreshSlice()
+        
     def _sliderValueChanged(self):
         # read current values
         theMin = self.minContrastSlider.value()
