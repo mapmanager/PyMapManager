@@ -41,6 +41,7 @@ class AnnotationsCore:
         self._df = None
 
         # self._defaultColums = defaultColums
+        self._isDirty = False #abj
 
         self._buildDataFrame()
     
@@ -181,6 +182,8 @@ class AnnotationsCore:
         # rebuild df from mutated full map
         self._buildDataFrame()
 
+        self._setDirty(True) #abj
+
     def manualConnectSpine(self, spineID : int, x, y, z):
         """Manually connect a spine to specified image (x,y,z).
         
@@ -194,6 +197,22 @@ class AnnotationsCore:
         _moved = self._fullMap.moveAnchor(spineID, x=x, y=y, z=z)
 
         # rebuild df from mutated full map
+        self._buildDataFrame()
+
+        self._setDirty(True) #abj
+
+    #abj
+    def autoResetBrightestIndex(self, spineID, segmentID, point, findBrightest : bool = True):
+
+        if not isinstance(spineID, int):
+            logger.error(f'got bad spineID:{spineID}, expecting int')
+            return
+        
+        # Update brightest path
+        brightestIdx = self._fullMap.autoConnectBrightestIndex(spineID, segmentID, point, findBrightest)
+        logger.info(f"brightestIdx {brightestIdx}")
+
+        # refreshDataFrame
         self._buildDataFrame()
 
     def setValue(self, colName : str, row : int, value):
@@ -241,12 +260,13 @@ class AnnotationsCore:
             logger.error(f'did not set value for col "{colName}" at row {row}')
 
     def undo(self):
+        # abj - this doesnt actually get called???
+        logger.info("undo in baseAnnotationsCore")
         self._fullMap.undo()
         self._buildDataFrame()
 
     def redo(self):
         self._fullMap.redo()
-        self._buildDataFrame()
 
     def __str__(self):
         _str = ''
@@ -255,6 +275,15 @@ class AnnotationsCore:
     
     def getClassName(self) -> str:
         return self.__class__.__name__
+    
+    def _setDirty(self, dirtyVal : bool = True):
+        """
+            # reset to false everytime there is a save
+        """
+        self._isDirty = dirtyVal
+
+    def getDirty(self):
+        return self._isDirty 
 
 class SpineAnnotationsCore(AnnotationsCore):
         
@@ -412,6 +441,8 @@ class SpineAnnotationsCore(AnnotationsCore):
 
         self._buildDataFrame()
 
+        self._setDirty(True) #abj
+
         return newSpineID
     
     def deleteAnnotation(self, rowIdx : Union[int, List[int]]) -> bool:
@@ -425,6 +456,8 @@ class SpineAnnotationsCore(AnnotationsCore):
         self._fullMap.deleteSpine(rowIdx)
 
         self._buildDataFrame()
+
+        self._setDirty(True) #abj
 
         return True
     
@@ -440,6 +473,8 @@ class SpineAnnotationsCore(AnnotationsCore):
             self.setValue(col, spineID, value)
 
         self._buildDataFrame()
+
+        self._setDirty(True) #abj
 
 class LineAnnotationsCore(AnnotationsCore):
 
@@ -474,6 +509,8 @@ class LineAnnotationsCore(AnnotationsCore):
         logger.info(f'created new segment {newSegmentID} {type(newSegmentID)}')
 
         self._buildDataFrame()
+
+        self._setDirty(True) #abj
         
         # print('df:')
         # print(self.getDataFrame())
@@ -495,6 +532,8 @@ class LineAnnotationsCore(AnnotationsCore):
         # logger.info(f'segmentID:{segmentID} _numSpines:{_numSpines}')
 
         _deleted = self._fullMap.deleteSegment(segmentID)
+        
+        self._setDirty(True) #abj
         
         # abb is this needed?
         self._fullMap.segments[:]

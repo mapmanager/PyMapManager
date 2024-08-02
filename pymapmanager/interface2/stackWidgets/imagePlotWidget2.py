@@ -10,7 +10,9 @@ from pymapmanager.interface2.stackWidgets.event.spineEvent import (
                 EditSpinePropertyEvent,
                 AddSpineEvent,
                 MoveSpineEvent,
-                ManualConnectSpineEvent)
+                ManualConnectSpineEvent,
+                AutoConnectSpineEvent #abj
+                )
 
 from pymapmanager.interface2.stackWidgets.event.segmentEvent import (
     AddSegmentPoint
@@ -240,12 +242,20 @@ class ImagePlotWidget(mmWidget2):
 
         elif action == autoConnectAction:
             logger.warning('Auto Connecting Spine')
-            # Dont need to acquire any new data,
-            #everything should be known because of the current selection
-            eventType = pmmEventType.autoConnectSpine
-            event = pmmEvent(eventType, self)
-            event.setSliceNumber(self._currentSlice)
-            self.emitEvent(event, blockSlots=True)
+
+            # pass in ID
+            # possible x,y,z to simplify stackwidget function
+            acs = AutoConnectSpineEvent(self, firstPointSelection)
+            self.emitEvent(acs)
+
+            # eventType = pmmEventType.autoConnectSpine
+            # event = pmmEvent(eventType, self)
+            # event.setSliceNumber(self._currentSlice)
+            # self.emitEvent(event)
+
+            # event = pmmEvent(pmmEventType.stateChange, self)
+            # # event.setStateChange(pmmStates.autoConnectSpine)
+            # self.emitEvent(event, blockSlots=True)
 
         elif action == deleteAction:
             logger.warning('deleting the selected annotation')
@@ -499,6 +509,14 @@ class ImagePlotWidget(mmWidget2):
         # logger.info(f'sliceNumber:{sliceNumber}')
         self._setSlice(sliceNumber, doEmit=False)
 
+    #abj 
+    def setRadiusEvent(self, event):
+        """ only called by line Plot to update segments' radius lines
+        """
+        logger.info("updating radius line")
+        sliceNumber = event.getSliceNumber()
+        self._aLinePlot.refreshRadiusLines(sliceNumber)
+
     def slot_setSlice(self, sliceNumber, doEmit=True):
         logger.warning(f'sliceNumber:{sliceNumber} doEmit:{doEmit}')
         if self.slotsBlocked():
@@ -538,6 +556,9 @@ class ImagePlotWidget(mmWidget2):
         if not self._channelIsRGB():
             channel= self._displayThisChannel
             # channelIdx = channel - 1
+            channelIdx = channel #abj
+
+            colorStr = self._contrastDict[channelIdx]['colorLUT']
             
             try:
                 colorStr = self._contrastDict[channel]['colorLUT']
@@ -555,6 +576,7 @@ class ImagePlotWidget(mmWidget2):
             tmpLevelList = []  # list of [min,max]
             for channelIdx in range(self._myStack.numChannels):
                 channelNumber = channelIdx + 1
+                # channelNumber = channelIdx #abj
                 oneMinContrast = self._contrastDict[channelNumber]['minContrast']
                 oneMaxContrast = self._contrastDict[channelNumber]['maxContrast']
 
@@ -718,15 +740,14 @@ class ImagePlotWidget(mmWidget2):
         if visible:
             self.refreshSlice()
 
-
-
-    def slot_updateLineRadius(self, radius):
-        """ Called whenever radius is updated
-        """
-        la = self._myStack.getLineAnnotations()
-        segmentID = None
-        la.calculateAndStoreRadiusLines(segmentID = segmentID, radius = radius)
-        self.refreshSlice()
+    # OLD
+    # def slot_updateLineRadius(self, radius):
+    #     """ Called whenever radius is updated
+    #     """
+    #     la = self._myStack.getLineAnnotations()
+    #     segmentID = None
+    #     la.calculateAndStoreRadiusLines(segmentID = segmentID, radius = radius)
+    #     self.refreshSlice()
 
     def _old_monkeyPatchMouseMove(self, event, emit=True):
         # PyQt5.QtGui.QMouseEvent

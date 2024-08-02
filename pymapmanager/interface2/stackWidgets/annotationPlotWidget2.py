@@ -874,6 +874,19 @@ class pointPlotWidget(annotationPlotWidget):
 
         self._refreshSlice()
 
+    def autoConnectSpineEvent(self, event : pmmEvent):
+        """Update plots on auto connect spine event.
+        """
+        for spine in event:
+            # update label
+            spineID = spine['spineID']
+            self._pointLabels.updateLabel(spineID)
+
+        # remake all spine lines
+        self._bMakeSpineLines()
+
+        self._refreshSlice()
+
     def undoEvent(self, event : UndoSpineEvent):
         """
         """
@@ -1246,7 +1259,7 @@ class linePlotWidget(annotationPlotWidget):
         return dfRet
     
     def slot_setSlice(self, sliceNumber: int):
-        
+        logger.info("setting slice in line plot")
         # startSec = time.time()
 
         super().slot_setSlice(sliceNumber)  # draws centerline
@@ -1270,8 +1283,6 @@ class linePlotWidget(annotationPlotWidget):
                 dfLeft["y"].to_numpy(),
                 connect=_lineConnect,
             )
-
-            # dfRight = self._annotations.getRightRadiusPlot(None, sliceNumber, 1)
             
             dfRight = self._annotations.getRightRadiusPlot(None, sliceNumber, zPlusMinus, radiusOffset)
             _lineConnect = self._getScatterConnect(dfRight)
@@ -1280,9 +1291,6 @@ class linePlotWidget(annotationPlotWidget):
                 dfRight["y"].to_numpy(),
                 connect=_lineConnect,
             )
-
-        # stopSec = time.time()
-        # logger.info(f'{self.getClassName()} took {round(stopSec-startSec,4)} sec')
 
     def selectedEvent(self, event: pmmEvent):
         """

@@ -377,4 +377,23 @@ class EditSpinePropertyEvent(_EditSpine):
                   col=item['col'],
                   value=item['value'])
         return item
-    
+
+#abj
+class AutoConnectSpineEvent(_EditSpine):
+    """Used Auto Connect Spine to its brightest point on a line segment
+    """
+    def __init__(self,
+                 mmWidget : mmWidget2,
+                 spineID : int):
+        super().__init__(pmmEventType.autoConnectSpine, mmWidget)
+        # if spineID is not None:
+        self.addEdit(spineID=spineID)
+
+    def getName(self) -> str:
+        return 'Auto Connect Spine'
+             
+    def _getItem(self, item : SpineEdit):
+        """Get the meaningful keys for this edit type.
+        """
+        item = SpineEdit(spineID=item['spineID'])
+        return item

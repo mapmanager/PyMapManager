@@ -411,18 +411,23 @@ class stack:
         
     #abj
     def save(self):
-        """ Stack saves changes to its Zarr file
+        """ Stack saves changes to its .mmap Zarr file that is stored
         """
-        if os.path.splitext(self.path)[1] == '.mmap':
-            self._fullMap.save(self.path)
-        else:
-            # TO: save as zarr (prompt user for an mmap file path/name)
-            pass
+        logger.info(f"Entering Stack save")
+       
+        path =  self.getPath()
+        ext = os.path.splitext(path)[1]
 
-    # def saveAs(self, path):
-    #     """ Stack saves changes to to a new zarr file path
-    #     """
-    #     self._fullMap.save(path)
+        if ext == ".mmap":
+            self._fullMap.save(self.getPath())
+        else:
+            logger.info("Not an .mmap file - No save occurred")
+
+    def saveAs(self, path):
+        """ Stack saves changes to to a new zarr file path
+            that user types in through dialog
+        """
+        self._fullMap.save(path)
 
 
         

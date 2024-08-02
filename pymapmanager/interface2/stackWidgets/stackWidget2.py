@@ -2,7 +2,10 @@
 # from pymapmanager.interface2 import PyMapManagerApp
 # see: https://stackoverflow.com/questions/39740632/python-type-hinting-without-cyclic-imports
 from __future__ import annotations
+import os
 from typing import TYPE_CHECKING
+
+from shapely import Point
 
 import pymapmanager.interface2
 import pymapmanager.interface2.stackWidgets
@@ -435,14 +438,23 @@ class stackWidget2(mmWidget2):
         self.emitEvent(_pmmEvent, blockSlots=True)
 
     def updateRadius(self, newRadius):
+        """ event that only  updates radius within linePlotWidget
+        """
         self._displayOptionsDict['lineDisplay']['radius'] = newRadius
 
-        _pmmEvent = pmmEvent(pmmEventType.setSlice, self)
+        # _pmmEvent = pmmEvent(pmmEventType.setSlice, self)
+        # _pmmEvent.setSliceNumber(self._currentSliceNumber)
+        # self.emitEvent(_pmmEvent, blockSlots=True)
+
+        _pmmEvent = pmmEvent(pmmEventType.setRadius, self)
         _pmmEvent.setSliceNumber(self._currentSliceNumber)
         self.emitEvent(_pmmEvent, blockSlots=True)
 
+
+
     def updatePlotBoxes(self, plotName):
-        # problem would have to directly send to imagePlotWidget
+        """ update check boxes that displays individual plots in ImagePlotWidget
+        """
         imagePlotName = ImagePlotWidget._widgetName
         imagePlotWidget = self._widgetDict[imagePlotName]
         imagePlotWidget.togglePlot(plotName)
@@ -724,6 +736,7 @@ class stackWidget2(mmWidget2):
 
         # reselect spine
         spines = event.getSpines()  # [int]
+        # logger.info(f"afterEdit2 spines: {spines}")
         self.zoomToPointAnnotation(spines)
 
         self.slot_setStatus('Ready')
@@ -813,29 +826,26 @@ class stackWidget2(mmWidget2):
         logger.warning('=== ===   STACK WIDGET PERFORMING AUTO CONNECT   === ===')
         logger.error('TODO (Cudmore) need to implement auto connect')
 
-        # set backend
+        segmentID = _stackSelection.firstSegmentSelection()
 
-        # Getting channel and img from stack
-        # channel = self.getStack().getImageChannel()
-
-        # TODO: Need to get color channel from stack
-        channel = 2
-        # channel = event.getColorChannel()
-        logger.info(f"channel {channel}")
-        z = _stackSelection.getCurrentPointSlice() # this might need to be checked, currently getting slice point selected
-        img = self.getStack().getImageSlice(z, channel=channel)
         _pointAnnotations = self.getStack().getPointAnnotations()
-        _lineAnnotations = self.getStack().getLineAnnotations()
-        autoBrightestIndex = _pointAnnotations.calculateSingleBrightestIndex(channel, spineIndex, _lineAnnotations, img)
-        _pointAnnotations.setValue('brightestIndex', spineIndex, autoBrightestIndex)
-        _pointAnnotations.updateSpineInt2(spineIndex, self.getStack())
+        x = _pointAnnotations.getValue('x', spineIndex)
+        y = _pointAnnotations.getValue('y', spineIndex)
+        z = _pointAnnotations.getValue('z', spineIndex)
+        # point = _pointAnnotations.getValue("point", spineIndex)
+
+        point = Point(x, y, z)
+        # logger.info(f"point {point}")
+
+        z = _stackSelection.getCurrentPointSlice() # this might need to be checked, currently getting slice point selected
+        _pointAnnotations = self.getStack().getPointAnnotations()
+        _pointAnnotations.autoResetBrightestIndex(spineIndex, segmentID, point, True)
+
+        #abj TODO: Check if spine intensity is being updated
+        # _pointAnnotations.updateSpineInt2(spineIndex, self.getStack())
         
-        newEvent = pmmEvent(pmmEventType.selection, self)
-        newEvent.getStackSelection().setPointSelection(items)
-        sliceNum = event.getSliceNumber()
-        logger.info(f"autoConnect sliceNum {sliceNum}")
-        newEvent.setSliceNumber(sliceNum)
-        self._afterEdit(newEvent)
+        self.getUndoRedo().addUndo(event)
+        self._afterEdit2(event)
 
     def setSliceEvent(self, event):
         # logger.info(event)
@@ -908,7 +918,7 @@ class stackWidget2(mmWidget2):
         # logger.info(f'num channels is: {self._stack.numChannels}')
         self._contrastDict = {}
         for channelIdx in range(self._stack.numChannels):
-            
+            # logger.info(f"channelidx {channelIdx}")
             # abb 20240721 not sure if is index or index  +1 
             channelNumber = channelIdx + 1
             # channelNumber = channelIdx
@@ -1057,6 +1067,8 @@ class stackWidget2(mmWidget2):
         # logger.info(f'event:{event}')
         # logger.info(f'undoEvent:{undoEvent}')
 
+        self.setDirtyTrue() # abj
+        
         return undoEvent is not None
     
     def redoEvent(self, event : RedoSpineEvent):
@@ -1064,12 +1076,17 @@ class stackWidget2(mmWidget2):
         logger.warning('=== ===   STACK WIDGET PERFORMING Redo   === ===')
 
         self.getStack().redo()
+
+        # TODO: redo is currently only resetting point annotations 
+        # add support for line annotations
         redoEvent = self.getUndoRedo().doRedo()
         
         event.setRedoEvent(redoEvent)
 
         # logger.info(f'event:{event}')
         # logger.info(f'redoEvent:{redoEvent}')
+
+        self.setDirtyTrue() # abj
 
         return redoEvent is not None
     
@@ -1085,3 +1102,65 @@ class stackWidget2(mmWidget2):
         _redoEvent = RedoSpineEvent(self, None)
         self.slot_pmmEvent(_redoEvent)
 
+    def save(self):
+        """ Stack Widget saves changes to its Zarr file
+        """
+
+        path = self.getStack().getPath()
+        ext = os.path.splitext(path)[1]
+        # logger.info(f"ext {ext}")
+        if ext == ".mmap":
+            self.getStack().save()
+            self.setDirtyFalse()
+        elif ext == ".tif":
+            self.fileSaveAs()
+        else:
+            logger.info("Extension not understood, nothing is saved")
+
+    def fileSaveAs(self):
+        # ('C:/Users/johns/Documents/GitHub/MapManagerCore/data/test', 'All Files (*)')
+        saveAsPath = QtWidgets.QFileDialog.getSaveFileName(None, 'Save File')[0]
+        logger.info(f"name {saveAsPath}")
+        self.getStack().saveAs(saveAsPath)
+
+    def setDirtyFalse(self):
+        """ Set dirty as False after a save
+        """
+        pa = self.getStack().getPointAnnotations()
+        la = self.getStack().getLineAnnotations()
+
+        pa._setDirty(False)
+        la._setDirty(False)
+
+    def setDirtyTrue(self):
+        """ Set dirty as False after a save
+        """
+
+        # TODO: add support with line annotations
+        # after updating stack.undo()
+        pa = self.getStack().getPointAnnotations()
+        # la = self.getStack().getLineAnnotations()
+
+        pa._setDirty(True)
+        # la._setDirty(False)
+
+    #abj
+    def getDirty(self):
+        """Check if spineannotations or lineannotations are dirty
+
+        Return:
+            True if dirty
+            False if not
+        """
+
+        # access stack
+        pa = self.getStack().getPointAnnotations()
+        la = self.getStack().getLineAnnotations()
+
+        isPaDirty = pa.getDirty()
+        isLaDirty = la.getDirty()
+
+        if isPaDirty or isLaDirty:
+            return True
+        else:
+            return False
