@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 import math
@@ -10,6 +11,8 @@ from platformdirs import user_data_dir
 from qtpy import QtGui, QtWidgets  # QtCore
 
 import qdarktheme
+
+from pymapmanager.interface2.stackWidgets.analysisParamWidget2 import AnalysisParamWidget
 
 # Enable HiDPI.
 qdarktheme.enable_hi_dpi()
@@ -28,7 +31,9 @@ from pymapmanager.interface2.openFirstWindow import OpenFirstWindow
 from pymapmanager.interface2.mainMenus import PyMapManagerMenus
 
 from pymapmanager._logger import logger, setLogLevel
+# from pymapmanager.pmmUtils import addUserPath, getBundledDir, getUserAnalysisParamJsonData, saveAnalysisParamJsonFile
 from pymapmanager.pmmUtils import getBundledDir
+import pymapmanager.pmmUtils
 
 def loadPlugins(verbose=False, pluginType='stack') -> dict:
     """Load stack plugins from both:
@@ -117,10 +122,18 @@ def loadPlugins(verbose=False, pluginType='stack') -> dict:
 
     return pluginDict
 
+
 class PyMapManagerApp(QtWidgets.QApplication):
     def __init__(self, argv=[], deferFirstWindow=False):        
         super().__init__(argv)
-    
+
+        self._analysisParams = mapmanagercore.analysis_params.AnalysisParams()
+        
+        firstTimeRunning = self._initUserDocuments()
+
+        if firstTimeRunning:
+            logger.info("  We created <user>/Documents/Pymapmanager-User-Files and need to restart")
+
         self._config = pymapmanager.interface2.Preferences(self)
         # util class to save/load app preferences including recent paths
 
@@ -166,6 +179,35 @@ class PyMapManagerApp(QtWidgets.QApplication):
 
         self._openFirstWindow = None
         self.openFirstWindow()
+
+    def _initUserDocuments(self):
+        """
+        """
+        # platformdirs 
+        jsonDump = self._analysisParams.getJson()
+
+        # Create user's pmm directory in user/documents if necessary and save json to it
+        return pymapmanager.pmmUtils.addUserPath(jsonDump)
+    
+    def getAnalysisParams(self):
+        """ get analysis params from json file within user documents
+        """
+        return self._analysisParams
+
+    def getUserJsonData(self):
+        return pymapmanager.pmmUtils.getUserAnalysisParamJsonData()
+    
+    def saveAnalysisParams(self, dict):
+        """
+            dict: analysis Parameters dictionary
+        """
+        # aP = self.getAnalysisParams()
+
+        # convert dictionary to json
+        analysisParamJson = json.dumps(dict)
+
+        # save to json file in user documents      
+        pymapmanager.pmmUtils.saveAnalysisParamJsonFile(analysisParamJson)
 
     def getNewUntitledNumber(self) -> int:
         """Get a unique number for each new map (From tiff file).
@@ -320,26 +362,28 @@ class PyMapManagerApp(QtWidgets.QApplication):
             stackWidget.save()
 
     def saveAsFile(self):
-        """ Save change to a new file
-
-        2 Scenarios:
-            1.) mmap file has not been created yet and we need to save a new one
-            2.) There is already a mmap file and user wants to create a new one
-                - in this scenario, after creating a new one, save would still save on the old one,
-                until user loads in that new file
+        """ Save as a new file
         """
         logger.info(f'Saving as file {  self._stackWidgetDict.keys()}')
 
-        # scenario 1) Should be called when something is dragged and dropped, new file is loaded in
-        # this is handled in loadTifFile
-        # scenario 2) 
         if len(self._stackWidgetDict) > 0:
             for key in self._stackWidgetDict.keys():
                 # looping through every path in stackWidgetDict
                 # key = path of current stack
                 stackWidget = self._stackWidgetDict[key]
                 stackWidget.fileSaveAs()
-                # stackWidget.saveAs(key)
+
+    #abj
+    def _showAnalysisParameters(self):
+
+        if len(self._stackWidgetDict) > 0:
+            for key in self._stackWidgetDict.keys():
+                # looping through every path in stackWidgetDict
+                # key = path of current stack
+                currentStackWidget = self._stackWidgetDict[key]
+
+        self.apWidget = AnalysisParamWidget(stackWidget=currentStackWidget, pmmApp=self)
+        self.apWidget.show()
 
     def _undo_action(self):
         self.getFrontWindow().emitUndoEvent()

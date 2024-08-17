@@ -153,6 +153,22 @@ class stackWidget2(mmWidget2):
         """
         return self._stack
     
+    def isTifPath(self) -> bool:
+        """ Check if stack has been saved by checking extension
+
+            ".mmap" = has been saved before -> we can get json from .zattributes
+            ".tif" = has not been saved -> use default json in users/documents
+        """
+        path = self.getStack().getPath()
+        ext = os.path.splitext(path)[1]
+        # logger.info(f"ext {ext}")
+        if ext == ".tif":
+            return True
+        elif ext == ".mmap":
+            return False
+        else:
+            logger.info(f"Unsupported extension: {ext}")
+    
     def _cancelSelection(self):
         """Cancel the current stack selection.
 
@@ -446,8 +462,6 @@ class stackWidget2(mmWidget2):
         _pmmEvent = pmmEvent(pmmEventType.setRadius, self)
         _pmmEvent.setSliceNumber(self._currentSliceNumber)
         self.emitEvent(_pmmEvent, blockSlots=True)
-
-
 
     def updatePlotBoxes(self, plotName):
         """ update check boxes that displays individual plots in ImagePlotWidget
@@ -1127,3 +1141,29 @@ class stackWidget2(mmWidget2):
             return True
         else:
             return False
+        
+    #abj
+    def getAnalysisParams(self):
+        """ Get analysis Params from MapManagerCore
+        """
+        # pass
+
+        return self.getStack().getAnalysisParameters()
+
+    # def saveAnalysisParamsDict(self):
+    #     """ Save analysis Params changes to zarr directory using MapManagerCore
+    #     """
+    #     pass
+
+    def updateDFwithNewParams(self):
+        """ Rebult line and point dataframes after analysis params changes are applied
+        """
+        self.getStack().getLineAnnotations()._buildDataFrame()
+        self.getStack().getPointAnnotations()._buildDataFrame()
+
+        # call set slice to refresh widgets
+        # TODO: create a custom event for this?
+        _pmmEvent = pmmEvent(pmmEventType.setSlice, self)
+        _pmmEvent.setSliceNumber(self._currentSliceNumber)
+        self.emitEvent(_pmmEvent, blockSlots=True)
+            

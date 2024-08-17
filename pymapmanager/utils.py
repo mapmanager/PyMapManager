@@ -1,4 +1,4 @@
-"""
+""" DEFUNCT - NO LONGER USED SINCE MapManagerCoreIncorporation
 General purpose utilities.
 
 These should not include any imports beyond things like

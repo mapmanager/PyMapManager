@@ -62,12 +62,12 @@ def run():
 
 def run2():
     app = PyMapManagerApp()
-    # path = '/Users/johns/Documents/GitHub/PyMapManager-Data/one-timepoint/rr30a_s0_ch1.tif'
-    path = '/Users/johns/Documents/GitHub/PyMapManager-Data/one-timepoint/rr30a_s0_ch1.mmap'
-    # sw2 = app.loadTifFile(path)
+    path = '/Users/johns/Documents/GitHub/PyMapManager-Data/one-timepoint/rr30a_s0_ch1.tif'
+    # path = '/Users/johns/Documents/GitHub/PyMapManager-Data/one-timepoint/rr30a_s0_ch1.mmap'
+    # # sw2 = app.loadTifFile(path)
     sw2 = app.loadStackWidget(path)
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
-    # run()
-    run2()
+    run()
+    # run2()
