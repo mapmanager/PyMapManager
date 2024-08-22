@@ -538,6 +538,7 @@ class LineAnnotationsCore(AnnotationsCore):
         try:
             # self._fullMap.segments[:]
             df = self._fullMap.segments['segment'].get_coordinates(include_z=True)
+            #TODO: get and add XLeft, YLeft etc
             df['segmentID'] = df.index
         except (AttributeError) as e:
             # when no segment
@@ -560,7 +561,7 @@ class LineAnnotationsCore(AnnotationsCore):
         else:
             return len(self._fullMap.segments[:])
         
-    def getLeftRadiusPlot(self, segmentID,
+    def old_getLeftRadiusPlot(self, segmentID,
                        zSlice,
                        zPlusMinus,
                        radiusOffset
@@ -584,6 +585,7 @@ class LineAnnotationsCore(AnnotationsCore):
         # logger.info(f"self._fullMap.segments['segment']:{self._fullMap.segments['segment']}")
         # logger.info(f"self._fullMap.segments:{self._fullMap.segments[:]}")
         
+        # TODO: move this calculation into core and save as its own column
         segmentLines = clipLines(self._fullMap.segments['segment'], zRange = (_startSlice, _stopSlice))
         xyLeft = shapely.offset_curve(segmentLines, radiusOffset * -1)
         xyLeft = xyLeft.get_coordinates(include_z=True)
@@ -591,7 +593,33 @@ class LineAnnotationsCore(AnnotationsCore):
 
         return xyLeft
     
-    def getRightRadiusPlot(self, segmentID,
+    def getLeftRadiusPlot(self, sliceNumber, zPlusMinus):
+        # segmentLines = self._df 
+        # logger.info(f"self._fullMap segments columns {self._fullMap.segments}")
+        zSlice = sliceNumber
+        if self.getNumSegments() == 0:
+            return None
+        
+        _startSlice = zSlice - zPlusMinus
+        _stopSlice = zSlice + zPlusMinus
+        xyLeft = clipLines(self._fullMap.segments['leftRadius'], zRange = (_startSlice, _stopSlice))
+        xyLeft = xyLeft.get_coordinates(include_z=True)
+        xyLeft['rowIndex'] = list(np.arange(len(xyLeft)))
+        return xyLeft
+    
+    def getRightRadiusPlot(self, sliceNumber, zPlusMinus):
+        zSlice = sliceNumber
+        if self.getNumSegments() == 0:
+            return None
+        
+        _startSlice = zSlice - zPlusMinus
+        _stopSlice = zSlice + zPlusMinus
+        xyRight= clipLines(self._fullMap.segments['rightRadius'], zRange = (_startSlice, _stopSlice))
+        xyRight = xyRight.get_coordinates(include_z=True)
+        xyRight['rowIndex'] = list(np.arange(len(xyRight)))
+        return xyRight
+    
+    def old_getRightRadiusPlot(self, segmentID,
                        zSlice,
                        zPlusMinus,
                        radiusOffset
@@ -616,11 +644,11 @@ class LineAnnotationsCore(AnnotationsCore):
 
         return xyRight
     
-    def getLeftRadiusLine(self):
-        return self._xyLeftDf
+    # def getLeftRadiusLine(self):
+    #     return self._xyLeftDf
     
-    def getRightRadiusLine(self):
-        return self._xyRightDf
+    # def getRightRadiusLine(self):
+    #     return self._xyRightDf
     
     # abb move to core
     def getSegments(self) -> LazyGeoFrame:

@@ -30,7 +30,7 @@ def run():
     # path = '/Users/johns/Documents/GitHub/MapManagerCore/data/rr30a_s0u.mmap'
 
 
-    path = '/Users/johns/Documents/GitHub/MapManagerCore/data/rr30a_s0u_v3.mmap'
+    # path = '/Users/johns/Documents/GitHub/MapManagerCore/data/rr30a_s0u_v3.mmap'
     # path = '/Users/johns/Documents/GitHub/MapManagerCore/data/test2.mmap'
     # path = '/Users/johns/Documents/GitHub/PyMapManager-Data/one-timepoint/rr30a_s0_ch1.mmap'
     # import mapmanagercore
@@ -38,7 +38,7 @@ def run():
     # pooch path
     import mapmanagercore.data
     # path = mapmanagercore.getSingleTimepointMap()
-    # path = mapmanagercore.data.getSingleTimepointMap()
+    path = mapmanagercore.data.getSingleTimepointMap()
     print("path", path)
     sw2 = app.loadStackWidget(path)
 

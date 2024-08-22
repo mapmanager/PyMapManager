@@ -49,7 +49,7 @@ class AnalysisParamWidget(mmWidget2):
             self.setWindowTitle('Analysis Parameters (Stack)')
             # Get analysis params from MapManagerCore Backend
             _dict = self._analysisParameters.getDict()
-            logger.info(f"mmc _dict: {_dict}")
+            # logger.info(f"mmc _dict: {_dict}")
 
         # logger.info(f"self._dict {self._dict}")
 
@@ -77,6 +77,9 @@ class AnalysisParamWidget(mmWidget2):
             # update dictionary directly
             self._dict[paramName]["currentValue"] = value
 
+        self.enableButtons()
+
+    def enableButtons(self):
         self.canApply = True
         self.canSave = True
         self.applyButton.setEnabled(self.canApply)
@@ -121,10 +124,10 @@ class AnalysisParamWidget(mmWidget2):
                 paramName = key
                 currentValue = val["currentValue"]
                 defaultValue = val["defaultValue"]
-                valueType = "int" # Currently all values are int. TODO: have a 'types' key in the backend
-                # valueType = val[
-                #     "type"
-                # ]  # from ('int', 'float', 'boolean', 'string', detectionTypes_)
+                # valueType = "int" # Currently all values are int. TODO: have a 'types' key in the backend
+                valueType = val[
+                    "type"
+                ]  # from ('int', 'float', 'boolean', 'string', detectionTypes_)
                 # units = val["units"]
                 # humanName = val["humanName"]
                 description = val["description"]
@@ -170,14 +173,14 @@ class AnalysisParamWidget(mmWidget2):
                 elif valueType == "float":
                     aWidget = QtWidgets.QDoubleSpinBox()
                     aWidget.setRange(
-                        -1e9, +1e9
+                        0, +1e3
                     )  # minimum is used for setSpecialValueText()
                     # aWidget.setSpecialValueText(
                     #     "None"
                     # )  # displayed when widget is set to minimum
 
                     if currentValue is None or math.isnan(currentValue):
-                        aWidget.setValue(-1e9)
+                        aWidget.setValue(0)
                     else:
                         aWidget.setValue(currentValue)
                     aWidget.setKeyboardTracking(False)  # don't trigger signal as user edits
@@ -328,12 +331,6 @@ class AnalysisParamWidget(mmWidget2):
             self.canApply = False
             self.applyButton.setEnabled(self.canApply)
 
-            #TODO: roi extend is is used from csv instead of analysis parameters for mapmanagercore
-            #TODO: restrict certain keys values such as channel ()
-            #should we only apply the changes to the current selected spine immediately.
-            # apply - apply changes to only current spine
-            #   --- if we do this then each time we open up the widget we have to get each spines unique value
-
         elif buttonName == "Save":
             if self.pmmApp is None:
                 # save to mmap directory file
@@ -347,6 +344,19 @@ class AnalysisParamWidget(mmWidget2):
 
         else:
             logger.warning(f'Button "{buttonName}" not understood.')
+
+    def setRadiusEvent(self, event):
+        """
+        """
+        # sliceNumber = event.getSliceNumber()
+        logger.info("updating radius in analysis params")
+        # update radius value
+        displayOptions = self.stackWidget.getDisplayOptions()
+        newRadius = displayOptions['lineDisplay']['radius']
+        self.widgetDict["segmentRadius"].setValue(newRadius)
+
+        self.enableButtons()
+
 
 if __name__ == '__main__':
     dp = AnalysisParams()
