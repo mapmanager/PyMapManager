@@ -13,10 +13,15 @@ from pymapmanager.interface2.stackWidgets.event.segmentEvent import (
 class TracingWidget(mmWidget2):
     _widgetName = 'Tracing'
 
+    # radius changed is a proper pmmEventType
+    # signalRadiusChanged = QtCore.Signal(object)  # dict : {checked, upDownSlices}
+
     def __init__(self, stackWidget):
         super().__init__(stackWidget)
         self._buildUI()
         
+        self._editState = False  # if edit segment is checked
+
     def _buildUI(self) -> QtWidgets.QVBoxLayout:
         """Initialize the toolbar with controls.
 
@@ -25,7 +30,7 @@ class TracingWidget(mmWidget2):
         """
 
         # stack widget state
-        _editSegment = self.getStackWidget().getState() == pmmStates.tracingSegment
+        tracingSegment = self.getStackWidget().getState() == pmmStates.tracingSegment
 
         _alignLeft = QtCore.Qt.AlignLeft
 
@@ -40,29 +45,22 @@ class TracingWidget(mmWidget2):
         # edit segment checkbox
         aCheckbox = QtWidgets.QCheckBox('Edit Segment')
         aCheckbox.setToolTip('Toggle tracing on/off')
-        aCheckbox.setChecked(_editSegment)
+        aCheckbox.setChecked(tracingSegment)
         aCheckbox.stateChanged.connect(self.on_segment_edit_checkbox)
         hBoxLayout.addWidget(aCheckbox, alignment=_alignLeft)
 
         # new line segment button
         self._addSegmentButton = QtWidgets.QPushButton('+')
         self._addSegmentButton.setToolTip('Add new segment')
-        self._addSegmentButton.setEnabled(_editSegment)
+        self._addSegmentButton.setEnabled(tracingSegment)
         _callback = lambda state, buttonName='+': self.on_segment_button_clicked(state, buttonName)
         self._addSegmentButton.clicked.connect(_callback)
         hBoxLayout.addWidget(self._addSegmentButton, alignment=_alignLeft)
 
-        # delete line segment button
-        # self._deleteSegmentButton = QtWidgets.QPushButton('-')
-        # self._deleteSegmentButton.setEnabled(_editSegment)
-        # _callback = lambda state, buttonName='-': self.on_segment_button_clicked(state, buttonName)
-        # self._deleteSegmentButton.clicked.connect(_callback)
-        # hBoxLayout.addWidget(self._deleteSegmentButton, alignment=_alignLeft)
-
-        # trace and cancel (A*)
+        # cancel (A*)
         self._traceCancelButton = QtWidgets.QPushButton('Cancel')  # toggle b/w trace/cancel
         self._traceCancelButton.setToolTip('Cancel Tracing')
-        # self._traceCancelButton.setEnabled(_editSegment)
+        # self._traceCancelButton.setEnabled(tracingSegment)
         self._traceCancelButton.setEnabled(False)
         _callback = lambda state, buttonName='trace_cancel': self.on_segment_button_clicked(state, buttonName)
         self._traceCancelButton.clicked.connect(_callback)
@@ -70,8 +68,58 @@ class TracingWidget(mmWidget2):
         
         hBoxLayout.addStretch()  # required for alignment=_alignLeft 
 
+        # 2nd row
+        hBoxLayout2 = QtWidgets.QHBoxLayout()
+        vControlLayout.addLayout(hBoxLayout2)
+
+        # segment radius
+        self._radiusLabel = QtWidgets.QLabel('Radius')
+        self._radiusLabel.setEnabled(tracingSegment)
+
+        self._radiusSpinBox = QtWidgets.QSpinBox()
+        self._radiusSpinBox.setToolTip('Set Segment Radius')
+        self._radiusSpinBox.setMaximum(10)
+        self._radiusSpinBox.setValue(3)
+        self._radiusSpinBox.setEnabled(tracingSegment)
+        self._radiusSpinBox.valueChanged.connect(self._on_radius_value_changed)
+        hBoxLayout2.addWidget(self._radiusLabel)
+        hBoxLayout2.addWidget(self._radiusSpinBox)
+
+        self._setPivotCheckBox = QtWidgets.QCheckBox('Set Pivot')
+        self._setPivotCheckBox.setToolTip('Enable Set Segment Pivot Point')
+        self._setPivotCheckBox.setEnabled(tracingSegment)
+        self._setPivotCheckBox.setChecked(False)
+        self._setPivotCheckBox.clicked.connect(self._on_set_pivot_checkbox)
+        hBoxLayout2.addWidget(self._setPivotCheckBox)
+
         return vControlLayout
 
+    def _on_radius_value_changed(self, value):
+        """
+            Value to change the radius of the left/ right points. When changed the points also change.
+        """
+        logger.info(f'Recalculate left/right given new radius {value}')
+        # send signal to backend to refresh 
+        # AnnotationPlotWidget that displays the radius line points
+        # radius changed is a proper pmmEventType
+        #         self.signalRadiusChanged.emit(value)
+
+    def _on_set_pivot_checkbox(self, checked):
+        """
+        Notes
+        =====
+        TODO: emit new event pmmEventType.settingSegmentPivot
+
+        When in settingSegmentPivot we wait for click near the segment (in image plot)
+            and then set the core 'segmentPivot'
+        """
+        checked = checked > 0
+        logger.info(checked)
+
+        event = pmmEvent(pmmEventType.stateChange, self)
+        event.setStateChange(pmmStates.settingSegmentPivot)
+        self.emitEvent(event)
+        
     def on_segment_edit_checkbox(self, state : int):
         """Respond to user toggling segment edit checkbox.
 
@@ -81,7 +129,8 @@ class TracingWidget(mmWidget2):
         # checkbox can have 3-states
         state = state > 0
 
-        self._addSegmentButton.setEnabled(state)
+        self._editState = state
+        # self._addSegmentButton.setEnabled(state)
         
         self.setGui()
 
@@ -121,8 +170,18 @@ class TracingWidget(mmWidget2):
 
     def setGui(self):
         segmentID = self.getSelectedSegment()
-            
-        # self._deleteSegmentButton.setEnabled(segmentID is not None)
+        isEnabled = self._editState and (segmentID is not None)
+
+        self._addSegmentButton.setEnabled(self._editState)
+        
+        # TODO: this is only enable when actualy tracing (in a thread)
+        self._traceCancelButton.setEnabled(False)
+
+        self._radiusLabel.setEnabled(isEnabled)
+        logger.warning('need to set radius spinbox to the current selected segment radius !!!')
+        self._radiusSpinBox.setEnabled(isEnabled)
+
+        self._setPivotCheckBox.setEnabled(isEnabled)
 
     def selectedEvent(self, event: pmmEvent):
         """

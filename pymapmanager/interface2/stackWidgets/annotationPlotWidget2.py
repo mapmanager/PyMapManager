@@ -469,6 +469,9 @@ class annotationPlotWidget(mmWidget2):
                 # logger.info('annotation plot widget emitting selection!!!!!!!!')
                 event.getStackSelection().setPointSelection(dbIdx)
                 event.setAlt(isAlt)
+                
+                logger.info(f'emit event -->> select point/spine {dbIdx}')
+                
                 self.emitEvent(event, blockSlots=False)
 
     def _selectAnnotation(self, dbIdx: List[int], isAlt: bool = False):
@@ -521,7 +524,7 @@ class annotationPlotWidget(mmWidget2):
         self._currentSlice = sliceNumber
 
         # theseSegments = None  # None for all segments
-        roiTypes = self._roiTypes
+        # roiTypes = self._roiTypes
 
         # TODO: (6/19/24) Change this to be connected to top tool bar zSlider
         zPlusMinus = self._displayOptions["zPlusMinus"]
@@ -531,8 +534,16 @@ class annotationPlotWidget(mmWidget2):
         segmentIDList = None  # none for all segments
 
         # dfPlot is a row reduced version of backend df (all columns preserved)
+        # logger.info(f'{self.getClassName()} from base calling dfPlot = self._annotations.getSegmentPlot()')
+        # print('   segmentIDList:', segmentIDList)
+        # print('   sliceNumber:', sliceNumber)
+        # print('   zPlusMinus:', zPlusMinus)
+             
         dfPlot = self._annotations.getSegmentPlot(
-            segmentIDList, roiTypes, sliceNumber, zPlusMinus=zPlusMinus
+            # segmentIDList, roiTypes, sliceNumber, zPlusMinus=zPlusMinus
+            sliceNumber,
+            zPlusMinus,
+            segmentIDList,
         )
 
         # logger.info(f'{self.getClassName()} dfPlot is:')
@@ -1252,29 +1263,48 @@ class linePlotWidget(annotationPlotWidget):
         dfRet[ dfRet == -1] = 0
 
         rowIndexDiff = np.diff(df['rowIndex'])  # 1 when contiguous rows
+        # rowIndexDiff = np.diff(df.index)  # 1 when contiguous rows
         dfRet[ (dfRet == 1) & (rowIndexDiff != 1)] = 0
 
         dfRet = np.append(dfRet, 0)  # append 0 value
 
         return dfRet
     
+    # abb was missing??? called from imagePlotWidget ???
+    def refreshRadiusLines(self, sliceNumber : int):
+        self.slot_setSlice(sliceNumber)
+
     def slot_setSlice(self, sliceNumber: int):
-        logger.info("setting slice in line plot")
+        # logger.info("setting slice in line plot")
         # startSec = time.time()
 
         super().slot_setSlice(sliceNumber)  # draws centerline
 
+        logger.warning('turned off left/right segment plot.')
+        return
+    
         # abb
         if self._annotations.getNumSegments() == 0:
+            logger.warning('NO SEGMENTS!')
             self._leftRadiusLines.setData([], [])
             self._rightRadiusLines.setData([], [])
             return        
         
         if self.showRadiusLines:
             zPlusMinus = self._displayOptions["zPlusMinus"] 
+            
             radiusOffset = self._displayOptions['radius'] 
             
+            # abb was this
             dfLeft = self._annotations.getLeftRadiusPlot(None, sliceNumber, zPlusMinus, radiusOffset)
+            
+            # now this
+            # logger.info('abb fetching left radius from core')
+            # dfLeft = self._annotations.getTimepointMap().segments['leftRadiusLine']
+
+            logger.info('dfLeft:')
+            print(dfLeft)
+            
             _lineConnect = self._getScatterConnect(dfLeft)
 
             # logger.info(f'dfLeft["x"].to_numpy() {dfLeft["x"].to_numpy()}')

@@ -4,9 +4,12 @@ import numpy as np
 
 from qtpy import QtWidgets
 
+from pymapmanager.timeseriesCore import TimeSeriesCore
+
 import pymapmanager
 import pymapmanager as pmm
 from pymapmanager.interface2.mainWindow import MainWindow
+from pymapmanager.interface2.stackWidgets.stackWidget2 import stackWidget2
 
 from pymapmanager._logger import logger
 
@@ -41,7 +44,6 @@ class MapSelection:
             ret += f'  {k}: {v}\n'
         return ret
     
-# class mapWidget(mmMapWidget):
 class mapWidget(MainWindow):
     """Main Map Widget (similar to stackWidget)
 
@@ -50,10 +52,11 @@ class mapWidget(MainWindow):
 
     _widgetName = 'Map Table'
 
-    def __init__(self, mmMap : pmm.mmMap):
+    # def __init__(self, mmMap : pmm.mmMap):
+    def __init__(self, timeseriescore : TimeSeriesCore):
         super().__init__(mapWidget=self, iAmMapWidget=True)
         
-        self._map = mmMap
+        self._map : TimeSeriesCore = timeseriescore
 
         # self._mapSelection : MapSelection = MapSelection(self)
 
@@ -65,7 +68,7 @@ class mapWidget(MainWindow):
 
         self._buildUI()
 
-        self.setWindowTitle(self._map.filePath)
+        self.setWindowTitle(self._map.path)
     
     # def getMapSelection(self) -> MapSelection:
     #     return self._mapSelection
@@ -79,7 +82,7 @@ class mapWidget(MainWindow):
         return self._map
     
     def getPath(self):
-        return self._map.filePath
+        return self._map.path
     
     def _old__buildMenus(self):
         mainMenu = self.menuBar()
@@ -135,19 +138,18 @@ class mapWidget(MainWindow):
         numCols = 3
         numSessions = _map.numSessions
         screenGrid = self.getApp().getScreenGrid(numSessions, numCols)
-        
+         
         for tp in range(firstTp, lastTp):
-            stack = _map.stacks[tp]
             posRect = screenGrid[tp]
-            bsw = self.openStack(stack=stack, posRect=posRect)
+            bsw = self.openStack2(tp, posRect=posRect)
 
             # toggle interface
-            # ['top toolbar', 'point list', 'line list', 'tracing widget qqq', 'image plot', 'Search Widget xxx']
+            # dict_keys(['top toolbar', 'Point List', 'Line List', 'image plot', 'Histogram'])
             bsw._toggleWidget("top toolbar", False)
-            bsw._toggleWidget("point list", False)
-            bsw._toggleWidget("line list", False)
-            bsw._toggleWidget("tracing widget qqq", False)
-            bsw._toggleWidget("Search Widget xxx", False)
+            bsw._toggleWidget("Point List", False)
+            bsw._toggleWidget("Line List", False)
+            # bsw._toggleWidget("tracing widget qqq", False)
+            bsw._toggleWidget("Histogram", False)
             # bsw._toggleWidget("Status Bar", False)
 
             # select a point and zoom
@@ -162,7 +164,7 @@ class mapWidget(MainWindow):
     def getNumSessions(self):
         return self.getMap().numSessions
     
-    def openStack2(self, session : int) -> "pmm.interface2.stackWidget":
+    def openStack2(self, session : int, posRect : List[int] = None) -> stackWidget2:
         """Open a stackWidget for map session.
         
         This is triggered on double-click in map table
@@ -178,18 +180,19 @@ class mapWidget(MainWindow):
         # screenGrid = self.getApp().getScreenGrid(numSessions, numCols)
         # posRect = screenGrid[session]
 
-        posRect = self.getApp().getConfigDict().getStackWindowGeometry()
+        if posRect is None:
+            posRect = self.getApp().getConfigDict().getStackWindowGeometry()
 
-        logger.error(f'posRect:{posRect}')
+        # logger.error(f'posRect:{posRect}')
         
-        stack = self._map.stacks[session]
-        bsw = self.openStack(stack=stack, session=session, posRect=posRect)
+        # stack = self._map.stacks[session]
+        bsw = self.openStack(session=session, posRect=posRect)
         return bsw
 
     def openStack(self,
-                  path = None,
-                  stack = None,
-                  session = None,
+                #   path = None,  # not used
+                #   stack = None,  # not used
+                  session : int,
                   posRect : List[int] = None,
                   ) -> "pmm.interface2.stackWidget":
         """Open a stack widget given the tif path.
@@ -203,21 +206,31 @@ class mapWidget(MainWindow):
             Position for the window [l, t, w, h]
         """
         
-        if path is not None:
-            bsw = self._findStackWidget(path)
-        elif stack is not None:
-            bsw = self._findStackWidget2(stack)
+        # if path is not None:
+        #     bsw = self._findStackWidget(path)
+        # elif stack is not None:
+        #     bsw = self._findStackWidget2(stack)
+        # else:
+        #     logger.warning('TODO: implement for core')
+        #     return
+        
         # !!!!!!!!!!!!!!!!!!!!!
+        bsw = None
         if bsw is None:
-            logger.info(f'opening stack widget from scratch with path:{path}')
-            defaultChannel = 2
-            if stack.getImageChannel(channel=defaultChannel) is None:
-                stack.loadImages(channel=defaultChannel)
-
-            bsw = pmm.interface2.stackWidgets.stackWidget2(path=path,
-                                                           stack=stack,
-                                                           mapWidget = self)
+            # logger.info(f'opening stack widget from scratch with path:{path}')
             
+            # defaultChannel = 2
+            # if stack.getImageChannel(channel=defaultChannel) is None:
+            #     stack.loadImages(channel=defaultChannel)
+
+            # bsw = pmm.interface2.stackWidgets.stackWidget2(path=path,
+            #                                                stack=stack,
+            #                                                mapWidget = self)
+
+            bsw = pmm.interface2.stackWidgets.stackWidget2(timeseriescore=self._map,
+                                                           mapWidget=self,
+                                                           timepoint=session)
+
             bsw.setWindowTitle(f'map session {session}')
 
             # bsw.signalSelectAnnotation2.connect(self.slot_selectAnnotation)
@@ -225,14 +238,14 @@ class mapWidget(MainWindow):
             # bsw._imagePlotWidget._aPointPlot.signalAnnotationClicked2.connect(self.slot_selectAnnotation)
 
             # to link widnows, 20230706
-            logger.warning('put back in 202402')
+            # logger.warning('put back in 202402')
             #bsw._imagePlotWidget.signalMouseEvent.connect(self.slot_MouseMoveEvent)
 
             self._stackWidgetList.append(bsw)
         else:
             logger.info('recycling existing stack widget')
         
-        logger.info(f'  path: {path}')
+        # logger.info(f'  path: {path}')
 
         if posRect is not None:
             bsw.setPosition(posRect[0], posRect[1], posRect[2], posRect[3])
@@ -363,7 +376,12 @@ class mapWidget(MainWindow):
 
         # vBoxLayout_main.addWidget(self._mapTableWidget)
 
-        dendrogramWidget = pmm.interface2.mapWidgets.dendrogramWidget(self)
+        logger.warning('abb add dendrogram widget back in')
+        # dendrogramWidget = pmm.interface2.mapWidgets.dendrogramWidget(self)
+        
+        # from pymapmanager.interface2.mapWidgets.dendrogramWidget2 import dendrogramWidget2
+        dendrogramWidget = pmm.interface2.mapWidgets.dendrogramWidget2(self)
+        
         dendrogramWidgetName = dendrogramWidget._widgetName
         dendrogramDock = self._addDockWidget(dendrogramWidget, 'right', '')
         self._widgetDict[dendrogramWidgetName] = dendrogramDock  # the dock, not the widget ???

@@ -20,8 +20,12 @@ import pymapmanager as pmm
 
 import pymapmanager.interface2
 
+from pymapmanager.timeseriesCore import TimeSeriesCore, TimeSeriesList
+
 import pymapmanager.interface2.stackWidgets
 import pymapmanager.interface2.mapWidgets
+
+from pymapmanager.interface2.mapWidgets.mapWidget import mapWidget
 
 from pymapmanager.interface2.stackWidgets import stackWidget2
 from pymapmanager.interface2.openFirstWindow import OpenFirstWindow
@@ -147,6 +151,10 @@ class PyMapManagerApp(QtWidgets.QApplication):
 
         # used to name new maps (created by dragging a tiff file)
         self._untitledNumber = 0
+
+        self._timeseriesList = TimeSeriesList()
+        # a list of time series (raw core data)
+        # can open a stack widget (one tp) or a map widget
 
         self._mapWidgetDict = {}
         # dictionary of open map widgets
@@ -360,7 +368,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
         """Remove theWindow from self._windowList.
         """
         logger.info('  remove _mapWidgetDict window from app list of windows')
-        mapPath = mapWidget.getMap().filePath
+        mapPath = mapWidget.getMap().path
         popThisKey = None
         for pathKey in self._mapWidgetDict.keys():
             if pathKey == mapPath:
@@ -576,6 +584,24 @@ class PyMapManagerApp(QtWidgets.QApplication):
         path : str
             Full path to (zarr, tif) file
         """
+        
+        _timeSeriesCore : TimeSeriesCore = self._timeseriesList.add(path)
+
+        numTimepoints = _timeSeriesCore.numSessions
+
+        if numTimepoints == 1:
+            _stackWidget = stackWidget2(timeseriescore=_timeSeriesCore, timepoint=0)
+
+            geometryRect = self.getConfigDict().getStackWindowGeometry()
+            _stackWidget.setGeometry(geometryRect[0], geometryRect[1], geometryRect[2], geometryRect[3])
+            _stackWidget.show()
+        
+        else:
+            _mapWidget = mapWidget(_timeSeriesCore)
+            _mapWidget.show()
+
+        return
+    
         if path in self._stackWidgetDict.keys():
             logger.info('showing already create stack widget')
             self._stackWidgetDict[path].show()
@@ -590,8 +616,10 @@ class PyMapManagerApp(QtWidgets.QApplication):
             # if not _Ext in loadTheseExtension:
             #     logger.error("can't load extension '{_ext}', extension must be in {loadTheseExtension}'")
             
-            mmMapSession = 1
-            _stackWidget = stackWidget2(path, mmMapSession=mmMapSession)
+            timepoint = 2
+            logger.error(f'hard coding map timepoint:{timepoint}')
+
+            _stackWidget = stackWidget2(path, timepoint=timepoint)
 
             geometryRect = self.getConfigDict().getStackWindowGeometry()
             

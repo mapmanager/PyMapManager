@@ -444,7 +444,7 @@ def plotMapScatter(map, xStat, yStat, segments=[], fig=None):
     plotDict['ystat'] = yStat
 
     mmMapPlot(map, plotDict, fig=fig)
-                   
+
 class mmMapPlot():
     """Plot a scatter plot or dendrogram for a map.
 

@@ -20,9 +20,8 @@ from pymapmanager._logger import logger
 
 class AnnotationsCore:
     def __init__(self,
-                 mapAnnotations : MapAnnotations,  # single timepoint
-                #  defaultColums : List[str],
-                 sessionID = 0,
+                 mapAnnotations : MapAnnotations,  # multi timepoint
+                 timepoint = 0,
                  ):
         """
         Parameters
@@ -32,23 +31,30 @@ class AnnotationsCore:
         defaultColums : List[str]
             Default columns for core dataframe, needed when creating a new map with no points
         """
-        self._sessionID = sessionID
 
-        # single timepoint of type
-        # mapmanagercore.annotations.single_time_point.layers.AnnotationsLayers
         self._fullMap : MapAnnotations = mapAnnotations
+        self._timepoint = timepoint
+
+        self._buildTimepointMap()
 
         self._df = None
-
-        # self._defaultColums = defaultColums
         self._isDirty = False #abj
 
         self._buildDataFrame()
     
+    def getFullMap(self):
+        return self._fullMap
+    
     @property
-    def sessionID(self):
-        return self._sessionID
+    def timepoint(self) -> int:
+        return self._timepoint
 
+    def _buildTimepointMap(self):
+        self._timepointMap = self._fullMap.getTimePoint(self.timepoint)
+
+    def getTimepointMap(self):
+        return self._timepointMap
+    
     def __len__(self) -> int:
         """Get the number of annotations.
         """
@@ -57,6 +63,11 @@ class AnnotationsCore:
     @property
     def numAnnotations(self):
         return len(self.getDataFrame())
+
+    def _buildDataFrame(self):
+        """derived classes define this for (point, line)
+        """
+        logger.error('baseAnnotationCore SHOULD NEVER BE CALLED.')
 
     def getDataFrame(self) -> pd.DataFrame:
         """Flat dataframe of all annotations (one per row).
@@ -70,22 +81,17 @@ class AnnotationsCore:
         """
         pass
 
-    def getSummaryDf(self):
+    def getSummaryDf(self) -> pd.DataFrame:
         """By default, summary df is underlying df.
         
         See: LineAnnotationsCore.
         """
         return self._df
     
-    def _buildDataFrame(self):
-        """derived classes define this for (point, line)
-        """
-        logger.error('baseAnnotationCore SHOULD NEVER BE CALLED.')
-
-    def getSegmentPlot(self, segmentID,
-                       roiTypes,
+    def getSegmentPlot(self,
                        zSlice,
-                       zPlusMinus
+                       zPlusMinus,
+                       segmentID :Optional[int] = None
                        ):
         """Get a spine dataframe based on z
 
@@ -95,17 +101,24 @@ class AnnotationsCore:
         _stopSlice = zSlice + zPlusMinus
 
         df = self.getDataFrame()
-        # logger.info(f"df: {df}")
+        
+        # logger.info(f'{self.getClassName()} df: {type(df)}')
+        # print(df.columns)
+        # print(df)
+        
         df['rowIndex'] = list(np.arange(len(df)))
 
         #abj: 7/17/24
         if not df.empty:
             df = df[(df['z']>=_startSlice) & (df['z']<=_stopSlice)]
 
+        if segmentID is not None:
+            df = df[ df['segmentID'] == segmentID]
+
         return df
     
     def getRow(self, rowIdx : int):
-        """Get columns and values for one row.
+        """Get columns and values for one row index.
         """
         df = self.getDataFrame() 
         row = df.loc[rowIdx]
@@ -143,11 +156,9 @@ class AnnotationsCore:
 
         df = self.getDataFrame()  # geopandas.geodataframe.GeoDataFrame
 
-        # print('df:')
-        # print(df.index)
-
         if colName not in list(df.columns):
             logger.error(f'did not find column name "{colName}"')
+            logger.error(f'available columns are: {df.columns}')
             return
         
         if rowIdx is None:
@@ -165,56 +176,6 @@ class AnnotationsCore:
             logger.error(f'bad rowIdx(s) {rowIdx}, colName:{colName}')
             return None
         
-    def moveSpine(self, spineID :int, x, y, z):
-        """Move a spine to new (x,y,z).
-        """
-        if not isinstance(spineID, int):
-            logger.error(f'got bad spineID:{spineID}, expecting int')
-            return
-                
-        # _moved = self._fullMap.moveSpine((spineID, self.sessionID), x=x, y=y, z=z)
-        _moved = self._fullMap.moveSpine(spineID, x=x, y=y, z=z)
-
-        #abj: 7/5
-        #update background ROI
-        self._fullMap.snapBackgroundOffset(spineID)
-
-        # rebuild df from mutated full map
-        self._buildDataFrame()
-
-        self._setDirty(True) #abj
-
-    def manualConnectSpine(self, spineID : int, x, y, z):
-        """Manually connect a spine to specified image (x,y,z).
-        
-        Backend will find closest point on tracing.
-        """
-        if not isinstance(spineID, int):
-            logger.error(f'got bad spineID:{spineID}, expecting int')
-            return
-        
-        # _moved = self._fullMap.moveAnchor((spineID, self.sessionID), x=x, y=y, z=z)
-        _moved = self._fullMap.moveAnchor(spineID, x=x, y=y, z=z)
-
-        # rebuild df from mutated full map
-        self._buildDataFrame()
-
-        self._setDirty(True) #abj
-
-    #abj
-    def autoResetBrightestIndex(self, spineID, segmentID, point, findBrightest : bool = True):
-
-        if not isinstance(spineID, int):
-            logger.error(f'got bad spineID:{spineID}, expecting int')
-            return
-        
-        # Update brightest path
-        brightestIdx = self._fullMap.autoConnectBrightestIndex(spineID, segmentID, point, findBrightest)
-        logger.info(f"brightestIdx {brightestIdx}")
-
-        # refreshDataFrame
-        self._buildDataFrame()
-
     def setValue(self, colName : str, row : int, value):
         """Set a single value in a row and column.
         
@@ -247,7 +208,7 @@ class AnnotationsCore:
                     return
                 
                 # self._fullMap.updateSpine(row, value=newDict)
-                self._fullMap.updateSpine(row, value=_spine)
+                self.getTimepointMap().updateSpine(row, value=_spine)
             
             except (ValueError) as e:
                 logger.error(e)
@@ -262,11 +223,12 @@ class AnnotationsCore:
     def undo(self):
         # abj - this doesnt actually get called???
         logger.info("undo in baseAnnotationsCore")
-        self._fullMap.undo()
+        self.getTimepointMap().undo()
         self._buildDataFrame()
 
     def redo(self):
-        self._fullMap.redo()
+        logger.info("redo in baseAnnotationsCore")
+        self.getTimepointMap().redo()
 
     def __str__(self):
         _str = ''
@@ -303,66 +265,112 @@ class SpineAnnotationsCore(AnnotationsCore):
         
         # logger.info(f'{self.getClassName()}')
         
-        if 0:
-            # new 20240801, pull from full map
-            storePoints = self._fullMap._frames['Spine']
-            dfPoints = storePoints._df
-            # print(dfPoints)
-
-            # fetch rows using "second" index named "t" that equals tpIDx
-            # e.g. get all rows for one timepoint
-            allSpinesDf = dfPoints.xs(self.sessionID, level="t")
-            # drop all columns that end with '.valid'
-            allSpinesDf = allSpinesDf.loc[:,~allSpinesDf.columns.str.endswith('.valid')]
-
-        try:
-            # logger.info('   calling self._fullMap.points[:]')
+        # self._fullMap.points[:]
+        
+        # v1
+        # if 0:
+        #     logger.info(f'building with _buildDataFrame {self.getClassName()}')
             
-            allSpinesDf = self._fullMap.points[:]
+        #     # new 20240801, pull from full map
+        #     storePoints = self._fullMap._frames['Spine']
+        #     dfPoints = storePoints._df
 
-            # logger.info(f'allSpinesDf:')
+        #     # logger.warning('dfPoints is:')
+        #     # print(dfPoints)
+
+        #     # fetch rows using "second" index named "t" that equals tpIDx
+        #     # e.g. get all rows for one timepoint
+        #     # logger.warning(f'self.timepoint:{self.timepoint} {type(self.timepoint)}')
+            
+        #     try:
+        #         allSpinesDf = dfPoints.xs(self.timepoint, level="t")
+        #         # drop all columns that end with '.valid'
+        #         allSpinesDf = allSpinesDf.loc[:,~allSpinesDf.columns.str.endswith('.valid')]
+        #     except (KeyError) as e:
+        #         logger.error(e)
+
+        #     if len(allSpinesDf) > 0:  # TODO: get rid of this
+        #         # when there is 1 spine, points[:] returns
+        #         # <class 'pandas.core.series.Series'> 
+        #         try:
+        #             xyCoord = allSpinesDf['point'].get_coordinates()
+        #             allSpinesDf['x'] = xyCoord['x']
+        #             allSpinesDf['y'] = xyCoord['y']
+        #         except(AttributeError) as e:
+        #             logger.error(e)
+        #             logger.error(f'allSpineDf is: {type(allSpinesDf)}')
+        #             print(allSpinesDf)
+        #     else:
+        #         allSpinesDf['x'] = None
+        #         allSpinesDf['y'] = None
+                
+        #     allSpinesDf['roiType'] = 'spineROI'
+        #     allSpinesDf.insert(0,'index', allSpinesDf.index)  # index is first column
+
+        #     logger.warning(f'{self.getClassName()} built allSpinesDf')
+        #     print(allSpinesDf)
+        #     print(allSpinesDf.columns)
+
+        #     self._df = allSpinesDf
+
+        #     return self._df
+    
+        # v0
+        if 1:
+            try:
+                # logger.info('   calling self._fullMap.points[:]')
+                
+                allSpinesDf = self.getTimepointMap().points[:]
+
+                # logger.info(f'allSpinesDf:')
+                # print(allSpinesDf)
+
+            except (AttributeError, KeyError) as e:
+                logger.warning(e)
+                allSpinesDf = None
+            
+            if allSpinesDf is None:
+                # single timepoint with no spines, gives None point[:] df
+                # make an empty dataframe with the correct columns
+                logger.warning(f'{self.getClassName()} making df from None')
+                # allSpinesDf = pd.DataFrame(columns=self._defaultColums)
+                allSpinesDf = pd.DataFrame()
+                allSpinesDf['segmentID'] = None
+                allSpinesDf['x'] = None
+                allSpinesDf['y'] = None
+                allSpinesDf['z'] = None
+                allSpinesDf['roiType'] = None
+                allSpinesDf['userType'] = None
+                allSpinesDf['accept'] = None
+                allSpinesDf['note'] = None
+                allSpinesDf['spineSide'] = None
+                allSpinesDf['spineAngle'] = None
+                allSpinesDf.insert(0,'index', None)  # index is first column
+
+            else:
+                if len(allSpinesDf) > 0:  # TODO: get rid of this
+                    # when there is 1 spine, points[:] returns
+                    # <class 'pandas.core.series.Series'> 
+                    try:
+                        xyCoord = allSpinesDf['point'].get_coordinates()
+                        allSpinesDf['x'] = xyCoord['x']
+                        allSpinesDf['y'] = xyCoord['y']
+                    except(AttributeError) as e:
+                        logger.error(e)
+                        logger.error(f'error getting x/y allSpinesDf is: {type(allSpinesDf)}')
+                        print(allSpinesDf)
+
+                allSpinesDf['roiType'] = 'spineROI'
+                allSpinesDf.insert(0,'index', allSpinesDf.index)  # index is first column
+
+            # logger.info(f'REBUILT allSpinesDf for timepoint:{self.timepoint} {type(allSpinesDf)}')
+            # print(allSpinesDf.columns)
             # print(allSpinesDf)
 
-        except (AttributeError, KeyError) as e:
-            logger.warning(e)
-            allSpinesDf = None
+            self._df = allSpinesDf
+
+            return self._df
         
-        if allSpinesDf is None:
-            # single timepoint with no spines, gives None point[:] df
-            # make an empty dataframe with the correct columns
-            logger.warning(f'{self.getClassName()} making df from None')
-            # allSpinesDf = pd.DataFrame(columns=self._defaultColums)
-            allSpinesDf = pd.DataFrame()
-            allSpinesDf['segmentID'] = None
-            allSpinesDf['x'] = None
-            allSpinesDf['y'] = None
-            allSpinesDf['z'] = None
-            allSpinesDf['roiType'] = None
-            allSpinesDf['userType'] = None
-            allSpinesDf['accept'] = None
-            allSpinesDf['note'] = None
-            allSpinesDf['spineSide'] = None
-            allSpinesDf['spineAngle'] = None
-            allSpinesDf.insert(0,'index', None)  # index is first column
-
-        else:
-            if len(allSpinesDf) > 0:  # TODO: get rid of this
-                # when there is 1 spine, points[:] returns
-                # <class 'pandas.core.series.Series'> 
-                try:
-                    xyCoord = allSpinesDf['point'].get_coordinates()
-                    allSpinesDf['x'] = xyCoord['x']
-                    allSpinesDf['y'] = xyCoord['y']
-                except(AttributeError) as e:
-                    logger.error(e)
-                    logger.error(f'allSpineDf is: {type(allSpinesDf)}')
-                    print(allSpinesDf)
-
-            allSpinesDf['roiType'] = 'spineROI'
-            allSpinesDf.insert(0,'index', allSpinesDf.index)  # index is first column
-
-        self._df = allSpinesDf
-
     def getSpineLines(self):
         """Get df to plot spine lines from head to tail (anchor).
         
@@ -388,7 +396,7 @@ class SpineAnnotationsCore(AnnotationsCore):
         # logger.info(f"getSpineLines test {test}")
         # logger.info(f"getSpineLines test type {type(test)}")
 
-        _anchorLines = self._fullMap.points['anchorLine']
+        _anchorLines = self.getTimepointMap().points['anchorLine']
         if len(_anchorLines) == 0:
             # no spines
             anchorDf = pd.DataFrame(columns=['x', 'y', 'z'])
@@ -406,14 +414,16 @@ class SpineAnnotationsCore(AnnotationsCore):
         
         Each is a df with (spineID, x, y).
         """
+        timepointMap = self.getTimepointMap()
+        
         if roiType == 'roiHead':
-            df = self._fullMap.points["roiHead"].get_coordinates()
+            df = timepointMap.points["roiHead"].get_coordinates()
         elif roiType == 'roiHeadBg':
-            df = self._fullMap.points["roiHeadBg"].get_coordinates()
+            df = timepointMap.points["roiHeadBg"].get_coordinates()
         elif roiType == 'roiBase':
-            df = self._fullMap.points["roiBase"].get_coordinates()
+            df = timepointMap.points["roiBase"].get_coordinates()
         elif roiType == 'roiBaseBg':
-            df = self._fullMap.points["roiBaseBg"].get_coordinates()
+            df = timepointMap.points["roiBaseBg"].get_coordinates()
         else:
             logger.error(f'did not understand roiType: {roiType}')
             return None, None
@@ -428,15 +438,25 @@ class SpineAnnotationsCore(AnnotationsCore):
     def addSpine(self, segmentID : int, x : int, y : int, z : int) -> int:
         # newSpineID = self._fullMap.addSpine(segmentId=(segmentID, self.sessionID), 
 
-        # logger.info(f'&&& &&& calling add spine segmentID:{segmentID} x:{x} y:{y} z:{z}')
-
-        newSpineID = self._fullMap.addSpine(segmentId=segmentID, 
+        newSpineID = self.getTimepointMap().addSpine(segmentId=segmentID, 
                                x=x,
                                y=y,
                                z=z)
 
-        newSpineID = int(newSpineID)
+        # newSpineID = int(newSpineID)
+
+        # need to rebuild core representation of single timepoint
+        self._buildTimepointMap()
         
+        # self.getTimepointMap().points[:]
+
+        # was in core
+        # 20240819 DOES NOT WORK !!!!!!!!!
+        # logger.error(f'turned off self.getTimepointMap().snapBackgroundOffset({newSpineID})')
+        self.getTimepointMap().snapBackgroundOffset(newSpineID)
+
+        self._buildTimepointMap()
+
         # logger.info(f'after add ... segmentID:{segmentID} x:{x} y:{y} z:{z} -->> newSpineID:{newSpineID}')
 
         self._buildDataFrame()
@@ -453,7 +473,7 @@ class SpineAnnotationsCore(AnnotationsCore):
         """
         # logger.info(f'DELETING ANNOTATION rowIdx:{rowIdx}')
 
-        self._fullMap.deleteSpine(rowIdx)
+        self.getTimepointMap().deleteSpine(rowIdx)
 
         self._buildDataFrame()
 
@@ -476,6 +496,56 @@ class SpineAnnotationsCore(AnnotationsCore):
 
         self._setDirty(True) #abj
 
+    def moveSpine(self, spineID :int, x, y, z):
+        """Move a spine to new (x,y,z).
+        """
+        if not isinstance(spineID, int):
+            logger.error(f'got bad spineID:{spineID}, expecting int')
+            return
+                
+        # _moved = self._fullMap.moveSpine((spineID, self.sessionID), x=x, y=y, z=z)
+        _moved = self.getTimepointMap().moveSpine(spineID, x=x, y=y, z=z)
+
+        #abj: 7/5
+        #update background ROI
+        self.getTimepointMap().snapBackgroundOffset(spineID)
+
+        # rebuild df from mutated full map
+        self._buildDataFrame()
+
+        self._setDirty(True) #abj
+
+    def manualConnectSpine(self, spineID : int, x, y, z):
+        """Manually connect a spine to specified image (x,y,z).
+        
+        Backend will find closest point on tracing.
+        """
+        if not isinstance(spineID, int):
+            logger.error(f'got bad spineID:{spineID}, expecting int')
+            return
+        
+        # _moved = self._fullMap.moveAnchor((spineID, self.sessionID), x=x, y=y, z=z)
+        _moved = self.getTimepointMap().moveAnchor(spineID, x=x, y=y, z=z)
+
+        # rebuild df from mutated full map
+        self._buildDataFrame()
+
+        self._setDirty(True) #abj
+
+    #abj
+    def autoResetBrightestIndex(self, spineID, segmentID, point, findBrightest : bool = True):
+
+        if not isinstance(spineID, int):
+            logger.error(f'got bad spineID:{spineID}, expecting int')
+            return
+        
+        # Update brightest path
+        brightestIdx = self.getTimepointMap().autoConnectBrightestIndex(spineID, segmentID, point, findBrightest)
+        logger.info(f"brightestIdx {brightestIdx}")
+
+        # refreshDataFrame
+        self._buildDataFrame()
+
 class LineAnnotationsCore(AnnotationsCore):
 
     def getNumSegments(self) -> int:
@@ -497,14 +567,14 @@ class LineAnnotationsCore(AnnotationsCore):
     
     @property
     def numSpines(self, segmentID : int) -> int:
-        _numSpines = self._fullMap.getNumSpines(segmentID)
+        _numSpines = self.getTimepointMap().getNumSpines(segmentID)
         logger.info(f'numSpines:{_numSpines}')
         return _numSpines
     
     def newSegment(self) -> int:
         """Add a new segment.
         """
-        newSegmentID = self._fullMap.newSegment()
+        newSegmentID = self.getTimepointMap().newSegment()
         newSegmentID = int(newSegmentID)
         logger.info(f'created new segment {newSegmentID} {type(newSegmentID)}')
 
@@ -531,12 +601,12 @@ class LineAnnotationsCore(AnnotationsCore):
         # _numSpines = self._fullMap.getNumSpines(segmentID)
         # logger.info(f'segmentID:{segmentID} _numSpines:{_numSpines}')
 
-        _deleted = self._fullMap.deleteSegment(segmentID)
+        _deleted = self.getTimepointMap().deleteSegment(segmentID)
         
         self._setDirty(True) #abj
-        
+
         # abb is this needed?
-        self._fullMap.segments[:]
+        self.getTimepointMap().segments[:]
 
         logger.info(f'  _deleted:{_deleted}')
 
@@ -550,7 +620,7 @@ class LineAnnotationsCore(AnnotationsCore):
         """
         logger.info(f'segmentID:{segmentID} x:{x} y:{y} z:{z}')
         
-        _added = self._fullMap.appendSegmentPoint(segmentID, x, y, z)
+        _added = self.appendSegmentPoint().appendSegmentPoint(segmentID, x, y, z)
 
         if _added is not None:
             self._buildDataFrame()
@@ -568,14 +638,20 @@ class LineAnnotationsCore(AnnotationsCore):
     def _buildSummaryDf(self) -> pd.DataFrame:
         """Get a summary dataframe, one segment per row.
         """
+        
         self._summaryDf = pd.DataFrame()
         try:
 
-            _list = self._fullMap.segments['segment'].index.to_list()
-            # logger.info(f'_list:{_list}')
+            # was this
+            # _list = self._fullMap.segments['segment'].index.to_list()
+            # 20240804
+            _list = self.getTimepointMap().segments['segment'].index.to_list()
+            # _list is 0,1,2,3,... regardless of timepoint
+            # logger.warning(f'  _list is:{_list}')
             self._summaryDf['Segment'] = _list
         except (AttributeError) as e:
             # when no segments
+            logger.error('NO SEGMENTS !!!!!!!!')
             self._summaryDf['Points'] = None
             self._summaryDf['Length'] = None
         else:
@@ -585,26 +661,87 @@ class LineAnnotationsCore(AnnotationsCore):
             
             pointsList = []
             lengthList = []
+            radiusList = []
+            pivotPointList = []
             for row_do_not_use, _data in self._summaryDf.iterrows():
                 # logger.info(f'  row:{row_do_not_use} _data: {type(_data)}')
                 # print(_data)
                 
                 segmentID = _data['Segment']
 
-                _points = self.getNumPnts(segmentID)
+                # logger.debug('!!!! &&& *** ((( )))  @@@@ THIS IS THE ERROR !!!!')
+                
+                _numPoints = self.getNumPnts(segmentID)
+                # logger.info(f'after getNumPnts({segmentID}) _numPoints is:{type(_numPoints)}')
+                # print(_numPoints)
+
                 _len = self.getLength(segmentID)
-                # _len = self._fullMap.segments['segment'].loc[segmentID].length
+                # logger.info(f'after getLength({segmentID}) _len is:{type(_len)}')
+                # print(_len)
+
                 if _len > 0:
                     _len = round(_len,2)
-                pointsList.append(_points)
+                pointsList.append(_numPoints)
                 lengthList.append(_len)
+
+                # TODO
+                radiusList.append('')
+                pivotPointList.append('')
+                
             self._summaryDf['Points'] = pointsList
             self._summaryDf['Length'] = lengthList
+            # TODO
+            self._summaryDf['Radius'] = radiusList
+            self._summaryDf['Pivot'] = pivotPointList
 
         self._summaryDf.index = self._summaryDf['Segment']
         
-        # logger.info('after line build, _summaryDf is:')
-        # print(self._summaryDf)
+        logger.info(f'after line build, _summaryDf is timepoint {self.timepoint}:')
+        print(self._summaryDf)
+
+    def _buildDataFrame_leftRight(self):
+            #
+            # left/right
+            
+            # abb, pull from core
+            radiusOffset = self.getTimepointMap().segments['radius']
+            logger.info(f'radiusOffset:{radiusOffset}')
+
+            # abb left/right radius
+            segmentLines = self.getTimepointMap().segments['segment']
+            logger.info(f'BEFORE segmentLines:')
+            print(segmentLines)
+            
+            # abb error clipLines does not preserve/return z
+            _startSlice = 0
+            logger.warning('abb hard coded _stopSlice=70')
+            _stopSlice = 70
+            segmentLines = clipLines(self.getTimepointMap().segments['segment'], zRange = (_startSlice, _stopSlice))
+
+            logger.info(f'AFTER clipLines() segmentLines:')
+            print(segmentLines)
+
+            # abb error offset_curve does not preserve z
+            #     error offset_curve returns MORE points that in source line
+            leftSegmentLines = shapely.offset_curve(segmentLines, radiusOffset * -1)
+            logger.info(f'AFTER leftSegmentLines:')
+            print(leftSegmentLines)
+            
+            # logger.info(f'segmentLines: {len(segmentLines)} {type(segmentLines)}')
+            # print(segmentLines)
+            
+            dfLeft = leftSegmentLines.get_coordinates(include_z=True)
+            dfLeft.reset_index()  # index is 'segmentID', make a new column 'segmentID'
+            # xyLeft['rowIndex'] = list(np.arange(len(xyLeft)))
+            
+            logger.info(f'dfLeft: {len(dfLeft)} {type(dfLeft)}')
+            print(dfLeft)
+            
+            # ValueError: cannot reindex on an axis with duplicate labels
+            # n = len(dfLeft)
+            # df.iloc[range(n), 'xLeft'] = dfLeft['x']
+            #df['xLeft'] = dfLeft['x']
+            #df['yLeft'] = dfLeft['y']
 
     def _buildDataFrame(self):  
         """Build dataframe for plotting.
@@ -619,11 +756,23 @@ class LineAnnotationsCore(AnnotationsCore):
         # logger.info(f'=== BUILD DATA FRAME {self.getClassName()}')
 
         # logger.info(f"   self._fullMap.segments['segment']:{self._fullMap.segments['segment']}")
-                    
+
+        logger.info(f'building segment df for timepoint:{self.timepoint}')
+
         try:
-            # self._fullMap.segments[:]
-            df = self._fullMap.segments['segment'].get_coordinates(include_z=True)
-            df['segmentID'] = df.index
+            #
+            # centerline
+            df = self.getTimepointMap().segments['segment'].get_coordinates(include_z=True)
+            
+            # df['segmentID'] = df.index
+
+            # logger.info(f'      raw segment for timepoint:{self.timepoint} df is {len(df)}:')
+            # df.reset_index()  # ValueError: cannot insert segmentID, already exists
+            # print(df.index)
+            # print(df)
+            
+            # self._buildDataFrame_leftRight()
+
         except (AttributeError) as e:
             # when no segment
             # AttributeError:'GeoSeries' object has no attribute 'set_index'
@@ -633,7 +782,8 @@ class LineAnnotationsCore(AnnotationsCore):
             df = pd.DataFrame()
             df['segmentID'] = None       
 
-        # logger.info(f"   self._fullMap.segments['segment']:{self._fullMap.segments['segment']}")
+        # logger.info(f'rebuilt segment df for timepoint:{self.timepoint}')
+        # print(df)
 
         self._df = df
 
@@ -656,18 +806,34 @@ class LineAnnotationsCore(AnnotationsCore):
 
         # abb
         if self.getNumSegments() == 0:
+            logger.warning('NO SEGMENTS!')
             return None
         
         _startSlice = zSlice - zPlusMinus
         _stopSlice = zSlice + zPlusMinus
 
+        # logger.info('calling self.getTimepointMap().segments[:]')
+        # print(self.getTimepointMap().segments[:])
+        # return
+    
         # logger.info(f"self._fullMap.segments['segment']:{self._fullMap.segments['segment']}")
         # logger.info(f"self._fullMap.segments:{self._fullMap.segments[:]}")
         
-        segmentLines = clipLines(self._fullMap.segments['segment'], zRange = (_startSlice, _stopSlice))
+        # clipLines() returns gp.GeoSeries (can be empty)
+        # abb was this
+        # segmentLines = clipLines(self._fullMap.segments['segment'], zRange = (_startSlice, _stopSlice))
+        segmentLines = clipLines(self.getTimepointMap().segments['segment'], zRange = (_startSlice, _stopSlice))
+        
+        logger.info(f'left segmentLines: {type(segmentLines)}')
+        print(segmentLines)
+        
         xyLeft = shapely.offset_curve(segmentLines, radiusOffset * -1)
         xyLeft = xyLeft.get_coordinates(include_z=True)
         xyLeft['rowIndex'] = list(np.arange(len(xyLeft)))
+
+        logger.info('left returning')
+        print(xyLeft.index)
+        print(xyLeft)
 
         return xyLeft
     
@@ -689,10 +855,16 @@ class LineAnnotationsCore(AnnotationsCore):
         _startSlice = zSlice - zPlusMinus
         _stopSlice = zSlice + zPlusMinus
 
-        segmentLines = clipLines(self._fullMap.segments['segment'], zRange = (_startSlice, _stopSlice))
+        # segmentLines = clipLines(self._fullMap.segments['segment'], zRange = (_startSlice, _stopSlice))
+        segmentLines = clipLines(self.getTimepointMap().segments['segment'], zRange = (_startSlice, _stopSlice))
         xyRight = shapely.offset_curve(segmentLines, radiusOffset * 1)
         xyRight = xyRight.get_coordinates(include_z=True)
         xyRight['rowIndex'] = list(np.arange(len(xyRight)))
+
+        logger.info(f'right segmentLines: {type(segmentLines)}')
+        print(segmentLines)
+        logger.info('right returning')
+        print(xyRight)
 
         return xyRight
     
@@ -704,10 +876,15 @@ class LineAnnotationsCore(AnnotationsCore):
     
     # abb move to core
     def getSegments(self) -> LazyGeoFrame:
-        return self._fullMap.segments['segment']
+        # return self._fullMap.segments['segment']
+        return self.getTimepointMap().segments['segment']
     
     def getNumPnts(self, segmentID : int):
         """Get the number of points in a segment.
+        
+        Notes
+        =====
+        This is returning a series ??? Aug 4
         """
         _segments = self.getSegments()
         _lineSegment = _segments.loc[segmentID]

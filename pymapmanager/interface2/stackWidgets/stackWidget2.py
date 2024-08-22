@@ -28,6 +28,8 @@ from .stackPluginWidget import stackPluginDock
 from .annotationListWidget2 import pointListWidget, lineListWidget
 from .imagePlotWidget2 import ImagePlotWidget
 
+from pymapmanager.timeseriesCore import TimeSeriesCore
+
 # from .tracingWidget import tracingWidget
 # from .histogramWidget2 import HistogramWidget
 # from .searchWidget2 import SearchWidget2
@@ -46,10 +48,11 @@ class stackWidget2(mmWidget2):
     _widgetName = 'Stack Widget'
 
     def __init__(self,
-                    path,
-                    stack : pymapmanager.stack = None,
+                    # path,
+                    # stack : pymapmanager.stack = None,
+                    timeseriescore : TimeSeriesCore,
                     mapWidget : "pymapmanager.interface2.mapWidget.mapWidget" = None,
-                    mmMapSession : int = 0,
+                    timepoint : int = 0,
     ):
         """Main stack widget that is parent to all other mmWidget2 widgets.
         
@@ -67,18 +70,22 @@ class stackWidget2(mmWidget2):
         iAmMapWidget = False
 
         super().__init__(stackWidget=self,
-                         mapWidget=mapWidget,
+                        #  mapWidget=timeseriescore,
+                        #  mapWidget=mapWidget,
                          iAmStackWidget=True,
                          iAmMapWidget=iAmMapWidget)
 
-        if stack is not None:
-            self._stack = stack
-        else:
-            logger.info('loading stack from path:')
-            logger.info(f'{path}')
-            self._stack = pymapmanager.stack(path, mmMapSession=mmMapSession)
+        # if stack is not None:
+        #     self._stack = stack
+        # else:
+        #     logger.info('loading stack from path:')
+        #     logger.info(f'   timepoint:{timepoint}')
+        #     logger.info(f'   path:{path}')
+        #     self._stack = pymapmanager.stack(path, timepoint=timepoint)
 
-        # add 2/24 when implementing map/timeseries GUI
+        self._stack = pymapmanager.stack(timeseriescore, timepoint=timepoint)
+
+        # keep track of map widget we were opened from
         self._mapWidget : Optional["pymapmanager.interface2.mapWidgets.mapWidget"] = mapWidget
 
         self._openPluginSet = set()
@@ -100,7 +107,7 @@ class stackWidget2(mmWidget2):
         from pymapmanager.interface2.stackWidgets.event.undoRedo import UndoRedoEvent
         self._undoRedo = UndoRedoEvent(self)
 
-        self.setWindowTitle(path)
+        self.setWindowTitle(self._stack.getFileName())
 
         self._buildUI()
         self._buildMenus()
@@ -478,10 +485,13 @@ class stackWidget2(mmWidget2):
         _eventSelection = event.getStackSelection()
         _stackSelection = self.getStackSelection()
 
-        # logger.info('stack selection received _eventSelection:')
-        # print(_eventSelection)
-        # logger.info('stack selection _stackSelection _stackSelection:')
-        # print(_stackSelection)
+        _debug = False
+        
+        if _debug:
+            logger.info('selectedEvent selectedEvent received _eventSelection:')
+            print(_eventSelection)
+            logger.info('stack selection _stackSelection _stackSelection:')
+            print(_stackSelection)
 
         if _stackSelection.getState() == pmmStates.manualConnectSpine:
             if not _eventSelection.hasSegmentPointSelection():
@@ -500,6 +510,8 @@ class stackWidget2(mmWidget2):
             _pointSelection = _eventSelection.getPointSelection()
             _stackSelection.setPointSelection(_pointSelection)
 
+            logger.info(f'   === processing _pointSelection:{_pointSelection}')
+
             if len(_pointSelection) == 1:
                 _onePoint = _pointSelection[0]
                 segmentIndex = self.getStack().getPointAnnotations().getValue("segmentID", _onePoint)
@@ -509,6 +521,13 @@ class stackWidget2(mmWidget2):
             else:
                 logger.warning(f'not setting segment selection for multi point selection {_pointSelection}')
 
+            if _debug:
+                logger.info('AFTER PROCESSING')
+                logger.info('   _eventSelection:')
+                print(_eventSelection)
+                logger.info('  _stackSelection:')
+                print(_stackSelection)
+            
         else:
             # no point selection
             _stackSelection.setPointSelection([])

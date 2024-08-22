@@ -14,8 +14,15 @@ def run():
     #
     # open a single tmiepoint map with segments and spines
     path = mapmanagercore.data.getSingleTimepointMap()
-    path = '/Users/cudmore/Desktop/multi_timepoint_map.mmap'
-    path = '/Users/cudmore/Desktop/multi_timepoint_map_seg_connected.mmap'
+    
+    # map with segments and spines (no segments connected)
+    # path = '/Users/cudmore/Desktop/multi_timepoint_map.mmap'
+    
+    # map with segments and spines, all segments connected
+    # path = '/Users/cudmore/Desktop/multi_timepoint_map_seg_connected.mmap'
+    
+    # all spines connect
+    # path = '/Users/cudmore/Desktop/multi_timepoint_map_seg_spine_connected.mmap'
 
     sw2 = app.loadStackWidget(path)
     

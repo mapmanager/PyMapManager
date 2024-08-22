@@ -22,12 +22,14 @@ class OpenFirstWindow(MainWindow):
     
     Open this at app start and close once a file/folder is loaded
     """
-    def __init__(self, pyMapManagerApp : PyMapManagerApp, parent=None):
+    def __init__(self,
+                 pyMapManagerApp : PyMapManagerApp,
+                 parent=None):
         super().__init__(parent)
 
-        self._app = pyMapManagerApp
+        self._app : PyMapManagerApp = pyMapManagerApp
 
-        self.recentStackList = self.getApp().getConfigDict().getRecentStacks()
+        # self.recentStackList = self.getApp().getConfigDict().getRecentStacks()
         self.recentMapList = self.getApp().getConfigDict().getRecentMaps()
 
         appIconPath = self.getApp().getAppIconPath()    
@@ -96,7 +98,7 @@ class OpenFirstWindow(MainWindow):
 
         return myTableWidget
     
-    def _on_recent_stack_click(self, rowIdx : int):
+    def _old_on_recent_stack_click(self, rowIdx : int):
         """On double-click, open a file and close self.
         """
         path = self.recentStackList[rowIdx]
@@ -170,17 +172,17 @@ class OpenFirstWindow(MainWindow):
         # recent files and tables
         recent_vBoxLayout = QtWidgets.QVBoxLayout()
 
+        # aLabel = QtWidgets.QLabel('Recent Files')
+        # recent_vBoxLayout.addWidget(aLabel)
+
+        # # headerStr='Recent Files (double-click to open)'
+        # headerStr = ''
+        # recentFileTable = self._makeRecentTable(self.recentStackList,
+        #                                         headerStr=headerStr)
+        # recentFileTable.cellDoubleClicked.connect(self._on_recent_stack_click)
+        # recent_vBoxLayout.addWidget(recentFileTable)
+
         aLabel = QtWidgets.QLabel('Recent Files')
-        recent_vBoxLayout.addWidget(aLabel)
-
-        # headerStr='Recent Files (double-click to open)'
-        headerStr = ''
-        recentFileTable = self._makeRecentTable(self.recentStackList,
-                                                headerStr=headerStr)
-        recentFileTable.cellDoubleClicked.connect(self._on_recent_stack_click)
-        recent_vBoxLayout.addWidget(recentFileTable)
-
-        aLabel = QtWidgets.QLabel('Recent Folders')
         recent_vBoxLayout.addWidget(aLabel)
 
         # headerStr='Recent Files (double-click to open)'

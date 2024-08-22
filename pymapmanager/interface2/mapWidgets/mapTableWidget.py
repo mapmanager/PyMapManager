@@ -32,7 +32,7 @@ class mapTableWidget(QtWidgets.QWidget):
 
     def slot_switchMap(self, mmMap : pmm.mmMap):
         self._mmMap = mmMap
-        self._mapNameLabel.setText(mmMap.getMapName())
+        self._mapNameLabel.setText(mmMap.filename)
         self._setModel()
 
     def contextMenuEvent(self, event):
@@ -42,17 +42,21 @@ class mapTableWidget(QtWidgets.QWidget):
         """
         
         # TODO: this is not respecting sort order
-        rowDict = self._myTableView.getSelectedRowDict()
+        timepoints = self._myTableView.getSelectedRows()
         
-        if rowDict is None:
+        logger.info(f'timepoints:{timepoints}')
+    
+        if len(timepoints) == 0:
             return
         
-        session = rowDict['Idx']
+        timepoint = timepoints[0]
+
+        # session = rowDict['Idx']
         # logger.info(f'rowDict: {rowDict}')
 
         _menu = QtWidgets.QMenu(self)
 
-        plotStackAction = _menu.addAction(f'Plot Stack')
+        plotStackAction = _menu.addAction('Plot Stack')
         #moveAction.setEnabled(isPointSelection and isOneRowSelection)
 
         _menu.addSeparator()
@@ -63,11 +67,11 @@ class mapTableWidget(QtWidgets.QWidget):
         # show the menu
         action = _menu.exec_(self.mapToGlobal(event.pos()))
         if action == plotStackAction:
-            self._on_table_double_click(session)
+            self._on_table_double_click(timepoint)
         elif action == plotPlusMinus1:
-            self.signalOpenRun.emit(session, 1)
+            self.signalOpenRun.emit(timepoint, 1)
         elif action == plotPlusMinus2:
-            self.signalOpenRun.emit(session, 2)
+            self.signalOpenRun.emit(timepoint, 2)
 
     def _getToolbar(self) -> QtWidgets.QVBoxLayout:
         hLayout = QtWidgets.QHBoxLayout()
@@ -121,7 +125,7 @@ class mapTableWidget(QtWidgets.QWidget):
         # myModel = pandasModel(dfPoints)
         # self._myTableView.mySetModel(myModel)
 
-        self._myTableView.setDataFrame(dfPoints)
+        self._myTableView.updateDataFrame(dfPoints)
 
 if __name__ == '__main__':
     path = '/Users/cudmore/Sites/PyMapManager-Data/maps/rr30a/rr30a.txt'

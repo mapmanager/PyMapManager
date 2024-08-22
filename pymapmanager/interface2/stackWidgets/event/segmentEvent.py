@@ -72,7 +72,7 @@ class _EditSegment(pmmEvent):
 
         # all segment edit event need to know map session,
         # will be None if not in map
-        sessionID = self.getSenderObject().getMapSession()
+        sessionID = self.getSenderObject().getMapTimepoint()
 
         segmentEdit = SegmentEdit(sessionID=sessionID,
                               segmentID=segmentID,

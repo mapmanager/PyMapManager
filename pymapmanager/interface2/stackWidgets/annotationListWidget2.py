@@ -215,7 +215,7 @@ class annotationListWidget(mmWidget2):
             rowList: List of rows that were selected
             isAlt: True if keyboard Alt is down
         """
-        # logger.warning('BASE CLASS CALLED')
+        logger.warning('BASE CLASS CALLED')
         return
 
         logger.info(f'{self.getClassName()} rowList:{itemList} isAlt:{isAlt}')
@@ -288,7 +288,10 @@ class pointListWidget(annotationListWidget):
         event.getStackSelection().setPointSelection(rowLabelList)
         event.setAlt(isAlt)
 
+        logger.info(f'emit -->> event: {event}')
+        
         self.emitEvent(event, blockSlots=False)        
+        # self.slot_pmmEvent(event)
 
     def _deleteSelected(self):
         """Delete currently selected annotations.

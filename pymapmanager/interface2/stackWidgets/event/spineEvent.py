@@ -91,7 +91,7 @@ class _EditSpine(pmmEvent):
 
         # all spine edit event need to know map session,
         # will be None if not in map
-        sessionID = self.getSenderObject().getMapSession()
+        sessionID = self.getSenderObject().getMapTimepoint()
 
         spineEdit = SpineEdit(spineID=spineID,
                               sessionID=sessionID,

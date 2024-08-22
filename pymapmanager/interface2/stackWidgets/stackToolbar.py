@@ -117,12 +117,21 @@ class StackToolBar(QtWidgets.QToolBar):
 
     def _on_radius_value_changed(self, value):
         """
+            Value to change the radius of the left/ right points.
+            When changed the points also change.
         """
         logger.info(f'Recalculate left/right given new radius {value}')
-
-        # call function to recaculate ALL left xy, right xy given a new radius
+        # send signal to backend to refresh 
+        # AnnotationPlotWidget that displays the radius line points
         self.signalRadiusChanged.emit(value)
 
+    # def _on_radius_value_changed(self, value):
+    #     """
+    #     """
+    #     logger.info(f'Recalculate left/right given new radius {value}')
+
+    #     # call function to recaculate ALL left xy, right xy given a new radius
+    #     self.signalRadiusChanged.emit(value)
 
     def _on_slidingz_value_changed(self, value):
         checked = self.slidingCheckbox.isChecked()
@@ -287,12 +296,3 @@ class StackToolBar(QtWidgets.QToolBar):
        
         plotName = action.text()
         self.signalPlotCheckBoxChanged.emit(plotName)
-
-    def _on_radius_value_changed(self, value):
-        """
-            Value to change the radius of the left/ right points. When changed the points also change.
-        """
-        logger.info(f'Recalculate left/right given new radius {value}')
-        # send signal to backend to refresh 
-        # AnnotationPlotWidget that displays the radius line points
-        self.signalRadiusChanged.emit(value)

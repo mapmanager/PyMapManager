@@ -911,6 +911,10 @@ class ImagePlotWidget(mmWidget2):
             # children will select, this is just to zoom and set slice (on alt)
             return
         
+        logger.info(f'hasPointSelection:{event.getStackSelection().hasPointSelection()}')
+        logger.info(f'firstPointSelection:{event.getStackSelection().firstPointSelection()}')
+        print(event)
+
         if event.getStackSelection().hasPointSelection():  # False on (None, [])
             # if not event.isAlt():
             #     return
@@ -995,6 +999,6 @@ class StackSlider(QtWidgets.QSlider):
             self.signalUpdateSlice.emit(sliceNumber)
 
     def slot_setSlice(self, sliceNumber):
-        # logger.info(sliceNumber)
+        logger.info(sliceNumber)
         self._updateSlice(sliceNumber, doEmit=False)
         self.update()  # required by QSlider

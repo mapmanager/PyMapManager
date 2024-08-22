@@ -58,6 +58,10 @@ class myQSortFilterProxyModel(QSortFilterProxyModel):
             sourceRow: row that is being looked at
             QModelIndex: QModelIndex of parent that contians source row
         """
+        # logger.error('')
+        # logger.error(f'   sourceRow:{sourceRow} {type(sourceRow)}')
+        # logger.error(f'   sourceParent:{sourceParent} {type(sourceParent)}')
+        
         # super().filterAcceptsRow(sourceRow)
 
         # Specific column is already set in QTableView
@@ -65,9 +69,12 @@ class myQSortFilterProxyModel(QSortFilterProxyModel):
 
         # row, column, qmodelindx
         filterCol = self.filterKeyColumn()
+
+        # logger.error(f'   filterCol:{filterCol}')
+
         valIndex = self.sourceModel().index(sourceRow, filterCol, sourceParent)
         # yearIndex = self.sourceModel().index(sourceRow, 1, sourceParent)
-        role=QtCore.Qt.DisplayRole
+        role = QtCore.Qt.DisplayRole
         val = self.sourceModel().data(valIndex, role)
         # year = self.sourceModel().data(yearIndex)
 
@@ -396,7 +403,11 @@ class myQTableView(QtWidgets.QTableView):
         # proxy still checks for hidden columns 
         for colName in hiddenColList:
             # Get the corresponding index in the DF
-            index = self.df.columns.get_loc(colName)
+            try:
+                index = self.df.columns.get_loc(colName)
+            except (KeyError) as e:
+                logger.error(f'did not find column name {colName}')
+                logger.error(e)
             # QTableView hides the column
             self.hideColumn(index)
 
@@ -409,8 +420,12 @@ class myQTableView(QtWidgets.QTableView):
 
         for colName in showColList:
             # Get the corresponding index in the DF
-            index = self.df.columns.get_loc(colName)
-            self.showColumn(index)
+            try:
+                index = self.df.columns.get_loc(colName)
+                self.showColumn(index)
+            except (KeyError) as e:
+                logger.error(f'did not find column name {colName}')
+                logger.error(e)
 
     def updateCurrentCol(self, newColName):
         """Called whenever signal is received to update column name

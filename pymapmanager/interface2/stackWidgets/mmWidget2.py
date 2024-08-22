@@ -16,14 +16,25 @@ import pymapmanager
 from pymapmanager._logger import logger
 
 class pmmStates(Enum):
+    # viewer, no editing
     view = auto()
+    
+    # editing allowed (default state)
     edit = auto()
     
+   # wait for click in image plot to specify the new position of a spine point
     movingPnt = auto()
-    manualConnectSpine = auto()
-    autoConnectSpine = auto()
     
+    # wait for click in image plot to specify connection point of spine (on a segment)
+    manualConnectSpine = auto()
+    
+    # autoConnectSpine = auto()  # abb not used -->> remove
+    
+    # wait for click in image plot to extend tracing for a segment
     tracingSegment = auto()
+
+    # abb 20240803, wait for click in image plot and set segment pivot for a segment
+    settingSegmentPivot = auto()
 
 class pmmEventType(Enum):
     selection = auto()
@@ -134,12 +145,13 @@ class StackSelection:
 
         if sessions is None:
             # asssign all points to our stack map session (can be none)
-            _sessions = [self.stack.getMapSession()] * len(items)
-            self._setValue('pointSelectionSessionList', _sessions)
+            # _sessions = [self.stack.getMapTimepoint()] * len(items)
+            sessions = [self.stack.timepoint] * len(items)
+            # self._setValue('pointSelectionSessionList', _sessions)
         else:
             if not isinstance(sessions, list):
                 sessions = [sessions]
-            self._setValue('pointSelectionSessionList', sessions)
+        self._setValue('pointSelectionSessionList', sessions)
     
     # def getPointSelection(self, mmWidget) -> Optional[List[int]]:
     def getPointSelection(self) -> Optional[List[int]]:
@@ -651,11 +663,12 @@ class mmWidget2(QtWidgets.QMainWindow):
         else:
             return self.getStackWidget().getStack()
 
-    def getMapSession(self) -> Optional[int]:
+    def getMapTimepoint(self) -> Optional[int]:
         """Get map session from the stack.
         """
         if self.getStack() is not None:
-            return self.getStack().getMapSession()
+            return self.getStack().getMapTimepoint()
+            # return self.getStack().timepoint()
         
     def getClassName(self) -> str:
         return self.__class__.__name__
@@ -705,7 +718,7 @@ class mmWidget2(QtWidgets.QMainWindow):
         else:
             self.blockSlotsOff()
 
-        logger.info(f'>>>>>>>>> emit "{self.getName()}" session:{self.getMapSession()} {event.type}')
+        logger.info(f'>>>>>>>>> emit "{self.getName()}" timepoint:{self.getStack().timepoint} {event.type}')
 
         self._signalPmmEvent.emit(event)
 
@@ -808,11 +821,12 @@ class mmWidget2(QtWidgets.QMainWindow):
         if self._iAmStackWidget:
             if _doDebug:
                 logger.info('===>>> ===>>> iAmStackWidget re-emit')
-                logger.info(f'   {self.getName()} session:{self.getMapSession()} sender:{event.getSender()}')
+                logger.info(f'   {self.getName()} session:{self.getMapTimepoint()} sender:{event.getSender()}')
             
             senderObject = event.getSenderObject()
             
             if event.reEmitPointAsMap:
+                logger.warning(f'event.reEmitPointAsMap:{event.reEmitPointAsMap}')
                 pass
             else:
                 
@@ -828,6 +842,14 @@ class mmWidget2(QtWidgets.QMainWindow):
                 _stackSelection = self._reduceToStackSelection(_stackSelection)
                 _newEvent._dict['stackSelection'] = _stackSelection
                 
+                # if 1 or _doDebug:
+                #     logger.info('===>>> ===>>> iAmStackWidget re-emit')
+                #     logger.info(f'   {self.getName()} session:{self.getMapTimepoint()} sender:{event.getSender()}')
+                #     print('_newEvent:')
+                #     print(_newEvent)
+
+                #
+                # CRITICAL !!!
                 self.emitEvent(_newEvent)
 
                 # 2
@@ -932,12 +954,17 @@ class mmWidget2(QtWidgets.QMainWindow):
         Transform a map selection to a stack selection.
         """
         
+        # logger.info('BEFORE stackselection:')
+        # print(stackselection)
+
         # no setter
         # stackselection.stack = self.getStack()
         stackselection._dict['stack'] = self.getStack()
 
         # coming from map selection, there is no stack
-        _stackSession = self.getStack().getMapSession()
+        # 20240819 was this ???
+        # #_stackSession = self.getStack().getMapTimepoint()
+        _stackSession = self.getStack().timepoint
 
         # logger.info(f'reducing stack selection to one session: {_stackSession}')
 
@@ -951,6 +978,9 @@ class mmWidget2(QtWidgets.QMainWindow):
                 points.append(stackselection._getValue('pointSelectionList')[_idx])
 
         stackselection.setPointSelection(points)
+
+        # logger.info('AFTER stackselection:')
+        # print(stackselection)
 
         return stackselection
     

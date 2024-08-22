@@ -44,6 +44,8 @@ class dendrogramWidget(mmWidget2):
         This is inherited from QtWidget.
         """
         
+        logger.info('')
+        
         _menu = QtWidgets.QMenu(self)
 
         plotStackAction = _menu.addAction(f'Plot Stack')
@@ -74,7 +76,6 @@ class dendrogramWidget(mmWidget2):
 
         self.plotDict = getPlotDict()
         plotDict = self.plotDict
-
         if plotDict['doDark']:
             plt.style.use('dark_background')
 
@@ -86,7 +87,6 @@ class dendrogramWidget(mmWidget2):
         )  # this is really tricky and annoying
         self.static_canvas.setFocus()
         
-
         #
         plotDict['segmentid'] = 0 # only map segment 0
         plotDict['showlines'] = True
