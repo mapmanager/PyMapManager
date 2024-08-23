@@ -417,21 +417,22 @@ class lineListWidget(annotationListWidget):
     def _initToolbar(self) -> QtWidgets.QVBoxLayout:
         """Initialize the toolbar with controls.
 
-        Derived funstion can define this method to add controls
+        Derived functions can define this method to add controls
             to the vertical layout of the toolbar.
 
         Returns:
             vLayout: VBoxLayout
         """
         vControlLayout = QtWidgets.QVBoxLayout()
-        
+        vControlLayout.setAlignment(QtCore.Qt.AlignTop)
+
         # name is already in DockWidget
         # aLabel = QtWidgets.QLabel(self._title)
         #vControlLayout.addWidget(aLabel)
 
         from pymapmanager.interface2.stackWidgets import TracingWidget
         tracingWidget = TracingWidget(self.getStackWidget())
-        vControlLayout.addWidget(tracingWidget)
+        vControlLayout.addWidget(tracingWidget, alignment=QtCore.Qt.AlignTop)
 
         return vControlLayout
     

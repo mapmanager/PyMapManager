@@ -128,6 +128,15 @@ class AnalysisParamWidget(mmWidget2):
                 valueType = val[
                     "type"
                 ]  # from ('int', 'float', 'boolean', 'string', detectionTypes_)
+                # try:
+                #     valueType = val[
+                #         "type"
+                #     ]  # from ('int', 'float', 'boolean', 'string', detectionTypes_)
+                # except (KeyError) as e:
+                #     logger.warning(e)
+                #     logger.warning(f'fpr key:{key}, available keys are:{val.keys()}')
+                #     # normally we abort, but not for now...
+
                 # units = val["units"]
                 # humanName = val["humanName"]
                 description = val["description"]

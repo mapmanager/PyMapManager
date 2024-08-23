@@ -639,7 +639,10 @@ class LineAnnotationsCore(AnnotationsCore):
         """Get a summary dataframe, one segment per row.
         """
         
-        self._summaryDf = pd.DataFrame()
+        _columns = ['Segment', 'Points', 'Length', 'Radius']
+        
+        self._summaryDf = pd.DataFrame(columns=_columns)
+        
         try:
 
             # was this
@@ -649,11 +652,20 @@ class LineAnnotationsCore(AnnotationsCore):
             # _list is 0,1,2,3,... regardless of timepoint
             # logger.warning(f'  _list is:{_list}')
             self._summaryDf['Segment'] = _list
+            
+            # TODO: this needs to be an int()
+            # in the core, radius should always be int (not float)
+            self._summaryDf['Radius'] = self.getTimepointMap().segments['radius']
+
+            # TODO: add this to the core
+            # this is the distance along the segment that is the "zero" length
+            # self._summaryDf['Pivot'] = self.getTimepointMap().segments['pivotPoint']
+        
         except (AttributeError) as e:
             # when no segments
             logger.error('NO SEGMENTS !!!!!!!!')
-            self._summaryDf['Points'] = None
-            self._summaryDf['Length'] = None
+            # self._summaryDf['Points'] = None
+            # self._summaryDf['Length'] = None
         else:
             
             # logger.info(f'{self.getClassName()} self._summaryDf is:')
@@ -661,45 +673,36 @@ class LineAnnotationsCore(AnnotationsCore):
             
             pointsList = []
             lengthList = []
-            radiusList = []
-            pivotPointList = []
+            # pivotPointList = []
+            
+            # get len and points from each segment
             for row_do_not_use, _data in self._summaryDf.iterrows():
+
                 # logger.info(f'  row:{row_do_not_use} _data: {type(_data)}')
+                # logger.info('_data')
                 # print(_data)
                 
                 segmentID = _data['Segment']
-
-                # logger.debug('!!!! &&& *** ((( )))  @@@@ THIS IS THE ERROR !!!!')
                 
                 _numPoints = self.getNumPnts(segmentID)
-                # logger.info(f'after getNumPnts({segmentID}) _numPoints is:{type(_numPoints)}')
-                # print(_numPoints)
-
                 _len = self.getLength(segmentID)
-                # logger.info(f'after getLength({segmentID}) _len is:{type(_len)}')
-                # print(_len)
-
                 if _len > 0:
                     _len = round(_len,2)
                 pointsList.append(_numPoints)
                 lengthList.append(_len)
 
                 # TODO
-                radiusList.append('')
-                pivotPointList.append('')
+                # pivotPointList.append('')
                 
             self._summaryDf['Points'] = pointsList
             self._summaryDf['Length'] = lengthList
-            # TODO
-            self._summaryDf['Radius'] = radiusList
-            self._summaryDf['Pivot'] = pivotPointList
 
         self._summaryDf.index = self._summaryDf['Segment']
         
         logger.info(f'after line build, _summaryDf is timepoint {self.timepoint}:')
         print(self._summaryDf)
 
-    def _buildDataFrame_leftRight(self):
+    def _old_robert_buildDataFrame_leftRight(self):
             #
             # left/right
             
@@ -759,6 +762,9 @@ class LineAnnotationsCore(AnnotationsCore):
 
         logger.info(f'building segment df for timepoint:{self.timepoint}')
 
+        print('core segment is')
+        print(self.getTimepointMap().segments[:])
+
         try:
             #
             # centerline
@@ -789,12 +795,6 @@ class LineAnnotationsCore(AnnotationsCore):
 
         # summary, one row per segment        
         self._buildSummaryDf()
-
-    def getNumSegments(self) -> int:
-        if self._fullMap.segments[:] is None:
-            return 0
-        else:
-            return len(self._fullMap.segments[:])
         
     def old_getLeftRadiusPlot(self, segmentID,
                        zSlice,

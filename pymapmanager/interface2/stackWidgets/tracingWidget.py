@@ -79,18 +79,20 @@ class TracingWidget(mmWidget2):
         self._radiusSpinBox = QtWidgets.QSpinBox()
         self._radiusSpinBox.setToolTip('Set Segment Radius')
         self._radiusSpinBox.setMaximum(10)
-        self._radiusSpinBox.setValue(3)
+        self._radiusSpinBox.setValue(3)  # set on segment selection
         self._radiusSpinBox.setEnabled(tracingSegment)
         self._radiusSpinBox.valueChanged.connect(self._on_radius_value_changed)
-        hBoxLayout2.addWidget(self._radiusLabel)
-        hBoxLayout2.addWidget(self._radiusSpinBox)
+        hBoxLayout2.addWidget(self._radiusLabel, alignment=_alignLeft)
+        hBoxLayout2.addWidget(self._radiusSpinBox, alignment=_alignLeft)
 
         self._setPivotCheckBox = QtWidgets.QCheckBox('Set Pivot')
         self._setPivotCheckBox.setToolTip('Enable Set Segment Pivot Point')
         self._setPivotCheckBox.setEnabled(tracingSegment)
         self._setPivotCheckBox.setChecked(False)
         self._setPivotCheckBox.clicked.connect(self._on_set_pivot_checkbox)
-        hBoxLayout2.addWidget(self._setPivotCheckBox)
+        hBoxLayout2.addWidget(self._setPivotCheckBox, alignment=_alignLeft)
+
+        hBoxLayout2.addStretch()  # required for alignment=_alignLeft 
 
         return vControlLayout
 
@@ -98,7 +100,7 @@ class TracingWidget(mmWidget2):
         """
             Value to change the radius of the left/ right points. When changed the points also change.
         """
-        logger.info(f'Recalculate left/right given new radius {value}')
+        logger.info(f'Recalculate left/right given new radius {value} -->> emit pmmEventType.setRadius')
         # send signal to backend to refresh 
         # AnnotationPlotWidget that displays the radius line points
         # radius changed is a proper pmmEventType
@@ -178,8 +180,12 @@ class TracingWidget(mmWidget2):
         self._traceCancelButton.setEnabled(False)
 
         self._radiusLabel.setEnabled(isEnabled)
-        logger.warning('need to set radius spinbox to the current selected segment radius !!!')
+        
         self._radiusSpinBox.setEnabled(isEnabled)
+        if segmentID is not None:
+            logger.warning('need to set radius spinbox to the current selected segment radius !!!')
+            _radius = 3
+            self._radiusSpinBox.setValue(_radius)
 
         self._setPivotCheckBox.setEnabled(isEnabled)
 

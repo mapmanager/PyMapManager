@@ -49,6 +49,7 @@ class pmmEventType(Enum):
 
     setSlice = auto()
     setColorChannel = auto()
+    
     setRadius = auto() # abj
 
     # acceptPoint = auto() # abj, used for setting isBad boolean
