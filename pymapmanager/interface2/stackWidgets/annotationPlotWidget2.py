@@ -1292,19 +1292,9 @@ class linePlotWidget(annotationPlotWidget):
         
         if self.showRadiusLines:
             zPlusMinus = self._displayOptions["zPlusMinus"] 
-            
-            radiusOffset = self._displayOptions['radius'] 
-            
-            # abb was this
-            dfLeft = self._annotations.getLeftRadiusPlot(None, sliceNumber, zPlusMinus, radiusOffset)
-            
-            # now this
-            # logger.info('abb fetching left radius from core')
-            # dfLeft = self._annotations.getTimepointMap().segments['leftRadiusLine']
-
-            logger.info('dfLeft:')
-            print(dfLeft)
-            
+            # radiusOffset = self._displayOptions['radius'] 
+            # dfLeft = self._annotations.getLeftRadiusPlot(None, sliceNumber, zPlusMinus, radiusOffset)
+            dfLeft = self._annotations.getLeftRadiusPlot(sliceNumber, zPlusMinus)
             _lineConnect = self._getScatterConnect(dfLeft)
 
             # logger.info(f'dfLeft["x"].to_numpy() {dfLeft["x"].to_numpy()}')
@@ -1314,7 +1304,8 @@ class linePlotWidget(annotationPlotWidget):
                 connect=_lineConnect,
             )
             
-            dfRight = self._annotations.getRightRadiusPlot(None, sliceNumber, zPlusMinus, radiusOffset)
+            # dfRight = self._annotations.getRightRadiusPlot(None, sliceNumber, zPlusMinus, radiusOffset)
+            dfRight = self._annotations.getRightRadiusPlot(sliceNumber, zPlusMinus)
             _lineConnect = self._getScatterConnect(dfRight)
             self._rightRadiusLines.setData(
                 dfRight["x"].to_numpy(),

@@ -104,7 +104,9 @@ class OpenFirstWindow(MainWindow):
         path = self.recentStackList[rowIdx]
         logger.info(f'rowId:{rowIdx} path:{path}')
 
-        if os.path.isfile(path):
+        # abj: Changed this to check if it is a directory instead of a file
+        # if os.path.isfile(path):
+        if os.path.isdir(path):
             self.getApp().loadStackWidget(path)
         else:
             logger.error(f'did not find path: {path}')

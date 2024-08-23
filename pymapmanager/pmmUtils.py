@@ -1,6 +1,7 @@
 """
 Includes utilities that uses classes within pymapmanager
 """
+import json
 import sys, os
 import math
 from typing import List
@@ -16,6 +17,9 @@ from matplotlib.path import Path
 import pymapmanager as pmm
 
 from pymapmanager.utils import _findBrightestIndex
+from pymapmanager._logger import logger
+import pathlib
+import shutil
 
 def getBundledDir():
     """Get the working directory where user preferences are save.
@@ -30,6 +34,117 @@ def getBundledDir():
         # we are running in a normal Python environment
         bundle_dir = os.path.dirname(os.path.abspath(__file__))
     return bundle_dir
+
+#abj
+# In order to save anaylis parameters json file need to include json file in .spec pyinstaller file
+# This will typically import it from the main directory (with datas) but maybe we can get it from the 
+# mapmanagercore directory
+# TODO: use this when app is first made
+def addUserPath(jsonDump):
+    """Make <user>/Documents/Pymapmanager-User-Files folder and add it to the Python sys.path
+
+    Returns:
+        True: If we made the folder (first time SanPy is running)
+    """
+
+    madeUserFolder = _makePmmFolders(jsonDump)  # make <user>/Documents/Pmm if necc
+
+    userPmmFolder = _getUserPmmFolder()
+
+    if not userPmmFolder in sys.path:
+        logger.info(f"Adding to sys.path: {userPmmFolder}")
+        sys.path.append(userPmmFolder)
+
+    logger.info("sys.path is now:")
+    for path in sys.path:
+        logger.info(f"    {path}")
+
+    return madeUserFolder
+
+def _makePmmFolders(analysisParamJson):
+    """Make <user>/Documents/Pymapmanager-User-Files folder .
+
+    If no Documents folder then make Pmm folder directly in <user> path.
+
+    Args:
+        Json File to hold analysis parameters
+        
+    """
+    # userDocumentsFolder = _getUserDocumentsFolder()
+
+    madeUserFolder = False
+
+    # main <user>/Documents/SanPy folder
+    pmmFolder = _getUserPmmFolder()
+    if not os.path.isdir(pmmFolder):
+        # first time run
+        logger.info(f'Making <user>/Pymapmanager-User-Files folder "{pmmFolder}"')
+        os.makedirs(pmmFolder)
+        madeUserFolder = True
+
+        # _bundDir = getBundledDir()
+
+        # Save json file to create pmm folder
+        # _dstPath = pathlib.Path(pmmFolder)
+        _dstPath = os.path.join(pmmFolder, "userAnalysisParameters.Json")
+        logger.info(f"    _dstPath:{_dstPath}")
+
+        with open(_dstPath, 'w') as file:
+            json.dump(analysisParamJson, file, indent = 4) 
+
+    else:
+        # already exists, make sure we have all sub-folders that are expected
+        pass
+
+    return madeUserFolder
+
+def saveAnalysisParamJsonFile(jsonData):
+    """ Save/ overwrite new data to user analysis parameters json file
+    """
+    pmmFolder = _getUserPmmFolder()
+    _dstPath = os.path.join(pmmFolder, "userAnalysisParameters.Json")
+
+    with open(_dstPath, 'w') as file:
+        json.dump(jsonData, file) 
+
+def getUserAnalysisParamJsonData():
+    """
+        get User's Json data for Analysis Parameters
+    
+    """
+    pmmFolder = _getUserPmmFolder()
+    _dstPath = os.path.join(pmmFolder, "userAnalysisParameters.Json")
+    readFile = open(_dstPath)
+
+    if not os.path.exists(_dstPath):
+        logger.info(f"Could not find path {_dstPath}")
+    else:
+        try:
+            jsonString = json.load(readFile)
+            jsonDict = json.loads(jsonString)
+        except:
+            logger.info("error loading in user json")
+
+        # logger.info(f"jsonDict {jsonDict}")
+        return jsonDict
+
+def _getUserPmmFolder():
+    """Get <user>/Documents/Pymapmanager-User-Files folder."""
+    userDocumentsFolder = _getUserDocumentsFolder()
+    pmmFolder = os.path.join(userDocumentsFolder, "Pymapmanager-User-Files")
+    return pmmFolder
+
+def _getUserDocumentsFolder():
+    """Get <user>/Documents folder."""
+    userPath = pathlib.Path.home()
+    userDocumentsFolder = os.path.join(userPath, "Documents")
+    if not os.path.isdir(userDocumentsFolder):
+        logger.error(f'Did not find path "{userDocumentsFolder}"')
+        logger.error(f'   Using "{userPath}"')
+        return userPath
+    else:
+        return userDocumentsFolder
+
 
 def calculateRectangleROIcoords(xPlotLines, yPlotLines, xPlotSpines, yPlotSpines):
     """

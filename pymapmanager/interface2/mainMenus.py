@@ -425,6 +425,10 @@ class PyMapManagerMenus:
         self.fileMenu.addSeparator()
 
         # abj
+        enableUndo = False
+        enableRedo = False
+        isDirty = False
+
         frontWindow = self.getApp().getFrontWindow()
         if isinstance(frontWindow, stackWidget2):
             enableUndo = frontWindow.getUndoRedo().numUndo() > 0
@@ -455,6 +459,12 @@ class PyMapManagerMenus:
         
         self.settingsMenu = self.fileMenu.addMenu('User Options...')
         self.settingsMenu.aboutToShow.connect(self._refreshSettingsMenu)
+        self.fileMenu.addSeparator()
+
+        #abj
+        analysisParametersAction = QtWidgets.QAction('App Analysis Parameters', self.getApp())
+        analysisParametersAction.triggered.connect(self.getApp()._showAnalysisParameters)
+        self.fileMenu.addAction(analysisParametersAction)
 
     def _refreshOpenRecent(self):
         """Dynamically generate the open recent stack/map menu.
@@ -485,3 +495,8 @@ class PyMapManagerMenus:
             )
 
             self.openRecentMenu.addAction(loadFolderAction)
+
+    def _refreshAnalysisParameters(self):
+        """
+        """
+        logger.info(f"refreshing analysis Parameters")

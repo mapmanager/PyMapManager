@@ -76,6 +76,7 @@ class stack:
         # TODO (cudmore) we should add an option to defer loading until explicitly called
         self.loadAnnotations()
         self.loadLines()
+        self.loadAnalysisParams() #abj
 
         self._buildHeader()
 
@@ -242,6 +243,10 @@ class stack:
         """
         return self._mapTimepoint
     
+    #abj
+    def getAnalysisParameters(self):
+        return self._analysisParams
+
     def getPointAnnotations(self) -> SpineAnnotationsCore:
         return self._annotations
 
@@ -263,6 +268,12 @@ class stack:
         # defaultColums = self._fullMap.segments[:].columns
         # self._lines = LineAnnotationsCore(self.sessionMap)  #, defaultColums=defaultColums)
         self._lines = LineAnnotationsCore(self.getCoreMap(), timepoint=self.timepoint)  #, defaultColums=defaultColums)
+
+    def loadAnalysisParams(self) -> None:
+        """ load analysis parameters
+        """ 
+        self._analysisParams = self._fullMap.analysisParams
+        logger.info(f"analysis params {self._analysisParams}")
 
     def getAutoContrast(self, channel):
         channelIdx = channel - 1
@@ -472,5 +483,11 @@ class stack:
         """
         self._fullMap.save(path)
 
+    def isEmpty(self):
+
+        if len(self._annotations) > 0 or len(self._lines) > 0:
+            return True
+        else:
+            return False
 
         

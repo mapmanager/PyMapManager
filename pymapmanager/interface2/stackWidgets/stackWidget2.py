@@ -457,8 +457,6 @@ class stackWidget2(mmWidget2):
         _pmmEvent.setSliceNumber(self._currentSliceNumber)
         self.emitEvent(_pmmEvent, blockSlots=True)
 
-
-
     def updatePlotBoxes(self, plotName):
         """ update check boxes that displays individual plots in ImagePlotWidget
         """
@@ -1183,3 +1181,29 @@ class stackWidget2(mmWidget2):
             return True
         else:
             return False
+        
+    #abj
+    def getAnalysisParams(self):
+        """ Get analysis Params from MapManagerCore
+        """
+        # pass
+
+        return self.getStack().getAnalysisParameters()
+
+    # def saveAnalysisParamsDict(self):
+    #     """ Save analysis Params changes to zarr directory using MapManagerCore
+    #     """
+    #     pass
+
+    def updateDFwithNewParams(self):
+        """ Rebult line and point dataframes after analysis params changes are applied
+        """
+        self.getStack().getLineAnnotations()._buildDataFrame()
+        self.getStack().getPointAnnotations()._buildDataFrame()
+
+        # call set slice to refresh widgets
+        # TODO: create a custom event for this?
+        _pmmEvent = pmmEvent(pmmEventType.setSlice, self)
+        _pmmEvent.setSliceNumber(self._currentSliceNumber)
+        self.emitEvent(_pmmEvent, blockSlots=True)
+            
