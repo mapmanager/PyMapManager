@@ -249,6 +249,8 @@ class annotationPlotWidget(mmWidget2):
         self.showScatter = True
 
     def _getScatterConnect(self, df : pd.DataFrame):
+        """None will not connect any points in scatter.
+        """
         return None
     
     def getStack(self):
@@ -337,17 +339,10 @@ class annotationPlotWidget(mmWidget2):
     def toggleScatterPlot(self) -> bool:
         """
         """
-        logger.info("")
-
-        visible = not self._scatter.isVisible()
-        self._scatter.setVisible(visible)
-
-        # abj
-        visible = not self._scatterUserSelection.isVisible()
-        self._scatterUserSelection.setVisible(visible)
-
         self.showScatter = not self.showScatter
-
+        logger.info(f'self.showScatter:{self.showScatter}')
+        self._scatter.setVisible(self.showScatter)
+        self._scatterUserSelection.setVisible(self.showScatter)
         return self.showScatter
 
     def _on_mouse_hover(self, points, event):
@@ -1248,19 +1243,17 @@ class linePlotWidget(annotationPlotWidget):
                 1 : connect to next
                 0 : do not connect to next
         """
-        # logger.info(df)
 
         if len(df) == 0:
             return None
         
-        dfRet = np.diff(df.index.to_numpy())
-        dfRet[ dfRet != 0] = -1
-        dfRet[ dfRet == 0] = 1
-        dfRet[ dfRet == -1] = 0
+        dfRet = np.diff(df.index.to_numpy())  # 1 when contiguous
+        dfRet[ dfRet != 1] = 0
 
-        rowIndexDiff = np.diff(df['rowIndex'])  # 1 when contiguous rows
-        # rowIndexDiff = np.diff(df.index)  # 1 when contiguous rows
-        dfRet[ (dfRet == 1) & (rowIndexDiff != 1)] = 0
+        segmentIdDiff = np.diff(df['segmentID'])  # 0 when contiguous rows
+        
+        # either not contiguous or we jump to the next segmentID
+        dfRet[ (dfRet != 1) | (segmentIdDiff != 0)] = 0
 
         dfRet = np.append(dfRet, 0)  # append 0 value
 
@@ -1278,7 +1271,8 @@ class linePlotWidget(annotationPlotWidget):
 
         # logger.warning('turned off left/right segment plot.')
         
-        _lineConnect = 1
+        _lineConnect = self._getScatterConnect(self._dfPlot)
+        
         xLeft = []
         yLeft = []
         xRight = []
@@ -1296,7 +1290,7 @@ class linePlotWidget(annotationPlotWidget):
             # print(f'xRight is: {xRight}')
             
             # _lineConnect = self._getScatterConnect(dfLeft)
-            _lineConnect = None
+            # _lineConnect = None
 
         #
         self._leftRadiusLines.setData(

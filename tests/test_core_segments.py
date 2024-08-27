@@ -116,12 +116,13 @@ def test_qt_segments():
 
     print('newSegmentID:', newSegmentID)
     
-    # print('=== after newSegment segments.singleTimepoint [:] is:')
-    # print(lac.singleTimepoint.segments[:])
+    print('=== after newSegment segments.singleTimepoint [:] is:')
+    print(lac.singleTimepoint.segments[:])
 
-    # print('=== after newSegment tsc _fullMap segments[:] is:')
-    # print(tsc._fullMap.segments[:])
+    print('=== after newSegment tsc _fullMap segments[:] is:')
+    print(tsc._fullMap.segments[:])
 
+    return
 
     x = 100
     y = 100
@@ -221,10 +222,10 @@ if __name__ == '__main__':
     logger.setLevel('DEBUG')
     
     # test_segment()
-    # test_qt_segments()
+    test_qt_segments()
 
     # test_qt_undo()
 
     # debug_copy()
 
-    debugLeftRight()
+    # debugLeftRight()
