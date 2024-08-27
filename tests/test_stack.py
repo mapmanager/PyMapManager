@@ -1,23 +1,32 @@
 
-import pymapmanager as pmm
+from mapmanagercore.data import getSingleTimepointMap
 
-def _test_init_stack():
-    return
+from pymapmanager import TimeSeriesCore, stack
+
+from pymapmanager._logger import logger
+
+def test_init_stack():
+
     
-    stackPath = '../PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
-    myStack = pmm.stack(stackPath)
+    path = getSingleTimepointMap()
 
-    df = myStack.getPointAnnotations().getDataFrame()
-    assert df.shape == (287,13)
+    tsc = TimeSeriesCore(path)
 
-    la = myStack.getLineAnnotations()
-    assert la.numSegments == 5
+    myStack = stack(tsc)
+
+    # df = myStack.getPointAnnotations().getDataFrame()
+    # assert df.shape == (287,13)
+
+    # la = myStack.getLineAnnotations()
+    # assert la.numSegments == 5
     
-    df = la.getDataFrame()  # this now returns summary of segments
-    #assert df.shape == (2121,12)
-    assert df.shape == (5,6)
+    # df = la.getDataFrame()  # this now returns summary of segments
+    # #assert df.shape == (2121,12)
+    # assert df.shape == (5,6)
 
     # TODO (cudmore) test (get segment, add segment, delete segment)
 
 if __name__ == '__main__':
+    logger.setLevel('DEBUG')
+    
     test_init_stack()

@@ -639,12 +639,13 @@ class PyMapManagerApp(QtWidgets.QApplication):
             geometryRect = self.getConfigDict().getStackWindowGeometry()
             _stackWidget.setGeometry(geometryRect[0], geometryRect[1], geometryRect[2], geometryRect[3])
             _stackWidget.show()
+            return _stackWidget
         
         else:
             _mapWidget = mapWidget(_timeSeriesCore)
             _mapWidget.show()
-
-        return
+            return _mapWidget
+        
     
         if path in self._stackWidgetDict.keys():
             logger.info('showing already create stack widget')

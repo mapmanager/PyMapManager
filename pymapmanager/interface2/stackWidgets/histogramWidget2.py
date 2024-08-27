@@ -232,7 +232,6 @@ class HistogramWidget(mmWidget2):
         '''
 
     def _onAutoContrast(self):
-        # theMin, theMax = self.getStack().getAutoContrast(self._channel)  # channel is 1 based, e.g. (1,2,3,...)
 
         minAutoContrast = self._contrastDict[self._channel]['minAutoContrast']
         maxAutoContrast = self._contrastDict[self._channel]['maxAutoContrast']

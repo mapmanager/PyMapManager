@@ -555,13 +555,13 @@ class ImagePlotWidget(mmWidget2):
         # rgb uses its own (r,g,b) LUT
         if not self._channelIsRGB():
             channel= self._displayThisChannel
-            # channelIdx = channel - 1
-            channelIdx = channel #abj
+            channelIdx = channel - 1
+            # channelIdx = channel #abj
 
             colorStr = self._contrastDict[channelIdx]['colorLUT']
             
             try:
-                colorStr = self._contrastDict[channel]['colorLUT']
+                colorStr = self._contrastDict[channelIdx]['colorLUT']
                 colorLut = self._colorLutDict[colorStr] # like (green, red, blue, gray, gray_r, ...)
                 #logger.info(f'colorStr:{colorStr}')
                 self._myImage.setLookupTable(colorLut, update=update)
@@ -599,9 +599,9 @@ class ImagePlotWidget(mmWidget2):
             self._myImage.setLevels(levelList, update=True)
         else:
             # one channel
-            # _channelIdx = self._displayThisChannel - 1
-            minContrast = self._contrastDict[self._displayThisChannel]['minContrast']
-            maxContrast = self._contrastDict[self._displayThisChannel]['maxContrast']
+            _channelIdx = self._displayThisChannel - 1
+            minContrast = self._contrastDict[_channelIdx]['minContrast']
+            maxContrast = self._contrastDict[_channelIdx]['maxContrast']
             
             #logger.info(f'channel {self._displayThisChannel} minContrast:{minContrast} maxContrast:{maxContrast}')
             
@@ -692,7 +692,7 @@ class ImagePlotWidget(mmWidget2):
             _pmmEvent = pmmEvent(pmmEventType.setSlice, self)
             _pmmEvent.setSliceNumber(self._currentSlice)
 
-            logger.info(f'  -->> emit signalUpdateSlice() _currentSlice:{self._currentSlice}')
+            logger.info(f'  -->> emitEvent signalUpdateSlice() _currentSlice:{self._currentSlice}')
             self.emitEvent(_pmmEvent, blockSlots=True)
 
     def _emitSetSlice(self, newSlice):
@@ -935,7 +935,7 @@ class ImagePlotWidget(mmWidget2):
         elif event.getStackSelection().hasSegmentSelection():
             oneSegmentID = event.getStackSelection().firstSegmentSelection()
             _lineAnnotations = self.getStackWidget().getStack().getLineAnnotations()
-            _numPnts = _lineAnnotations.getNumPnts(oneSegmentID)
+            _numPnts = _lineAnnotations.getNumPoints(oneSegmentID)
             # logger.warning(f'oneSegmentID:{oneSegmentID} _numPnts:{_numPnts}')
             if _numPnts > 2:
                 x, y, z = _lineAnnotations.getMedianZ(oneSegmentID)

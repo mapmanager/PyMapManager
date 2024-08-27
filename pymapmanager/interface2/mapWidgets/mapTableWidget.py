@@ -121,7 +121,7 @@ class mapTableWidget(QtWidgets.QWidget):
         
         TODO: we need to limit this to roiType like (spineRoi, controlPnt)
         """
-        dfPoints = self._mmMap.getDataFrame()
+        dfPoints = self._mmMap.getMapDataFrame()
         # myModel = pandasModel(dfPoints)
         # self._myTableView.mySetModel(myModel)
 

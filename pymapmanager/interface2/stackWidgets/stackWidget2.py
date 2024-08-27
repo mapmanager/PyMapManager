@@ -634,7 +634,7 @@ class stackWidget2(mmWidget2):
         segmentID = _stackSelection.firstSegmentSelection()
 
         # check that the segment has >=2 points
-        _numPntsInSegment = self.getStack().getLineAnnotations().getNumPnts(segmentID)
+        _numPntsInSegment = self.getStack().getLineAnnotations().getNumPoints(segmentID)
         if _numPntsInSegment < 2:
             logger.warning(f'not added, segment needs >=2 points but has {_numPntsInSegment} points')
             return False

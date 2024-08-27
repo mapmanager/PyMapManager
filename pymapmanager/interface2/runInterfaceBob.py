@@ -14,7 +14,12 @@ def run():
     #
     # open a single tmiepoint map with segments and spines
     path = mapmanagercore.data.getSingleTimepointMap()
-    
+
+    # a single timepoint tif file
+    # error in images
+    # IndexError: index -2 is out of bounds for axis 0 with size 1
+    # path = mapmanagercore.data.getTiffChannel_1()
+
     # map with segments and spines (no segments connected)
     # path = '/Users/cudmore/Desktop/multi_timepoint_map.mmap'
     
@@ -26,12 +31,9 @@ def run():
 
     sw2 = app.loadStackWidget(path)
     
-    # sw2.zoomToPointAnnotation(0, isAlt=True)
+    sw2.zoomToPointAnnotation(0, isAlt=True)
     
-    # a single timepoint tif file
-    # path = mapmanagercore.data.getTiffChannel_1()
-    # sw2 = app.loadStackWidget(path)
-
+    # debug tracing plugin
     # sw2.runPlugin('Tracing', inDock=True)
 
     sys.exit(app.exec_())

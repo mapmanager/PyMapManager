@@ -902,7 +902,8 @@ class pointPlotWidget(annotationPlotWidget):
         """
         """
 
-        # logger.info(f'event:{event}')
+        logger.info(f'{self.getClassName()}')
+        logger.info(f'event:{event}')
         
         _undoEvent = event.getUndoEvent()
 
@@ -1208,15 +1209,10 @@ class linePlotWidget(annotationPlotWidget):
         )  # put it on top, may need to change '10'
 
     def toggleRadiusLines(self):
-        visible = not self._leftRadiusLines.isVisible()
-        self._leftRadiusLines.setVisible(visible)
-    
-        visible = not self._rightRadiusLines.isVisible()
-        self._rightRadiusLines.setVisible(visible)
-
         self.showRadiusLines = not self.showRadiusLines
-
-        return visible
+        self._leftRadiusLines.setVisible(self.showRadiusLines)
+        self._rightRadiusLines.setVisible(self.showRadiusLines)
+        return self.showRadiusLines
 
     def _getScatterColor(self):
         """
@@ -1280,38 +1276,38 @@ class linePlotWidget(annotationPlotWidget):
 
         super().slot_setSlice(sliceNumber)  # draws centerline
 
-        logger.warning('turned off left/right segment plot.')
-        return
-    
-        # abb
-        if self._annotations.getNumSegments() == 0:
-            logger.warning('NO SEGMENTS!')
-            self._leftRadiusLines.setData([], [])
-            self._rightRadiusLines.setData([], [])
-            return        
+        # logger.warning('turned off left/right segment plot.')
         
+        _lineConnect = 1
+        xLeft = []
+        yLeft = []
+        xRight = []
+        yRight = []
         if self.showRadiusLines:
-            zPlusMinus = self._displayOptions["zPlusMinus"] 
-            # radiusOffset = self._displayOptions['radius'] 
-            # dfLeft = self._annotations.getLeftRadiusPlot(None, sliceNumber, zPlusMinus, radiusOffset)
-            dfLeft = self._annotations.getLeftRadiusPlot(sliceNumber, zPlusMinus)
-            _lineConnect = self._getScatterConnect(dfLeft)
+            xLeft = self._dfPlot['xLeft'].to_numpy()
+            yLeft = self._dfPlot['yLeft'].to_numpy()
 
-            # logger.info(f'dfLeft["x"].to_numpy() {dfLeft["x"].to_numpy()}')
-            self._leftRadiusLines.setData(
-                dfLeft["x"].to_numpy(),
-                dfLeft["y"].to_numpy(),
-                connect=_lineConnect,
-            )
+            xRight = self._dfPlot['xRight'].to_numpy()
+            yRight = self._dfPlot['yRight'].to_numpy()
+
+            # logger.info('')
+            # print(f'x is: {self._dfPlot["x"]}')
+            # print(f'xLeft is: {xLeft}')
+            # print(f'xRight is: {xRight}')
             
-            # dfRight = self._annotations.getRightRadiusPlot(None, sliceNumber, zPlusMinus, radiusOffset)
-            dfRight = self._annotations.getRightRadiusPlot(sliceNumber, zPlusMinus)
-            _lineConnect = self._getScatterConnect(dfRight)
-            self._rightRadiusLines.setData(
-                dfRight["x"].to_numpy(),
-                dfRight["y"].to_numpy(),
-                connect=_lineConnect,
-            )
+            # _lineConnect = self._getScatterConnect(dfLeft)
+            _lineConnect = None
+
+        #
+        self._leftRadiusLines.setData(
+            xLeft, yLeft,
+            connect=_lineConnect,
+        )
+
+        self._rightRadiusLines.setData(
+            xRight, yRight,
+            connect=_lineConnect,
+        )
 
     def selectedEvent(self, event: pmmEvent):
         """

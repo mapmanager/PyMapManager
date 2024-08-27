@@ -5,15 +5,10 @@ from typing import List, Union, Optional
 import numpy as np
 import pandas as pd
 
-from mapmanagercore import MapAnnotations, MultiImageLoader
 from mapmanagercore.lazy_geo_pd_images import Metadata
-# from mapmanagercore.lazy_geo_pd_images.store import LazyImagesGeoPandas, ImageLoader
 
-import pymapmanager
 from pymapmanager.annotations.baseAnnotationsCore import SpineAnnotationsCore, LineAnnotationsCore
-
 from pymapmanager.timeseriesCore import TimeSeriesCore
-
 from pymapmanager._logger import logger
 
 class stack:
@@ -22,61 +17,25 @@ class stack:
     loadTheseExtension = ['.mmap', '.tif']
 
     def __init__(self,
-                # path : str = None,
                 timeseriescore : TimeSeriesCore,
                 loadImageData : bool = True,
-                mmMap : "pymapmanager.mmMap" = None,
-                timepoint : int = 0):
-        """Load a stack from a .mmap zarr file or an in memory core MapAnnotations.
+                timepoint : int = 0,
+                defaultChannelIdx = 0):
+        """Load a stack from a .mmap zarr file or an in memory TimeSeriesCore.
 
         Parameters
         ----------
-        path : str
-            Path to either (1) .mmap zarr to open, or (2) .tif file import
-        zarrMap : core MapAnnotations
-            In memory core MapAnnotations
-        mmMap : pymapmanager.mmMap
-            A PyMapManager multi-timepoint map
-        mapTimepoint : int
-            When mmMap is specified, this is the timepoint in mmMap
+        timeseriescore : TimeSeriesCore
+            In memory TimeSeriesCore (wraps core MapAnnotations)
+        timepoint : int
+            Timepoint in timeseriescore
         """
-        # full path to file, can be (mmap zarr, image tif)
-        # self.path = path
 
-        self._timeseriescore = timeseriescore
-
-        self._fullMap = timeseriescore._fullMap
-
-        # pymapmanager map (not core map)
-        self._mmMap : pymapmanager.mmMap = mmMap
+        self._fullMap : TimeSeriesCore = timeseriescore
         self._timepoint = timepoint
 
-        self.maxNumChannels = 4  # TODO: put into backend core
-        
-        # load the map
-        # _startSec = time.time()
-        
-        # load from file
-        # TODO: in the future we will load from more file types
-        # if path is not None:
-        #     _ext = os.path.splitext(path)[1]
-        #     if _ext == '.mmap':
-        #         self._load_zarr()
-        #     elif _ext == '.tif':
-        #         self._import_tiff()
-
-        # elif zarrMap is not None:
-        #     # load from in memory map
-        #     logger.info(f'loading map from memory: {zarrMap}')
-        #     self._filename = 'Untitled'
-        #     self._fullMap = zarrMap
-
-        self._buildMapTimepoint()
-                    
-        # TODO (cudmore) we should add an option to defer loading until explicitly called
-        self.loadAnnotations()
-        self.loadLines()
-        self.loadAnalysisParams() #abj
+        self._annotations = SpineAnnotationsCore(self._fullMap, timepoint=self.timepoint)  #, defaultColums=defaultColums)
+        self._lines = LineAnnotationsCore(self._fullMap, timepoint=self.timepoint)  #, defaultColums=defaultColums)
 
         self._buildHeader()
 
@@ -84,61 +43,18 @@ class stack:
             logger.warning(f'EXPENSIVE: loading all image data for {self.numChannels} channels')
             for _channel in range(self.numChannels):
                 _channel += 1
-                self.loadImages(channel=_channel)
+                logger.warning('TODO: turn loadImages() back on ... ')
+                # self.loadImages(channel=_channel)
 
-        # _stopSec = time.time()
-        # logger.info(f'loaded stack in {round(_stopSec-_startSec,3)} sec')
+        # get the first image slice from defaultChannelIdx
+        self.getImageSlice(0, defaultChannelIdx)
 
-        # TODO: specify default channel and fetch slice 0 here
-        self._currentImageSlice = None
-
-        logger.info(f'loaded stack timepoint: {self.getMapTimepoint()}')
-        # logger.info(f'metadata is: {self.getMetadata()}')
-        
-    def _old__load_zarr(self):
-        """Load from mmap zarr file.
-        """
-        path = self.path
-        logger.info(f'loading zarr path: {path}')
-        self._filename = os.path.split(path)[1]
-        self._fullMap : MapAnnotations = MapAnnotations.load(path)
-
-        logger.info(f'calling full map points[:]')
-        self._fullMap.points[:]
-        logger.info(f'calling full map segments[:]')
-        self._fullMap.segments[:]
-
-        logger.info(f'loaded full map:{self._fullMap}')
-
-    def _old__import_tiff(self):
-        """Load from tif file.
-        
-        Result is a single timepoint with no segments and no spines.
-        """
-        path = self.path
-
-        loader = MultiImageLoader()
-        loader.read(path, channel=0)
-        
-        # TEMPORARY, fake second channel, to debug single channel stack
-        # loader.read(path, channel=1)
-
-        map = MapAnnotations(loader.build(),
-                            lineSegments=pd.DataFrame(),
-                            points=pd.DataFrame())
-
-        self._fullMap : MapAnnotations = map
+        logger.info(f'loaded stack timepoint: {self}')
               
     def getMetadata(self) -> Metadata:
         """Get metadata from the core map.
         """
-        return self.getMapTimepoint().metadata()
-    
-    def _buildMapTimepoint(self):
-        """Reduce full core map to a single session id.
-        """
-        self._mapTimepoint = self._fullMap.getTimePoint(self.timepoint)
-        return self._mapTimepoint
+        return self._fullMap.getMapImages().metadata(self.timepoint)
     
     def __str__(self):
         x = self.header['xPixels']
@@ -166,7 +82,8 @@ class stack:
         bitDepth = 8
 
         # TODO: cludge, remove
-        _shape = self.getMapTimepoint().shape
+        # _shape = self._fullMap.getMapImages().getShape(self.timepoint)
+        _shape = self._annotations.singleTimepoint.shape  # shape of image in single timepoint
 
         #_numChannels = self.sessionMap.numChannels
         _numChannels = _shape[0]
@@ -185,9 +102,8 @@ class stack:
         
         # TODO: cludge, setting analysis channel to 0 for 1 channel, and to 1 for 2 channel
         analysisChannelIdx = _numChannels - 1  # 0 based
-        self.getMapTimepoint().analysisParams.setValue('channel', analysisChannelIdx)
-        # logger.info('analysis parms is:')
-        # print(self.sessionMap.analysisParams.printDict())
+        self.getAnalysisParameters().setValue('channel', analysisChannelIdx)
+
 
     def printHeader(self):
         for k, v in self.header.items():
@@ -207,45 +123,17 @@ class stack:
         return self.header['numChannels']
     
     def getFileName(self) -> str:
-        return self._timeseriescore.filename
+        return self._fullMap.filename
     
     def getPath(self):
-        return self._timeseriescore.path
+        return self._fullMap.path
 
     @property
     def timepoint(self) -> int:
         return self._timepoint
     
-    def getMapTimepoint(self) -> MapAnnotations:
-        """Get backend core map manager map.
-            One timepoint (Session)
-        """
-        return self._mapTimepoint
-
-    def getCoreMap(self):
-        return self._fullMap
-    
-    # def getMap(self):
-    #     """Get full mmMap.
-    #     """
-    #     return self._mmMap
-
-    # def getMapTimepoint(self) -> int:
-    #     """Get stack session.
-        
-    #     See sessionID property
-    #     """
-    #     return self._mapTimepoint
-
-    @property
-    def mapTimepoint(self):
-        """See getMapSession() function.
-        """
-        return self._mapTimepoint
-    
-    #abj
     def getAnalysisParameters(self):
-        return self._analysisParams
+        return self._fullMap.getAnalysisParams()
 
     def getPointAnnotations(self) -> SpineAnnotationsCore:
         return self._annotations
@@ -253,83 +141,10 @@ class stack:
     def getLineAnnotations(self) -> LineAnnotationsCore:
         return self._lines
 
-    def loadAnnotations(self) -> None:
-        """Load point annotations.
-        """
-        # self._annotations = SpineAnnotationsCore(self.sessionMap, analysisParams = self._analysisParams)
-        # defaultColums = self._fullMap.points[:].columns
-        # self._annotations = SpineAnnotationsCore(self.sessionMap)  #, defaultColums=defaultColums)
-        self._annotations = SpineAnnotationsCore(self.getCoreMap(), timepoint=self.timepoint)  #, defaultColums=defaultColums)
-
-    def loadLines(self) -> None:
-        """Load line annotations.
-        """
-        # self._lines = LineAnnotationsCore(self.sessionMap, analysisParams = self._analysisParams)
-        # defaultColums = self._fullMap.segments[:].columns
-        # self._lines = LineAnnotationsCore(self.sessionMap)  #, defaultColums=defaultColums)
-        self._lines = LineAnnotationsCore(self.getCoreMap(), timepoint=self.timepoint)  #, defaultColums=defaultColums)
-
-    def loadAnalysisParams(self) -> None:
-        """ load analysis parameters
-        """ 
-        self._analysisParams = self._fullMap.analysisParams
-        logger.info(f"analysis params {self._analysisParams}")
-
     def getAutoContrast(self, channel):
         channelIdx = channel - 1
-        _min, _max = self.getMapTimepoint().getAutoContrast_qt(channel=channelIdx)
+        _min, _max = self._fullMap.getMapImages().getAutoContrast(self.timepoint, channel=channelIdx)
         return _min, _max
-
-    def loadImages(self, channel : int = None):
-        """Load all images for one channel.
-        """
-        return
-    
-        startSec = time.time()
-
-        if channel is not None:
-            channel = channel - 1
-        else:
-            channel = 1
-        
-        sessionNumber = self.getMapSession()
-        if sessionNumber is None:
-            sessionNumber = 0
-
-        # logger.info('self.sessionMap.images ...')
-
-        logger.info(f'self.sessionMap:{self.sessionMap}')
-
-        # abb 20240513
-        # this always gets z-project, I want the full 3d img volume?
-        _imgData = self.sessionMap.getPixels(channel=channel, zRange=(0,70))
-        
-        # _imgData = self.sessionMap._annotations._images
-        
-        # logger.info(f'_imgData:{_imgData}')
-        # logger.info(f'_imgData:{_imgData.shape}')
-
-        # sys.exit(1)
-
-        # _images = self.sessionMap.images
-        
-        # logger.info('loadSlice ...')
-        
-        # sls = [_images.loadSlice(sessionNumber, channel, i)
-        #        for i in range(self.numSlices)]
-        # _imgData = _images.fetchSlices2(sessionNumber, channel, (0, self.numSlices))
-
-        # logger.info('done')
-
-        # _imgData = np.array(sls)
-
-        # logger.info(f'channel:{channel} _imgData {_imgData.shape}')
-
-        self._images[channel] = _imgData
-
-        stopSec = time.time()
-        elapsedSec = round(stopSec-startSec,3)
-        logger.info(f'loaded channel:{channel} img:{_imgData.shape} in {elapsedSec} seconds')
 
     def getImageSlice(self,
                       imageSlice : int,
@@ -354,20 +169,9 @@ class stack:
 
         # logger.info(f'fetching channelIdx:{channelIdx}')
         
-        # single map timepoint in core is not efficient
-        # _imgData = self.getMapTimepoint().getPixels(channel=channelIdx, z=imageSlice)
-        
-        # instead, just get straight from the full map
-        # abb this is REALLY SLOW
-        # it may be 'reloading all image data on each call???
-        # nope, it takes sub millisecond time???
-
-        # startSec= time.time()
-        
-        _imgData = self._fullMap.getPixels(time=self.timepoint, channel=channelIdx, z=imageSlice)
-
-        # stopSec = time.time()
-        # logger.info(f'   took {stopSec-startSec} s !!!')
+        _imgData = self._fullMap.getMapImages().getPixels(timepoint=self.timepoint,
+                                                          channelIdx=channelIdx,
+                                                          zRange=imageSlice)
 
         _imgData = _imgData._image
     
@@ -408,7 +212,10 @@ class stack:
 
 
         zRange = (firstSlice, lastSlice)
-        slices = self.getMapTimepoint().getPixels(channel=channelIdx, zRange=zRange)
+        slices = self._fullMap.getImagesCore().getPixels(
+            timepoint=self.timepoint,
+            channelIdx=channelIdx,
+            zRange=zRange)
 
         return slices._image
 
@@ -439,55 +246,29 @@ class stack:
         return _intensity
     
     def undo(self):
-        # logger.info('')
-
-        # _beforeDf = self.getPointAnnotations().getDataFrame()
-
-        # print('_beforeDf[115]')
-        # print(_beforeDf.loc[115, ['x', 'y', 'z']])
-
         _ret = self._fullMap.undo()
 
-        # print(f'_ret:{_ret}')
-
+        # self.getPointAnnotations()._buildTimepoint()  # rebuild single timepoint
         self.getPointAnnotations()._buildDataFrame()
 
-        # _afterDf = self.getPointAnnotations().getDataFrame()
-        # print('_afterDf[115]')
-        # print(_afterDf.loc[115, ['x', 'y', 'z']])
-
     def redo(self):
-        # logger.info('')
         _ret = self._fullMap.redo()
-        # print(f'_ret:{_ret}')
 
+        # CRITICAL FOR REDO !!!!!
+        self.getPointAnnotations()._buildTimepoint()  # rebuild single timepoint
+        
         self.getPointAnnotations()._buildDataFrame()
         
     #abj
     def save(self):
         """ Stack saves changes to its .mmap Zarr file that is stored
         """
-        logger.info(f"Entering Stack save")
-       
-        path =  self.getPath()
-        ext = os.path.splitext(path)[1]
-
-        if ext == ".mmap":
-            self._fullMap.save(self.getPath())
-        else:
-            logger.info("Not an .mmap file - No save occurred")
+        self._fullMap.save()
 
     def saveAs(self, path):
         """ Stack saves changes to to a new zarr file path
             that user types in through dialog
         """
-        self._fullMap.save(path)
-
-    def isEmpty(self):
-
-        if len(self._annotations) > 0 or len(self._lines) > 0:
-            return True
-        else:
-            return False
+        self._fullMap.saveAs(path)
 
         

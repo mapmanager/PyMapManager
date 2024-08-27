@@ -668,7 +668,7 @@ class mmWidget2(QtWidgets.QMainWindow):
         """Get map session from the stack.
         """
         if self.getStack() is not None:
-            return self.getStack().getMapTimepoint()
+            return self.getStack().timepoint
             # return self.getStack().timepoint()
         
     def getClassName(self) -> str:
