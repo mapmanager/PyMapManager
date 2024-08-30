@@ -608,7 +608,7 @@ class LineAnnotationsCore(AnnotationsCore):
         """
         #self._df = self.getMapSegments()._buildSegmentDataFrame(self.timepoint)
 
-        _columns = ['t', 'segmentID', 'x', 'y', 'z', 'xLeft', 'yLeft', 'xRight', 'yRight']
+        _columns = ['t', 'segmentID', 'x', 'y', 'z', 'xLeft', 'yLeft', 'xRight', 'yRight', "length"]
 
         dfRet = pd.DataFrame(columns=_columns)
 
@@ -634,6 +634,9 @@ class LineAnnotationsCore(AnnotationsCore):
             xyRight = xyRight.reset_index()  # xyRight still has labels as segmentID
             dfRet['xRight'] = xyRight['x']
             dfRet['yRight'] = xyRight['y']
+
+            #abj
+            dfRet["length"] =  segmentDf['segment'].length
         
         dfRet['t'] = self.timepoint
 
