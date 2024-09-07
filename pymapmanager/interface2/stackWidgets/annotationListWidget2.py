@@ -323,12 +323,20 @@ class lineListWidget(annotationListWidget):
             self._myTableView.setEnabled(False)
     
     def selectedEvent(self, event):
-        # logger.warning(f'{self.getClassName()} event stack selection is:')
+        logger.warning(f'{self.getClassName()} event stack selection is:')
         # logger.warning(f'{event.getStackSelection()}')
         
         segmentSelection = event.getStackSelection().getSegmentSelection()        
-        # logger.warning(f'selecting segmentSelection:{segmentSelection}')
+        logger.warning(f'selecting segmentSelection:{segmentSelection}')
         self._myTableView._selectRow(segmentSelection)
+
+        # abj
+        if segmentSelection is None or len(segmentSelection) <= 0:
+            logger.info(f"segmentSelection is {segmentSelection}")
+        else:
+            segmentID = segmentSelection[0]
+            self.currentSegmentID = segmentID
+            self.updateRadiusSpinBox(segmentID)
     
     def on_table_selection(self, itemList : List[int], isAlt : bool = False):
         """Respond to user selection in table (myTableView).
@@ -361,6 +369,22 @@ class lineListWidget(annotationListWidget):
 
         logger.info(f'-->> "{self.getClassName()}" emit segment selection event {segmentList}')
         self.emitEvent(event, blockSlots=False)
+
+        # abj: 9/5/2024
+        # update radius spinbox within tracing widget after table selection
+        if itemList is None or len(itemList) <= 0:
+            logger.info(f"segmentSelection is {itemList}")
+        else:
+            segmentID = itemList[0]
+            self.currentSegmentID = segmentID
+            self.updateRadiusSpinBox(segmentID)
+
+    def updateRadiusSpinBox(self, segmentID):
+        # abj: 9/5/2024
+        # update radius spinbox within tracing widget after table selection
+        newRadius = int(self._annotations.getValue("radius", segmentID))
+        # logger.info(f"newRadius {newRadius}")
+        self.tracingWidget.updateRadiusSpinBox(newRadius)
 
     def _deleteSelected(self):
         """Delete currently selected line annotations.
@@ -431,10 +455,37 @@ class lineListWidget(annotationListWidget):
         #vControlLayout.addWidget(aLabel)
 
         from pymapmanager.interface2.stackWidgets import TracingWidget
-        tracingWidget = TracingWidget(self.getStackWidget())
-        vControlLayout.addWidget(tracingWidget, alignment=QtCore.Qt.AlignTop)
+        self.tracingWidget = TracingWidget(self.getStackWidget())
+        self.tracingWidget.signalRadiusChanged.connect(self.updateSegmentRadius)
+        vControlLayout.addWidget( self.tracingWidget, alignment=QtCore.Qt.AlignTop)
 
         return vControlLayout
+    
+    def setRadiusEvent(self, event):
+
+        # refresh linelistWidget
+        self._setModel()
+
+        segmentID = event.getFirstSegmentSelection()
+        # reselect current segment
+        self._myTableView._selectRow([segmentID])
+
+    def updateSegmentRadius(self, newRadius):
+        """ Update segment radius stored in backend
+            - each segment has its own unique radius stored
+            - ensure that we are only updating the segment that is selected
+        """
+        segmentID = self.currentSegmentID
+ 
+        eventType = pmmEventType.setRadius
+        event = pmmEvent(eventType, self)
+        event.setSegmentSelection([segmentID])
+        logger.info(f"setting radius {newRadius}")
+        event.setNewRadiusVal(newRadius)
+        # event.setSliceNumber(sliceNum)
+        logger.info(f'emit -->> event: {event}')
+        self.emitEvent(event, blockSlots=False)        
+
     
 if __name__ == '__main__':
     import pymapmanager

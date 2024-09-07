@@ -234,7 +234,6 @@ class StackSelection:
         # abb, put back in
         # return segmentSelectionList is not None or segmentSelectionList == []
 
-
     def firstSegmentSelection(self) -> Optional[int]:
         if not self.hasSegmentSelection():
             return
@@ -345,7 +344,9 @@ class pmmEvent():
             # implementing map/timeseries
             # 'mapSessionSelection': [],
 
-            'editSpine' : None
+            'editSpine' : None,
+
+            'emittedValue' : None # integer for set radius event
 
         }
 
@@ -409,6 +410,20 @@ class pmmEvent():
     # abj
     def setSegmentSelection(self, segmentSelection : List[int]):
         self.getStackSelection().setSegmentSelection(segmentSelection)
+
+    def getFirstSegmentSelection(self):
+        return self.getStackSelection().firstSegmentSelection()
+
+    # abj
+    def setNewRadiusVal(self, newRadiusVal):
+        """ Used by setRadius event to set and get new radius
+        """
+        # self.getStackSelection().setNewRadiusVal(newRadiusVal)
+        self._dict["emittedValue"] = newRadiusVal
+
+    def getNewRadiusVal(self) -> int:
+        # return self.getStackSelection().getNewRadiusVal()
+        return self._dict["emittedValue"]
 
     def setType(self, theType : pmmEventType):
         self._dict['type'] = theType

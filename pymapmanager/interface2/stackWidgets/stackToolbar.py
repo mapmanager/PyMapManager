@@ -215,15 +215,15 @@ class StackToolBar(QtWidgets.QToolBar):
         self.addWidget(self.slidingUpDownLabel)
         self.addWidget(self.slidingUpDown)
 
-        # add radius
-        self.radiusLabel = QtWidgets.QLabel('radius')
-        self._radiusSpinBox = QtWidgets.QSpinBox()
-        self._radiusSpinBox.setMaximum(10)
-        self._radiusSpinBox.setValue(3)
-        self._radiusSpinBox.setEnabled(True)
-        self._radiusSpinBox.valueChanged.connect(self._on_radius_value_changed)
-        self.addWidget(self.radiusLabel)
-        self.addWidget(self._radiusSpinBox)
+        # add radius - deprecated
+        # self.radiusLabel = QtWidgets.QLabel('radius')
+        # self._radiusSpinBox = QtWidgets.QSpinBox()
+        # self._radiusSpinBox.setMaximum(10)
+        # self._radiusSpinBox.setValue(3)
+        # self._radiusSpinBox.setEnabled(True)
+        # self._radiusSpinBox.valueChanged.connect(self._on_radius_value_changed)
+        # self.addWidget(self.radiusLabel)
+        # self.addWidget(self._radiusSpinBox)
 
         # Drop Box to hide different parts of plot
         plotMenuButton = QtWidgets.QPushButton("Plots")

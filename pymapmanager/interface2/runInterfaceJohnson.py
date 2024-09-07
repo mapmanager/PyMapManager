@@ -33,12 +33,14 @@ def run():
     # path = '/Users/johns/Documents/GitHub/MapManagerCore/data/rr30a_s0u_v3.mmap'
     # path = '/Users/johns/Documents/GitHub/MapManagerCore/data/test2.mmap'
     # path = '/Users/johns/Documents/GitHub/PyMapManager-Data/one-timepoint/rr30a_s0_ch1.mmap'
+    path = 'C:/Users/johns/Documents/TestMMCMaps/rr30a_s0u.mmap'
     # import mapmanagercore
 
     # pooch path
     import mapmanagercore.data
-    # path = mapmanagercore.getSingleTimepointMap()
+    ## path = mapmanagercore.getSingleTimepointMap()
     path = mapmanagercore.data.getSingleTimepointMap()
+
     print("path", path)
     sw2 = app.loadStackWidget(path)
 
@@ -54,8 +56,9 @@ def run():
     # df['userType'] = 1
     # sw2.getStack().getPointAnnotations().intializeIsBad()
     # sw2.getStack().getPointAnnotations().intializeUserType()
-
+    # sw2.forceRefresh()
     sw2.zoomToPointAnnotation(120, isAlt=True)
+
     # sw2.runPlugin('Scatter Plot', inDock=True)
 
     sys.exit(app.exec_())

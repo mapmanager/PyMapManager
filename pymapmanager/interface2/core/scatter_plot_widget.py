@@ -342,9 +342,18 @@ class Highlighter(object):
             self._setData([], [])
             self._parentPlot.selectPointsFromHighlighter([])
 
+        if self.keyIsDown  == 'alt':
+            self._isAlt = True
+
     def _keyReleaseEvent(self, event):
         logger.info(f'key release event')
+
+        if self.keyIsDown  == 'alt':
+            self._isAlt = False
+        
         self.keyIsDown = None
+
+
 
     def _setData(self, xStat, yStat):
         """" Set the data that is highlighted in yellow 
@@ -555,8 +564,8 @@ class ScatterPlotWidget(QtWidgets.QWidget):
         # self.color = plt.get_cmap("cool")
         # self.color = sns.color_palette("Paired", 12).as_hex()
         # print('self.color:', self.color)
-        self.color = ['#a6cee3', '#1f78b4', '#b2df8a', '#33a02c', '#fb9a99', '#e31a1c', '#fdbf6f', '#ff7f00', '#cab2d6', '#6a3d9a', '#ffff99', '#b15928']
-
+        # self.color = ['#a6cee3', '#1f78b4', '#b2df8a', '#33a02c', '#fb9a99', '#e31a1c', '#fdbf6f', '#ff7f00', '#cab2d6', '#6a3d9a', '#ffff99', '#b15928']
+        self.color = ['#f77189', '#dc8932', '#ae9d31', '#77ab31', '#33b07a', '#36ada4', '#38a9c5', '#6e9bf4', '#cc7af4', '#f565cc']
         if darkTheme:
             plt.style.use("dark_background")
         
@@ -620,6 +629,11 @@ class ScatterPlotWidget(QtWidgets.QWidget):
         self._df = newDF
         self.setColumnList()
 
+        hueColumnStr = self.dict["hueColumn"] # 8/30/24
+        logger.info(f"hueColumnStr {hueColumnStr}")
+        self.setHueIDList(hueColumnStr) 
+        self._updateIdComboBox()
+
     def setFilter(self, filterColumn):
         """ IMPORTANT: This needs to be called within wrapper class 
         Args:
@@ -656,6 +670,8 @@ class ScatterPlotWidget(QtWidgets.QWidget):
             return
 
         self.hueIDList = self._df[hueColumnStr].unique().tolist()
+
+        logger.info(f" self.hueIDList { self.hueIDList}")
             
     def getfilterStr(self):
         return self.filterStrList 
@@ -1261,7 +1277,12 @@ class ScatterPlotWidget(QtWidgets.QWidget):
         """ Update id combo box every time the Hue column is changed
         This will display a new list everytime to correspond to the new columns unique values
         """
+
+        if self.hueIDList is None:
+            return
+            
         self.idComboBox.clear()
+        
         for id in self.hueIDList:
             if not np.isnan(id):
                 self.idComboBox.addItem(str(int(id)))

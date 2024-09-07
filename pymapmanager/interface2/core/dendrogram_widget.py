@@ -3,6 +3,7 @@
     This time it is its own widget and will be adapted by pmm
 """
 
+import math
 from typing import List, Optional  # , Callable, Iterator
 import pandas as pd
 from qtpy import QtGui, QtCore, QtWidgets
@@ -183,6 +184,7 @@ class Highlighter(object):
 
         self.mouseDownEvent = None
         self.keyIsDown = None
+        self._isAlt = False
         self.setCanvasConnections()
 
     def setCanvasConnections(self):
@@ -342,8 +344,15 @@ class Highlighter(object):
             self._setData([], [])
             self._parentPlot.selectPointsFromHighlighter([])
 
+        if self.keyIsDown == 'alt':
+            self._isAlt = True
+
     def _keyReleaseEvent(self, event):
         logger.info(f'key release event')
+
+        if event.key == 'alt':
+            self._isAlt = False
+        
         self.keyIsDown = None
 
     def _setData(self, xStat, yStat):
@@ -416,7 +425,8 @@ class Highlighter(object):
         """
         self.mouseDownEvent = None
         indexList = self.xyStatIndex[self.maskPoints].tolist()
-        self._parentPlot.selectPointsFromHighlighter(indexList)
+
+        self._parentPlot.selectPointsFromHighlighter(indexList, self._isAlt)
         return
 
 class myStatListWidget(QtWidgets.QWidget):
@@ -499,7 +509,7 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
 
     Get stat names and variables from sanpy.bAnalysisUtil.getStatList()
     """
-    signalAnnotationSelected = QtCore.Signal(object)  # pymapmanager.annotations.SelectionEvent
+    signalAnnotationSelected = QtCore.Signal(object)  # dict: {list of points, isAlt} pymapmanager.annotations.SelectionEvent
     
     # def __init__(self, inputtedDF, filterColumn: None, hueColumn: None):
     def __init__(self,
@@ -552,8 +562,11 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
         self.acceptColumn = acceptColumn
         self.hueIDList = None
 
-        self.color = ['#a6cee3', '#1f78b4', '#b2df8a', '#33a02c', '#fb9a99', '#e31a1c', '#fdbf6f', '#ff7f00', '#cab2d6', '#6a3d9a', '#ffff99', '#b15928']
+        self.spineLengthConstant = 3
 
+        # self.color = ['#a6cee3', '#1f78b4', '#b2df8a', '#33a02c', '#fb9a99', '#e31a1c', '#fdbf6f', '#ff7f00', '#cab2d6', '#6a3d9a', '#ffff99', '#b15928']
+        self.color = ['#f77189', '#dc8932', '#ae9d31', '#77ab31', '#33b07a', '#36ada4', '#38a9c5', '#6e9bf4', '#cc7af4', '#f565cc']
+        
         if darkTheme:
             plt.style.use("dark_background")
         
@@ -705,6 +718,7 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
     def setSegmentPlot(self):
         # self.segmentLength 
         # self.segment.plot([0,0],[0,self.segmentLength])
+        logger.info(f"segmentLength {self.segmentLength}")
         self.segment = self.axScatter.plot([0,0],[0,self.segmentLength], zorder = 1)
 
     def setSpineLinePlot(self):
@@ -769,6 +783,16 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
         self.userTypeCheckbox.setChecked(False)
         self.userTypeCheckbox.stateChanged.connect(self._on_change_User_Type)
         hLayoutHeader.addWidget(self.userTypeCheckbox)
+
+        self.spineAngleCheckbox = QtWidgets.QCheckBox('Spine Angle')
+        self.spineAngleCheckbox.setChecked(False)
+        self.spineAngleCheckbox.stateChanged.connect(self._on_change_spine_Angle)
+        hLayoutHeader.addWidget(self.spineAngleCheckbox)
+
+        self.spineLengthCheckbox = QtWidgets.QCheckBox('Spine Length')
+        self.spineLengthCheckbox.setChecked(False)
+        self.spineLengthCheckbox.stateChanged.connect(self._on_change_spine_Length)
+        hLayoutHeader.addWidget(self.spineLengthCheckbox)
 
         self.toolBarCheckbox = QtWidgets.QCheckBox('Tool Bar')
         self.toolBarCheckbox.setChecked(True)
@@ -861,13 +885,12 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
 
 
         # abj: 8/28
-        # TODO: change this to get first segment from combo box
         segmentID = filterStr
         self.dendrogramReplot(newSegmentID=segmentID)
 
         ## TODO: change this to plot 
-        xDFStat = np.array(self.plotDF["spineX"] )
-        yDFStat = np.array(self.plotDF["spineY"] )
+        xDFStat = np.array(self.plotDF["spineX"])
+        yDFStat = np.array(self.plotDF["spineY"])
         indexList = np.array(indexList)
 
         self.setSpineLinePlot()
@@ -1039,7 +1062,12 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
         self.static_canvas.draw()
 
     def dendrogramReplot(self, newSegmentID):
-        """
+        """ Recalculate all values needed to plot the dendrogram
+
+        Stored values:
+            self.plotDF = pd.DataFrame({"spineX": spineX, "spineY": spineY, "spineIndex": savedSpineIndex})
+            self.spineLineDF = pd.DataFrame({"spineLineX": spineLineX, "spineLineY": spineLineY})
+
         """
         newSegmentID = int(newSegmentID)
         self._paDF = self._df
@@ -1049,8 +1077,9 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
         # logger.info(f"filteredPointDF0 {filteredPointDF}")
         spinePositions = filteredPointDF["spinePosition"]
         spineLength = filteredPointDF["spineLength"]
+            
         # logger.info(f"spineLength {spineLength}")
-        spineAngle= filteredPointDF["spineAngle"]
+        spineAngle = filteredPointDF["spineAngle"]
         spineSide = filteredPointDF["spineSide"]
         spineIndex = filteredPointDF["index"]
 
@@ -1066,15 +1095,42 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
         savedSpineIndex = []
 
         for i, index in enumerate(spineIndex):
-            constant = spineLength[index]
+            if self.spineLengthCheckbox.isChecked():
+                logger.info("Spine length checked")
+                xVal = spineLength[index]
+            else:
+                xVal = self.spineLengthConstant
+
             # print("i", spineSide[i][0])
             direction = spineSide[index] # need to index to get first and only value in series
             savedSpineIndex.append(index)
+            # Determine direction
             if(direction == "Left"):
-                spineX.append(constant)
-                spineY.append(anchorY[i])
+                # xVal = -1 * xVal  
+                spineX.append(-1 * xVal)
             elif(direction == "Right"):
-                spineX.append(-1 *(constant))
+                spineX.append(xVal)
+
+            # Calculate Y
+            if self.spineAngleCheckbox.isChecked():
+                angle = spineAngle[index]
+                # logger.info(f"angle {angle}")
+              
+                angleTan = math.tan(angle * math.pi/180)
+           
+                # angledY = xVal * math.tan(angle)
+                # logger.info(f"index {index} angledY {angledY} temp {temp}")
+
+                # account for undefined tangent angles
+                if angle == 270 or angle == 90 or angle == 180 or angle == 0 or angle == 360:
+                    angledY = xVal
+                else:
+                    # angledY = xVal * math.tan(((angle * math.pi/180) - 90))
+                    angledY = (xVal / math.tan((angle * math.pi/180)))
+                
+                logger.info(f"index {index} angledY {angledY}")
+                spineY.append(angledY)
+            else:
                 spineY.append(anchorY[i])
 
         spineLineX = []
@@ -1090,22 +1146,11 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
 
         filteredLineDF = self._laDF[self._laDF.index == newSegmentID]
         # logger.info(f"filteredLineDF {filteredLineDF}")
-        # get length of segment, get the first row since all rows will have same value within same segmemt
-        # segmentLength = filteredLineDF["length"].iloc[0]
         self.segmentLength = filteredLineDF["length"].iloc[0]
         # logger.info(f"segmentLength {segmentLength}")
 
-        # return dataframe that contains everything we need to plot
-        # self.plotDF = pd.DataFrame({"spineX": spineX, "spineY": spineY, "spineLineX": spineLineX, "spineLineY": spineLineY,
-        #                        "segmentLength": segmentLength})
         self.plotDF = pd.DataFrame({"spineX": spineX, "spineY": spineY, "spineIndex": savedSpineIndex})
         self.spineLineDF = pd.DataFrame({"spineLineX": spineLineX, "spineLineY": spineLineY})
-
-        
-        # logger.info(self.plotDF)
-
-
-
 
     def _switchScatter(self):
         """Switch between single scatter plot and scatter + marginal histograms"""
@@ -1193,12 +1238,13 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
         return self.storedRowIdx
     
     # IMPORTANT SIGNAL-SLOT CONNECTION (inside -> outside wrapper)
-    def selectPointsFromHighlighter(self, selectedPointsList):
+    def selectPointsFromHighlighter(self, selectedPointsList, isAlt):
         """
             selectedPointsList: list of points selected within highlighter
         """
-        
-        self.signalAnnotationSelected.emit(selectedPointsList)
+        emitDict = {"itemList": selectedPointsList, "isAlt":isAlt}
+        self.signalAnnotationSelected.emit(emitDict)
+        # self.signalAnnotationSelected.emit(selectedPointsList)
 
     def _on_change_Accept(self):
         # self.acceptValue = not self.acceptValue
@@ -1207,6 +1253,14 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
 
     def _on_change_User_Type(self):
         check = self.userTypeCheckbox.isChecked() 
+        self.rePlot()
+
+    def _on_change_spine_Angle(self):
+        check = self.spineAngleCheckbox.isChecked() 
+        self.rePlot()
+
+    def _on_change_spine_Length(self):
+        check = self.spineLengthCheckbox.isChecked() 
         self.rePlot()
 
     def _onNewHueColumnStr(self, hueColumnStr):
@@ -1303,4 +1357,18 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
         self.rePlot()
 
      # ----------- Functions that need to be used by adapted slots (END) ----------- #
+
+    def _on_key_release(self, event):
+        if event.key == 'alt':
+            self._isAlt = False
+
+    def _on_key_press(self, event):
+        
+        logger.info(f'event.key: "{event.key}"')
+        
+        # if event.key == 'escape':
+        #     self.cancelSelection()
+        
+        if event.key == 'alt':
+            self._isAlt = True
 

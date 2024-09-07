@@ -6,12 +6,12 @@ import numpy as np
 import pandas as pd
 import shapely
 
-# import mapmanagercore
+import mapmanagercore
 # from mapmanagercore import MapAnnotations
 # from mapmanagercore import MapAnnotations, MultiImageLoader
 # from mapmanagercore.annotations.single_time_point.base import SingleTimePointFrame
 # from mapmanagercore import single_time_point
-# from mapmanagercore.layers.line import clipLines
+from mapmanagercore.layers.line import clipLines
 # from mapmanagercore.lazy_geo_pandas import LazyGeoFrame
 
 from pymapmanager.interface2.stackWidgets.event.spineEvent import EditSpinePropertyEvent
@@ -119,6 +119,8 @@ class AnnotationsCore:
         #abj: 7/17/24
         if not df.empty:
             df = df[(df['z']>=_startSlice) & (df['z']<=_stopSlice)]
+
+        # logger.info(f"df {df}")
 
         if segmentID is not None:
             df = df[ df['segmentID'] == segmentID]
@@ -608,7 +610,7 @@ class LineAnnotationsCore(AnnotationsCore):
         """
         #self._df = self.getMapSegments()._buildSegmentDataFrame(self.timepoint)
 
-        _columns = ['t', 'segmentID', 'x', 'y', 'z', 'xLeft', 'yLeft', 'xRight', 'yRight', "length"]
+        _columns = ['t', 'segmentID', 'x', 'y', 'z', 'xLeft', 'yLeft', 'xRight', 'yRight', "length", "radius"]
 
         dfRet = pd.DataFrame(columns=_columns)
 
@@ -631,17 +633,22 @@ class LineAnnotationsCore(AnnotationsCore):
             dfRet['yLeft'] = xyLeft['y']
 
             xyRight = segmentDf['rightRadius'].get_coordinates(include_z=False)
+            # logger.info(f"xyRight {xyRight}")
             xyRight = xyRight.reset_index()  # xyRight still has labels as segmentID
+            # logger.info(f"xyRight after {xyRight}")
             dfRet['xRight'] = xyRight['x']
             dfRet['yRight'] = xyRight['y']
 
             #abj
             dfRet["length"] =  segmentDf['segment'].length
+
+            dfRet["radius"] =  segmentDf['radius']
+        
         
         dfRet['t'] = self.timepoint
 
         # logger.info(f'built segment df')
-        # print(dfRet)
+        # print("dfRet", dfRet)
 
         self._df = dfRet
     
@@ -650,3 +657,24 @@ class LineAnnotationsCore(AnnotationsCore):
         
         # return self._df
     
+    def getNumSegments(self) -> int:
+        if self._singleTimePoint.segments[:] is None:
+            return 0
+        else:
+            return len(self._singleTimePoint.segments[:])
+
+    def setValue(self, segmentID, value):
+        """
+        """
+        from mapmanagercore.schemas.segment import Segment
+
+        #  updateSegment(self, segmentId: Keys, value: Segment, replaceLog=False, skipLog=False):
+        _segment = Segment(radius=value)
+        self.singleTimepoint.updateSegment(segmentId = segmentID, value=_segment)
+
+        self._buildTimepoint()
+        self._buildDataFrame()
+
+        # self._buildDataFrame()
+
+        self._setDirty(True) #abj

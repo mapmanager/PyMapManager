@@ -514,8 +514,10 @@ class ImagePlotWidget(mmWidget2):
         """ only called by line Plot to update segments' radius lines
         """
         logger.info("updating radius line")
-        sliceNumber = event.getSliceNumber()
-        self._aLinePlot.refreshRadiusLines(sliceNumber)
+        # sliceNumber = event.getSliceNumber()
+        sliceNumber = self._currentSlice
+        # self._aLinePlot.refreshRadiusLines(sliceNumber)
+        self._aLinePlot.slot_setSlice(sliceNumber)
 
     def slot_setSlice(self, sliceNumber, doEmit=True):
         logger.warning(f'sliceNumber:{sliceNumber} doEmit:{doEmit}')

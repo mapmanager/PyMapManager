@@ -350,7 +350,7 @@ class stackWidget2(mmWidget2):
         topToobarName = 'top toolbar'
         self._topToolbar = StackToolBar(self._stack, self._displayOptionsDict)
         self._topToolbar.signalSlidingZChanged.connect(self.updateDisplayOptionsZ)
-        self._topToolbar.signalRadiusChanged.connect(self.updateRadius)
+        # self._topToolbar.signalRadiusChanged.connect(self.updateRadius)
         self._topToolbar.signalPlotCheckBoxChanged.connect(self.updatePlotBoxes)
         self.addToolBar(QtCore.Qt.TopToolBarArea, self._topToolbar)
         self._widgetDict[topToobarName] = self._topToolbar
@@ -442,19 +442,6 @@ class stackWidget2(mmWidget2):
         _pmmEvent.setSliceNumber(self._currentSliceNumber)
 
         logger.info(f'  -->> emit updateDisplayOptionsZ() self._currentSliceNumber :{self._currentSliceNumber}')
-        self.emitEvent(_pmmEvent, blockSlots=True)
-
-    def updateRadius(self, newRadius):
-        """ event that only  updates radius within linePlotWidget
-        """
-        self._displayOptionsDict['lineDisplay']['radius'] = newRadius
-
-        # _pmmEvent = pmmEvent(pmmEventType.setSlice, self)
-        # _pmmEvent.setSliceNumber(self._currentSliceNumber)
-        # self.emitEvent(_pmmEvent, blockSlots=True)
-
-        _pmmEvent = pmmEvent(pmmEventType.setRadius, self)
-        _pmmEvent.setSliceNumber(self._currentSliceNumber)
         self.emitEvent(_pmmEvent, blockSlots=True)
 
     def updatePlotBoxes(self, plotName):
@@ -872,6 +859,18 @@ class stackWidget2(mmWidget2):
         # abj
         self._currentSliceNumber = sliceNumber
 
+    # abj
+    def setRadiusEvent(self, event: pmmEvent):
+        segmentID = event.getFirstSegmentSelection()
+        newRadius = event.getNewRadiusVal()
+
+        logger.info(f"newRadius {newRadius}")
+        # self.getStack().getLineAnnotations().setValue("radius", segmentID, newRadius)
+        self.getStack().getLineAnnotations().setValue(segmentID, newRadius)
+
+        # self.getUndoRedo().addUndo(event)
+        # self._afterEdit2(event)
+
     def getCurrentSliceNumber(self):
         return self._currentSliceNumber 
 
@@ -1195,8 +1194,10 @@ class stackWidget2(mmWidget2):
     #     """
     #     pass
 
+
+    # deprecated
     def updateDFwithNewParams(self):
-        """ Rebult line and point dataframes after analysis params changes are applied
+        """ Rebuild line and point dataframes after analysis params changes are applied
         """
         self.getStack().getLineAnnotations()._buildDataFrame()
         self.getStack().getPointAnnotations()._buildDataFrame()
@@ -1206,4 +1207,4 @@ class stackWidget2(mmWidget2):
         _pmmEvent = pmmEvent(pmmEventType.setSlice, self)
         _pmmEvent.setSliceNumber(self._currentSliceNumber)
         self.emitEvent(_pmmEvent, blockSlots=True)
-            
+

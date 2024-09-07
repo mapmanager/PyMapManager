@@ -354,17 +354,18 @@ class AnalysisParamWidget(mmWidget2):
         else:
             logger.warning(f'Button "{buttonName}" not understood.')
 
-    def setRadiusEvent(self, event):
-        """
-        """
-        # sliceNumber = event.getSliceNumber()
-        logger.info("updating radius in analysis params")
-        # update radius value
-        displayOptions = self.stackWidget.getDisplayOptions()
-        newRadius = displayOptions['lineDisplay']['radius']
-        self.widgetDict["segmentRadius"].setValue(newRadius)
+    # Deprecated
+    # def setRadiusEvent(self, event):
+    #     """
+    #     """
+    #     # sliceNumber = event.getSliceNumber()
+    #     logger.info("updating radius in analysis params")
+    #     # update radius value
+    #     displayOptions = self.stackWidget.getDisplayOptions()
+    #     newRadius = displayOptions['lineDisplay']['radius']
+    #     self.widgetDict["segmentRadius"].setValue(newRadius)
 
-        self.enableButtons()
+    #     self.enableButtons()
 
 
 if __name__ == '__main__':

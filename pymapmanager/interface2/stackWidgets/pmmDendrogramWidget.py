@@ -27,7 +27,7 @@ from pymapmanager.interface2.stackWidgets.event.spineEvent import DeleteSpineEve
 import pyqtgraph as pg
 
 class PmmDendrogramWidget(mmWidget2):
-    _widgetName = 'Johnson Dendrogram'
+    _widgetName = 'Single Time Point Dendrogram'
 
     def __init__(self, stackWidget):
         """Widget to display a dendrogram plot of point and lines
@@ -62,18 +62,22 @@ class PmmDendrogramWidget(mmWidget2):
         self._makeCentralWidget(dendrogramPlotLayout)
 
 
-    def on_dendrogram_plot_selection(self, itemList : List[int], isAlt : bool = False):
+    # def on_dendrogram_plot_selection(self, itemList : List[int], isAlt : bool = False):
+    def on_dendrogram_plot_selection(self, aDict: dict):
         """Respond to user selection in scatter plot.
         
         This is called when user selects points within scatter plot window.
 
         Args:
-            rowList: List of rows that were selected
-            isAlt: True if keyboard Alt is down
+            aDict = {itemList : List[int], isAlt : bool = False}
+                rowList: List of rows that were selected
+                isAlt: True if keyboard Alt is down
         """
 
         # logger.info(f'{self.getClassName()} itemList:{itemList} isAlt:{isAlt}')
 
+        itemList = aDict["itemList"]
+        isAlt = aDict["isAlt"]
         if itemList is None:
             itemList = []
         
