@@ -562,7 +562,7 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
         self.acceptColumn = acceptColumn
         self.hueIDList = None
 
-        self.spineLengthConstant = 3
+        self.spineLengthConstant = 10
 
         # self.color = ['#a6cee3', '#1f78b4', '#b2df8a', '#33a02c', '#fb9a99', '#e31a1c', '#fdbf6f', '#ff7f00', '#cab2d6', '#6a3d9a', '#ffff99', '#b15928']
         self.color = ['#f77189', '#dc8932', '#ae9d31', '#77ab31', '#33b07a', '#36ada4', '#38a9c5', '#6e9bf4', '#cc7af4', '#f565cc']
@@ -996,8 +996,6 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
         filterStr = self.dict["filterStr"]
         filterColumn = self.dict["filterColumn"]
         hueColumn = self.dict["hueColumn"]
-        # columnNameX = self.dict["X Stat"]
-        # columnNameY = self.dict["Y Stat"]
         
         if filterStr != "" and filterColumn != "":
             # Filter by the inputted column and default str. In the case of pmm: filterStr=spineROI, filterColumn=roiType
@@ -1005,27 +1003,11 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
         else:  
             self.filteredDF, xyStatIndex = self.getfilteredDFWithIndexList(filterStr=None, filterColumn=None)
 
-        # try:
-        #     # In For Plotting Later, the dataframe needs to be filtered by the hueColumn and current hueID
-        #     currentHueID = float(self.dict["currentHueID"])
-        #     self.filteredDF  = self.filteredDF.loc[self.filteredDF[hueColumn] == currentHueID]
-        #     xyStatIndex = self.getFilteredIndexList(self.filteredDF)
-
-        # except:
-        #     # logger.info("no ID")
-        #     # get "All" segments
-        #     currentHueID = self.dict["currentHueID"] # this doesn't actually get used
-
         segmentID = filterStr
         self.dendrogramReplot(newSegmentID=segmentID)
 
-        ## TODO: change this to plot 
         xDFStat = self.plotDF["spineX"] 
-        # logger.info(f"new xDFStat {xDFStat}")
         yDFStat = self.plotDF["spineY"] 
-
-        # xStat = np.array(xStat)
-        # yStat = np.array(yStat)
         xyStatIndex =  np.array(xyStatIndex)
 
         if self.dict["invertY"]:
@@ -1106,29 +1088,37 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
             savedSpineIndex.append(index)
             # Determine direction
             if(direction == "Left"):
-                # xVal = -1 * xVal  
-                spineX.append(-1 * xVal)
+                xVal = -1 * xVal  
+                spineX.append(xVal)
+                # spineX.append(-1 * xVal)
             elif(direction == "Right"):
                 spineX.append(xVal)
 
             # Calculate Y
             if self.spineAngleCheckbox.isChecked():
                 angle = spineAngle[index]
-                # logger.info(f"angle {angle}")
-              
-                angleTan = math.tan(angle * math.pi/180)
-           
                 # angledY = xVal * math.tan(angle)
                 # logger.info(f"index {index} angledY {angledY} temp {temp}")
 
                 # account for undefined tangent angles
-                if angle == 270 or angle == 90 or angle == 180 or angle == 0 or angle == 360:
-                    angledY = xVal
+                undefinedList = [270, 90, 180, 0, 360]
+                if math.ceil(angle) in undefinedList or math.floor(angle) in undefinedList:
+                    angledY = anchorY[i] # make it perpendicular to line
                 else:
-                    # angledY = xVal * math.tan(((angle * math.pi/180) - 90))
-                    angledY = (xVal / math.tan((angle * math.pi/180)))
-                
-                logger.info(f"index {index} angledY {angledY}")
+                    # default
+                    # angledY = xVal * math.tan((angle * math.pi/180))
+
+                    # Logic: adjust y val by abs value of angle. + or - depending on angle
+                    # this allows us to accurately plot angle
+                    anchorYVal = anchorY[i]
+                    angledY = xVal * math.tan((angle + 90)* math.pi/180)
+                    diff = abs(anchorYVal) - abs(angledY)
+                    if angle < 90:
+                        angledY = anchorYVal - abs(diff)
+                    else:
+                        angledY = anchorYVal + abs(diff)
+
+                # logger.info(f"index {index} angle {angle} xVal {xVal} angledY {angledY}")
                 spineY.append(angledY)
             else:
                 spineY.append(anchorY[i])

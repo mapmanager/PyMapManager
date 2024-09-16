@@ -71,6 +71,16 @@ def run2():
     sw2 = app.loadStackWidget(path)
     sys.exit(app.exec_())
 
+def run3():
+    app = PyMapManagerApp()
+    path = 'C:/Users/johns/Documents/TestMMCMaps/rr30a_s0u.mmap'
+
+    sw2 = app.loadStackWidget(path)
+    sw2.zoomToPointAnnotation(120, isAlt=True)
+    sys.exit(app.exec_())
+
+
 if __name__ == '__main__':
-    run()
+    # run()
     # run2()
+    run3()
