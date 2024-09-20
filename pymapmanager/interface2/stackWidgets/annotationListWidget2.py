@@ -486,7 +486,18 @@ class lineListWidget(annotationListWidget):
         logger.info(f'emit -->> event: {event}')
         self.emitEvent(event, blockSlots=False)        
 
-    
+    def settedSegmentPivot(self, event):
+
+        # uncheck Pivot box in tracing widget after setting segment pivot
+        self.tracingWidget.updatePivotSpinBox(False)
+
+        # refresh linelistWidget
+        self._setModel()
+
+        segmentID = event.getFirstSegmentSelection()
+        # reselect current segment
+        self._myTableView._selectRow([segmentID])
+        
 if __name__ == '__main__':
     import pymapmanager
     

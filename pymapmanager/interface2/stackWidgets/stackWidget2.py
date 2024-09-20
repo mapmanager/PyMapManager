@@ -600,6 +600,36 @@ class stackWidget2(mmWidget2):
 
         return True
     
+    def settedSegmentPivot(self, event : pmmEvent): #abj
+        """Derived classes need to perform action of selection event.
+        """
+        logger.warning('=== ===   STACK WIDGET PERFORMING ADD PIVOT POINT   === ===')
+
+        logger.info(event)
+
+        for item in event:
+            segmentID = item['segmentID']
+            x = item['x']
+            y = item['y']
+            z = item['z']
+            # logger.info(f' setted pivot point to segmentID:{segmentID} with x:{x} y:{y} z:{z}')
+            clickedPoint = Point(x,y,z)
+            _added = self.getStack().getLineAnnotations().setPivotDistance(segmentID, clickedPoint)
+            # _added = self.getStack().getLineAnnotations().old_setPivotPoint(segmentID, clickedPoint)
+
+        if _added is None:
+            self.slot_setStatus('No point added, click a bit closer to the last point')
+        else:
+            self.slot_setStatus('set Pivot point in segment tracing')
+        
+        self.getUndoRedo().addUndo(event)
+
+        self._afterEditSegment(event)
+
+        # self.getUndoRedo().addUndo(event)
+        
+    #     return _added is not None
+    
     #
     # spines
     def addedEvent(self, event : AddSpineEvent) -> bool:
@@ -723,6 +753,8 @@ class stackWidget2(mmWidget2):
             self.slot_setStatus('Click the line to specify the new spine connection point, esc to cancel')
         elif _state == pmmStates.tracingSegment:
             self.slot_setStatus('Shift+click to create a new segment tracing points')
+        elif _state == pmmStates.settingSegmentPivot: # abj
+            self.slot_setStatus('Click to set segment Pivot')
 
         return True
     
@@ -742,6 +774,19 @@ class stackWidget2(mmWidget2):
         spines = event.getSpines()  # [int]
         # logger.info(f"afterEdit2 spines: {spines}")
         self.zoomToPointAnnotation(spines)
+
+        self.slot_setStatus('Ready')
+
+    def _afterEditSegment(self, event):
+        """After edit (setSegmentPivot), return to edit state 
+        """
+
+        # logger.info('returning to edit state and re-select spines')
+
+        # return to edit state
+        stateEvent = pmmEvent(pmmEventType.stateChange, self)
+        stateEvent.setStateChange(pmmStates.edit)
+        self.slot_pmmEvent(stateEvent)
 
         self.slot_setStatus('Ready')
 

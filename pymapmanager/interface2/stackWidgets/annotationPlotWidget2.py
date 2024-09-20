@@ -1202,6 +1202,25 @@ class linePlotWidget(annotationPlotWidget):
         self._rightRadiusLines.setZValue(
             zorder
         )  # put it on top, may need to change '10'
+        
+        color= "orange"
+        _pen = pg.mkPen(width=penWidth, color=color)
+        self._pivotPoints = self._view.plot(
+            [],
+            [],
+            pen=None,  # None to not draw lines
+            symbol= "o",
+            # symbolColor  = 'red',
+            symbolPen=None,
+            fillOutline=False,
+            markeredgewidth=5,
+            symbolBrush = color,
+            # connect='finite',
+        )
+
+        self._pivotPoints.setZValue(
+            10
+        )  #
 
     def toggleRadiusLines(self):
         self.showRadiusLines = not self.showRadiusLines
@@ -1329,6 +1348,9 @@ class linePlotWidget(annotationPlotWidget):
             connect=_lineConnect,
         )
 
+        pivotPointXs, pivotPointYs = self._annotations.getPivotPoint()
+        self._pivotPoints.setData(pivotPointXs, pivotPointYs)
+
     def selectedEvent(self, event: pmmEvent):
         """
         
@@ -1366,4 +1388,7 @@ class linePlotWidget(annotationPlotWidget):
         print(self._dfPlot)
 
     def addedSegmentPointEvent(self, event):
+        self._refreshSlice()
+
+    def settedSegmentPivot(self, event):
         self._refreshSlice()

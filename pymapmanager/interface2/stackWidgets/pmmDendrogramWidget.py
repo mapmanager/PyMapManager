@@ -36,6 +36,7 @@ class PmmDendrogramWidget(mmWidget2):
         self.stackWidget = stackWidget
         self._paDf = stackWidget.getStack().getPointAnnotations().getDataFrame()
         self._laDf = stackWidget.getStack().getLineAnnotations().getDataFrame()
+        self._summaryLaDf = stackWidget.getStack().getLineAnnotations().getSummaryDf()
 
         # pg.PlotWidget() 
         self._view = pg.PlotWidget() 
@@ -50,6 +51,7 @@ class PmmDendrogramWidget(mmWidget2):
 
     def _buildScatterPlot(self):
         self._dendrogramPlotWidget = DendrogramPlotWidget(df=self._paDf, laDF= self._laDf, 
+                                                    summaryLaDF = self._summaryLaDf,
                                                     filterColumn= "segmentID", acceptColumn = None,
                                                     hueColumnList=["segmentID"],
                                                     # stackWidget = stackWidget,

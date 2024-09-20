@@ -514,7 +514,8 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
     # def __init__(self, inputtedDF, filterColumn: None, hueColumn: None):
     def __init__(self,
         df : pd.DataFrame, # pointsDF
-        laDF: pd.DataFrame, #segmentDF
+        laDF: pd.DataFrame, #segmentDF (individual points)
+        summaryLaDF: pd.DataFrame, # segmentDF (summary data: length, radius, etc...)
         filterColumn : Optional[str] = None,
         acceptColumn : Optional[str] = None,
         hueColumnList: Optional[List[str]] = None,
@@ -578,6 +579,9 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
         self._df = df
 
         self._laDF = laDF
+
+        self._summaryLaDF = summaryLaDF
+
         # logger.info(f"self._df {self._df}")
         self.setColumnList()
         self.hueColumnList = hueColumnList
@@ -676,8 +680,8 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
         indexList = []
         # logger.info(f"filter self._df {self._df}")
         # logger.info(f"self._df[filterColumn] {self._df[filterColumn]}")
-        logger.info(f"filterColumn {filterColumn}")
-        logger.info(f"filterStr {filterStr}")
+        # logger.info(f"filterColumn {filterColumn}")
+        # logger.info(f"filterStr {filterStr}")
         if filterStr == "All":
             indexList = self._df.index.tolist()
             # No filtering done
@@ -718,7 +722,7 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
     def setSegmentPlot(self):
         # self.segmentLength 
         # self.segment.plot([0,0],[0,self.segmentLength])
-        logger.info(f"segmentLength {self.segmentLength}")
+        # logger.info(f"segmentLength {self.segmentLength}")
         self.segment = self.axScatter.plot([0,0],[0,self.segmentLength], zorder = 1)
 
     def setSpineLinePlot(self):
@@ -752,7 +756,7 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
                         # default value is first color in map
                         myColorMap.append(self.color[0])
 
-            logger.info("here in setscatterplot")
+            # logger.info("here in setscatterplot")
             self.scatterPoints = self.axScatter.scatter(xStat, yStat, s = self._markerSize, c = myColorMap, 
                                                         picker=False, zorder = 2)
 
@@ -1134,9 +1138,11 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
             spineLineY.append(spineY[i]) 
             spineLineY.append(np.nan) 
 
-        filteredLineDF = self._laDF[self._laDF.index == newSegmentID]
+        # filteredLineDF = self._laDF[self._laDF.index == newSegmentID]
         # logger.info(f"filteredLineDF {filteredLineDF}")
-        self.segmentLength = filteredLineDF["length"].iloc[0]
+        # self.segmentLength = filteredLineDF["length"].iloc[0]
+        filteredLineDF = self._summaryLaDF[self._summaryLaDF.index == newSegmentID]
+        self.segmentLength = filteredLineDF["Length"].iloc[0]
         # logger.info(f"segmentLength {segmentLength}")
 
         self.plotDF = pd.DataFrame({"spineX": spineX, "spineY": spineY, "spineIndex": savedSpineIndex})

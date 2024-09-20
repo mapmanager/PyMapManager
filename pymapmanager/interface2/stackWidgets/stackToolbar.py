@@ -283,8 +283,9 @@ class StackToolBar(QtWidgets.QToolBar):
 
         logger.info(f"plotMenuChange {action.text()}")
         if action.text() == "Radius Lines":
-            self._radiusSpinBox.setEnabled(action.isChecked())
-            self.radiusLabel.setEnabled(action.isChecked())
+            # self._radiusSpinBox.setEnabled(action.isChecked())
+            # self.radiusLabel.setEnabled(action.isChecked())
+            pass
         elif action.text() == "Image":
             self.channelActionGroup.setEnabled(action.isChecked())
             # self.slidingUpDownLabel.setEnabled(action.isChecked())

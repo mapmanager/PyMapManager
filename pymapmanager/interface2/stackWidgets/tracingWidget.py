@@ -136,6 +136,9 @@ class TracingWidget(mmWidget2):
         if self.currentSegmentID != self.prevSegmentID:
             self.signalRadiusChanged.emit(value)
 
+    def updatePivotSpinBox(self, value):
+        self._setPivotCheckBox.setChecked(value)
+
     def _on_set_pivot_checkbox(self, checked):
         """
         Notes
@@ -151,7 +154,7 @@ class TracingWidget(mmWidget2):
         event = pmmEvent(pmmEventType.stateChange, self)
         event.setStateChange(pmmStates.settingSegmentPivot)
         self.emitEvent(event)
-        
+    
     def on_segment_edit_checkbox(self, state : int):
         """Respond to user toggling segment edit checkbox.
 

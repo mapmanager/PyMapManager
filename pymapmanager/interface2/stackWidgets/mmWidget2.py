@@ -68,6 +68,9 @@ class pmmEventType(Enum):
     addSegmentPoint = auto()
     deleteSegmentPoint = auto()
 
+    # setPivotPoint = auto() # abj
+    settingSegmentPivot = auto() # abj
+
 class StackSelection:
     def __init__(self, stack : pymapmanager.stack = None):
         
@@ -820,6 +823,9 @@ class mmWidget2(QtWidgets.QMainWindow):
         elif event.type == pmmEventType.deleteSegmentPoint:
             acceptEvent = self.deletedSegmentPointEvent(event)
 
+        elif event.type == pmmEventType.settingSegmentPivot: # abj
+            acceptEvent = self.settedSegmentPivot(event)
+
         # abj
         # elif event.type == pmmEventType.acceptPoint:
         #     acceptEvent = self.acceptPoint(event)
@@ -1024,6 +1030,10 @@ class mmWidget2(QtWidgets.QMainWindow):
         """
 
     def deletedSegmentPointEvent(self, event : pmmEvent):
+        """Derived classes need to perform action of selection event.
+        """
+
+    def settedSegmentPivot(self, event : pmmEvent):
         """Derived classes need to perform action of selection event.
         """
 
