@@ -26,14 +26,14 @@ def run():
     # path = '../PyMapManager-Data/core-map/one-timepoint/oneTimepoint.mmap'
     # path ='\\Users\\johns\\Documents\\GitHub\\MapManagerCore\\sandbox\\data\\rr30a_s0.mmap'
     # path = 'C:\\Users\\johns\\Documents\\GitHub\\MapManagerCore\\data\\rr30a_s0u.mmap'
-    # path = '\\Users\\johns\\Documents\\GitHub\\MapManagerCore\\data\\rr30a_s0u.mmap'
+    path = '\\Users\\johns\\Documents\\GitHub\\MapManagerCore\\data\\rr30a_s0u.mmap'
     # path = '/Users/johns/Documents/GitHub/MapManagerCore/data/rr30a_s0u.mmap'
 
 
     # path = '/Users/johns/Documents/GitHub/MapManagerCore/data/rr30a_s0u_v3.mmap'
     # path = '/Users/johns/Documents/GitHub/MapManagerCore/data/test2.mmap'
     # path = '/Users/johns/Documents/GitHub/PyMapManager-Data/one-timepoint/rr30a_s0_ch1.mmap'
-    path = 'C:/Users/johns/Documents/TestMMCMaps/rr30a_s0u.mmap'
+    # path = 'C:/Users/johns/Documents/TestMMCMaps/rr30a_s0u.mmap'
     # import mapmanagercore
 
     # pooch path
@@ -74,6 +74,7 @@ def run2():
 def run3():
     app = PyMapManagerApp()
     path = 'C:/Users/johns/Documents/TestMMCMaps/rr30a_s0u.mmap'
+    # path = 'C:/Users/johns/Documents/TestMMCMaps/rr30a_s0u_newSpineAngle.mmap'
 
     sw2 = app.loadStackWidget(path)
     sw2.zoomToPointAnnotation(120, isAlt=True)
@@ -81,6 +82,6 @@ def run3():
 
 
 if __name__ == '__main__':
-    # run()
+    run()
     # run2()
-    run3()
+    # run3()

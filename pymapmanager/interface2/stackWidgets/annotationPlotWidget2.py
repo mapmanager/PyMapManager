@@ -76,15 +76,15 @@ class PointLabels:
         y = self.df.getValue('y', labelID)
         spineAngles = self._df.getDataFrame()["spineAngle"]
         idSpineAngle = spineAngles[labelID]
-        adjustConstant = 2
+        adjustConstant = 3
         adjustX = adjustConstant * math.cos(idSpineAngle * math.pi/180)
         adjustY = adjustConstant * math.sin(idSpineAngle * math.pi/180)
         adjustX = abs(adjustX)
         adjustY = abs(adjustY)
 
-        if 0 <= abs(idSpineAngle) and abs(idSpineAngle) <= 90:
+        if 0 <= idSpineAngle and idSpineAngle <= 90:
             label.setPos(QtCore.QPointF(x + adjustX, y + adjustY))
-        elif 90 <= abs(idSpineAngle) and abs(idSpineAngle) <= 180:
+        elif 90 <= idSpineAngle and idSpineAngle <= 180:
             label.setPos(QtCore.QPointF(x - adjustX, y + adjustY))
         elif 180 <= idSpineAngle and idSpineAngle <= 270:
             label.setPos(QtCore.QPointF(x - adjustX, y - adjustY))

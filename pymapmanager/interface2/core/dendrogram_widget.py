@@ -1115,11 +1115,20 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
                     # Logic: adjust y val by abs value of angle. + or - depending on angle
                     # this allows us to accurately plot angle
                     anchorYVal = anchorY[i]
-                    angledY = xVal * math.tan((angle + 90)* math.pi/180)
+                    angledY = xVal * math.tan((angle)* math.pi/180)
                     diff = abs(anchorYVal) - abs(angledY)
-                    if angle < 90:
+
+                    if 0 <= angle and angle <= 90: # GOOD
+                        # label.setPos(QtCore.QPointF(x + adjustX, y + adjustY))
+                        angledY = anchorYVal + abs(diff)
+                    elif 90 <= angle and angle <= 180: 
+                        # label.setPos(QtCore.QPointF(x - adjustX, y + adjustY))
                         angledY = anchorYVal - abs(diff)
-                    else:
+                    elif 180 <= angle and angle <= 270:
+                        # label.setPos(QtCore.QPointF(x - adjustX, y - adjustY))
+                        angledY = anchorYVal - abs(diff)
+                    elif 270 <= angle and angle <= 360: #BAD
+                        # label.setPos(QtCore.QPointF(x + adjustX, y - adjustY))
                         angledY = anchorYVal + abs(diff)
 
                 # logger.info(f"index {index} angle {angle} xVal {xVal} angledY {angledY}")
@@ -1138,9 +1147,6 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
             spineLineY.append(spineY[i]) 
             spineLineY.append(np.nan) 
 
-        # filteredLineDF = self._laDF[self._laDF.index == newSegmentID]
-        # logger.info(f"filteredLineDF {filteredLineDF}")
-        # self.segmentLength = filteredLineDF["length"].iloc[0]
         filteredLineDF = self._summaryLaDF[self._summaryLaDF.index == newSegmentID]
         self.segmentLength = filteredLineDF["Length"].iloc[0]
         # logger.info(f"segmentLength {segmentLength}")
