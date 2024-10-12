@@ -18,6 +18,7 @@ class Preferences:
         # self._version = 0.1
         # self._version = 0.23  # adding default window size
         self._version = 0.24  # upgrade to zar
+        self._version = 0.25  # removed load stack (we only load mmap either from tif or mmap file)
         # johnson, when you change the format of saved json, manually bump the version
 
         self._maxRecent = 10
