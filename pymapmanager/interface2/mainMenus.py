@@ -4,6 +4,7 @@ from qtpy import QtWidgets
 
 from pymapmanager._logger import logger, setLogLevel
 from pymapmanager.interface2.stackWidgets import stackWidget2
+from pymapmanager.interface2.mapWidgets import mapWidget
 
 class PyMapManagerMenus:
     """Main app menus including loaded map and stack widgets.
@@ -27,6 +28,8 @@ class PyMapManagerMenus:
         #
         # file
         self.fileMenu = mainMenu.addMenu("&File")
+        _emptyAction = QtWidgets.QAction("None", mainWindow)
+        self.fileMenu.addAction(_emptyAction)
         self.fileMenu.aboutToShow.connect(self._refreshFileMenu)
 
         # loadFileAction = QtWidgets.QAction("Open...", self.getApp())
@@ -80,6 +83,8 @@ class PyMapManagerMenus:
         #
         # edit
         self.editMenu = mainMenu.addMenu("&Edit")
+        _emptyAction = QtWidgets.QAction("None", mainWindow)
+        self.editMenu.addAction(_emptyAction)
         self.editMenu.aboutToShow.connect(self._refreshEditMenu)
 
         #
@@ -197,14 +202,14 @@ class PyMapManagerMenus:
             self.pluginsMenu.addAction(action)
 
     def _refreshWindowsMenu(self):
-        """A menu with stacks then maps
+        """A menu with stacks and maps
         """
         logger.info('')
         
         self.windowsMenu.clear()
 
-        for _path, _stackWidget in self.getApp().getStackWidgetsDict().items():
-            logger.info(f'adding to stack window:{_path}')
+        for _path, _stackWidget in self.getApp().getOpenWidgetDict().items():
+            logger.info(f'adding to stack/map window:{_path}')
             # path = _stackWidget.getPath()
             action = QtWidgets.QAction(_path, self.getApp(), checkable=True)
             #TODO: check frontmost window and toggle check
@@ -212,62 +217,16 @@ class PyMapManagerMenus:
             action.triggered.connect(partial(self._onWindowsMenuAction, _path))
             self.windowsMenu.addAction(action)
 
-        # add sep if we have at least one map
-        if len(self.getApp().getMapWidgetsDict().items()) > 0:
-            self.windowsMenu.addSeparator()
-
-        for _path, _mapWidget in self.getApp().getMapWidgetsDict().items():
-            logger.info(f'adding map to windows menu:{_path}')
-            action = QtWidgets.QAction(_path, self.getApp(), checkable=True)
-            # action.setChecked(_sanPyWindow.isActiveWindow())
-            action.triggered.connect(partial(self._onWindowsMenuAction, _path))
-            self.windowsMenu.addAction(action)
-
         # add sep if we have at least one stack or map
-        if len(self.getApp().getStackWidgetsDict().items()) > 0 or \
-                len(self.getApp().getMapWidgetsDict().items()) > 0:
+        if len(self.getApp().getOpenWidgetDict().items()) > 0:
             self.windowsMenu.addSeparator()
 
         action = QtWidgets.QAction('Open First', self.getApp(), checkable=True)
         action.triggered.connect(partial(self._onOpenFirstMenuAction))
         self.windowsMenu.addAction(action)
 
-    # def _refreshMapsMenu(self):
-    #     """Dynamically refresh the stacks maps.
-    #     """
-    #     logger.info('')
-    #     self.mapsMenu.clear()
-    #     self._getMapsMenu(self.mapsMenu)
-    
-    # def _refreshStacksMenu(self):
-    #     """Dynamically refresh the stacks menu.
-    #     """
-    #     logger.info('')
-    #     self.stacksMenu.clear()
-    #     self._getStacksMenu(self.stacksMenu)
-
-    # def _getMapsMenu(self, aWindowsMenu):
-    #     logger.info('')
-    #     for _path, _mapWidget in self.getApp().getMapWidgetsDict().items():
-    #         # path = _mapWidget.getPath()
-    #         action = QtWidgets.QAction(_path, self.getApp(), checkable=True)
-    #         # action.setChecked(_sanPyWindow.isActiveWindow())
-    #         # action.triggered.connect(partial(self._windowsMenuAction, _sanPyWindow, path))
-    #         aWindowsMenu.addAction(action)
-    #     return aWindowsMenu
-    
-    # def _getStacksMenu(self, aWindowsMenu):
-    #     logger.info('')
-    #     for _path, _stackWidget in self.getApp().getStackWidgetsDict().items():
-    #         # path = _stackWidget.getPath()
-    #         action = QtWidgets.QAction(_path, self.getApp(), checkable=True)
-    #         # action.setChecked(_sanPyWindow.isActiveWindow())
-    #         action.triggered.connect(partial(self._onStacksMenuAction, _path))
-    #         aWindowsMenu.addAction(action)
-    #     return aWindowsMenu
-    
     def _onOpenFirstMenuAction(self):
-        self.getApp()._openFirstWindow.show()
+        self.getApp().openFirstWindow()
 
     def _onPluginMenuAction(self, pluginName : str, mapOrStack : str):
         """Run a plugin.
@@ -310,12 +269,12 @@ class PyMapManagerMenus:
         
         self.editMenu.clear()
 
-        enableUndo = True
-        enableRedo = True
+        enableUndo = False
+        enableRedo = False
         
         # from pymapmanager.interface2.stackWidgets import stackWidget2
         frontWindow = self.getApp().getFrontWindow()
-        if isinstance(frontWindow, stackWidget2):
+        if isinstance(frontWindow, (stackWidget2, mapWidget)):
             nextUndo = frontWindow.getUndoRedo().nextUndoStr()
             nextRedo = frontWindow.getUndoRedo().nextRedoStr()
             enableUndo = frontWindow.getUndoRedo().numUndo() > 0
@@ -410,6 +369,8 @@ class PyMapManagerMenus:
     def _refreshFileMenu(self):
         """ Dynamically generate the file stack/map menu.
         """
+        logger.info('')
+        
         self.fileMenu.clear()
         
         loadFileAction = QtWidgets.QAction("Open...", self.getApp())
@@ -418,11 +379,11 @@ class PyMapManagerMenus:
         loadFileAction.triggered.connect(self.getApp().openFile)
         self.fileMenu.addAction(loadFileAction)
         
-        loadFolderAction = QtWidgets.QAction("Open Time-Series...", self.getApp())
-        loadFolderAction.setCheckable(False)  # setChecked is True by default?
-        loadFolderAction.triggered.connect(self.getApp().openTimeSeries)
-        self.fileMenu.addAction(loadFolderAction)
-        self.fileMenu.addSeparator()
+        # loadFolderAction = QtWidgets.QAction("Open Time-Series...", self.getApp())
+        # loadFolderAction.setCheckable(False)  # setChecked is True by default?
+        # loadFolderAction.triggered.connect(self.getApp().openTimeSeries)
+        # self.fileMenu.addAction(loadFolderAction)
+        # self.fileMenu.addSeparator()
 
         # abj
         enableUndo = False

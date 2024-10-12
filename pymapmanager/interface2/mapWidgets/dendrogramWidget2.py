@@ -21,6 +21,8 @@ from pymapmanager._logger import logger
 
 class dendrogramWidget2(mmWidget2):
     """A dendrogram widget.
+
+    Plot seesion versus spine position.
     """
 
     _widgetName = "Map Dendrogram v2"
@@ -76,10 +78,8 @@ class dendrogramWidget2(mmWidget2):
         self.mmmPlot = mmMapPlot2(_map, plotDict, fig=self.fig)
         
         # logger.info('TODO: reactivate for core')
-        # self.mmmPlot.connect_on_pick(self._on_pick)
+        self.mmmPlot.connect_on_pick(self._on_pick)
         
-        # self.mmmPlot = mmMapPlot(self.getMap(), plotDict, fig=None)
-
         vLayout = QtWidgets.QVBoxLayout()
         self._makeCentralWidget(vLayout)
         
@@ -97,6 +97,27 @@ class dendrogramWidget2(mmWidget2):
         # plt.draw()
         # plt.show()
 
+    def _on_pick(self, d):
+        """Callback on selection in matplotlib.
+        """
+        logger.info('')
+        spineID = d['spineID']
+        timepoint = d['timepoint']
+        isAlt = d['isAlt']
+
+        from pymapmanager.interface2.stackWidgets.event.spineEvent import SelectSpine
+        event = SelectSpine(self, spineID, timepoint=timepoint, isAlt=isAlt)
+        
+        logger.info(f'emit event -->> select map spineID:{spineID} timepoint:{timepoint} isAlt:{isAlt}')
+        self.emitEvent(event, blockSlots=False)
+
+        # emit point selection
+        # eventType = pmmEventType.selection
+        # event = pmmEvent(eventType, self)
+        # event.getStackSelection().setPointSelection(spineID)
+        # event.setAlt(isAlt)
+
+            
     def _buildTopToolbar(self):
         """Top toobar.
         """

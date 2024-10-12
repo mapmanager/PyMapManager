@@ -1,33 +1,31 @@
 from typing import List, Union, Optional
 
-from pymapmanager.interface2.stackWidgets import stackWidget2
+# from pymapmanager.interface2.stackWidgets import stackWidget2
 from pymapmanager.interface2.stackWidgets.mmWidget2 import pmmEvent, pmmEventType
-from pymapmanager.interface2.stackWidgets.event.spineEvent import (AddSpineEvent,
-                                                                   DeleteSpineEvent,
-                                                                   MoveSpineEvent,
-                                                                   ManualConnectSpineEvent,
-                                                                   EditSpinePropertyEvent,
-                                                                   EditedSpineEvent)
+# from pymapmanager.interface2.stackWidgets.event.spineEvent import (AddSpineEvent,
+#                                                                    DeleteSpineEvent,
+#                                                                    MoveSpineEvent,
+#                                                                    ManualConnectSpineEvent,
+#                                                                    EditSpinePropertyEvent,
+#                                                                    EditedSpineEvent)
 
-from pymapmanager.interface2.stackWidgets.event.segmentEvent import (AddSegmentEvent,
-                                                                   DeleteSegmentEvent,
-                                                                   AddSegmentPoint,
-                                                                   DeleteSegmentPoint)
+# from pymapmanager.interface2.stackWidgets.event.segmentEvent import (AddSegmentEvent,
+#                                                                    DeleteSegmentEvent,
+#                                                                    AddSegmentPoint,
+#                                                                    DeleteSegmentPoint)
 
 from pymapmanager._logger import logger
 
-class UndoRedoEvent:
+class _old_UndoRedoEvent:
     """Undo and Redo spine events for a stack widget.
-    
-    Undo delete is not working, could be because core does not refresh spine lines on undo/redo?
-    Same might be true for apsine property 'Accept'
     """
-    def __init__(self, parentStackWidget : stackWidget2):
-        self._parentStackWidget = parentStackWidget
+    # def __init__(self, parentStackWidget : stackWidget2):
+    def __init__(self):
+        # self._parentStackWidget = parentStackWidget  # TODO: not used and not needed
         self._undoList = []
         self._redoList = []
 
-    def _getStackWidgetSlice(self) -> int:
+    def _old__getStackWidgetSlice(self) -> int:
         """Used to emit set slice.
         """
         return self._parentStackWidget.getCurrentSliceNumber()
@@ -155,7 +153,7 @@ class UndoRedoEvent:
     def numRedo(self) -> int:
         return len(self._redoList)
 
-    def _emitEditedSpineEvent(self, event):
+    def _old__emitEditedSpineEvent(self, event):
         theWidget = event.getSenderObject()
         
         # TODO: make a deep copy of event
@@ -171,14 +169,14 @@ class UndoRedoEvent:
         ese = EditedSpineEvent(theWidget, spineID)
         theWidget.emitEvent(ese)
 
-    def _refreshSlice(self, event):
+    def _old_refreshSlice(self, event):
         theWidget = event.getSenderObject()
         setSliceEvent = pmmEvent(pmmEventType.setSlice, theWidget)
         _sliceNumber = self._getStackWidgetSlice()
         setSliceEvent.setSliceNumber(_sliceNumber)
         theWidget.emitEvent(setSliceEvent)
 
-    def _cancelSelection(self, event, segment=False):
+    def _old_cancelSelection(self, event, segment=False):
         items = []
         theWidget = event.getSenderObject()
         event = pmmEvent(pmmEventType.selection, theWidget)
@@ -188,7 +186,7 @@ class UndoRedoEvent:
             event.getStackSelection().setPointSelection(items)
         theWidget.emitEvent(event)
 
-    def _reselect(self, event, segment=False):
+    def _old_reselect(self, event, segment=False):
         if segment:
             items = event.getSegments()
         else:

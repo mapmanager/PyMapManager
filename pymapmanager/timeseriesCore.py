@@ -1,5 +1,5 @@
 import os
-from typing import Optional
+from typing import Optional, Tuple, Union
 
 import pandas as pd
 from shapely.geometry import LineString
@@ -13,8 +13,9 @@ class ImagesCore:
     def __init__(self, fullMap : "TimeSeriesCore"):
         self._fullMap : TimeSeriesCore = fullMap
 
-    def getPixels(self, timepoint, channelIdx, zRange):
-        return self._fullMap.getPixels(time=timepoint, channel=channelIdx, z=zRange)
+    def getPixels(self, timepoint, channelIdx, zRange : Union[int, Tuple[int,int]]):
+        # return self._fullMap.getPixels(time=timepoint, channel=channelIdx, z=zRange)
+        return self._fullMap._images.fetchSlices(timepoint, channelIdx, (zRange, zRange+1))
 
     def getAutoContrast(self, timepoint, channel):
         channelIdx = channel - 1
@@ -32,7 +33,7 @@ class ImagesCore:
     # def shape(self, timepoint):
     #     self._fullMap.shape(t=timepoint)
 
-class SegmentsCore:
+class _old_SegmentsCore:
     def __init__(self, core, fullMap : MapAnnotations):
         self._core = core
         self._fullMap : MapAnnotations = fullMap
@@ -266,7 +267,7 @@ class SegmentsCore:
 
         return (x, y, z)
 
-class PointsCore:
+class _old_PointsCore:
     def __init__(self, core,
                  fullMap : MapAnnotations):
         self._core = core
@@ -367,6 +368,81 @@ class PointsCore:
         logger.info('TODO')
         logger.info(f'timepoint:{timepoint} row:{row} value:{value}')
 
+from pymapmanager._logger import logger
+
+class UndoRedoManager:
+    """Undo and Redo spine events for a stack widget.
+    """
+    # def __init__(self, parentStackWidget : stackWidget2):
+    def __init__(self):
+        # self._parentStackWidget = parentStackWidget  # TODO: not used and not needed
+        self._undoList = []
+        self._redoList = []
+
+    def __str__(self):
+        retStr = 'UndoRedoManager in TimeSeriesCore has\n'
+        retStr += f'   _undoList:{self._undoList}\n'
+        retStr += f'   _redoList:{self._redoList}\n'
+        
+        return retStr
+    
+    def addUndo(self, event : "pymapmanager.interface2.stackWidgets.mmWidget2.pmmEvent") -> None:
+        self._undoList.append(event)
+
+    def _addRedo(self, event : "pymapmanager.interface2.stackWidgets.mmWidget2.pmmEvent") -> None:
+        self._redoList.append(event)
+
+    def doUndo(self) -> "pymapmanager.interface2.stackWidgets.mmWidget2.pmmEvent":
+        """Undo the last edit event.
+        """
+
+        if self.numUndo() == 0:
+            logger.info('nothing to undo')
+            return
+
+        # the last undo event
+        undoEvent = self._undoList.pop(len(self._undoList)-1)
+
+        # add to redo
+        self._addRedo(undoEvent)
+
+        return undoEvent
+        
+    def doRedo(self) -> Optional["pymapmanager.interface2.stackWidgets.mmWidget2.pmmEvent"]:
+        if self.numRedo() == 0:
+            logger.info('nothing to redo')
+            return
+        
+        # the last undo event
+        redoEvent = self._redoList.pop(len(self._redoList)-1)
+
+        # add to undo
+        self.addUndo(redoEvent)
+
+        return redoEvent
+        
+    def nextUndoStr(self) -> str:
+        """Get a str rep for the next undo action.
+        """
+        if self.numUndo() == 0:
+            return ''
+        else:
+            return self._undoList[self.numUndo()-1].getName()
+
+    def nextRedoStr(self) -> str:
+        """Get a str rep for the next undo action.
+        """
+        if self.numRedo() == 0:
+            return ''
+        else:
+            return self._redoList[self.numRedo()-1].getName()
+    
+    def numUndo(self) -> int:
+        return len(self._undoList)
+
+    def numRedo(self) -> int:
+        return len(self._redoList)
+
 class TimeSeriesCore():
     """Holds a map/stack as a MapAnnotations.
     """
@@ -380,6 +456,8 @@ class TimeSeriesCore():
             self._load_zarr()
         elif _ext == '.tif':
             self._import_tiff()
+        else:
+            logger.error(f'did not load file extension: {_ext}')
 
         self._imagesCore = ImagesCore(self._fullMap)
         # self._pointsCore = PointsCore(self, self._fullMap)
@@ -388,8 +466,13 @@ class TimeSeriesCore():
         # every mutation sets to True
         self._isDirty = False
 
+        self._undoRedoManager = UndoRedoManager()
+
     def getTimepoint(self, timepoint : int):
         return self._fullMap.getTimePoint(timepoint)
+    
+    def getUndoRedo(self):
+        return self._undoRedoManager
     
     def getPointDataFrame(self):
         return self._fullMap.points[:]
@@ -407,11 +490,11 @@ class TimeSeriesCore():
     def getMapImages(self) -> ImagesCore:
         return self._imagesCore
     
-    def getMapPoints(self) -> PointsCore:
-        return self._pointsCore
+    # def getMapPoints(self) -> PointsCore:
+    #     return self._pointsCore
     
-    def getMapSegments(self) -> SegmentsCore:
-        return self._segmentCore
+    # def getMapSegments(self) -> SegmentsCore:
+    #     return self._segmentCore
 
     def _old_isTifPath(self) -> bool:
         """ Check if stack has been saved by checking extension
@@ -539,7 +622,7 @@ class TimeSeriesCore():
         logger.info('-->> PERFORMING REDO')
         self._fullMap.redo()
 
-class TimeSeriesList():
+class _old_TimeSeriesList():
     """Manage a liist of TimeSeriesCore (MapAnnotations.
     """
     def __init__(self):

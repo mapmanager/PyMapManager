@@ -13,6 +13,10 @@ from typing import List, Optional, Tuple, TypedDict, Self
 from qtpy import QtGui, QtCore, QtWidgets
 
 import pymapmanager
+
+# abb 20240906
+# from pymapmanager.interface2.stackWidgets.event.spineEvent import SelectSpine
+
 from pymapmanager._logger import logger
 
 class pmmStates(Enum):
@@ -37,6 +41,8 @@ class pmmStates(Enum):
     settingSegmentPivot = auto()
 
 class pmmEventType(Enum):
+    selectSpine = auto()  # abb 20240906
+
     selection = auto()
     add = auto()
     delete = auto()
@@ -290,7 +296,7 @@ class StackSelection:
         except (KeyError) as e:
             logger.error(f'did not find key "{key}", available keys are {self._dict.keys()}')
 
-    def getCopy(self):
+    def _old_getCopy(self):
         """Shallow copy the selection.
         
         Used to generate a new selection to reduce from map to stack.
@@ -479,7 +485,7 @@ class pmmEvent():
             str += f'    {k}: {v}\n'
         return str
 
-    def getCopy(self):
+    def _old_getCopy(self):
         """Shallow copy the event.
         
         Used to generate a new event with a different type.
@@ -536,6 +542,12 @@ class mmWidget2(QtWidgets.QMainWindow):
         self._stackWidget = stackWidget  # parent stack widget
         self._mapWidget = mapWidget  # parent map widget
 
+        # 20240905, TimeSeriesCore() holds one undo manager for all
+        # 20240904 moved from stackWidget2
+        # from pymapmanager.interface2.stackWidgets.event.undoRedo import UndoRedoEvent
+        # # self._undoRedo = UndoRedoEvent(self)
+        # self._undoRedo = UndoRedoEvent()
+
         # to show as a widget
         self._showSelf: bool = True
 
@@ -547,7 +559,6 @@ class mmWidget2(QtWidgets.QMainWindow):
         #     _windowTitle += f':{self.getStackWidget().getStack().getFileName()}'
         self.setWindowTitle(_windowTitle)
         
-
         # (1) this is the original and it works, connects stackwidget
         # bi-directional signal/slot between self and parent
         # if stackWidget is not None:
@@ -563,13 +574,22 @@ class mmWidget2(QtWidgets.QMainWindow):
                 self._signalPmmEvent.connect(mapWidget.slot_pmmEvent)
                 mapWidget._signalPmmEvent.connect(self.slot_pmmEvent)
 
-        # else:
-        #     self._signalPmmEvent.connect(self.slot_pmmEvent)
-
-    # def getMapSelection(self):
-    #     if self.getMapWidgetParent() is not None:
-    #         return self.getMapWidgetParent().getMapSelection()
-
+    def getUndoRedo(self):
+        if self._iAmStackWidget:
+            logger.info(f'   getting from stack widget')
+            _undoRedo = self.getStack().getTimeSeriesCore().getUndoRedo()
+        elif self._iAmMapWidget:
+            logger.info(f'   getting from map widget')
+            _undoRedo = self.getTimeSeriesCore().getUndoRedo()
+        else:
+            logger.error('neither a map or stack widget???')
+            return
+        
+        logger.info(f'    returning undoredo object of type: {type(_undoRedo)}')
+        print(_undoRedo)
+        
+        return _undoRedo
+    
     def getApp(self) -> "pymapmanager.interface2.PyMapManagerApp":
         """Get running application.
         """
@@ -584,7 +604,7 @@ class mmWidget2(QtWidgets.QMainWindow):
         This should allow proper garbage colection.
         """
         if self._mapWidget is not None:
-            logger.info(f'   disconnect signal/slot from map')
+            logger.info('   disconnect signal/slot from map')
             try:
                 # while True:
                 #     self._signalPmmEvent.disconnect(self._mapWidget.slot_pmmEvent)
@@ -597,14 +617,8 @@ class mmWidget2(QtWidgets.QMainWindow):
                 # self._mapWidget._signalPmmEvent.disconnect()
             except TypeError:
                 pass
-    
-    # def getMap(self):
-    #     if self._mapWidget is None:
-    #         return
-    #     else:
-    #         self._mapWidget.getMap()
 
-    def getInitError(self):
+    def _old_getInitError(self):
         # TODO: implement this
         return False
     
@@ -678,26 +692,6 @@ class mmWidget2(QtWidgets.QMainWindow):
         # return self._name
         return self._widgetName
 
-    # def getParent(self) -> "mmWidget2":
-    #     """Get the parent pmmWidget.
-    #     """
-    #     return self._pmmParentWidget
-        
-    # def getState(self) -> pmmStates:
-    #     """Get the current state.
-    #     """
-    #     return self._state
-    
-    # def getAnnotations(self) -> List[int]:
-    #     """Get underlying pymapmanager.annotations.
-    #     """
-    #     return self._annotations
-
-    # def getSelectedAnnotations(self) -> List[int]:
-    #     """Get a list of selected annotations.
-    #     """
-    #     return self._selectedAnnotations
-
     def blockSlotsOn(self):
         """Turn on blocking of incoming slots.
         """
@@ -719,7 +713,7 @@ class mmWidget2(QtWidgets.QMainWindow):
         else:
             self.blockSlotsOff()
 
-        logger.info(f'>>>>>>>>> emit "{self.getName()}" timepoint:{self.getStack().timepoint} {event.type}')
+        logger.info(f'>>>>>>>>> emit "{self.getName()}" {event.type}')
 
         self._signalPmmEvent.emit(event)
 
@@ -747,6 +741,11 @@ class mmWidget2(QtWidgets.QMainWindow):
         elif event.type == pmmEventType.redoSpineEvent:
             acceptEvent = self.redoEvent(event)
 
+        # abb 20240906
+        elif event.type == pmmEventType.selectSpine:
+            # logger.info(f'   <<< "{self.getClassName()}"')
+            acceptEvent = self.selectedSpine(event)
+       
         elif event.type == pmmEventType.selection:
             # logger.info(f'   <<< "{self.getClassName()}"')
             acceptEvent = self.selectedEvent(event)
@@ -833,13 +832,17 @@ class mmWidget2(QtWidgets.QMainWindow):
                 
                 # 1
                 # re-emit event to children
-                _newEvent = event.getDeepCopy()
+                # 20240906 removed copy
+                # _newEvent = event.getDeepCopy()
+                _newEvent = event
                 
                 # to break recursion
                 _newEvent.reEmitMapAsPoint = senderObject._mapWidget is not None          
 
                 # 03/12 reduce point selection down to stack
-                _stackSelection = _newEvent.getStackSelection().getCopy()
+                # 20240906 removed copy
+                # _stackSelection = _newEvent.getStackSelection().getCopy()
+                _stackSelection = _newEvent.getStackSelection()
                 _stackSelection = self._reduceToStackSelection(_stackSelection)
                 _newEvent._dict['stackSelection'] = _stackSelection
                 
@@ -985,6 +988,9 @@ class mmWidget2(QtWidgets.QMainWindow):
 
         return stackselection
     
+    def selectedSpine(self, event : "SelectSpine"):
+        pass
+
     def selectedEvent(self, event : pmmEvent):
         """Derived classes need to perform action of selection event.
         

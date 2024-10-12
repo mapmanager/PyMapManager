@@ -70,8 +70,7 @@ class stackWidget2(mmWidget2):
         iAmMapWidget = False
 
         super().__init__(stackWidget=self,
-                        #  mapWidget=timeseriescore,
-                        #  mapWidget=mapWidget,
+                         mapWidget=mapWidget,
                          iAmStackWidget=True,
                          iAmMapWidget=iAmMapWidget)
 
@@ -104,8 +103,9 @@ class stackWidget2(mmWidget2):
 
         self._displayOptionsDict : pymapmanager.interface2.AppDisplayOptions = pymapmanager.interface2.AppDisplayOptions()
 
-        from pymapmanager.interface2.stackWidgets.event.undoRedo import UndoRedoEvent
-        self._undoRedo = UndoRedoEvent(self)
+        # from pymapmanager.interface2.stackWidgets.event.undoRedo import UndoRedoEvent
+        # # self._undoRedo = UndoRedoEvent(self)
+        # self._undoRedo = UndoRedoEvent()
 
         self.setWindowTitle(self._stack.getFileName())
 
@@ -262,8 +262,11 @@ class stackWidget2(mmWidget2):
     def _buildMenus(self) -> QtWidgets.QMenuBar:
         mainMenu = self.menuBar()
 
+        # 20240903 was this
         self._mainMenu = pymapmanager.interface2.PyMapManagerMenus(self.getPyMapManagerApp())
         self._mainMenu._buildMenus(mainMenu, self)
+
+        #_mainMenu = self.getApp().getMainMenu()
 
         # close
         self.closeShortcut = QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+W"), self)
@@ -276,8 +279,9 @@ class stackWidget2(mmWidget2):
         # self.getPyMapManagerApp().getMainMenu()._buildMenus(mainMenu, self)
 
         # we will append to this
-        viewMenu = self._mainMenu.viewMenu
-        viewMenu.aboutToShow.connect(self._refreshViewMenu)
+        # viewMenu = self._mainMenu.viewMenu
+        self._mainMenu.viewMenu.aboutToShow.connect(self._refreshViewMenu)
+        # _mainMenu.viewMenu.aboutToShow.connect(self._refreshViewMenu)
         
     def _refreshViewMenu(self):
         logger.info('')
@@ -744,7 +748,7 @@ class stackWidget2(mmWidget2):
         """After edit (move), return to edit state and re-select spines (to refresh ROIs).
         """
 
-        # logger.info('returning to edit state and re-select spines')
+        logger.info('returning to edit state and re-select spines')
 
         # return to edit state
         stateEvent = pmmEvent(pmmEventType.stateChange, self)
@@ -753,7 +757,6 @@ class stackWidget2(mmWidget2):
 
         # reselect spine
         spines = event.getSpines()  # [int]
-        # logger.info(f"afterEdit2 spines: {spines}")
         self.zoomToPointAnnotation(spines)
 
         self.slot_setStatus('Ready')
@@ -800,6 +803,7 @@ class stackWidget2(mmWidget2):
             _pointAnnotation = self.getStack().getPointAnnotations()
             _pointAnnotation.moveSpine(spineID=spineID, x=x, y=y, z=z)
 
+        # PUT THIS BACK IN
         self.getUndoRedo().addUndo(event)
 
         self._afterEdit2(event)
@@ -1069,7 +1073,8 @@ class stackWidget2(mmWidget2):
 
         self._afterEdit(newEvent)
 
-    def getUndoRedo(self):
+    # 20240904 moved to pmmWidget2
+    def _old_getUndoRedo(self):
         return self._undoRedo
         
     def undoEvent(self, event : UndoSpineEvent):
@@ -1077,6 +1082,7 @@ class stackWidget2(mmWidget2):
         logger.warning('=== ===   STACK WIDGET PERFORMING Undo   === ===')
 
         self.getStack().undo()
+        
         undoEvent = self.getUndoRedo().doUndo()
         
         event.setUndoEvent(undoEvent)
@@ -1119,6 +1125,9 @@ class stackWidget2(mmWidget2):
         _redoEvent = RedoSpineEvent(self, None)
         self.slot_pmmEvent(_redoEvent)
 
+    def getPath(self) -> str:
+        return self.getStack().getPath()
+        
     def save(self):
         """ Stack Widget saves changes to its Zarr file
         """
@@ -1195,7 +1204,8 @@ class stackWidget2(mmWidget2):
     #     """
     #     pass
 
-    def updateDFwithNewParams(self):
+    # abj
+    def _old_updateDFwithNewParams(self):
         """ Rebult line and point dataframes after analysis params changes are applied
         """
         self.getStack().getLineAnnotations()._buildDataFrame()

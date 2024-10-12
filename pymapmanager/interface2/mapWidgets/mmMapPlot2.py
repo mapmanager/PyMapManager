@@ -8,7 +8,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.widgets import RectangleSelector  # To click+drag rectangular selection
 
-from pymapmanager import mmMap
+from pymapmanager import TimeSeriesCore
 from pymapmanager._logger import logger
 
 def getPlotDict2():
@@ -76,7 +76,7 @@ class mmMapPlot2():
     Pure matplotlib, no PyQt
     """
     def __init__(self,
-                 map : mmMap,
+                 map : TimeSeriesCore,
                  plotDict,
                  fig = None):
         """
@@ -90,7 +90,7 @@ class mmMapPlot2():
         fig: Either a matplotlib.figure.Figure if using Qt or
                 plt.figure() if using command line or IPython/Jupyter.
         """
-        self.map = map
+        self.map : TimeSeriesCore = map
         self.pd = plotDict # plot dict
         self._on_pick_fn = None
 
@@ -129,9 +129,6 @@ class mmMapPlot2():
         self._origYLim = self.axes.get_ylim()
 
         # self.replotMap()
-
-    def rebuildPlotDict(self):
-        self.pd = self.getMapValues3(self.pd)
 
     def _buildUI(self):
         
@@ -281,14 +278,6 @@ class mmMapPlot2():
 
         self._refreshFigure()
 
-    def cancelSelection(self):
-        """Cancel both point and run selection.
-        """
-        self.cancelPointSelection()
-        self.cancelRunSelection()
-    
-        self._refreshFigure()
-
     def _on_key_press(self, event):
         
         logger.info(f'event.key: "{event.key}"')
@@ -345,6 +334,7 @@ class mmMapPlot2():
             self.iterSpine(event.key)
 
     def _on_key_release(self, event):
+        logger.info(f'event.key: "{event.key}"')
         if event.key == 'alt':
             self._isAlt = False
         elif event.key == 'shift':
@@ -471,10 +461,23 @@ class mmMapPlot2():
             except (KeyError):
                 logger.error('did not find column key "aDist" in line DataFrame')
 
+    def cancelSelection(self):
+        """Cancel both point and run selection.
+        """
+        self.cancelPointSelection()
+        self.cancelRunSelection()
+    
+        self._refreshFigure()
+    
     def cancelPointSelection(self):
         self.myPointSelection.set_xdata([])
         self.myPointSelection.set_ydata([])
 
+    def cancelRunSelection(self):
+        # clear
+        self.mySelectedRows.set_xdata([])
+        self.mySelectedRows.set_ydata([])
+        
     def selectPoints(self, clickDict : dict,
                      doRefresh=True,
                      doEmit=False):
@@ -549,13 +552,7 @@ class mmMapPlot2():
         if doEmit:
             # emit selection to parent
             if self._on_pick_fn is not None:
-                logger.info('put back in core')
-                # self._on_pick_fn(self._pointSelectionDict)
-
-    def cancelRunSelection(self):
-        # clear
-        self.mySelectedRows.set_xdata([])
-        self.mySelectedRows.set_ydata([])
+                self._on_pick_fn(self._pointSelectionDict)
 
     def selectRuns(self, spineID : int, doRefresh=True):
         """Select a run of point annotations.
@@ -565,14 +562,13 @@ class mmMapPlot2():
         runs : [(spineID, timepoint)] or []
         """
         logger.info(f'spineID:{spineID}')
-        
-        # clear
-        # self.mySelectedRows.set_xdata([])
-        # self.mySelectedRows.set_ydata([])
             
         xSpineRun = self.pd['xSpineLineDict'][spineID]
         ySpineRun = self.pd['ySpineLineDict'][spineID]
 
+        # logger.info(f'xSpineRun:{xSpineRun}')
+        # logger.info(f'ySpineRun:{ySpineRun}')
+        
         self.mySelectedRows.set_xdata(xSpineRun)
         self.mySelectedRows.set_ydata(ySpineRun)
 
@@ -729,3 +725,12 @@ class mmMapPlot2():
         logger.info(f'   took:{round(stopTime - startTime, 2)} seconds')
 
         return pd
+
+    def rebuildPlotDict(self):
+        self.pd = self.getMapValues3(self.pd)
+        # self._printPlotDict()
+
+    def _printPlotDict(self):
+        logger.info('pd is:')
+        for k, v in self.pd.items():
+            print(f'"{k}": {type(v)}')

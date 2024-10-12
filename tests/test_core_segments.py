@@ -209,23 +209,50 @@ def debug_copy():
     # core calls: self._annotations._images.shape(self._t)
     print(f'stp.shape:{stp.shape}')  # (2, 70, 1024, 1024)
 
-def debugLeftRight():
+def debugMemory():
     from pymapmanager import TimeSeriesCore
 
-    zarrPath = getSingleTimepointMap()    
-    tsc = TimeSeriesCore(zarrPath)
-    stp = tsc._fullMap.getTimePoint(0)
-    segments = stp.segments[:]
-    print(segments)
+    # zarrPath = getSingleTimepointMap()    
+    zarrPath = '/Users/cudmore/Desktop/multi_timepoint_map_seg_spine_connected.mmap'
     
+    tsc = TimeSeriesCore(zarrPath)
+
+    # stp = tsc._fullMap.getTimePoint(0)
+    # segments = stp.segments[:]
+    # print(segments)
+
+    import psutil
+
+    m1 = psutil.Process().memory_info().rss / (1024 * 1024)
+
+    timepoint = 2
+    channelIdx = 0
+    zRange = 10
+    
+    _img = tsc._fullMap._images.fetchSlices(timepoint, channelIdx, (0,1))
+    print(_img.shape, type(_img))
+    return
+
+    _pixels = []
+    for z in range(20):
+        # <mapmanagercore.lazy_geo_pd_images.image_slices.ImageSlice object at 0x15ae6a290>
+        _pixels1 = tsc._fullMap.getPixels(time=timepoint, channel=channelIdx, z=z)
+        _pixels.append(_pixels1)
+
+    # print(_pixels)
+    
+    m2 = psutil.Process().memory_info().rss / (1024 * 1024)
+
+    print(m1, m2)
+
 if __name__ == '__main__':
     logger.setLevel('DEBUG')
     
     # test_segment()
-    test_qt_segments()
+    # test_qt_segments()
 
     # test_qt_undo()
 
     # debug_copy()
 
-    # debugLeftRight()
+    debugMemory()

@@ -29,10 +29,18 @@ def run():
     # all spines connect
     # path = '/Users/cudmore/Desktop/multi_timepoint_map_seg_spine_connected.mmap'
 
-    sw2 = app.loadStackWidget(path)
+    # path = mapmanagercore.data.getSingleTimepointMap()
+    # sw2 = app.loadStackWidget(path)
+    # sw2.zoomToPointAnnotation(120, isAlt=True)
     
-    sw2.zoomToPointAnnotation(0, isAlt=True)
-    
+    path = '/Users/cudmore/Desktop/multi_timepoint_map_seg_spine_connected.mmap'
+    mw = app.loadStackWidget(path)
+
+    centerTimepoint = 2
+    plusMinusTimepoint = 1
+    spineID = 139
+    mw.openStackRun(centerTimepoint, plusMinusTimepoint, spineID=spineID)
+
     # debug tracing plugin
     # sw2.runPlugin('Tracing', inDock=True)
 

@@ -11,6 +11,11 @@ import pymapmanager as pmm
 from pymapmanager.interface2.mainWindow import MainWindow
 from pymapmanager.interface2.stackWidgets.stackWidget2 import stackWidget2
 
+from pymapmanager.interface2.stackWidgets.event.spineEvent import (AddSpineEvent, 
+                                                                   DeleteSpineEvent,  
+                                                                   UndoSpineEvent,
+                                                                   RedoSpineEvent)
+
 from pymapmanager._logger import logger
 
 class MapSelectionDict(TypedDict):
@@ -73,17 +78,34 @@ class mapWidget(MainWindow):
     # def getMapSelection(self) -> MapSelection:
     #     return self._mapSelection
     
+    def zoomToPointAnnotation(self,
+                              idx : int,
+                              isAlt : bool = False,
+                              select : bool = False
+                              ):
+        logger.warning('mapWidget() does not have snap to point, stackWidget2() has that!')
+        return
+    
     def runPlugin(self, pluginName : str):
         """run a map plugin.
         """
         logger.info(pluginName)
 
+    def getTimeSeriesCore(self) -> TimeSeriesCore:
+        return self._map
+    
     def getMap(self):
         return self._map
     
     def getPath(self):
         return self._map.path
     
+    def emitUndoEvent(self):
+        """
+        """
+        _undoEvent = UndoSpineEvent(self, None)
+        self.slot_pmmEvent(_undoEvent)
+
     def _old__buildMenus(self):
         mainMenu = self.menuBar()
 
@@ -93,16 +115,16 @@ class mapWidget(MainWindow):
     # def getApp(self) -> "pmm.interface2.pyMapManagerApp":
     #     return QtWidgets.QApplication.instance()
 
-    def _findStackWidget(self, path):
-        """Find an open stack widget.
-        """
-        for stackWidget in self._stackWidgetList:
-            zarrPath = stackWidget.getStack().getPath()
-            if zarrPath == path:
-                return stackWidget
-        return None
+    # def _findStackWidget(self, path):
+    #     """Find an open stack widget.
+    #     """
+    #     for stackWidget in self._stackWidgetList:
+    #         zarrPath = stackWidget.getStack().getPath()
+    #         if zarrPath == path:
+    #             return stackWidget
+    #     return None
     
-    def _findStackWidget2(self, thisStack):
+    def _findStackWidget(self, thisStack):
         """Find an open stack widget.
 
         Parameters
@@ -116,15 +138,19 @@ class mapWidget(MainWindow):
         return None
     
     def openStackRun(self,
-                     timepoint,
-                     plusMinus,
-                     spineRun : List[int] = None):
+                     timepoint : int,
+                     plusMinus : int,
+                     spineID : int = None):
+                    #  spineRun : List[int] = None):
         """Open a run of stack widgets.
+
+        Parameters
+        ----------
+        timepoint : int
+            Center timepoint
+        plusMinus : int
+            Plus and minus from center timepoint.
         """
-        # _map = self._findMap(mapPath)
-        # if _map is None:
-        #     logger.error(f'did not find open map.')
-        #     return
         
         _map = self.getMap()
         
@@ -135,7 +161,7 @@ class mapWidget(MainWindow):
         if lastTp > _map.numSessions-1:
             lastTp = _map.numSessions
 
-        numCols = 3
+        numCols = 4
         numSessions = _map.numSessions
         screenGrid = self.getApp().getScreenGrid(numSessions, numCols)
          
@@ -153,11 +179,8 @@ class mapWidget(MainWindow):
             # bsw._toggleWidget("Status Bar", False)
 
             # select a point and zoom
-            if spineRun is not None:
-                spineIdx = spineRun[tp]
-                if ~np.isnan(spineIdx):
-                    spineIdx = int(spineIdx)
-                    bsw.zoomToPointAnnotation(spineIdx, isAlt=True, select=True)
+            if spineID is not None:
+                bsw.zoomToPointAnnotation(spineID, isAlt=True, select=True)
 
         self.linkOpenPlots(link=True)
 
@@ -205,27 +228,9 @@ class mapWidget(MainWindow):
         postRect : List[int]
             Position for the window [l, t, w, h]
         """
-        
-        # if path is not None:
-        #     bsw = self._findStackWidget(path)
-        # elif stack is not None:
-        #     bsw = self._findStackWidget2(stack)
-        # else:
-        #     logger.warning('TODO: implement for core')
-        #     return
-        
-        # !!!!!!!!!!!!!!!!!!!!!
+
         bsw = None
         if bsw is None:
-            # logger.info(f'opening stack widget from scratch with path:{path}')
-            
-            # defaultChannel = 2
-            # if stack.getImageChannel(channel=defaultChannel) is None:
-            #     stack.loadImages(channel=defaultChannel)
-
-            # bsw = pmm.interface2.stackWidgets.stackWidget2(path=path,
-            #                                                stack=stack,
-            #                                                mapWidget = self)
 
             bsw = pmm.interface2.stackWidgets.stackWidget2(timeseriescore=self._map,
                                                            mapWidget=self,
@@ -303,7 +308,7 @@ class mapWidget(MainWindow):
             # HOLY CRAP, THIS WORKS !!!!!!!!!!
             #widget._imagePlotWidget._plotWidget.setYLink(self._stackWidgetList[0]._imagePlotWidget._plotWidget)
 
-    def slot_selectAnnotation(self, selectionEvent, plusMinus=2):
+    def _old_slot_selectAnnotation(self, selectionEvent, plusMinus=2):
         """Respond to annotation selections.
         
         For spineRoi (if alt) then

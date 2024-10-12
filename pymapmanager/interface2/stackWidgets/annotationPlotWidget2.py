@@ -21,7 +21,8 @@ from .mmWidget2 import mmWidget2, pmmEventType, pmmEvent, pmmStates
 from pymapmanager.interface2.stackWidgets.event.spineEvent import (AddSpineEvent,
                                                                    DeleteSpineEvent,
                                                                    MoveSpineEvent,
-                                                                   UndoSpineEvent)
+                                                                   UndoSpineEvent,
+                                                                   SelectSpine)
 
 from pymapmanager.interface2.stackWidgets.event.segmentEvent import (DeleteSegmentEvent)
 
@@ -1004,6 +1005,16 @@ class pointPlotWidget(annotationPlotWidget):
             x, y = self.pointAnnotations.getRoi(firstSelectedRow, 'roiBaseBg')
             if x is not None:
                 self._segmentBackgroundPolygon.setData(x, y)
+
+    # abb 20240906
+    def selectedSpine(self, event : SelectSpine):
+        logger.info('TODO: check if each spine is in our timepoint')
+        # for spine in event:
+        #     logger.info(spine)
+        #     self._selectAnnotation(spine['spineID'], event.isAlt)
+        spineIDList = event.getSpines()
+        logger.info(f'spineIDList:{spineIDList} event.isAlt:{event.isAlt}')
+        self._selectAnnotation(spineIDList, event.isAlt)
 
     def selectedEvent(self, event: pmmEvent):
         # logger.info(event)

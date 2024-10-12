@@ -894,6 +894,29 @@ class ImagePlotWidget(mmWidget2):
         # self.setLayout(hBoxLayout)
         # self.setCentralWidget(centralWidget)
 
+    # abb 20240906
+    def selectedSpine(self, event : "SelectSpine"):
+        logger.info('TODO: check if each spine is in our timepoint')
+        # for spine in event:
+        #     logger.info(spine)
+        #     self._selectAnnotation(spine['spineID'], event.isAlt)
+        spineIDList = event.getSpines()
+        logger.info(f'spineIDList:{spineIDList} event.isAlt:{event.isAlt}')
+        # self._selectAnnotation(spineIDList, event.isAlt)
+
+        if len(spineIDList) > 0:
+            oneItem = spineIDList[0]
+            _pointAnnotations = self.getStackWidget().getStack().getPointAnnotations()
+            x = _pointAnnotations.getValue('x', oneItem)
+            y = _pointAnnotations.getValue('y', oneItem)
+            z = _pointAnnotations.getValue('z', oneItem)
+
+            if event.isAlt:
+                logger.info(f"spine: zoom to coordinates x:{x} y:{y}")
+                self._zoomToPoint(x, y)
+        
+            self._emitSetSlice(z)
+    
     def selectedEvent(self, event : pmmEvent):
         """Snap set slice and optionally zoom to point and line annotations.
         
@@ -911,9 +934,9 @@ class ImagePlotWidget(mmWidget2):
             # children will select, this is just to zoom and set slice (on alt)
             return
         
-        logger.info(f'hasPointSelection:{event.getStackSelection().hasPointSelection()}')
-        logger.info(f'firstPointSelection:{event.getStackSelection().firstPointSelection()}')
-        print(event)
+        # logger.info(f'hasPointSelection:{event.getStackSelection().hasPointSelection()}')
+        # logger.info(f'firstPointSelection:{event.getStackSelection().firstPointSelection()}')
+        # print(event)
 
         if event.getStackSelection().hasPointSelection():  # False on (None, [])
             # if not event.isAlt():

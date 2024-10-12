@@ -18,6 +18,7 @@ class Preferences:
         # self._version = 0.1
         # self._version = 0.23  # adding default window size
         self._version = 0.24  # upgrade to zar
+        # johnson, when you change the format of saved json, manually bump the version
 
         self._maxRecent = 10
         self._configDict = self.load()
@@ -61,7 +62,7 @@ class Preferences:
             return
         return self._configDict[key]
 
-    def addStackPath(self, stackPath : str):
+    def _old_addStackPath(self, stackPath : str):
         """Add a single timepoint stack.
         
         Similar to addMapPath.
@@ -87,9 +88,7 @@ class Preferences:
         if mapPath not in self.configDict["recentMaps"]:
             self.configDict["recentMaps"].append(mapPath)
             # limit list to last _maxNumUndo
-            self.configDict["recentMaps"] = self.configDict["recentMaps"][
-                -self._maxRecent :
-            ]
+            self.configDict["recentMaps"] = self.configDict["recentMaps"][-self._maxRecent :]
 
         # always set as the most recent file
         self.configDict["mostRecentMap"] = mapPath

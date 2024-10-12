@@ -43,12 +43,20 @@ class _EditSpine(pmmEvent):
     
     Including (add, delete, move head, move tail/anchor, edit property, connect to segment)
     """
-    def __init__(self, eventType : pmmEventType, mmWidget : mmWidget2):
+    def __init__(self, eventType : pmmEventType,
+                 mmWidget : mmWidget2,
+                 isAlt : bool = False):
         super().__init__(eventType, mmWidget)
 
         # list of dict with keys in (spineID, col, value)
         self._list = []
 
+        self._isAlt = isAlt
+
+    @property
+    def isAlt(self):
+        return self._isAlt
+    
     def getName(self) -> str:
         """Derived classes define this and is used in undo/redo menus.
         """
@@ -67,6 +75,7 @@ class _EditSpine(pmmEvent):
     def addEdit(self,
                 spineID : int = None,
                 segmentID : int = None,
+                sessionID : int = None,  # new working on map spine selection
                 x : int = None,
                 y: int = None,
                 z : int = None,
@@ -91,7 +100,8 @@ class _EditSpine(pmmEvent):
 
         # all spine edit event need to know map session,
         # will be None if not in map
-        sessionID = self.getSenderObject().getMapTimepoint()
+        if sessionID is None:
+            sessionID = self.getSenderObject().getMapTimepoint()
 
         spineEdit = SpineEdit(spineID=spineID,
                               sessionID=sessionID,
@@ -397,3 +407,22 @@ class AutoConnectSpineEvent(_EditSpine):
         """
         item = SpineEdit(spineID=item['spineID'])
         return item
+    
+class SelectSpine(_EditSpine):
+    def __init__(self,
+                 mmWidget,
+                 spineID : int,
+                 timepoint : int,
+                 isAlt : bool = False):
+        super().__init__(pmmEventType.selectSpine, mmWidget, isAlt=isAlt)
+        self.addEdit(spineID=spineID, sessionID=timepoint)
+
+    def getName(self) -> str:
+        return 'Select Spine (Map)'
+             
+    def _getItem(self, item : SpineEdit):
+        """Get the meaningful keys for this edit type.
+        """
+        item = SpineEdit(spineID=item['spineID'], sessionID=item['sessionID'])
+        return item
+    

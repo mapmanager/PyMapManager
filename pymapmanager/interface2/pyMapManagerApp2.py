@@ -12,6 +12,7 @@ from qtpy import QtGui, QtWidgets  # QtCore
 
 import qdarktheme
 
+import pymapmanager.interface2.openFirstWindow
 from pymapmanager.interface2.stackWidgets.analysisParamWidget2 import AnalysisParamWidget
 
 # Enable HiDPI.
@@ -23,7 +24,7 @@ import pymapmanager as pmm
 
 import pymapmanager.interface2
 
-from pymapmanager.timeseriesCore import TimeSeriesCore, TimeSeriesList
+from pymapmanager.timeseriesCore import TimeSeriesCore
 
 import pymapmanager.interface2.stackWidgets
 import pymapmanager.interface2.mapWidgets
@@ -126,7 +127,105 @@ def loadPlugins(verbose=False, pluginType='stack') -> dict:
 
     return pluginDict
 
+class OpenWidgetList:
+    """A heterogeneous list (dict) of open stack and map widgets.
+    
+    Map Widgets keep their own list of stack widgets.
+    """
+    def __init__(self, app):
+        self._app = app
+        self._widgetDictList = {}
 
+    def getDict(self) -> dict:
+        """Get a dictionary of open stack/map widgets.
+        """
+        _dict = {}
+        for _path, _widget in self._widgetDictList.items():
+            _dict[_path] = {}
+            # _dict[_path] = numTimepoints
+        return _dict
+    
+    def openWidgetFromPath(self, path : str):
+        """Open a stack or map from path.
+        
+        This opens a TimeSeriesCore and then a stack or map widget
+        """
+        if path not in self._widgetDictList.keys():
+            logger.info(f'loading widget path:{path}')
+            # open timeseries core
+            _timeSeriesCore = TimeSeriesCore(path)
+            # self._widgetDictList[path] = tsc
+        
+            numTimepoints = _timeSeriesCore.numSessions
+
+            if numTimepoints == 1:
+                # single timepoint map
+                _aWidget = stackWidget2(timeseriescore=_timeSeriesCore, timepoint=0)
+
+                geometryRect = self._app.getConfigDict().getStackWindowGeometry()
+                _aWidget.setGeometry(geometryRect[0], geometryRect[1], geometryRect[2], geometryRect[3])
+                _aWidget.show()
+                # return _stackWidget
+            
+            else:
+                # multi timepoint map
+                _aWidget = mapWidget(_timeSeriesCore)
+                _aWidget.show()
+                # return _mapWidget
+            
+            self._app.closeFirstWindow()
+
+            self._widgetDictList[path] = _aWidget
+
+        return self._widgetDictList[path]
+
+    def showMapOrStack(self, path):
+
+        if path in self._widgetDictList.keys():
+            self._widgetDictList[path].show()
+            self._widgetDictList[path].raise_()
+            self._widgetDictList[path].activateWindow()
+        else:
+            logger.warning('did not find opened map or stack with path')
+            logger.warning(f'   {path}')
+    
+    def closeWidget(self, aWidget):
+        """Remove theWindow from self._stackWidgetDict.
+        
+        """
+        logger.info('  remove stack/map window from app list of windows')
+        
+        zarrPath = aWidget.getPath()
+        popThisKey = None
+        for pathKey in self._widgetDictList.keys():
+            if pathKey == zarrPath:
+                popThisKey = pathKey
+                break
+
+        if popThisKey is not None:
+            _theWindow = self._widgetDictList.pop(popThisKey, None)
+            logger.info(f'popped {_theWindow}')
+            # _theWindow.close()
+        else:
+            logger.error(f'did not find stack/map widget in app {aWidget}')
+            logger.error('available keys are')
+            logger.error(self._widgetDictList.keys())
+
+        # check if there are any more windows and show load window
+        # activeWindow = self.activeWindow()
+        # logger.info(f'activeWindow:{activeWindow}')
+        # if activeWindow is None:
+        #     self._openFirstWindow.show()
+
+        if len(self._widgetDictList.keys()) == 0:
+            self._app.openFirstWindow()
+
+    def save(self, aWidget):
+        logger.info(f'TODO: save widget: {aWidget}')
+        
+    def saveAs(self, aWidget):
+        logger.info(f'TODO: save as widget: {aWidget}')
+        
 class PyMapManagerApp(QtWidgets.QApplication):
     def __init__(self, argv=[], deferFirstWindow=False):        
         super().__init__(argv)
@@ -163,17 +262,19 @@ class PyMapManagerApp(QtWidgets.QApplication):
         # self._appDisplayOptions : pymapmanager.interface.AppDisplayOptions = pymapmanager.interface2.AppDisplayOptions()
 
         # used to name new maps (created by dragging a tiff file)
-        self._untitledNumber = 0
+        # self._untitledNumber = 0
 
-        self._timeseriesList = TimeSeriesList()
+        # self._timeseriesList = TimeSeriesList()
         # a list of time series (raw core data)
         # can open a stack widget (one tp) or a map widget
 
-        self._mapWidgetDict = {}
+        self._openWidgetList = OpenWidgetList(self)
+        
+        # self._mapWidgetDict = {}
         # dictionary of open map widgets
         # keys are full path to map
 
-        self._stackWidgetDict = {}
+        # self._stackWidgetDict = {}
         # dictionary of open stack widgets
         # keys are full path to stack
 
@@ -183,7 +284,8 @@ class PyMapManagerApp(QtWidgets.QApplication):
         self._mapWidgetPluginsDict = loadPlugins(pluginType='map')
         # application wide stack widgets
         
-        self._mainMenu = PyMapManagerMenus(self)
+        # logger.info('building PyMapManagerMenus()')
+        # self._mainMenu = PyMapManagerMenus(self)
 
         self._openFirstWindow = None
         self.openFirstWindow()
@@ -217,7 +319,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
         # save to json file in user documents      
         pymapmanager.pmmUtils.saveAnalysisParamJsonFile(analysisParamJson)
 
-    def getNewUntitledNumber(self) -> int:
+    def _old_getNewUntitledNumber(self) -> int:
         """Get a unique number for each new map (From tiff file).
         """
         self._untitledNumber += 1
@@ -268,6 +370,10 @@ class PyMapManagerApp(QtWidgets.QApplication):
                 _windowType = 'stack'
         elif isinstance(activeWindow, pymapmanager.interface2.mapWidgets.mapWidget):
             _windowType = 'map'
+        elif isinstance(activeWindow, pymapmanager.interface2.openFirstWindow.OpenFirstWindow):
+            pass
+        else:
+            logger.warning('Did not understand type of front window, not in: stack, map, or open first?')
 
         return _windowType
 
@@ -275,50 +381,33 @@ class PyMapManagerApp(QtWidgets.QApplication):
         """Remove theWindow from self._stackWidgetDict.
         
         """
-        logger.info('  remove stackwidget window from app list of windows')
+        self._openWidgetList.closeWidget(stackWidget)
+        return
+    
+    def closeMapWindow(self, mapWidget):
+        """Remove theWindow from self._stackWidgetDict.
         
-        # if theWindow.getMap() is not None:
-        #     theWindow.closeStackWindow()
-        #     return
-        
-        zarrPath = stackWidget.getStack().getPath()
-        popThisKey = None
-        for pathKey in self._stackWidgetDict.keys():
-            if pathKey == zarrPath:
-                popThisKey = pathKey
-                break
-
-        if popThisKey is not None:
-            _theWindow = self._stackWidgetDict.pop(popThisKey, None)
-            logger.info(f'popped {_theWindow}')
-            # _theWindow.close()
-        else:
-            logger.error(f'did not find stack widget in app {stackWidget}')
-            logger.error('available keys are')
-            logger.error(self._stackWidgetDict.keys())
-
-        # check if there are any more windows and show load window
-        # activeWindow = self.activeWindow()
-        # logger.info(f'activeWindow:{activeWindow}')
-        # if activeWindow is None:
-        #     self._openFirstWindow.show()
-
-        if len(self._stackWidgetDict.keys()) == 0 and \
-                            len(self._mapWidgetDict.keys()) == 0:
-            self.openFirstWindow()
+        """
+        self._openWidgetList.closeWidget(mapWidget)
+        return
 
     def openFirstWindow(self):
         """Toggle or create an OpenFirstWindow.
         """
-        if self._openFirstWindow is not None:
-            self._openFirstWindow.show()
-            # update recent
-        else:
+        logger.info('')
+        
+        if self._openFirstWindow is None:
             self._openFirstWindow = OpenFirstWindow(self)        
-            self._openFirstWindow.show()
+        
+        self._openFirstWindow.show()
             
-            self._openFirstWindow.raise_()
-            self._openFirstWindow.activateWindow()  # bring to front
+        self._openFirstWindow.raise_()
+        self._openFirstWindow.activateWindow()  # bring to front
+
+    def closeFirstWindow(self):
+        if self._openFirstWindow is not None:
+            self._openFirstWindow.close()
+            self._openFirstWindow = None
 
     def getAppIconPath(Self):
         return os.path.join(getBundledDir(), 'interface2', 'icons', 'mapmanager-icon.png')
@@ -332,66 +421,39 @@ class PyMapManagerApp(QtWidgets.QApplication):
     def getMapPluginDict(self):
         return self._mapWidgetPluginsDict
     
-    def getMapWidgetsDict(self):
-        return self._mapWidgetDict
-    
-    def getStackWidgetsDict(self):
-        return self._stackWidgetDict
-    
-    def getMainMenu(self):
-        return self._mainMenu
-    
     def openFile(self):
-        """Open single timepoint stack.
+        """Prompt user to open a file.
         """
-        logger.info('')
+        logger.info('TODO: Prompt user to open a file.')
         return
 
-    def openTimeSeries(self):
-        """OPen a time-series map.
-        """
-        logger.info('')
-        pass
-
     def saveFile(self):
-        """ Save new changes to current file
+        """ Save changes to front most window
         """
-        # zarrPath = self.stackWidget.getStack().getPath()
-        # <pymapmanager.interface2.stackWidgets.stackWidget2.stackWidget2 object at 0x00000194F144C790>
-        # temp = self._stackWidgetDict['\\Users\\johns\\Documents\\GitHub\\MapManagerCore\\data\\rr30a_s0u.mmap']
-        # logger.info(f'Saving file at path: {temp}')
-      
-        logger.info(f'Saving file at path: {  self._stackWidgetDict.keys()}')
-        for key in self._stackWidgetDict.keys():
-            # looping through every path in stackWidgetDict
-            # key = path of current stack
-            stackWidget = self._stackWidgetDict[key]
-            # stackWidget.save(key)
-            stackWidget.save()
+        _frontWidget = self.getFrontWindow()
+        self._openWidgetList.save(_frontWidget)
 
     def saveAsFile(self):
         """ Save as a new file
         """
-        logger.info(f'Saving as file {  self._stackWidgetDict.keys()}')
-
-        if len(self._stackWidgetDict) > 0:
-            for key in self._stackWidgetDict.keys():
-                # looping through every path in stackWidgetDict
-                # key = path of current stack
-                stackWidget = self._stackWidgetDict[key]
-                stackWidget.fileSaveAs()
+        _frontWidget = self.getFrontWindow()
+        self._openWidgetList.saveAs(_frontWidget)
 
     #abj
     def _showAnalysisParameters(self):
 
-        if len(self._stackWidgetDict) > 0:
-            for key in self._stackWidgetDict.keys():
-                # looping through every path in stackWidgetDict
-                # key = path of current stack
-                currentStackWidget = self._stackWidgetDict[key]
-
-        self.apWidget = AnalysisParamWidget(stackWidget=currentStackWidget, pmmApp=self)
+        _frontWidget = self.getFrontWindow()
+        self.apWidget = AnalysisParamWidget(stackWidget=_frontWidget, pmmApp=self)
         self.apWidget.show()
+
+        # if len(self._stackWidgetDict) > 0:
+        #     for key in self._stackWidgetDict.keys():
+        #         # looping through every path in stackWidgetDict
+        #         # key = path of current stack
+        #         currentStackWidget = self._stackWidgetDict[key]
+
+        # self.apWidget = AnalysisParamWidget(stackWidget=currentStackWidget, pmmApp=self)
+        # self.apWidget.show()
 
     def _undo_action(self):
         self.getFrontWindow().emitUndoEvent()
@@ -408,7 +470,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
             return
         self._mapWidgetDict[path].setVisible(visible)
 
-    def closeMapWindow(self, mapWidget):
+    def _old_closeMapWindow(self, mapWidget):
         """Remove theWindow from self._windowList.
         """
         logger.info('  remove _mapWidgetDict window from app list of windows')
@@ -431,6 +493,9 @@ class PyMapManagerApp(QtWidgets.QApplication):
 
         Stack widgets here are standalone, no map.
         """
+        self._openWidgetList.showMapOrStack(path)
+        return
+    
         logger.info(path)
         if path in self._stackWidgetDict.keys():
             self._stackWidgetDict[path].show()
@@ -484,7 +549,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
         
         return posList
 
-    def loadMapWidget(self, path):
+    def _old_loadMapWidget(self, path):
         """Load the main map widget from a path.
         """
         if path in self._mapWidgetDict.keys():
@@ -592,33 +657,10 @@ class PyMapManagerApp(QtWidgets.QApplication):
         # need to save zarr file first. so that we can create a stack from it within stackwidget
         # need to create stackwidget from new map
         #only save when user clicks save as
+        
+    def getOpenWidgetDict(self):
+        return self._openWidgetList.getDict()
     
-    def stackWidgetFromStack(self, newStack : "pymapmanager.stack"):
-        """Open a stack widget from an in memory stack.
-        
-        The newStack is created when user drops a tiff file.
-        """
-
-        _stackWidget = stackWidget2(path=None, stack=newStack)
-
-        # cludge
-        _stackWidget.getDisplayOptions()['windowState']['defaultChannel'] = 1
-
-        geometryRect = self.getConfigDict().getStackWindowGeometry()
-        left = geometryRect[0]
-        top = geometryRect[1]
-        width = geometryRect[2]
-        height = geometryRect[3]
-        
-        _stackWidget.setGeometry(left, top, width, height)
-
-        _stackWidget.show()
-
-        # add to runtime dict so it shows up in menus
-        newUntitledNumber = self.getNewUntitledNumber()
-        stackTitle = 'Image' + str(newUntitledNumber)
-        self._stackWidgetDict[stackTitle] = _stackWidget
-        
     def loadStackWidget(self, path : str):
         """Load a stack from a path.
             Path can be from (.mmap, .tif)
@@ -629,63 +671,8 @@ class PyMapManagerApp(QtWidgets.QApplication):
             Full path to (zarr, tif) file
         """
         
-        _timeSeriesCore : TimeSeriesCore = self._timeseriesList.add(path)
-
-        numTimepoints = _timeSeriesCore.numSessions
-
-        if numTimepoints == 1:
-            _stackWidget = stackWidget2(timeseriescore=_timeSeriesCore, timepoint=0)
-
-            geometryRect = self.getConfigDict().getStackWindowGeometry()
-            _stackWidget.setGeometry(geometryRect[0], geometryRect[1], geometryRect[2], geometryRect[3])
-            _stackWidget.show()
-            return _stackWidget
-        
-        else:
-            _mapWidget = mapWidget(_timeSeriesCore)
-            _mapWidget.show()
-            return _mapWidget
-        
-    
-        if path in self._stackWidgetDict.keys():
-            logger.info('showing already create stack widget')
-            self._stackWidgetDict[path].show()
-        else:
-            # load stack and make widget
-            # logger.info(f'loading stack widget from path: {path}')
-            # _stackWidget = pmm.interface2.stackWidgets.stackWidget2(path)
-            
-            # for example
-            # loadTheseExtension = pymapmanager.stack.loadTheseExtension
-            # _ext = os.path.splitext(path)[1]
-            # if not _Ext in loadTheseExtension:
-            #     logger.error("can't load extension '{_ext}', extension must be in {loadTheseExtension}'")
-            
-            timepoint = 2
-            logger.error(f'hard coding map timepoint:{timepoint}')
-
-            _stackWidget = stackWidget2(path, timepoint=timepoint)
-
-            geometryRect = self.getConfigDict().getStackWindowGeometry()
-            
-            left = geometryRect[0]
-            top = geometryRect[1]
-            width = geometryRect[2]
-            height = geometryRect[3]
-            
-            _stackWidget.setGeometry(left, top, width, height)
-
-            _stackWidget.show()
-            
-            # add to runtime dict so it shows up in menus
-            self._stackWidgetDict[path] = _stackWidget
-
-        self._openFirstWindow.hide()
-
-        # add to recent opened windows
-        self.getConfigDict().addStackPath(path)
-
-        return self._stackWidgetDict[path]
+        _aWidget = self._openWidgetList.openWidgetFromPath(path)
+        return _aWidget
     
 def main():
     """Run the PyMapMAnager app.

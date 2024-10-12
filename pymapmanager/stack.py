@@ -51,6 +51,9 @@ class stack:
 
         logger.info(f'loaded stack timepoint: {self}')
               
+    def getTimeSeriesCore(self) -> TimeSeriesCore:
+        return self._fullMap
+
     def getMetadata(self) -> Metadata:
         """Get metadata from the core map.
         """
@@ -173,7 +176,9 @@ class stack:
                                                           channelIdx=channelIdx,
                                                           zRange=imageSlice)
 
-        _imgData = _imgData._image
+        # get pixels returns
+        # mapmanagercore.lazy_geo_pd_images.image_slices.ImageSlice
+        # _imgData = _imgData._image
     
         self._currentImageSlice = _imgData
 
@@ -256,7 +261,6 @@ class stack:
 
         # CRITICAL FOR REDO !!!!!
         self.getPointAnnotations()._buildTimepoint()  # rebuild single timepoint
-        
         self.getPointAnnotations()._buildDataFrame()
         
     #abj
