@@ -33,7 +33,8 @@ def run():
     # sw2 = app.loadStackWidget(path)
     # sw2.zoomToPointAnnotation(120, isAlt=True)
     
-    path = '/Users/cudmore/Desktop/multi_timepoint_map_seg_spine_connected.mmap'
+    # path = '/Users/cudmore/Desktop/multi_timepoint_map_seg_spine_connected.mmap'
+
     mw = app.loadStackWidget(path)
 
     centerTimepoint = 2
