@@ -185,3 +185,28 @@ class DeleteSegmentPoint(_EditSegment):
 
     def addDeleteSegment(self, segmentID : int):
         self.addEditSegment(segmentID=segmentID)
+
+# abj
+class SetSegmentPivot(_EditSegment):
+    def __init__(self,
+                mmWidget : mmWidget2,
+                segmentID : int,
+                x : int,
+                y : int,
+                z : int
+                ):
+        super().__init__(pmmEventType.settingSegmentPivot, mmWidget)
+        self.setPivotPoint(segmentID, x=x, y=y, z=z)
+
+    def getName(self) -> str:
+        """Derived classes define this and is used in undo/redo menus.
+        """
+        return 'Set Pivot Point'
+
+    def setPivotPoint(self,
+                        segmentID : int,
+                        x : int,
+                        y : int,
+                        z : int):
+        self.addEditSegment(segmentID=segmentID, x=x, y=y, z=z)
+

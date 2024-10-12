@@ -15,12 +15,16 @@ class TracingWidget(mmWidget2):
 
     # radius changed is a proper pmmEventType
     # signalRadiusChanged = QtCore.Signal(object)  # dict : {checked, upDownSlices}
+    signalRadiusChanged = QtCore.Signal(object)
 
     def __init__(self, stackWidget):
         super().__init__(stackWidget)
         self._buildUI()
         
         self._editState = False  # if edit segment is checked
+
+        self.currentSegmentID = None
+        self.prevSegmentID = None
 
     def _buildUI(self) -> QtWidgets.QVBoxLayout:
         """Initialize the toolbar with controls.
@@ -95,6 +99,28 @@ class TracingWidget(mmWidget2):
         hBoxLayout2.addStretch()  # required for alignment=_alignLeft 
 
         return vControlLayout
+    
+    def getCurrentSelectedRadius(self, segmentID) -> int:
+        """ get radius of currently selected segment
+
+        Return:
+            integer of current radius
+        """
+        currentRadius = self._stackWidget.getStack().getLineAnnotations().getValue("radius", segmentID)
+        # logger.info(f"currentRadius {currentRadius}")
+        return int(currentRadius)
+
+    #abj
+    def updateRadiusSpinBox(self, value):
+        """ For the use of outside container to update Tracing Widget radius spinbox
+        """
+
+        # disable to ensure that _on_radius_value_changed doesnt get triggered on outside change
+        # self._radiusSpinBox.setEnabled(False)
+        # self._radiusSpinBox.disconnect() 
+        self._radiusSpinBox.setValue(value)
+        # self._radiusSpinBox.valueChanged.connect(self._on_radius_value_changed)
+        # self._radiusSpinBox.setEnabled(tracingSegment)
 
     def _on_radius_value_changed(self, value):
         """
@@ -105,6 +131,13 @@ class TracingWidget(mmWidget2):
         # AnnotationPlotWidget that displays the radius line points
         # radius changed is a proper pmmEventType
         #         self.signalRadiusChanged.emit(value)
+
+        # do not emit when radius value is changed after selecting new segment
+        if self.currentSegmentID != self.prevSegmentID:
+            self.signalRadiusChanged.emit(value)
+
+    def updatePivotSpinBox(self, value):
+        self._setPivotCheckBox.setChecked(value)
 
     def _on_set_pivot_checkbox(self, checked):
         """
@@ -121,7 +154,7 @@ class TracingWidget(mmWidget2):
         event = pmmEvent(pmmEventType.stateChange, self)
         event.setStateChange(pmmStates.settingSegmentPivot)
         self.emitEvent(event)
-        
+    
     def on_segment_edit_checkbox(self, state : int):
         """Respond to user toggling segment edit checkbox.
 
@@ -171,7 +204,12 @@ class TracingWidget(mmWidget2):
             logger.warning(f'did not understand buttonName:{buttonName}')
 
     def setGui(self):
+   
         segmentID = self.getSelectedSegment()
+
+        # abj
+        self.currentSegmentID = segmentID
+
         isEnabled = self._editState and (segmentID is not None)
 
         self._addSegmentButton.setEnabled(self._editState)
@@ -183,8 +221,10 @@ class TracingWidget(mmWidget2):
         
         self._radiusSpinBox.setEnabled(isEnabled)
         if segmentID is not None:
-            logger.warning('need to set radius spinbox to the current selected segment radius !!!')
-            _radius = 3
+            # logger.warning('need to set radius spinbox to the current selected segment radius !!!')
+
+            _radius = self.getCurrentSelectedRadius(segmentID)
+            # _radius = 3
             self._radiusSpinBox.setValue(_radius)
 
         self._setPivotCheckBox.setEnabled(isEnabled)
@@ -193,7 +233,13 @@ class TracingWidget(mmWidget2):
         """
         """
 
+        if self.currentSegmentID is None:
+            self.prevSegmentID = None
+        else:
+            self.prevSegmentID = self.currentSegmentID 
+
         self.setGui()
+    
         return
     
         _stackSelection = event.getStackSelection()

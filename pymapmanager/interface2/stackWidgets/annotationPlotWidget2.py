@@ -77,15 +77,15 @@ class PointLabels:
         y = self.df.getValue('y', labelID)
         spineAngles = self._df.getDataFrame()["spineAngle"]
         idSpineAngle = spineAngles[labelID]
-        adjustConstant = 2
+        adjustConstant = 3
         adjustX = adjustConstant * math.cos(idSpineAngle * math.pi/180)
         adjustY = adjustConstant * math.sin(idSpineAngle * math.pi/180)
         adjustX = abs(adjustX)
         adjustY = abs(adjustY)
 
-        if 0 <= abs(idSpineAngle) and abs(idSpineAngle) <= 90:
+        if 0 <= idSpineAngle and idSpineAngle <= 90:
             label.setPos(QtCore.QPointF(x + adjustX, y + adjustY))
-        elif 90 <= abs(idSpineAngle) and abs(idSpineAngle) <= 180:
+        elif 90 <= idSpineAngle and idSpineAngle <= 180:
             label.setPos(QtCore.QPointF(x - adjustX, y + adjustY))
         elif 180 <= idSpineAngle and idSpineAngle <= 270:
             label.setPos(QtCore.QPointF(x - adjustX, y - adjustY))
@@ -246,7 +246,7 @@ class annotationPlotWidget(mmWidget2):
         # logger.info(self._colorMap)
         # print('_colorMap:', self._colorMap)
         self._colorMap = ['#f77189', '#dc8932', '#ae9d31', '#77ab31', '#33b07a', '#36ada4', '#38a9c5', '#6e9bf4', '#cc7af4', '#f565cc']
-
+        # self._colorMap = ['#a6cee3', '#1f78b4', '#b2df8a', '#33a02c', '#fb9a99', '#e31a1c', '#fdbf6f', '#ff7f00', '#cab2d6', '#6a3d9a', '#ffff99', '#b15928']
         self.showScatter = True
 
     def _getScatterConnect(self, df : pd.DataFrame):
@@ -515,7 +515,7 @@ class annotationPlotWidget(mmWidget2):
             sliceNumber:
         """
         
-        # logger.info(f'{self.getClassName()} sliceNumber:{sliceNumber}')
+        logger.info(f'{self.getClassName()} sliceNumber:{sliceNumber}')
 
         self._currentSlice = sliceNumber
 
@@ -1213,6 +1213,25 @@ class linePlotWidget(annotationPlotWidget):
         self._rightRadiusLines.setZValue(
             zorder
         )  # put it on top, may need to change '10'
+        
+        color= "orange"
+        _pen = pg.mkPen(width=penWidth, color=color)
+        self._pivotPoints = self._view.plot(
+            [],
+            [],
+            pen=None,  # None to not draw lines
+            symbol= "o",
+            # symbolColor  = 'red',
+            symbolPen=None,
+            fillOutline=False,
+            markeredgewidth=5,
+            symbolBrush = color,
+            # connect='finite',
+        )
+
+        self._pivotPoints.setZValue(
+            10
+        )  #
 
     def toggleRadiusLines(self):
         self.showRadiusLines = not self.showRadiusLines
@@ -1259,20 +1278,46 @@ class linePlotWidget(annotationPlotWidget):
             return None
         
         dfRet = np.diff(df.index.to_numpy())  # 1 when contiguous
+        # logger.info(f"dfRet {dfRet}")
         dfRet[ dfRet != 1] = 0
 
         segmentIdDiff = np.diff(df['segmentID'])  # 0 when contiguous rows
+        # logger.info(f"segmentIdDiff {segmentIdDiff}")
         
         # either not contiguous or we jump to the next segmentID
         dfRet[ (dfRet != 1) | (segmentIdDiff != 0)] = 0
+
+        dfRet = np.append(dfRet, 0)  # append 0 value
+        # dfRet = np.insert(0, dfRet)  # append 0 value
+
+        # logger.info(f"dfRet final {dfRet}")
+
+        return dfRet
+    
+    def old_getScatterConnect(self, df : pd.DataFrame):
+        """Given a line df to plot (for a slice)
+            Build a connect array with
+                1 : connect to next
+                0 : do not connect to next
+        """
+        # logger.info(df)
+
+        dfRet = np.diff(df.index.to_numpy())
+        dfRet[ dfRet != 0] = -1
+        dfRet[ dfRet == 0] = 1
+        dfRet[ dfRet == -1] = 0
+
+        rowIndexDiff = np.diff(df['rowIndex'])  # 1 when contiguous rows
+        dfRet[ (dfRet == 1) & (rowIndexDiff != 1)] = 0
 
         dfRet = np.append(dfRet, 0)  # append 0 value
 
         return dfRet
     
     # abb was missing??? called from imagePlotWidget ???
-    def refreshRadiusLines(self, sliceNumber : int):
-        self.slot_setSlice(sliceNumber)
+    # def refreshRadiusLines(self, sliceNumber: int):
+    #     self.slot_setSlice(sliceNumber)
+    #     return
 
     def slot_setSlice(self, sliceNumber: int):
         # logger.info("setting slice in line plot")
@@ -1280,8 +1325,9 @@ class linePlotWidget(annotationPlotWidget):
 
         super().slot_setSlice(sliceNumber)  # draws centerline
 
+        # self.refreshRadiusLines(sliceNumber)
+
         # logger.warning('turned off left/right segment plot.')
-        
         _lineConnect = self._getScatterConnect(self._dfPlot)
         
         xLeft = []
@@ -1289,6 +1335,7 @@ class linePlotWidget(annotationPlotWidget):
         xRight = []
         yRight = []
         if self.showRadiusLines:
+            # logger.info("showing radius lines")
             xLeft = self._dfPlot['xLeft'].to_numpy()
             yLeft = self._dfPlot['yLeft'].to_numpy()
 
@@ -1299,10 +1346,8 @@ class linePlotWidget(annotationPlotWidget):
             # print(f'x is: {self._dfPlot["x"]}')
             # print(f'xLeft is: {xLeft}')
             # print(f'xRight is: {xRight}')
-            
-            # _lineConnect = self._getScatterConnect(dfLeft)
-            # _lineConnect = None
 
+        # logger.info(f"xRight, yRight: {xRight}, {yRight}")
         #
         self._leftRadiusLines.setData(
             xLeft, yLeft,
@@ -1313,6 +1358,9 @@ class linePlotWidget(annotationPlotWidget):
             xRight, yRight,
             connect=_lineConnect,
         )
+
+        pivotPointXs, pivotPointYs = self._annotations.getPivotPoint()
+        self._pivotPoints.setData(pivotPointXs, pivotPointYs)
 
     def selectedEvent(self, event: pmmEvent):
         """
@@ -1351,4 +1399,7 @@ class linePlotWidget(annotationPlotWidget):
         print(self._dfPlot)
 
     def addedSegmentPointEvent(self, event):
+        self._refreshSlice()
+
+    def settedSegmentPivot(self, event):
         self._refreshSlice()

@@ -6,12 +6,12 @@ import numpy as np
 import pandas as pd
 import shapely
 
-# import mapmanagercore
+import mapmanagercore
 # from mapmanagercore import MapAnnotations
 # from mapmanagercore import MapAnnotations, MultiImageLoader
 # from mapmanagercore.annotations.single_time_point.base import SingleTimePointFrame
 # from mapmanagercore import single_time_point
-# from mapmanagercore.layers.line import clipLines
+from mapmanagercore.layers.line import clipLines
 # from mapmanagercore.lazy_geo_pandas import LazyGeoFrame
 
 from pymapmanager.interface2.stackWidgets.event.spineEvent import EditSpinePropertyEvent
@@ -120,6 +120,8 @@ class AnnotationsCore:
         if not df.empty:
             df = df[(df['z']>=_startSlice) & (df['z']<=_stopSlice)]
 
+        # logger.info(f"df {df}")
+
         if segmentID is not None:
             df = df[ df['segmentID'] == segmentID]
 
@@ -131,7 +133,7 @@ class AnnotationsCore:
         df = self.getDataFrame() 
         row = df.loc[rowIdx]
         return row
-    
+
     def getValue(self, colName : str, rowIdx : int):
         """Get a single value from a row and column.
         
@@ -495,6 +497,43 @@ class LineAnnotationsCore(AnnotationsCore):
 
         return _added
     
+    def old_setPivotPoint(self, segmentID : int, clickedPoint: shapely.Point):
+        """Set a pivot point to a segment.
+        """
+        logger.info(f'segmentID: {segmentID} clickedPoint: {clickedPoint}')
+        
+        # _added = self.getMapSegments().appendSegmentPoint(self.timepoint, segmentID, x, y, z)
+        _added = self.singleTimepoint.setPivotPoint(segmentID, clickedPoint)
+        logger.info(f'segmentID: {segmentID} pivotPoint: {_added}')
+        if _added is not None:
+            # self._buildDataFrame()
+            self._buildTimepoint()
+
+            self._buildDataFrame()
+
+            self._setDirty(True) #abj
+
+        return _added
+    
+    def setPivotDistance(self, segmentID : int, clickedPoint: shapely.Point):
+        """Set a pivot point to a segment.
+        """
+        logger.info(f'segmentID: {segmentID} clickedPoint: {clickedPoint}')
+        
+        # _added = self.getMapSegments().appendSegmentPoint(self.timepoint, segmentID, x, y, z)
+        # _added = self.singleTimepoint.setPivotPoint(segmentID, clickedPoint)
+        _added = self.singleTimepoint.setPivotDistance(segmentID, clickedPoint)
+        logger.info(f'segmentID: {segmentID} pivotDistance: {_added}')
+        if _added is not None:
+            # self._buildDataFrame()
+            self._buildTimepoint()
+
+            self._buildDataFrame()
+
+            self._setDirty(True) #abj
+
+        return _added
+    
     @property
     def numSegments(self):
         """Get the number of segments in this timepoint.
@@ -546,7 +585,7 @@ class LineAnnotationsCore(AnnotationsCore):
         """Get a summary dataframe, one segment per row.
         """
         # self._summaryDf = self.getMapSegments()._buildSegmentSummaryDf(timepoint=self.timepoint)
-        _columns = ['Segment', 'Points', 'Length', 'Radius']
+        _columns = ['Segment', 'Points', 'Length', 'Radius', 'Pivot Distance','Point Distances']
         
         summaryDf = pd.DataFrame(columns=_columns)
         
@@ -556,7 +595,12 @@ class LineAnnotationsCore(AnnotationsCore):
             _list = segmentDf.index.to_list()
             summaryDf['Segment'] = _list
             summaryDf['Radius'] = segmentDf['radius']
+            summaryDf['Pivot Distance'] = segmentDf['pivotDistance']
+            summaryDf['Point Distances'] = segmentDf['distance']
+
             # summaryDf['Pivot'] = self._fullMap.segments['pivotPoint']
+            # summaryDf['pivotPointX'] = segmentDf['pivotPoint'].x
+            # summaryDf['pivotPointY'] = segmentDf['pivotPoint'].y
         
         except (AttributeError) as e:
             # when no segments
@@ -607,7 +651,7 @@ class LineAnnotationsCore(AnnotationsCore):
          - Does not contain empty segments.
         """
         #self._df = self.getMapSegments()._buildSegmentDataFrame(self.timepoint)
-
+        
         _columns = ['t', 'segmentID', 'x', 'y', 'z', 'xLeft', 'yLeft', 'xRight', 'yRight']
 
         dfRet = pd.DataFrame(columns=_columns)
@@ -616,6 +660,8 @@ class LineAnnotationsCore(AnnotationsCore):
         
         if len(segmentDf) > 0:
             xyCoord = segmentDf['segment'].get_coordinates(include_z=True)
+
+            #TODO: get distance along line and add as a column
             
             dfRet['segmentID'] = xyCoord.index
             
@@ -631,14 +677,21 @@ class LineAnnotationsCore(AnnotationsCore):
             dfRet['yLeft'] = xyLeft['y']
 
             xyRight = segmentDf['rightRadius'].get_coordinates(include_z=False)
+            # logger.info(f"xyRight {xyRight}")
             xyRight = xyRight.reset_index()  # xyRight still has labels as segmentID
+            # logger.info(f"xyRight after {xyRight}")
             dfRet['xRight'] = xyRight['x']
             dfRet['yRight'] = xyRight['y']
+
+            # dfRet['pointDistance'] = segmentDf['distance']
+
+            #abj
+            dfRet["radius"] =  segmentDf['radius']
         
         dfRet['t'] = self.timepoint
 
         # logger.info(f'built segment df')
-        # print(dfRet)
+        # print("dfRet", dfRet)
 
         self._df = dfRet
     
@@ -647,3 +700,60 @@ class LineAnnotationsCore(AnnotationsCore):
         
         # return self._df
     
+    def getNumSegments(self) -> int:
+        if self._singleTimePoint.segments[:] is None:
+            return 0
+        else:
+            return len(self._singleTimePoint.segments[:])
+
+    def setValue(self, segmentID, value):
+        """
+        """
+        from mapmanagercore.schemas.segment import Segment
+
+        #  updateSegment(self, segmentId: Keys, value: Segment, replaceLog=False, skipLog=False):
+        _segment = Segment(radius=value)
+        self.singleTimepoint.updateSegment(segmentId = segmentID, value=_segment)
+
+        self._buildTimepoint()
+        self._buildDataFrame()
+
+        # self._buildDataFrame()
+
+        self._setDirty(True) #abj
+
+    def getPivotPoint(self):
+        """ Get Pivot points of each segment to plot within linePlotWidget
+        
+        Return: 
+            returnPointX: List of X values of pivot points
+            returnPointX: List of Y values of pivot points
+            
+        """
+        
+        # find pivotDistance within point distance, that is what we plot
+        pivotDistances = self._summaryDf["Pivot Distance"]
+        pointDistance = self._summaryDf["Point Distances"]
+
+        returnPointX = []
+        returnPointY = []
+
+        # pivotIndexList = None # len of segmentIDs
+        for segmentID, pList in enumerate(pointDistance):
+            # print("p ", p)
+            if pivotDistances[segmentID] in pList:
+                pivotDistance = pivotDistances[segmentID]
+                pointID = pList.index(pivotDistance)
+                # print("pList", pList)
+                # print("found pivot ", pivotDistances[segmentID], "at point index: ", pointID)
+                # # logger.info(f"pivot x : {linePointX[pointID]} y: {linePointY[pointID]}")
+                filteredDF = self._df.loc[self._df["segmentID"] == segmentID]
+                filteredDF = filteredDF.reset_index() # reset index since mmc uses index based on each segment
+   
+                linePointX = filteredDF["x"]
+                linePointY = filteredDF["y"]
+
+                returnPointX.append(linePointX[pointID])
+                returnPointY.append(linePointY[pointID])
+   
+        return returnPointX, returnPointY

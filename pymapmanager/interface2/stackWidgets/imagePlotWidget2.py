@@ -15,7 +15,7 @@ from pymapmanager.interface2.stackWidgets.event.spineEvent import (
                 )
 
 from pymapmanager.interface2.stackWidgets.event.segmentEvent import (
-    AddSegmentPoint
+    AddSegmentPoint, SetSegmentPivot
 )
 
 from .mmWidget2 import mmWidget2, pmmEventType, pmmEvent, pmmStates
@@ -416,6 +416,26 @@ class ImagePlotWidget(mmWidget2):
                     addSegmentPoint = AddSegmentPoint(self, segmentID=_segmentID, x=x, y=y, z=z)
                     self.emitEvent(addSegmentPoint)
 
+        elif _state == pmmStates.settingSegmentPivot: # abj
+        
+            pos = event.pos()
+            imagePos : QtCore.QPointF = self._myImage.mapFromScene(pos)
+            x = int(imagePos.x())
+            y = int(imagePos.y())
+            z = self._currentSlice
+            
+            if not self.getStackWidget().getStackSelection().hasSegmentSelection():
+                logger.error('no segment selection???')
+                return
+            else:
+                _segmentID = self.getStackWidget().getStackSelection().getSegmentSelection()
+                _segmentID = _segmentID[0]
+                logger.info(f'-->> emit AddSegmentPoint segmentID:{_segmentID} x:{x} y:{y} z:{z}')
+                # addSegmentPoint = AddSegmentPoint(self, segmentID=_segmentID, x=x, y=y, z=z)
+                event = SetSegmentPivot(self, segmentID=_segmentID, x=x, y=y, z=z)
+                event.setSegmentSelection([_segmentID])
+                self.emitEvent(event)
+
         elif isShift:
             # make a new spine
 
@@ -514,8 +534,10 @@ class ImagePlotWidget(mmWidget2):
         """ only called by line Plot to update segments' radius lines
         """
         logger.info("updating radius line")
-        sliceNumber = event.getSliceNumber()
-        self._aLinePlot.refreshRadiusLines(sliceNumber)
+        # sliceNumber = event.getSliceNumber()
+        sliceNumber = self._currentSlice
+        # self._aLinePlot.refreshRadiusLines(sliceNumber)
+        self._aLinePlot.slot_setSlice(sliceNumber)
 
     def slot_setSlice(self, sliceNumber, doEmit=True):
         logger.warning(f'sliceNumber:{sliceNumber} doEmit:{doEmit}')

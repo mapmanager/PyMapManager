@@ -354,7 +354,7 @@ class stackWidget2(mmWidget2):
         topToobarName = 'top toolbar'
         self._topToolbar = StackToolBar(self._stack, self._displayOptionsDict)
         self._topToolbar.signalSlidingZChanged.connect(self.updateDisplayOptionsZ)
-        self._topToolbar.signalRadiusChanged.connect(self.updateRadius)
+        # self._topToolbar.signalRadiusChanged.connect(self.updateRadius)
         self._topToolbar.signalPlotCheckBoxChanged.connect(self.updatePlotBoxes)
         self.addToolBar(QtCore.Qt.TopToolBarArea, self._topToolbar)
         self._widgetDict[topToobarName] = self._topToolbar
@@ -446,19 +446,6 @@ class stackWidget2(mmWidget2):
         _pmmEvent.setSliceNumber(self._currentSliceNumber)
 
         logger.info(f'  -->> emit updateDisplayOptionsZ() self._currentSliceNumber :{self._currentSliceNumber}')
-        self.emitEvent(_pmmEvent, blockSlots=True)
-
-    def updateRadius(self, newRadius):
-        """ event that only  updates radius within linePlotWidget
-        """
-        self._displayOptionsDict['lineDisplay']['radius'] = newRadius
-
-        # _pmmEvent = pmmEvent(pmmEventType.setSlice, self)
-        # _pmmEvent.setSliceNumber(self._currentSliceNumber)
-        # self.emitEvent(_pmmEvent, blockSlots=True)
-
-        _pmmEvent = pmmEvent(pmmEventType.setRadius, self)
-        _pmmEvent.setSliceNumber(self._currentSliceNumber)
         self.emitEvent(_pmmEvent, blockSlots=True)
 
     def updatePlotBoxes(self, plotName):
@@ -617,6 +604,36 @@ class stackWidget2(mmWidget2):
 
         return True
     
+    def settedSegmentPivot(self, event : pmmEvent): #abj
+        """Derived classes need to perform action of selection event.
+        """
+        logger.warning('=== ===   STACK WIDGET PERFORMING ADD PIVOT POINT   === ===')
+
+        logger.info(event)
+
+        for item in event:
+            segmentID = item['segmentID']
+            x = item['x']
+            y = item['y']
+            z = item['z']
+            # logger.info(f' setted pivot point to segmentID:{segmentID} with x:{x} y:{y} z:{z}')
+            clickedPoint = Point(x,y,z)
+            _added = self.getStack().getLineAnnotations().setPivotDistance(segmentID, clickedPoint)
+            # _added = self.getStack().getLineAnnotations().old_setPivotPoint(segmentID, clickedPoint)
+
+        if _added is None:
+            self.slot_setStatus('No point added, click a bit closer to the last point')
+        else:
+            self.slot_setStatus('set Pivot point in segment tracing')
+        
+        self.getUndoRedo().addUndo(event)
+
+        self._afterEditSegment(event)
+
+        # self.getUndoRedo().addUndo(event)
+        
+    #     return _added is not None
+    
     #
     # spines
     def addedEvent(self, event : AddSpineEvent) -> bool:
@@ -740,6 +757,8 @@ class stackWidget2(mmWidget2):
             self.slot_setStatus('Click the line to specify the new spine connection point, esc to cancel')
         elif _state == pmmStates.tracingSegment:
             self.slot_setStatus('Shift+click to create a new segment tracing points')
+        elif _state == pmmStates.settingSegmentPivot: # abj
+            self.slot_setStatus('Click to set segment Pivot')
 
         return True
     
@@ -758,6 +777,19 @@ class stackWidget2(mmWidget2):
         # reselect spine
         spines = event.getSpines()  # [int]
         self.zoomToPointAnnotation(spines)
+
+        self.slot_setStatus('Ready')
+
+    def _afterEditSegment(self, event):
+        """After edit (setSegmentPivot), return to edit state 
+        """
+
+        # logger.info('returning to edit state and re-select spines')
+
+        # return to edit state
+        stateEvent = pmmEvent(pmmEventType.stateChange, self)
+        stateEvent.setStateChange(pmmStates.edit)
+        self.slot_pmmEvent(stateEvent)
 
         self.slot_setStatus('Ready')
 
@@ -875,6 +907,18 @@ class stackWidget2(mmWidget2):
 
         # abj
         self._currentSliceNumber = sliceNumber
+
+    # abj
+    def setRadiusEvent(self, event: pmmEvent):
+        segmentID = event.getFirstSegmentSelection()
+        newRadius = event.getNewRadiusVal()
+
+        logger.info(f"newRadius {newRadius}")
+        # self.getStack().getLineAnnotations().setValue("radius", segmentID, newRadius)
+        self.getStack().getLineAnnotations().setValue(segmentID, newRadius)
+
+        # self.getUndoRedo().addUndo(event)
+        # self._afterEdit2(event)
 
     def getCurrentSliceNumber(self):
         return self._currentSliceNumber 
@@ -1216,4 +1260,4 @@ class stackWidget2(mmWidget2):
         _pmmEvent = pmmEvent(pmmEventType.setSlice, self)
         _pmmEvent.setSliceNumber(self._currentSliceNumber)
         self.emitEvent(_pmmEvent, blockSlots=True)
-            
+

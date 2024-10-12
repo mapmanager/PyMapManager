@@ -74,6 +74,9 @@ class pmmEventType(Enum):
     addSegmentPoint = auto()
     deleteSegmentPoint = auto()
 
+    # setPivotPoint = auto() # abj
+    settingSegmentPivot = auto() # abj
+
 class StackSelection:
     def __init__(self, stack : pymapmanager.stack = None):
         
@@ -240,7 +243,6 @@ class StackSelection:
         # abb, put back in
         # return segmentSelectionList is not None or segmentSelectionList == []
 
-
     def firstSegmentSelection(self) -> Optional[int]:
         if not self.hasSegmentSelection():
             return
@@ -351,7 +353,9 @@ class pmmEvent():
             # implementing map/timeseries
             # 'mapSessionSelection': [],
 
-            'editSpine' : None
+            'editSpine' : None,
+
+            'emittedValue' : None # integer for set radius event
 
         }
 
@@ -415,6 +419,20 @@ class pmmEvent():
     # abj
     def setSegmentSelection(self, segmentSelection : List[int]):
         self.getStackSelection().setSegmentSelection(segmentSelection)
+
+    def getFirstSegmentSelection(self):
+        return self.getStackSelection().firstSegmentSelection()
+
+    # abj
+    def setNewRadiusVal(self, newRadiusVal):
+        """ Used by setRadius event to set and get new radius
+        """
+        # self.getStackSelection().setNewRadiusVal(newRadiusVal)
+        self._dict["emittedValue"] = newRadiusVal
+
+    def getNewRadiusVal(self) -> int:
+        # return self.getStackSelection().getNewRadiusVal()
+        return self._dict["emittedValue"]
 
     def setType(self, theType : pmmEventType):
         self._dict['type'] = theType
@@ -804,6 +822,9 @@ class mmWidget2(QtWidgets.QMainWindow):
         elif event.type == pmmEventType.deleteSegmentPoint:
             acceptEvent = self.deletedSegmentPointEvent(event)
 
+        elif event.type == pmmEventType.settingSegmentPivot: # abj
+            acceptEvent = self.settedSegmentPivot(event)
+
         # abj
         # elif event.type == pmmEventType.acceptPoint:
         #     acceptEvent = self.acceptPoint(event)
@@ -1015,6 +1036,10 @@ class mmWidget2(QtWidgets.QMainWindow):
         """
 
     def deletedSegmentPointEvent(self, event : pmmEvent):
+        """Derived classes need to perform action of selection event.
+        """
+
+    def settedSegmentPivot(self, event : pmmEvent):
         """Derived classes need to perform action of selection event.
         """
 
