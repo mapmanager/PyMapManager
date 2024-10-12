@@ -265,6 +265,8 @@ class PyMapManagerMenus:
         
     def _refreshEditMenu(self):
         """Manage undo/redo menus.
+        
+        20241011, redo is always off.
         """
         
         self.editMenu.clear()
@@ -300,7 +302,8 @@ class PyMapManagerMenus:
         redoAction = QtWidgets.QAction("Redo " + nextRedo, self.getApp())
         redoAction.setCheckable(False)  # setChecked is True by default?
         redoAction.setShortcut("Shift+Ctrl+Z")
-        redoAction.setEnabled(enableRedo)
+        # redoAction.setEnabled(enableRedo)
+        redoAction.setEnabled(False)
         redoAction.triggered.connect(self.getApp()._redo_action)
         self.editMenu.addAction(redoAction)
 
@@ -437,8 +440,8 @@ class PyMapManagerMenus:
 
         self.openRecentMenu.clear()
 
-        # add files
-        for recentFile in configDict.getRecentStacks():
+        # add recent mmap files
+        for recentFile in configDict.getRecentMaps():
             loadFileAction = QtWidgets.QAction(recentFile, self.getApp())
             loadFileAction.triggered.connect(
                 partial(self.getApp().loadStackWidget, recentFile)
@@ -446,16 +449,16 @@ class PyMapManagerMenus:
 
             self.openRecentMenu.addAction(loadFileAction)
         
-        self.openRecentMenu.addSeparator()
+        # self.openRecentMenu.addSeparator()
 
-        # add folders
-        for recentFolder in configDict.getRecentMaps():
-            loadFolderAction = QtWidgets.QAction(recentFolder, self.getApp())
-            loadFolderAction.triggered.connect(
-                partial(self.getApp().loadMapWidget, recentFolder)
-            )
+        # add recent folders
+        # for recentFolder in configDict.getRecentMaps():
+        #     loadFolderAction = QtWidgets.QAction(recentFolder, self.getApp())
+        #     loadFolderAction.triggered.connect(
+        #         partial(self.getApp().loadMapWidget, recentFolder)
+        #     )
 
-            self.openRecentMenu.addAction(loadFolderAction)
+        #     self.openRecentMenu.addAction(loadFolderAction)
 
     def _refreshAnalysisParameters(self):
         """

@@ -97,37 +97,27 @@ class OpenFirstWindow(MainWindow):
             myTableWidget.setRowHeight(idx, _rowHeight + int(.7 * _rowHeight))
 
         return myTableWidget
-    
-    def _old_on_recent_stack_click(self, rowIdx : int):
-        """On double-click, open a file and close self.
-        """
-        path = self.recentStackList[rowIdx]
-        logger.info(f'rowId:{rowIdx} path:{path}')
-
-        # abj: Changed this to check if it is a directory instead of a file
-        # if os.path.isfile(path):
-        if os.path.isdir(path):
-            self.getApp().loadStackWidget(path)
-        else:
-            logger.error(f'did not find path: {path}')
 
     def _on_recent_map_click(self, rowIdx : int):    
-        """On double-click, open a folder and close self.
+        """On double-click, open a mmap and close self.
         """
         path = self.recentMapList[rowIdx]
         logger.info(f'rowId:{rowIdx} path:{path}')
 
-        if os.path.isdir(path):
-            self.getApp().loadMapWidget(path)
+        # if os.path.isdir(path):
+        if os.path.isfile(path):
+            self.getApp().loadStackWidget(path)
         else:
-            logger.error(f'did not find path: {path}')
+            logger.error(f'did not find dir path: {path}')
 
     def _on_open_button_click(self, name : str):
         logger.info(name)
         if name == 'Open...':
             self._app.loadStackWidget()
-        elif name == 'Open Folder...':
-            self._app.loadMapWidget()
+
+        # TODO: implement this
+        # elif name == 'Open Folder...':
+            # self._app.loadFolder()  # load a folder of mmap
 
     def _buildUI(self):
         # typical wrapper for PyQt, we can't use setLayout(), we need to use setCentralWidget()
@@ -152,22 +142,22 @@ class OpenFirstWindow(MainWindow):
 
         name = 'Open...'
         aButton = QtWidgets.QPushButton(name)
-        aButton.setFixedSize(QtCore.QSize(200, 60))
-        aButton.setToolTip('Open an image.')
+        aButton.setFixedSize(QtCore.QSize(180, 40))
+        aButton.setToolTip('Open a tif or mmap file.')
         aButton.clicked.connect(partial(self._on_open_button_click, name))
         hBoxLayout.addWidget(aButton, alignment=QtCore.Qt.AlignLeft)
 
-        name = 'Open Map...'
+        name = 'Open Folder...'
         aButton = QtWidgets.QPushButton(name)
-        aButton.setFixedSize(QtCore.QSize(200, 60))
-        aButton.setToolTip('Open a map.')
+        aButton.setFixedSize(QtCore.QSize(180, 40))
+        aButton.setToolTip('Open a folder of mmap files.')
         aButton.clicked.connect(partial(self._on_open_button_click, name))
         hBoxLayout.addWidget(aButton, alignment=QtCore.Qt.AlignLeft)
 
         name = 'Drag and Drop'
         aButton = DragAndDropWidget(name, self._app)
-        aButton.setFixedSize(QtCore.QSize(200, 60))
-        aButton.setToolTip('Drag and Drop Tif File.')
+        aButton.setFixedSize(QtCore.QSize(180, 40))
+        aButton.setToolTip('Drag and drop a tif or mmap file.')
         # aButton.clicked.connect(partial(self._on_open_button_click, name))
         hBoxLayout.addWidget(aButton, alignment=QtCore.Qt.AlignLeft)
 

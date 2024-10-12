@@ -149,6 +149,8 @@ class OpenWidgetList:
         """Open a stack or map from path.
         
         This opens a TimeSeriesCore and then a stack or map widget
+
+        Returns a stack widget (tp==1) or a map widget (tp>1)
         """
         if path not in self._widgetDictList.keys():
             logger.info(f'loading widget path:{path}')
@@ -176,6 +178,9 @@ class OpenWidgetList:
             self._app.closeFirstWindow()
 
             self._widgetDictList[path] = _aWidget
+
+        # add to recent opened maps
+        self._app.getConfigDict().addMapPath(path)
 
         return self._widgetDictList[path]
 
@@ -446,15 +451,6 @@ class PyMapManagerApp(QtWidgets.QApplication):
         self.apWidget = AnalysisParamWidget(stackWidget=_frontWidget, pmmApp=self)
         self.apWidget.show()
 
-        # if len(self._stackWidgetDict) > 0:
-        #     for key in self._stackWidgetDict.keys():
-        #         # looping through every path in stackWidgetDict
-        #         # key = path of current stack
-        #         currentStackWidget = self._stackWidgetDict[key]
-
-        # self.apWidget = AnalysisParamWidget(stackWidget=currentStackWidget, pmmApp=self)
-        # self.apWidget.show()
-
     def _undo_action(self):
         self.getFrontWindow().emitUndoEvent()
         
@@ -466,27 +462,9 @@ class PyMapManagerApp(QtWidgets.QApplication):
         """Show/hide a map widget.
         """
         if path not in self._mapWidgetDict.keys():
-            logger.warning(f'did not find in keys')
+            logger.warning(f'did not find path:{path} in keys: {self._mapWidgetDict.keys()}')
             return
         self._mapWidgetDict[path].setVisible(visible)
-
-    def _old_closeMapWindow(self, mapWidget):
-        """Remove theWindow from self._windowList.
-        """
-        logger.info('  remove _mapWidgetDict window from app list of windows')
-        mapPath = mapWidget.getMap().path
-        popThisKey = None
-        for pathKey in self._mapWidgetDict.keys():
-            if pathKey == mapPath:
-                popThisKey = pathKey
-        
-        if popThisKey is not None:
-            self._mapWidgetDict.pop(popThisKey, None)
-
-        # check if there are any more windows and show load window
-        if len(self._stackWidgetDict.keys()) == 0 and \
-                            len(self._mapWidgetDict.keys()) == 0:
-            self._openFirstWindow.show()
 
     def showMapOrStack(self, path):
         """Show an already opened map or stack widget.
@@ -495,19 +473,6 @@ class PyMapManagerApp(QtWidgets.QApplication):
         """
         self._openWidgetList.showMapOrStack(path)
         return
-    
-        logger.info(path)
-        if path in self._stackWidgetDict.keys():
-            self._stackWidgetDict[path].show()
-            self._stackWidgetDict[path].raise_()
-            self._stackWidgetDict[path].activateWindow()
-        elif path in self._mapWidgetDict.keys():
-            self._mapWidgetDict[path].show()
-            self._mapWidgetDict[path].raise_()
-            self._mapWidgetDict[path].activateWindow()
-        else:
-            logger.warning('did not find opened map or stack with path')
-            logger.warning(f'   {path}')
 
     def getScreenGrid(self, numItems : int, itemsPerRow : int) -> List[List[int]]:
         """Get screen coordiates for a grid of windows.
@@ -548,120 +513,11 @@ class PyMapManagerApp(QtWidgets.QApplication):
             currentTop += windowHeight + vSpace
         
         return posList
-
-    def _old_loadMapWidget(self, path):
-        """Load the main map widget from a path.
-        """
-        if path in self._mapWidgetDict.keys():
-            self._mapWidgetDict[path].show()
-        else:
-            # load map and make widget
-            logger.info(f'loading mmMap from path: {path}')
-            _map = pmm.mmMap(path)
-            logger.info(f'   {_map}')
-            _mapWidget = pmm.interface2.mapWidgets.mapWidget(_map)
-            self._mapWidgetDict[path] = _mapWidget
-
-        self._mapWidgetDict[path].show()
-        self._mapWidgetDict[path].raise_()
-        self._mapWidgetDict[path].activateWindow()
-
-        # always hide the open first window
-        self._openFirstWindow.hide()
-
-        # add to recent opened windows
-        self.getConfigDict().addMapPath(path)
-
-        return self._mapWidgetDict[path]
-    
-    # def loadTifFile2(self, path : str):
-    #     import pandas as pd
-    #     from mapmanagercore import MapAnnotations, MultiImageLoader
-    #     from pymapmanager import stack
-
-    #     # check that path exists and is .tif file
-    #     if not os.path.isfile(path):
-    #         logger.warning(f'file not found: {path}')
-    #         return
-    #     _ext = os.path.splitext(path)[1]
-    #     if _ext != '.tif':
-    #         logger.warning(f'can only load files with .tif extension, got extension "{_ext}"')
-    #         return 
-
-    #     loader = MultiImageLoader()
-    #     loader.read(path, channel=0)
-
-    #     map = MapAnnotations(loader.build(),
-    #                         lineSegments=pd.DataFrame(),
-    #                         points=pd.DataFrame())
-        
-    #     logger.info(f'map from tif file is {map}')
-
-    #     # make a stack
-    #     aStack = stack(zarrMap=map)
-    #     aStack.header['numChannels'] = 1
-                      
-    #     print(aStack)
-
-    #     self.stackWidgetFromStack(aStack)
-
-    # abj
-    def _old_loadTifFile(self, path : str):
-        """Load a stack from tif from a path.
-        Only happens on first load/ drag and drop
-        Create stackwidget/ mmap from tif file
-        
-        Parameters
-        ----------
-        path : str
-            Full path to tif file
-        """
-        from mapmanagercore import MapAnnotations, MultiImageLoader
-        from mapmanagercore.lazy_geo_pandas import LazyGeoFrame
-        from mapmanagercore.schemas import Segment, Spine
-
-        loader = MultiImageLoader()
-        # path = "C:\\Users\\johns\\Documents\\GitHub\\PyMapManager-Data\\one-timepoint\\rr30a_s0_ch1.tif"
-    
-        try: # Check if path is a tif file
-            # TODO: detect channel, move channel to parameter
-            loader.read(path, channel=0)
-            logger.info("loading tif file!")
-        except Exception as e: # else return error message
-            logger.info(f"Exeception when reading tif file: {e}")
-            return
-        import pandas as pd
-        import geopandas
-        lineSegments = geopandas.GeoDataFrame()
-        points = geopandas.GeoDataFrame()
-
-
-        # Might no be necessary, example.ipynb works with empty geodataframes
-        # self._segments = LazyGeoFrame(
-        #     Segment, data=lineSegments, store=self)
-        # self._points = LazyGeoFrame(Spine, data=points, store=self)
-
-        map = MapAnnotations(loader.build(),
-                            lineSegments=lineSegments,
-                            points=points)
-        
-        # Save new mmap file in same directory as tif file
-        import os
-        pathParse = os.path.splitext(path)[0] # without extension
-        newMapPath = pathParse + ".mmap"
-        logger.info("Save new Map from tif file")
-        map.save(newMapPath)
-
-        self.loadStackWidget(newMapPath)
-        # map.points[:]
-        # need to save zarr file first. so that we can create a stack from it within stackwidget
-        # need to create stackwidget from new map
-        #only save when user clicks save as
         
     def getOpenWidgetDict(self):
         return self._openWidgetList.getDict()
     
-    def loadStackWidget(self, path : str):
+    def loadStackWidget(self, path : str = None):
         """Load a stack from a path.
             Path can be from (.mmap, .tif)
         
@@ -669,8 +525,16 @@ class PyMapManagerApp(QtWidgets.QApplication):
         ----------
         path : str
             Full path to (zarr, tif) file
+        
+        Returns
+        -------
+        Either a stackWIdget (single timepoint) or a MapWidget (multiple timepoint)
         """
         
+        if path is None:
+            logger.warning('TODO: write a file open dialog to open an mmap file')
+            return
+            
         _aWidget = self._openWidgetList.openWidgetFromPath(path)
         return _aWidget
     

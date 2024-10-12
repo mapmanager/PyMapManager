@@ -603,8 +603,8 @@ class mmWidget2(QtWidgets.QMainWindow):
             logger.error('neither a map or stack widget???')
             return
         
-        logger.info(f'    returning undoredo object of type: {type(_undoRedo)}')
-        print(_undoRedo)
+        # logger.info(f'    returning undoredo object of type: {type(_undoRedo)}')
+        # print(_undoRedo)
         
         return _undoRedo
     
@@ -636,7 +636,7 @@ class mmWidget2(QtWidgets.QMainWindow):
             except TypeError:
                 pass
 
-    def _old_getInitError(self):
+    def getInitError(self):
         # TODO: implement this
         return False
     

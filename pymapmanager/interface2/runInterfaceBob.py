@@ -35,15 +35,17 @@ def run():
     
     # path = '/Users/cudmore/Desktop/multi_timepoint_map_seg_spine_connected.mmap'
 
+    # mw will be map widget if path has multiple timepoints, otherwise mw is a stackwidget2
     mw = app.loadStackWidget(path)
 
-    centerTimepoint = 2
-    plusMinusTimepoint = 1
-    spineID = 139
-    mw.openStackRun(centerTimepoint, plusMinusTimepoint, spineID=spineID)
+    # multi timepoint map
+    # centerTimepoint = 2
+    # plusMinusTimepoint = 1
+    # spineID = 139
+    # mw.openStackRun(centerTimepoint, plusMinusTimepoint, spineID=spineID)
 
     # debug tracing plugin
-    # sw2.runPlugin('Tracing', inDock=True)
+    # mw.runPlugin('Tracing', inDock=True)
 
     sys.exit(app.exec_())
 

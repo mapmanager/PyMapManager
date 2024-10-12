@@ -34,13 +34,13 @@ class Preferences:
         theRet = [x, y, width, height]
         return theRet
     
-    def getMostRecentStack(self):
-        return self.configDict["mostRecentStack"]
+    # def getMostRecentStack(self):
+    #     return self.configDict["mostRecentStack"]
 
-    def getRecentStacks(self):
-        return self.configDict["recentStacks"]
+    # def getRecentStacks(self):
+    #     return self.configDict["recentStacks"]
 
-    def getMostRecentMap(self):
+    def getMostRecentMap(self) -> str:
         return self.configDict["mostRecentMap"]
 
     def getRecentMaps(self):
@@ -62,32 +62,16 @@ class Preferences:
             return
         return self._configDict[key]
 
-    def _old_addStackPath(self, stackPath : str):
-        """Add a single timepoint stack.
-        
-        Similar to addMapPath.
-        """
-
-        if stackPath not in self.configDict["recentStacks"]:
-            self.configDict["recentStacks"].append(stackPath)
-            # limit list to last _maxNumUndo
-            self.configDict["recentStacks"] = self.configDict["recentStacks"][
-                -self._maxRecent :
-            ]
-
-        # always set as the most recent file
-        self.configDict["mostRecentStack"] = stackPath
-
         self.save()
 
     def addMapPath(self, mapPath : str):
-        """Add a map path.
-        Similar to addMapPath.
+        """Add a map path to recent maps
         """
 
         if mapPath not in self.configDict["recentMaps"]:
             self.configDict["recentMaps"].append(mapPath)
-            # limit list to last _maxNumUndo
+            
+            # reduce/limit list to last _maxRecent
             self.configDict["recentMaps"] = self.configDict["recentMaps"][-self._maxRecent :]
 
         # always set as the most recent file
@@ -168,8 +152,8 @@ class Preferences:
         configDict["version"] = self._version
         configDict["theme"] = 'dark'  # in ['dark', 'light', 'auto']
 
-        configDict["recentStacks"] = []
-        configDict["mostRecentStack"] = ""
+        # configDict["recentStacks"] = []
+        # configDict["mostRecentStack"] = ""
 
         configDict["recentMaps"] = []
         configDict["mostRecentMap"] = ""
@@ -185,3 +169,6 @@ class Preferences:
         configDict['logLevel'] = 'INFO'
 
         return configDict
+
+    def getRecentMapsDataframe(self):
+        pass
