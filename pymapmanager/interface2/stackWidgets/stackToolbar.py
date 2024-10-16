@@ -98,6 +98,9 @@ class StackToolBar(QtWidgets.QToolBar):
             # rgb
             channel = actionName
 
+        # logger.info(f"actionName {actionName}")
+        # logger.info(f"channel emit {channel}")
+
         # getting sloppy
         self.slot_setChannel(channel)
 
@@ -150,8 +153,10 @@ class StackToolBar(QtWidgets.QToolBar):
         logger.info(f'bTopToolbar channel:{channel}')
         if channel == 'rgb':
             channelIdx = 3
+            # channelIdx = 2 # abj
         else:
             channelIdx = channel - 1
+            # channelIdx = channel # abj
 
         # turn off sliding z
         slidingEnabled = channel != 'rgb'
@@ -159,7 +164,7 @@ class StackToolBar(QtWidgets.QToolBar):
         self.slidingUpDown.setEnabled(slidingEnabled)
         self.slidingCheckbox.setEnabled(slidingEnabled)
         #self.colorPopup.setEnabled(slidingEnabled)
-
+        # logger.info(f'channelIdx:{channelIdx}')
         action = self._actionList[channelIdx]
         action.setChecked(True)
 

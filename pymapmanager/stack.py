@@ -145,7 +145,8 @@ class stack:
         return self._lines
 
     def getAutoContrast(self, channel):
-        channelIdx = channel - 1
+        # channelIdx = channel - 1
+        channelIdx = channel # abj
         _min, _max = self._fullMap.getMapImages().getAutoContrast(self.timepoint, channel=channelIdx)
         return _min, _max
 
@@ -166,6 +167,7 @@ class stack:
         logger.info(f'imageSlice:{imageSlice} channel:{channel}')
         
         channelIdx = channel - 1
+        # channelIdx = channel # abj
         
         if not isinstance(imageSlice, int):
             imageSlice = int(imageSlice)
@@ -206,6 +208,7 @@ class stack:
             imageSlice = int(imageSlice)
 
         channelIdx = channel - 1
+        # channelIdx = channel # abj
 
         firstSlice = imageSlice - upSlices
         if firstSlice < 0:
