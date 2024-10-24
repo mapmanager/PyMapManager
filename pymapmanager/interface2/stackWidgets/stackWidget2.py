@@ -1009,8 +1009,6 @@ class stackWidget2(mmWidget2):
             # expensive, get once
             # channelIdx = channelNumber
             logger.info(f"channelIdx, {channelIdx}")
-            # minAutoContrast, maxAutoContrast = self._stack.getAutoContrast(channel=channelIdx)
-
             # Channel index = actual index of channel  (0,1,2)
             # channel number = number shown to user (1,2,3)
             minAutoContrast, maxAutoContrast = self._stack.getAutoContrast(channel=channelIdx)
@@ -1200,6 +1198,9 @@ class stackWidget2(mmWidget2):
         saveAsPath = QtWidgets.QFileDialog.getSaveFileName(None, 'Save File')[0]
         logger.info(f"name {saveAsPath}")
         self.getStack().saveAs(saveAsPath)
+
+    def getLastSaveTime(self):
+        return self.getStack().getLastSaveTime()
 
     def setDirtyFalse(self):
         """ Set dirty as False after a save

@@ -235,7 +235,7 @@ class StackToolBar(QtWidgets.QToolBar):
         self.addWidget(plotMenuButton)
         plotMenu = QtWidgets.QMenu()
 
-        plotMenuList = ["Spines", "Center Line", "Radius Lines", "Labels", "Image"]
+        plotMenuList = ["Annotations", "Spines", "Center Line", "Radius Lines", "Labels", "Image"]
         self.actionMenuDict = {}
 
         for plotName in plotMenuList:
@@ -276,21 +276,26 @@ class StackToolBar(QtWidgets.QToolBar):
             labelAction.setChecked(False)
             self.signalPlotCheckBoxChanged.emit("UnRefreshed Labels")
         else:
-            # check if label box is changed  before setting checked
+            # check if label box is changed before setting checked
             if labelAction.isChecked():
                 pass
             else:
                 labelAction.setChecked(True)
                 self.signalPlotCheckBoxChanged.emit("UnRefreshed Labels")
     
-
     def plotMenuChange(self, action):
 
         logger.info(f"plotMenuChange {action.text()}")
+
+        if action.text() == "Annotations":
+            # Disable Spines, Center Line, Radius Lines, Labels
+            self.labelBoxUpdate()
+        
         if action.text() == "Radius Lines":
             # self._radiusSpinBox.setEnabled(action.isChecked())
             # self.radiusLabel.setEnabled(action.isChecked())
             pass
+
         elif action.text() == "Image":
             self.channelActionGroup.setEnabled(action.isChecked())
             # self.slidingUpDownLabel.setEnabled(action.isChecked())

@@ -20,6 +20,8 @@ class Preferences:
         self._version = 0.24  # upgrade to zar
         self._version = 0.25  # removed load stack (we only load mmap either from tif or mmap file)
         # johnson, when you change the format of saved json, manually bump the version
+        self._version = 0.26 # abj: dictionary to hold path, timepoints number, and save 
+        self._version = 0.27 # added recentMapFolder
 
         self._maxRecent = 10
         self._configDict = self.load()
@@ -41,11 +43,18 @@ class Preferences:
     # def getRecentStacks(self):
     #     return self.configDict["recentStacks"]
 
-    def getMostRecentMap(self) -> str:
-        return self.configDict["mostRecentMap"]
+    # def getMostRecentMap(self) -> str:
+    #     return self.configDict["mostRecentMap"]
 
-    def getRecentMaps(self):
-        return self.configDict["recentMaps"]
+    # def getRecentMaps(self):
+    #     return self.configDict["recentMaps"]
+    
+    # abj
+    def getMostRecentMap(self) -> str:
+        return self.configDict["mostRecentMapDict"]
+
+    def getRecentMapDicts(self):
+        return self.configDict["recentMapDicts"]
 
     @property
     def configDict(self):
@@ -65,7 +74,7 @@ class Preferences:
 
         self.save()
 
-    def addMapPath(self, mapPath : str):
+    def old_addMapPath(self, mapPath : str):
         """Add a map path to recent maps
         """
 
@@ -78,6 +87,52 @@ class Preferences:
         # always set as the most recent file
         self.configDict["mostRecentMap"] = mapPath
 
+        self.save()
+
+    def _find_index_of_dict_with_value(self, dicts, key, value):
+        for index, dictionary in enumerate(dicts):
+            if dictionary.get(key) == value:
+                return index
+        return None # none if not found
+
+    def addMapPathDict(self, mapPathDict : dict):
+        """Add a map path dict to recent maps
+
+        map path dict:
+            'Path': pathToOpenedMap,
+            'Last Save Time' : 'yyyymmdd hh:mm'
+            'Timepoints: 1,
+
+        """
+        currentPath = mapPathDict["Path"]
+        # check to see if path is unique
+        dictList = self.configDict["recentMapDicts"]
+        indexCheck = self._find_index_of_dict_with_value(dictList, "Path", currentPath)
+        # if mapPathDict["Path"] not in 
+
+        if indexCheck is None:
+            self.configDict["recentMapDicts"].append(mapPathDict)
+            
+            # reduce/limit list to last _maxRecent
+            self.configDict["recentMapDicts"] = self.configDict["recentMapDicts"][-self._maxRecent :]
+        
+        else:
+            # replace current map dict with new map dict
+            self.configDict["recentMapDicts"][indexCheck] = mapPathDict
+
+        # always set as the most recent file
+        self.configDict["mostRecentMapDict"] = mapPathDict
+
+        self.save()
+
+    # abj
+    def addMapFolder(self, folderPath):
+        """
+        """
+        # self.configDict["mostRecentMapDict"]
+        if folderPath not in self.configDict["recentMapFolders"]:
+            self.configDict["recentMapFolders"].append(folderPath)
+        
         self.save()
 
     def preferencesSet(self, key1, key2, val):
@@ -156,8 +211,13 @@ class Preferences:
         # configDict["recentStacks"] = []
         # configDict["mostRecentStack"] = ""
 
-        configDict["recentMaps"] = []
-        configDict["mostRecentMap"] = ""
+        # configDict["recentMaps"] = []
+        # configDict["mostRecentMap"] = ""
+
+        configDict["recentMapDicts"] = []
+        configDict["mostRecentMapDict"] = ""
+
+        configDict["recentMapFolders"] = []
 
         # stack window geometry
         # PyQt5.QtCore.QRect(80, 126, 734, 547)

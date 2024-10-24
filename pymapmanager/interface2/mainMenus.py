@@ -32,54 +32,6 @@ class PyMapManagerMenus:
         self.fileMenu.addAction(_emptyAction)
         self.fileMenu.aboutToShow.connect(self._refreshFileMenu)
 
-        # loadFileAction = QtWidgets.QAction("Open...", self.getApp())
-        # loadFileAction.setCheckable(False)  # setChecked is True by default?
-        # loadFileAction.setShortcut("Ctrl+O")
-        # loadFileAction.triggered.connect(self.getApp().openFile)
-        # fileMenu.addAction(loadFileAction)
-        
-        # loadFolderAction = QtWidgets.QAction("Open Time-Series...", self.getApp())
-        # loadFolderAction.setCheckable(False)  # setChecked is True by default?
-        # loadFolderAction.triggered.connect(self.getApp().openTimeSeries)
-        # fileMenu.addAction(loadFolderAction)
-
-        # # like the help menu, this gets rerouted to the main python/sanp menu
-        # # settingsMenu = fileMenu.addMenu('Settings...')
-        # # name = "Settings..."
-        # # action = QtWidgets.QAction(name, self.getApp())
-        # # # action.aboutToShow.connect(self._refreshSettingsMenu)
-        # # action.triggered.connect(self._on_settings_menu_action)
-        # # settingsMenu.aboutToShow.connect(self._refreshSettingsMenu)
-        # # settingsMenu.addAction(action)
-
-        # fileMenu.addSeparator()
-
-        # # abj
-        # saveFileAction = QtWidgets.QAction("Save", self.getApp())
-        # saveFileAction.setCheckable(False)  # setChecked is True by default?
-        # saveFileAction.setShortcut("Ctrl+S")
-        # saveFileAction.triggered.connect(self.getApp().saveFile)
-        # fileMenu.addAction(saveFileAction)
-        
-        # saveAsFileAction = QtWidgets.QAction("Save As", self.getApp())
-        # saveAsFileAction.setCheckable(False)  # setChecked is True by default?
-        # saveAsFileAction.triggered.connect(self.getApp().saveAsFile)
-        # fileMenu.addAction(saveAsFileAction)
-
-        # fileMenu.addSeparator()
-
-        # # open recent (submenu) will show two lists, one for files and then one for folders
-        # self.openRecentMenu = QtWidgets.QMenu("Open Recent ...")
-        # self.openRecentMenu.aboutToShow.connect(self._refreshOpenRecent)
-        # fileMenu.addMenu(self.openRecentMenu)
-
-        # fileMenu.addSeparator()
-        
-        # self.settingsMenu = fileMenu.addMenu('User Options...')
-        # # _emptyAction = QtWidgets.QAction("None", self.getApp())
-        # # self.settingsMenu.addAction(_emptyAction)
-        # self.settingsMenu.aboutToShow.connect(self._refreshSettingsMenu)
-
         #
         # edit
         self.editMenu = mainMenu.addMenu("&Edit")
@@ -225,8 +177,18 @@ class PyMapManagerMenus:
         action.triggered.connect(partial(self._onOpenFirstMenuAction))
         self.windowsMenu.addAction(action)
 
+        # Make this greyed out when folder is not loaded
+        _activateFolderWindow = self.getApp().isFolderWindowEnabled()
+        action = QtWidgets.QAction('Open Folder Window', self.getApp(), checkable=True)
+        action.setEnabled(_activateFolderWindow)
+        action.triggered.connect(partial(self._onOpenFolderMenuAction))
+        self.windowsMenu.addAction(action)
+
     def _onOpenFirstMenuAction(self):
         self.getApp().openFirstWindow()
+
+    def _onOpenFolderMenuAction(self):
+        self.getApp().openFolderWindow()
 
     def _onPluginMenuAction(self, pluginName : str, mapOrStack : str):
         """Run a plugin.

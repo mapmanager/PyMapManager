@@ -278,4 +278,7 @@ class stack:
         """
         self._fullMap.saveAs(path)
 
+    def getLastSaveTime(self):
+        return self._fullMap.getLastSaveTime()
+
         

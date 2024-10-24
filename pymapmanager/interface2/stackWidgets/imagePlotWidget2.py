@@ -745,7 +745,15 @@ class ImagePlotWidget(mmWidget2):
 
         logger.info(f"toggling plotName {plotName}")
         visible = False
-        if plotName == "Spines":
+
+        if plotName == "Annotations":
+            visible = self._aPointPlot.toggleScatterPlot() # spines
+            self._aPointPlot.toggleSpineLines() # spine (lines)
+            visible2 = self._aLinePlot.toggleScatterPlot() # center line
+            visible3 = self._aLinePlot.toggleRadiusLines() # radius lines 
+            visible4 = self._aPointPlot.toggleLabels() # labels
+
+        elif plotName == "Spines":
             visible = self._aPointPlot.toggleScatterPlot()
             self._aPointPlot.toggleSpineLines()
             # self.plotDict[plotName].toggleScatterPlot()
