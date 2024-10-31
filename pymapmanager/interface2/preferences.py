@@ -233,3 +233,8 @@ class Preferences:
 
     def getRecentMapsDataframe(self):
         pass
+
+    def clearRecentFiles(self):
+        self.configDict["recentMapDicts"].clear()
+        self.configDict["mostRecentMapDict"] = ""
+        self.save()

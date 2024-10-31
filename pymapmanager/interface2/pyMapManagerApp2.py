@@ -695,6 +695,12 @@ class PyMapManagerApp(QtWidgets.QApplication):
     def isFolderWindowEnabled(self):
         return self.enableFolderWindow
     
+    def clearRecentFiles(self):
+        self._config.clearRecentFiles()
+
+        # refresh first window 
+        self._openFirstWindow.refreshUI()
+    
 def main():
     """Run the PyMapMAnager app.
     

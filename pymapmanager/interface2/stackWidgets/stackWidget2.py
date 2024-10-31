@@ -1244,7 +1244,7 @@ class stackWidget2(mmWidget2):
         else:
             return False
         
-    #abj
+    # abj
     def getAnalysisParams(self):
         """ Get analysis Params from MapManagerCore
         """

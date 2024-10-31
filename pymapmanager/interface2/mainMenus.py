@@ -381,6 +381,11 @@ class PyMapManagerMenus:
         self.openRecentMenu = QtWidgets.QMenu("Open Recent ...")
         self.openRecentMenu.aboutToShow.connect(self._refreshOpenRecent)
         self.fileMenu.addMenu(self.openRecentMenu)
+
+        clearRecentAction = QtWidgets.QAction("Clear Recent", self.getApp()) # abj
+        clearRecentAction.setCheckable(False)  
+        clearRecentAction.triggered.connect(self.getApp().clearRecentFiles)
+        self.fileMenu.addAction(clearRecentAction)
         self.fileMenu.addSeparator()
         
         self.settingsMenu = self.fileMenu.addMenu('User Options...')
@@ -403,7 +408,8 @@ class PyMapManagerMenus:
         self.openRecentMenu.clear()
 
         # add recent mmap files
-        for recentFile in configDict.getRecentMaps():
+        for recentMapDict in configDict.getRecentMapDicts(): # abj
+            recentFile = recentMapDict["Path"]
             loadFileAction = QtWidgets.QAction(recentFile, self.getApp())
             loadFileAction.triggered.connect(
                 partial(self.getApp().loadStackWidget, recentFile)
@@ -421,6 +427,11 @@ class PyMapManagerMenus:
         #     )
 
         #     self.openRecentMenu.addAction(loadFolderAction)
+
+    # def _clearRecent(self):
+    #     configDict = self.getApp().getConfigDict()
+    #     configDict.clearRecentFiles()
+    #     # self.openRecentMenu.clear()
 
     def _refreshAnalysisParameters(self):
         """

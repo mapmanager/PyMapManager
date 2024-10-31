@@ -136,9 +136,11 @@ class OpenFirstWindow(MainWindow):
         if name == 'Open...':
             self._app.loadStackWidget()
 
-        # TODO: implement this
         elif name == 'Open Folder...':
             self._app.loadFolder()  # load a folder of mmap
+
+    def refreshUI(self): # abj
+        self._buildUI()
 
     def _buildUI(self):
         # typical wrapper for PyQt, we can't use setLayout(), we need to use setCentralWidget()
