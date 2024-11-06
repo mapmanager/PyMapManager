@@ -671,6 +671,10 @@ class LineAnnotationsCore(AnnotationsCore):
             dfRet['y'] = xyCoord['y']
             dfRet['z'] = xyCoord['z']
         
+
+            # dfRet['leftRadius'] = segmentDf['leftRadius']
+            # dfRet['rightRadius'] = segmentDf['rightRadius']
+
             xyLeft = segmentDf['leftRadius'].get_coordinates(include_z=False)
             xyLeft = xyLeft.reset_index()  # xyLeft still has labels as segmentID
             dfRet['xLeft'] = xyLeft['x']
@@ -757,3 +761,33 @@ class LineAnnotationsCore(AnnotationsCore):
                 returnPointY.append(linePointY[pointID])
    
         return returnPointX, returnPointY
+    
+    def getLeftRadiusPlot(self, sliceNumber, zPlusMinus):
+        # segmentLines = self._df 
+        # logger.info(f"self._fullMap segments columns {self._fullMap.segments}")
+        zSlice = sliceNumber
+        if self.getNumSegments() == 0:
+            return None
+        
+        segmentDf = self.singleTimepoint.segments[:]
+        
+        # logger.info(f"segmentDf['leftRadius'] {segmentDf['leftRadius']}")
+        _startSlice = zSlice - zPlusMinus
+        _stopSlice = zSlice + zPlusMinus
+        xyLeft = clipLines(segmentDf['leftRadius'], zRange = (_startSlice, _stopSlice))
+        xyLeft = xyLeft.get_coordinates(include_z=True)
+        xyLeft['rowIndex'] = list(np.arange(len(xyLeft)))
+        return xyLeft
+    
+    def getRightRadiusPlot(self, sliceNumber, zPlusMinus):
+        zSlice = sliceNumber
+        if self.getNumSegments() == 0:
+            return None
+        
+        segmentDf = self.singleTimepoint.segments[:]
+        _startSlice = zSlice - zPlusMinus
+        _stopSlice = zSlice + zPlusMinus
+        xyRight= clipLines(segmentDf['rightRadius'], zRange = (_startSlice, _stopSlice))
+        xyRight = xyRight.get_coordinates(include_z=True)
+        xyRight['rowIndex'] = list(np.arange(len(xyRight)))
+        return xyRight

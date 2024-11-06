@@ -57,7 +57,7 @@ def run():
     # sw2.getStack().getPointAnnotations().intializeIsBad()
     # sw2.getStack().getPointAnnotations().intializeUserType()
     # sw2.forceRefresh()
-    sw2.zoomToPointAnnotation(120, isAlt=True)
+    sw2.zoomToPointAnnotation(5, isAlt=True)
 
     # sw2.runPlugin('Scatter Plot', inDock=True)
 
@@ -111,4 +111,5 @@ if __name__ == '__main__':
     # run2()
     # run3()
     # run4()
-    runFirstWindow()
+    run5()
+    # runFirstWindow()

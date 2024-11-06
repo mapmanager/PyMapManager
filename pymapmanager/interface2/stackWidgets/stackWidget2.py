@@ -175,7 +175,8 @@ class stackWidget2(mmWidget2):
 
         # logger.info('stack _selection')
         # logger.info(_selection)
-        
+        # logger.info("entering cancel selection")
+
         state = _selection.getState()
         if state != pmmStates.edit:
             # revert to edit state

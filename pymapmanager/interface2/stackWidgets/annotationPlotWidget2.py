@@ -1315,9 +1315,43 @@ class linePlotWidget(annotationPlotWidget):
         return dfRet
     
     # abb was missing??? called from imagePlotWidget ???
-    # def refreshRadiusLines(self, sliceNumber: int):
-    #     self.slot_setSlice(sliceNumber)
-    #     return
+    def refreshRadiusLines(self, sliceNumber: int):
+                
+        xLeft = []
+        yLeft = []
+        xRight = []
+        yRight = []
+        if self.showRadiusLines:
+            # logger.info("showing radius lines")
+            # xLeft = self._dfPlot['xLeft'].to_numpy()
+            # yLeft = self._dfPlot['yLeft'].to_numpy()
+            # xRight = self._dfPlot['xRight'].to_numpy()
+            # yRight = self._dfPlot['yRight'].to_numpy()
+            zPlusMinus = self._displayOptions["zPlusMinus"]
+            dfLeft = self._annotations.getLeftRadiusPlot(sliceNumber, zPlusMinus)
+            xLeft = dfLeft["x"].to_numpy()
+            yLeft = dfLeft["y"].to_numpy()
+            dfRight = self._annotations.getRightRadiusPlot(sliceNumber, zPlusMinus)
+            xRight = dfRight["x"].to_numpy()
+            yRight = dfRight["y"].to_numpy()
+
+            _lineConnectLeft = self.old_getScatterConnect(dfLeft)
+            _lineConnectRight = self.old_getScatterConnect(dfRight)
+
+            # logger.info(f'length dfleft {len(dfLeft)}')
+            # logger.info(f'length dfRight {len(dfRight)}')
+
+        # logger.info(f"xRight, yRight: {xRight}, {yRight}")
+        #
+        self._leftRadiusLines.setData(
+            xLeft, yLeft,
+            connect=_lineConnectLeft,
+        )
+
+        self._rightRadiusLines.setData(
+            xRight, yRight,
+            connect=_lineConnectRight,
+        )
 
     def slot_setSlice(self, sliceNumber: int):
         # logger.info("setting slice in line plot")
@@ -1325,39 +1359,10 @@ class linePlotWidget(annotationPlotWidget):
 
         super().slot_setSlice(sliceNumber)  # draws centerline
 
-        # self.refreshRadiusLines(sliceNumber)
+        self.refreshRadiusLines(sliceNumber)
 
         # logger.warning('turned off left/right segment plot.')
-        _lineConnect = self._getScatterConnect(self._dfPlot)
-        
-        xLeft = []
-        yLeft = []
-        xRight = []
-        yRight = []
-        if self.showRadiusLines:
-            # logger.info("showing radius lines")
-            xLeft = self._dfPlot['xLeft'].to_numpy()
-            yLeft = self._dfPlot['yLeft'].to_numpy()
-
-            xRight = self._dfPlot['xRight'].to_numpy()
-            yRight = self._dfPlot['yRight'].to_numpy()
-
-            # logger.info('')
-            # print(f'x is: {self._dfPlot["x"]}')
-            # print(f'xLeft is: {xLeft}')
-            # print(f'xRight is: {xRight}')
-
-        # logger.info(f"xRight, yRight: {xRight}, {yRight}")
-        #
-        self._leftRadiusLines.setData(
-            xLeft, yLeft,
-            connect=_lineConnect,
-        )
-
-        self._rightRadiusLines.setData(
-            xRight, yRight,
-            connect=_lineConnect,
-        )
+        # _lineConnect = self._getScatterConnect(self._dfPlot)
 
         pivotPointXs, pivotPointYs = self._annotations.getPivotPoint()
         self._pivotPoints.setData(pivotPointXs, pivotPointYs)
