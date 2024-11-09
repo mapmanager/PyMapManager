@@ -26,9 +26,9 @@ class HistogramWidget(mmWidget2):
         # print(self._contrastDict)
 
         self._sliceNumber = 0
-        self._channel = 1
+        self._channel = 0
         # self._maxValue = 2**self._myStack.header['bitDepth']  # will default to 8 if not found
-        self._maxValue = 2**self._contrastDict[1]['displayBitDepth']
+        self._maxValue = 2**self._contrastDict[0]['displayBitDepth']
         self._sliceImage = None  # set by 
 
         self.plotLogHist = True
@@ -272,7 +272,7 @@ class _histogram(QtWidgets.QWidget):
         # assuming multichannel images have same bit depth for all channels
         # # TODO: pull this from ch 1 of contrast dict
         # self._maxValue = 2**self._myStack.header['bitDepth']  # will default to 8 if not found
-        self._maxValue = 2 ** contrastDict[1]['displayBitDepth']
+        self._maxValue = 2 ** contrastDict[0]['displayBitDepth']
 
         self._sliceImage = None  # set by 
 

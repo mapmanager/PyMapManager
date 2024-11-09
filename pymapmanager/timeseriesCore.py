@@ -17,10 +17,17 @@ class ImagesCore:
         # return self._fullMap.getPixels(time=timepoint, channel=channelIdx, z=zRange)
         return self._fullMap._images.fetchSlices(timepoint, channelIdx, (zRange, zRange+1))
 
-    def getAutoContrast(self, timepoint, channel):
-        channelIdx = channel - 1
+    def getAutoContrast(self, timepoint, channel) -> Tuple[int, int]:
+        """
+        Parameters
+        ----------
+        timepoint : int
+        channel : int
+            Zero based channel index.
+        """
+        # channelIdx = channel - 1
         # channelIdx = channel # abj
-        _min, _max = self._fullMap.getAutoContrast_qt(timepoint, channel=channelIdx)
+        _min, _max = self._fullMap.getAutoContrast_qt(timepoint, channel=channel)
         return _min, _max
 
     def getShape(self, timepoint):

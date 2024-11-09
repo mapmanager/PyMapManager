@@ -1321,6 +1321,8 @@ class linePlotWidget(annotationPlotWidget):
         yLeft = []
         xRight = []
         yRight = []
+        _lineConnectLeft = None
+        _lineConnectRight = None
         if self.showRadiusLines:
             # logger.info("showing radius lines")
             # xLeft = self._dfPlot['xLeft'].to_numpy()
@@ -1329,17 +1331,19 @@ class linePlotWidget(annotationPlotWidget):
             # yRight = self._dfPlot['yRight'].to_numpy()
             zPlusMinus = self._displayOptions["zPlusMinus"]
             dfLeft = self._annotations.getLeftRadiusPlot(sliceNumber, zPlusMinus)
-            xLeft = dfLeft["x"].to_numpy()
-            yLeft = dfLeft["y"].to_numpy()
+            if dfLeft is not None:
+                xLeft = dfLeft["x"].to_numpy()
+                yLeft = dfLeft["y"].to_numpy()
+                _lineConnectLeft = self.old_getScatterConnect(dfLeft)
+            
             dfRight = self._annotations.getRightRadiusPlot(sliceNumber, zPlusMinus)
-            xRight = dfRight["x"].to_numpy()
-            yRight = dfRight["y"].to_numpy()
+            if dfRight is not None:
+                xRight = dfRight["x"].to_numpy()
+                yRight = dfRight["y"].to_numpy()
+                _lineConnectRight = self.old_getScatterConnect(dfRight)
 
-            _lineConnectLeft = self.old_getScatterConnect(dfLeft)
-            _lineConnectRight = self.old_getScatterConnect(dfRight)
-
-            # logger.info(f'length dfleft {len(dfLeft)}')
-            # logger.info(f'length dfRight {len(dfRight)}')
+                # logger.info(f'length dfleft {len(dfLeft)}')
+                # logger.info(f'length dfRight {len(dfRight)}')
 
         # logger.info(f"xRight, yRight: {xRight}, {yRight}")
         #
