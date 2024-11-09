@@ -98,6 +98,9 @@ class StackToolBar(QtWidgets.QToolBar):
             # rgb
             channel = actionName
 
+        # logger.info(f"actionName {actionName}")
+        # logger.info(f"channel emit {channel}")
+
         # getting sloppy
         self.slot_setChannel(channel)
 
@@ -150,8 +153,10 @@ class StackToolBar(QtWidgets.QToolBar):
         logger.info(f'bTopToolbar channel:{channel}')
         if channel == 'rgb':
             channelIdx = 3
+            # channelIdx = 2 # abj
         else:
             channelIdx = channel - 1
+            # channelIdx = channel # abj
 
         # turn off sliding z
         slidingEnabled = channel != 'rgb'
@@ -159,7 +164,7 @@ class StackToolBar(QtWidgets.QToolBar):
         self.slidingUpDown.setEnabled(slidingEnabled)
         self.slidingCheckbox.setEnabled(slidingEnabled)
         #self.colorPopup.setEnabled(slidingEnabled)
-
+        # logger.info(f'channelIdx:{channelIdx}')
         action = self._actionList[channelIdx]
         action.setChecked(True)
 
@@ -230,7 +235,7 @@ class StackToolBar(QtWidgets.QToolBar):
         self.addWidget(plotMenuButton)
         plotMenu = QtWidgets.QMenu()
 
-        plotMenuList = ["Spines", "Center Line", "Radius Lines", "Labels", "Image"]
+        plotMenuList = ["Annotations", "Spines", "Center Line", "Radius Lines", "Labels", "Image"]
         self.actionMenuDict = {}
 
         for plotName in plotMenuList:
@@ -271,21 +276,26 @@ class StackToolBar(QtWidgets.QToolBar):
             labelAction.setChecked(False)
             self.signalPlotCheckBoxChanged.emit("UnRefreshed Labels")
         else:
-            # check if label box is changed  before setting checked
+            # check if label box is changed before setting checked
             if labelAction.isChecked():
                 pass
             else:
                 labelAction.setChecked(True)
                 self.signalPlotCheckBoxChanged.emit("UnRefreshed Labels")
     
-
     def plotMenuChange(self, action):
 
         logger.info(f"plotMenuChange {action.text()}")
+
+        if action.text() == "Annotations":
+            # Disable Spines, Center Line, Radius Lines, Labels
+            self.labelBoxUpdate()
+        
         if action.text() == "Radius Lines":
             # self._radiusSpinBox.setEnabled(action.isChecked())
             # self.radiusLabel.setEnabled(action.isChecked())
             pass
+
         elif action.text() == "Image":
             self.channelActionGroup.setEnabled(action.isChecked())
             # self.slidingUpDownLabel.setEnabled(action.isChecked())

@@ -720,10 +720,13 @@ class myQTableView(QtWidgets.QTableView):
                 # modelSeries = self.model._data.loc[rowIdx]  # pandas.core.series.Series
                 # QModelIndex
                 # proxyIndex = self.proxyModel.mapFromSource(modelIndex)
-                
-                _get_loc = self.model._data.index.get_loc(rowIdx)  # abb new
-                modelIndex = self.model.index(_get_loc, 0)
+                logger.info(f"rowIdx {rowIdx}")
+                # _get_loc = self.model._data.index.get_loc(rowIdx)  # abb new # abj: 10/31 removed due to failing pytest
+                # modelIndex = self.model.index(_get_loc, 0)
+                modelIndex = self.model.index(rowIdx, 0)
                 proxyIndex = self.proxyModel.mapFromSource(modelIndex)
+
+                # logger.info(f"_get_loc {_get_loc} modelIndex {modelIndex} proxyIndex {proxyIndex}")
 
                 # works
                 # logger.warning(f'_get_loc:{_get_loc}')

@@ -576,7 +576,7 @@ class ImagePlotWidget(mmWidget2):
     def _setColorLut(self, update=False):
         # rgb uses its own (r,g,b) LUT
         if not self._channelIsRGB():
-            channel= self._displayThisChannel
+            channel = self._displayThisChannel
             channelIdx = channel - 1
             # channelIdx = channel #abj
 
@@ -597,8 +597,8 @@ class ImagePlotWidget(mmWidget2):
             logger.warning('implement this')
             tmpLevelList = []  # list of [min,max]
             for channelIdx in range(self._myStack.numChannels):
-                channelNumber = channelIdx + 1
-                # channelNumber = channelIdx #abj
+                # channelNumber = channelIdx + 1
+                channelNumber = channelIdx #abj, dictionary will use 0 based indexing
                 oneMinContrast = self._contrastDict[channelNumber]['minContrast']
                 oneMaxContrast = self._contrastDict[channelNumber]['maxContrast']
 
@@ -609,12 +609,14 @@ class ImagePlotWidget(mmWidget2):
                 oneMaxContrast = int(oneMaxContrast / maxInt * 255)
 
                 oneLevel = [oneMinContrast, oneMaxContrast]
+                # logger.info(f"oneLevel {oneLevel}")
                 tmpLevelList.append(oneLevel)
             
             levelList = [None] * 3
             levelList[0] = tmpLevelList[1]
             levelList[1] = tmpLevelList[0]  # green
             levelList[2] = tmpLevelList[1]
+
             #
             logger.info(f'{self._displayThisChannel} levelList:{levelList}')
             self._myImage.setLookupTable(False)
@@ -743,7 +745,15 @@ class ImagePlotWidget(mmWidget2):
 
         logger.info(f"toggling plotName {plotName}")
         visible = False
-        if plotName == "Spines":
+
+        if plotName == "Annotations":
+            visible = self._aPointPlot.toggleScatterPlot() # spines
+            self._aPointPlot.toggleSpineLines() # spine (lines)
+            visible2 = self._aLinePlot.toggleScatterPlot() # center line
+            visible3 = self._aLinePlot.toggleRadiusLines() # radius lines 
+            visible4 = self._aPointPlot.toggleLabels() # labels
+
+        elif plotName == "Spines":
             visible = self._aPointPlot.toggleScatterPlot()
             self._aPointPlot.toggleSpineLines()
             # self.plotDict[plotName].toggleScatterPlot()

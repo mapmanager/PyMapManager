@@ -27,10 +27,13 @@ class OpenFirstWindow(MainWindow):
                  parent=None):
         super().__init__(parent)
 
+        logger.info("NEW OPEN FIRST WINDOW")
         self._app : PyMapManagerApp = pyMapManagerApp
 
         # self.recentStackList = self.getApp().getConfigDict().getRecentStacks()
-        self.recentMapList = self.getApp().getConfigDict().getRecentMaps()
+        # self.recentMapList = self.getApp().getConfigDict().getRecentMaps()
+
+        self.recentMapDictList = self.getApp().getConfigDict().getRecentMapDicts()
 
         appIconPath = self.getApp().getAppIconPath()    
         if os.path.isfile(appIconPath):
@@ -54,7 +57,8 @@ class OpenFirstWindow(MainWindow):
     # def getApp(self):
     #     return self._app
     
-    def _makeRecentTable(self, pathList : List[str], headerStr = ''):
+    # def _makeRecentTable(self, pathList : List[str], headerStr = ''):
+    def _makeRecentTable(self, pathDictList : List[dict], headerStr = ''):
         """Given a list of file/folder path, make a table.
         
         Caller needs to connect to cellClick()
@@ -65,15 +69,18 @@ class OpenFirstWindow(MainWindow):
         myTableWidget = QtWidgets.QTableWidget()
         myTableWidget.setToolTip('Double-click to open')
         myTableWidget.setWordWrap(False)
-        myTableWidget.setRowCount(len(pathList))
-        myTableWidget.setColumnCount(1)
+        myTableWidget.setRowCount(len(pathDictList))
+        # myTableWidget.setColumnCount(1)
+        myTableWidget.setColumnCount(3)
         myTableWidget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         myTableWidget.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         myTableWidget.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
         # self.myTableWidget.cellClicked.connect(self._on_recent_file_click)
 
         # hide the row headers
-        myTableWidget.horizontalHeader().hide()
+        # myTableWidget.horizontalHeader().hide()
+
+        # myTableWidget.horizontalHeader().hide()
 
         # set font size of table (default seems to be 13 point)
         fnt = self.font()
@@ -91,9 +98,23 @@ class OpenFirstWindow(MainWindow):
         # QHeaderView will automatically resize the section to fill the available space. The size cannot be changed by the user or programmatically.
         header.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
 
-        for idx, stat in enumerate(pathList):
-            item = QtWidgets.QTableWidgetItem(stat)
-            myTableWidget.setItem(idx, 0, item)
+        header.setSectionResizeMode(1, QtWidgets.QHeaderView.Fixed)
+        header.resizeSection(1,200)
+
+        # set headertext
+        myTableWidget.setHorizontalHeaderLabels(('Path', 'Last Save Time', 'Timepoints'))
+
+        for idx, stat in enumerate(pathDictList):
+            # logger.info(f"table displays {stat['Timepoints']}")
+            path = QtWidgets.QTableWidgetItem(stat["Path"])
+            lastSaveTime= QtWidgets.QTableWidgetItem(str(stat["Last Save Time"]))
+            timePoints = QtWidgets.QTableWidgetItem(str(stat["Timepoints"])) # needs to be a str to be displayed
+            # logger.info(f"Path {path}")
+            # logger.info(f"lastSaveTime {lastSaveTime}")
+            # logger.info(f"timePoints {timePoints}")
+            myTableWidget.setItem(idx, 0, path)
+            myTableWidget.setItem(idx, 1, lastSaveTime)
+            myTableWidget.setItem(idx, 2, timePoints)
             myTableWidget.setRowHeight(idx, _rowHeight + int(.7 * _rowHeight))
 
         return myTableWidget
@@ -101,11 +122,11 @@ class OpenFirstWindow(MainWindow):
     def _on_recent_map_click(self, rowIdx : int):    
         """On double-click, open a mmap and close self.
         """
-        path = self.recentMapList[rowIdx]
+        path = self.recentMapDictList[rowIdx]["Path"]
         logger.info(f'rowId:{rowIdx} path:{path}')
 
-        # if os.path.isdir(path):
-        if os.path.isfile(path):
+        if os.path.isdir(path): # abj (10/14/24) - using directory mmap moving forward
+        # if os.path.isfile(path):
             self.getApp().loadStackWidget(path)
         else:
             logger.error(f'did not find dir path: {path}')
@@ -115,9 +136,11 @@ class OpenFirstWindow(MainWindow):
         if name == 'Open...':
             self._app.loadStackWidget()
 
-        # TODO: implement this
-        # elif name == 'Open Folder...':
-            # self._app.loadFolder()  # load a folder of mmap
+        elif name == 'Open Folder...':
+            self._app.loadFolder()  # load a folder of mmap
+
+    def refreshUI(self): # abj
+        self._buildUI()
 
     def _buildUI(self):
         # typical wrapper for PyQt, we can't use setLayout(), we need to use setCentralWidget()
@@ -179,7 +202,7 @@ class OpenFirstWindow(MainWindow):
 
         # headerStr='Recent Files (double-click to open)'
         headerStr = ''
-        recentFolderTable = self._makeRecentTable(self.recentMapList,
+        recentFolderTable = self._makeRecentTable(self.recentMapDictList,
                                                   headerStr=headerStr)
         recentFolderTable.cellDoubleClicked.connect(self._on_recent_map_click)
         recent_vBoxLayout.addWidget(recentFolderTable)

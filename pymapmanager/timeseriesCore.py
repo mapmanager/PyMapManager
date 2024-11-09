@@ -1,6 +1,6 @@
 import os
 from typing import Optional, Tuple, Union
-
+from datetime import datetime
 import pandas as pd
 from shapely.geometry import LineString
 
@@ -19,6 +19,7 @@ class ImagesCore:
 
     def getAutoContrast(self, timepoint, channel):
         channelIdx = channel - 1
+        # channelIdx = channel # abj
         _min, _max = self._fullMap.getAutoContrast_qt(timepoint, channel=channelIdx)
         return _min, _max
 
@@ -512,6 +513,29 @@ class TimeSeriesCore():
         else:
             logger.info(f"Unsupported extension: {ext}")
     
+
+    # abj
+    # def storeLastSaveTime(self):
+    #     """Last time .mmap was saved
+
+    #     in the format: ‘yyyymmdd hh:mm’
+    #     """
+    #     currentTime = datetime.now()
+    #     # Format the current time
+    #     formatted_time = currentTime.strftime('%Y%m%d %H:%M')
+    #     logger.info(f"storeLastSaveTime {formatted_time}")
+    #     self.lastSaveTime = formatted_time
+
+    def getLastSaveTime(self):
+        """Last time .mmap was saved
+
+        in the format: ‘yyyymmdd hh:mm’
+        """
+        # if self.lastSaveTime is None:
+        #     return ""
+        
+        return self._fullMap.getLastSaveTime()
+    
     @property
     def numSessions(self):
         """Number of timepoints in the map.
@@ -599,6 +623,10 @@ class TimeSeriesCore():
 
         if ext == ".mmap":
             self._fullMap.save(self.path)
+
+            # Store last save time to display
+
+            # self.storeLastSaveTime()
         else:
             logger.info("Not an .mmap file - Did not save")
 

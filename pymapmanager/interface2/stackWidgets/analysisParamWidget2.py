@@ -44,12 +44,10 @@ class AnalysisParamWidget(mmWidget2):
 
         else:
             # TODO: Disable if there is no current stack?
-
             self._analysisParameters = stackWidget.getAnalysisParams() 
             self.setWindowTitle('Analysis Parameters (Stack)')
             # Get analysis params from MapManagerCore Backend
             _dict = self._analysisParameters.getDict()
-            # logger.info(f"mmc _dict: {_dict}")
 
         # logger.info(f"self._dict {self._dict}")
 
@@ -57,11 +55,8 @@ class AnalysisParamWidget(mmWidget2):
         self._dict = copy.deepcopy(_dict)
         # self._dict = _dict
     
-    
         # self.changedDict = {}
         self._buildGUI()
-
-        # self.show()
 
     def on_spin_box(self, paramName, value):
         """

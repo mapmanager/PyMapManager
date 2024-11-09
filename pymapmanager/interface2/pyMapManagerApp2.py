@@ -13,6 +13,7 @@ from qtpy import QtGui, QtWidgets  # QtCore
 import qdarktheme
 
 import pymapmanager.interface2.openFirstWindow
+from pymapmanager.interface2.openFolderWindow import OpenFolderWindow
 from pymapmanager.interface2.stackWidgets.analysisParamWidget2 import AnalysisParamWidget
 
 # Enable HiDPI.
@@ -175,7 +176,16 @@ class OpenWidgetList:
             self._widgetDictList[path] = _aWidget
 
         # add to recent opened maps
-        self._app.getConfigDict().addMapPath(path)
+        # self._app.getConfigDict().addMapPath(path)
+
+        logger.info(f"numTimepoints {numTimepoints}")
+        lastSaveTime = _timeSeriesCore.getLastSaveTime()
+        # abj:
+        pathDict = {"Path": path,
+                    "Last Save Time": str(lastSaveTime), # needs to be updated
+                    "Timepoints": str(numTimepoints)}
+        
+        self._app.getConfigDict().addMapPathDict(pathDict)
 
         return self._widgetDictList[path]
 
@@ -220,11 +230,48 @@ class OpenWidgetList:
         if len(self._widgetDictList.keys()) == 0:
             self._app.openFirstWindow()
 
-    def save(self, aWidget):
-        logger.info(f'TODO: save widget: {aWidget}')
+
+    def updateMapPathDict(self, aWidget):
+        """ called whenever a file is saved to immediately show the last save time of the file path
+        """
+        # lastSaveTime = self._timeSeriesCore.getLastSaveTime() # old time series core being loaded
+        # logger.info(f'updateSaveTime: {lastSaveTime}')
+        # self.pathDict["lastSaveTime"] = self._timeSeriesCore.getLastSaveTime()
+
+        path = aWidget.getPath()
+        refreshTimeSeriesCore = TimeSeriesCore(path)
+        # lastSaveTime = aWidget.getLastSaveTime() # still showing old one, need to create new time series core to refresh?
+        lastSaveTime = refreshTimeSeriesCore.getLastSaveTime()
+        numTimepoints = refreshTimeSeriesCore.numSessions
+        pathDict = {"Path": path,
+                    "Last Save Time": str(lastSaveTime), # needs to be updated
+                    "Timepoints": str(numTimepoints)}
+        self._app.getConfigDict().addMapPathDict(pathDict)
         
+    def save(self, aWidget):
+        # logger.info(f'TODO: save widget: {aWidget}')
+        logger.info(f'save widget: {aWidget}')
+        aWidget.save()
+
+        self.updateMapPathDict(aWidget) # abj
+      
+        # logger.info(f'aWidget.getLastSaveTime: {lastSaveTime}')
+        # self.pathDict["lastSaveTime"] = lastSaveTime
+
     def saveAs(self, aWidget):
-        logger.info(f'TODO: save as widget: {aWidget}')
+        # logger.info(f'TODO: save as widget: {aWidget}')
+        logger.info(f'save as widget: {aWidget}')
+        aWidget.fileSaveAs()
+        self.updateMapPathDict(aWidget) # abj
+
+    def _checkWidgetExists(self, path):
+        """ Check if a widget exists in the widget dict list
+        """
+        if path in self._widgetDictList:
+            return True
+        
+        return False
+    
         
 class PyMapManagerApp(QtWidgets.QApplication):
     def __init__(self, argv=[], deferFirstWindow=False):        
@@ -286,6 +333,9 @@ class PyMapManagerApp(QtWidgets.QApplication):
         
         # logger.info('building PyMapManagerMenus()')
         # self._mainMenu = PyMapManagerMenus(self)
+
+        self.shownPathsList = []  # abj
+        self.enableFolderWindow = False
 
         self._openFirstWindow = None
         self.openFirstWindow()
@@ -529,10 +579,122 @@ class PyMapManagerApp(QtWidgets.QApplication):
         
         if path is None:
             logger.warning('TODO: write a file open dialog to open an mmap file')
-            return
+            # openFilePath, fileType = QtWidgets.QFileDialog.getOpenFileName(None, "Open File", "", "Zarr (*.mmap)")
+            # customDialog = QtWidgets.QFileDialog.setNameFilter(None, "zarr directory (*.mmap)")
+            # openFilePath = customDialog.getExistingDirectory(None)
+            # openFilePath = QtWidgets.QFileDialog.getExistingDirectory(None)
+
+            dialog = QtWidgets.QFileDialog(None)
+            # dialog.setFileMode(QtWidgets.QFileDialog.Directory)
+            dialog.setNameFilter("zarr directory (*.mmap)")
+            # openFilePath = dialog.getExistingDirectory(None)
+            # dialog.setOptions(options)
+            openFilePath = dialog.getExistingDirectory()
+            # openFilePath = QtWidgets.QFileDialog.getExistingDirectory(None)
+
+            logger.info(f"openFilePath {openFilePath}")
+            
+            _ext = os.path.splitext(openFilePath)[1]
+            window = self.activeWindow() 
+            if openFilePath == "":
+                logger.info(f"error: openFilePath is None/ Empty")
+                # QtWidgets.QMessageBox.critical(window, "Error", "File Path is Empty")
+                return
+            elif _ext != '.mmap': # could make this into a for loop until user inputs .mmap
+                logger.info(f"error: incorrect directory type, must be of extension: (.mmap)") 
+                QtWidgets.QMessageBox.critical(window, "Error", "Incorrect directory type, must be of extension: (.mmap)")
+                return
+            
+            _aWidget = self._openWidgetList.openWidgetFromPath(openFilePath)
+
+            # return
+            return _aWidget
             
         _aWidget = self._openWidgetList.openWidgetFromPath(path)
         return _aWidget
+
+    def get_folders_with_mmap(self, rootDir):
+        """Gets all folders in a directory that contain .mmap files."""
+
+        mmapFolders = []
+
+        for folderName in os.listdir(rootDir):
+            # logger.info(f"folder_name {folderName}")
+            if folderName.endswith('.mmap'):
+                mmapFolders.append(os.path.join(rootDir, folderName))
+
+        return mmapFolders
+
+    def loadFolder(self):
+
+        # open dialog to select folder
+
+        dialog = QtWidgets.QFileDialog(None)
+        # dialog.setFileMode(QtWidgets.QFileDialog.Directory)
+        # dialog.setNameFilter("zarr directory (*.mmap)")
+        openFolderPath = dialog.getExistingDirectory()
+
+        # need to check if selected folder contains at least one .mmap folder.
+        # else need to return/ error check
+        mmapFolderList = self.get_folders_with_mmap(openFolderPath)
+        if len(mmapFolderList) > 0:
+            # loop through all .mmap directories in openFolderPath
+            print("opening all paths in folder list")
+            self.getConfigDict().addMapFolder(openFolderPath)
+
+            self.shownFolderPathsList = []
+            for openFilePath in mmapFolderList:
+                # print(openFilePath)
+                try:
+                    _aWidget = self._openWidgetList.openWidgetFromPath(openFilePath)
+                    logger.info(f"opened PATH {openFilePath}")
+                    self.shownFolderPathsList .append(openFilePath)
+                except:
+                    logger.info(f"failed to open path {openFilePath}")
+
+            if len(self.shownFolderPathsList) > 0:
+                self.enableFolderWindow = True
+                self.openFolderWindow()
+        else:
+            logger.info("folder did not contain a .mmap zarr directory")
+            # display an error to user and reshow dialog selection?
+            window = self.activeWindow() 
+            QtWidgets.QMessageBox.critical(window, "Error", "Folder did not contain a .mmap zarr directory")
+
+    def getMMAPFolderList(self):
+        return self.shownFolderPathsList 
+    
+    def openFolderWindow(self):
+        """Toggle or create an OpenFolderWindow.
+        """
+        logger.info('openFolderWindow function')
+        self._folderWindow = None
+        mmapFolderList = self.getMMAPFolderList()
+        if self._folderWindow is None:
+            self._folderWindow = OpenFolderWindow(self, None)  
+            # self._folderWindow = OpenFolderWindow(self, None, mmapFolderList)        
+        
+        self._folderWindow.show()
+        
+        self._folderWindow.raise_()
+        self._folderWindow.activateWindow()  # bring to front
+
+    def checkWidgetExists(self, path):
+        return self._openWidgetList._checkWidgetExists(path)
+
+    def closeFolderWindow(self):
+        if self._openFolderWindow is not None:
+            self._openFolderWindow.close()
+            self._openFolderWindow = None
+
+    def isFolderWindowEnabled(self):
+        return self.enableFolderWindow
+    
+    def clearRecentFiles(self):
+        self._config.clearRecentFiles()
+
+        # refresh first window 
+        self._openFirstWindow.refreshUI()
     
 def main():
     """Run the PyMapMAnager app.

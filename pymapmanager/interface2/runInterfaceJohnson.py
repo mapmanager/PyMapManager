@@ -57,7 +57,7 @@ def run():
     # sw2.getStack().getPointAnnotations().intializeIsBad()
     # sw2.getStack().getPointAnnotations().intializeUserType()
     # sw2.forceRefresh()
-    sw2.zoomToPointAnnotation(120, isAlt=True)
+    sw2.zoomToPointAnnotation(5, isAlt=True)
 
     # sw2.runPlugin('Scatter Plot', inDock=True)
 
@@ -80,8 +80,36 @@ def run3():
     sw2.zoomToPointAnnotation(120, isAlt=True)
     sys.exit(app.exec_())
 
+def run4():
+    app = PyMapManagerApp()
+    path = 'C:/Users/johns/Documents/TestMMCMaps/ManualSave/firstTest.mmap'
+    # path = 'C:/Users/johns/Documents/TestMMCMaps/rr30a_s0u_newSpineAngle.mmap'
+
+    sw2 = app.loadStackWidget(path)
+    sw2.zoomToPointAnnotation(120, isAlt=True)
+    sys.exit(app.exec_())
+
+def run5():
+    app = PyMapManagerApp()
+    path = 'C:/Users/johns/Documents/GitHub/MapManagerCore/data/rr30a_s0u.mmap'
+    # path = 'C:/Users/johns/Documents/TestMMCMaps/rr30a_s0u_newSpineAngle.mmap'
+
+    sw2 = app.loadStackWidget(path)
+    sw2.zoomToPointAnnotation(120, isAlt=True)
+    sys.exit(app.exec_())
+
+def runFirstWindow():
+    app = PyMapManagerApp()
+    # path = 'C:/Users/johns/Documents/TestMMCMaps/rr30a_s0u_newSpineAngle.mmap'
+    sys.exit(app.exec_())
+
+
+
 
 if __name__ == '__main__':
-    run()
+    # run()
     # run2()
     # run3()
+    # run4()
+    run5()
+    # runFirstWindow()

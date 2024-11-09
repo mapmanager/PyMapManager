@@ -175,7 +175,8 @@ class stackWidget2(mmWidget2):
 
         # logger.info('stack _selection')
         # logger.info(_selection)
-        
+        # logger.info("entering cancel selection")
+
         state = _selection.getState()
         if state != pmmStates.edit:
             # revert to edit state
@@ -932,6 +933,7 @@ class stackWidget2(mmWidget2):
         """
         _pmmEvent = pmmEvent(pmmEventType.setColorChannel, self)
         _pmmEvent.setColorChannel(colorChannel)
+        # logger.info(f"set colorChannel {colorChannel}")
         self.emitEvent(_pmmEvent)
 
     def slot_setStatus(self, text : str):
@@ -986,6 +988,7 @@ class stackWidget2(mmWidget2):
             # logger.info(f"channelidx {channelIdx}")
             # abb 20240721 not sure if is index or index  +1 
             channelNumber = channelIdx + 1
+            # channelNumber = channelIdx - 1
             # channelNumber = channelIdx
 
             _defaultDisplayBitDepth = 11
@@ -1005,9 +1008,13 @@ class stackWidget2(mmWidget2):
             # logger.info(f'  channel {channelIdx} minStackIntensity:{minStackIntensity} maxStackIntensity:{maxStackIntensity}')
 
             # expensive, get once
+            # channelIdx = channelNumber
+            logger.info(f"channelIdx, {channelIdx}")
+            # Channel index = actual index of channel  (0,1,2)
+            # channel number = number shown to user (1,2,3)
             minAutoContrast, maxAutoContrast = self._stack.getAutoContrast(channel=channelIdx)
-
-            self._contrastDict[channelNumber] = {
+            #   self._contrastDict[channelNumber]
+            self._contrastDict[channelIdx] = { # abj: 10/15/24 - changed from channelNumber to channelIdx
                 'channel': channelNumber,
                 'colorLUT': self._channelColor[channelIdx],
                 'minContrast': minAutoContrast,  # set by user
@@ -1193,6 +1200,9 @@ class stackWidget2(mmWidget2):
         logger.info(f"name {saveAsPath}")
         self.getStack().saveAs(saveAsPath)
 
+    def getLastSaveTime(self):
+        return self.getStack().getLastSaveTime()
+
     def setDirtyFalse(self):
         """ Set dirty as False after a save
         """
@@ -1235,7 +1245,7 @@ class stackWidget2(mmWidget2):
         else:
             return False
         
-    #abj
+    # abj
     def getAnalysisParams(self):
         """ Get analysis Params from MapManagerCore
         """
