@@ -2,7 +2,7 @@ import json
 import os
 import sys
 import math
-from typing import List  # , Union  # , Callable, Iterator, Optional
+from typing import List, Union  # , Callable, Iterator, Optional
 
 import inspect
 
@@ -20,8 +20,6 @@ qdarktheme.enable_hi_dpi()
 
 import mapmanagercore
 
-import pymapmanager as pmm
-
 import pymapmanager.interface2
 
 from pymapmanager.timeseriesCore import TimeSeriesCore
@@ -36,7 +34,6 @@ from pymapmanager.interface2.openFirstWindow import OpenFirstWindow
 from pymapmanager.interface2.mainMenus import PyMapManagerMenus
 
 from pymapmanager._logger import logger, setLogLevel
-# from pymapmanager.pmmUtils import addUserPath, getBundledDir, getUserAnalysisParamJsonData, saveAnalysisParamJsonFile
 from pymapmanager.pmmUtils import getBundledDir
 import pymapmanager.pmmUtils
 
@@ -145,7 +142,7 @@ class OpenWidgetList:
             # _dict[_path] = numTimepoints
         return _dict
     
-    def openWidgetFromPath(self, path : str):
+    def openWidgetFromPath(self, path : str) -> Union[stackWidget2, mapWidget]:
         """Open a stack or map from path.
         
         This opens a TimeSeriesCore and then a stack or map widget
@@ -156,7 +153,6 @@ class OpenWidgetList:
             logger.info(f'loading widget path:{path}')
             # open timeseries core
             _timeSeriesCore = TimeSeriesCore(path)
-            # self._widgetDictList[path] = tsc
         
             numTimepoints = _timeSeriesCore.numSessions
 
@@ -167,14 +163,13 @@ class OpenWidgetList:
                 geometryRect = self._app.getConfigDict().getStackWindowGeometry()
                 _aWidget.setGeometry(geometryRect[0], geometryRect[1], geometryRect[2], geometryRect[3])
                 _aWidget.show()
-                # return _stackWidget
             
             else:
                 # multi timepoint map
                 _aWidget = mapWidget(_timeSeriesCore)
                 _aWidget.show()
-                # return _mapWidget
             
+            # always close open first
             self._app.closeFirstWindow()
 
             self._widgetDictList[path] = _aWidget
@@ -517,9 +512,10 @@ class PyMapManagerApp(QtWidgets.QApplication):
     def getOpenWidgetDict(self):
         return self._openWidgetList.getDict()
     
-    def loadStackWidget(self, path : str = None):
+    def loadStackWidget(self, path : str = None) -> Union[stackWidget2, mapWidget]:
         """Load a stack from a path.
-            Path can be from (.mmap, .tif)
+
+        Path can be a .mmap or .tif file.
         
         Parameters
         ----------
@@ -528,7 +524,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
         
         Returns
         -------
-        Either a stackWIdget (single timepoint) or a MapWidget (multiple timepoint)
+        Either a stackWidget2 (single timepoint) or a MapWidget (multiple timepoint)
         """
         
         if path is None:

@@ -13,12 +13,12 @@ def run():
 
     #
     # open a single tmiepoint map with segments and spines
-    path = mapmanagercore.data.getSingleTimepointMap()
+    # path = mapmanagercore.data.getSingleTimepointMap()
 
     # a single timepoint tif file
     # error in images
     # IndexError: index -2 is out of bounds for axis 0 with size 1
-    # path = mapmanagercore.data.getTiffChannel_1()
+    path = mapmanagercore.data.getTiffChannel_1()
 
     # map with segments and spines (no segments connected)
     # path = '/Users/cudmore/Desktop/multi_timepoint_map.mmap'
@@ -33,6 +33,7 @@ def run():
     # sw2 = app.loadStackWidget(path)
     # sw2.zoomToPointAnnotation(120, isAlt=True)
     
+    # a mmap with multiple timepoints, connects segments and spines
     # path = '/Users/cudmore/Desktop/multi_timepoint_map_seg_spine_connected.mmap'
 
     # mw will be map widget if path has multiple timepoints, otherwise mw is a stackwidget2

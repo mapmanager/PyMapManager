@@ -37,7 +37,8 @@ def test_plugins(qtbot, qapp):
     mmapPath = mapmanagercore.data.getSingleTimepointMap()
 
     logger.info(f'opening stack widget path {mmapPath}')
-    stackWidgetWindow = stackWidget2(path=mmapPath)
+    stackWidgetWindow = qapp.loadStackWidget(mmapPath)
+    # stackWidgetWindow = stackWidget2(path=mmapPath)
 
     # get list of all stack widgets from app, keys are class of plugin
     stackPluginDict = qapp.getStackPluginDict()

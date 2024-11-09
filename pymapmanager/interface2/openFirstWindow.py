@@ -125,7 +125,7 @@ class OpenFirstWindow(MainWindow):
         _mainVLayout = QtWidgets.QVBoxLayout()
         _mainWidget.setLayout(_mainVLayout)
         self.setCentralWidget(_mainWidget)
-
+        
         # for open and open folder buttons
         hBoxLayout = QtWidgets.QHBoxLayout()
         hBoxLayout.setAlignment(QtCore.Qt.AlignLeft)
@@ -185,6 +185,7 @@ class OpenFirstWindow(MainWindow):
         recent_vBoxLayout.addWidget(recentFolderTable)
 
         _mainVLayout.addLayout(recent_vBoxLayout)
+
 
 # QtWidgets.QPushButton
 # QtWidgets.QMainWindow
