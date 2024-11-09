@@ -87,8 +87,11 @@ class stackWidget2(mmWidget2):
         # keep track of map widget we were opened from
         self._mapWidget : Optional["pymapmanager.interface2.mapWidgets.mapWidget"] = mapWidget
 
-        self._openPluginSet = set()
-        """Set of open plugins."""
+        # self._openPluginSet = set() # removed by johnson
+        # """Set of open plugins."""
+
+        self._openPluginDict = {} # abj
+        """Dict of open plugins."""
 
         self._stackSelection = StackSelection(self._stack)
         """One stack selection (state) shared by all children mmWidget2."""
@@ -298,7 +301,39 @@ class stackWidget2(mmWidget2):
             aAction.triggered.connect(_lambda)
             viewMenu.addAction(aAction)
 
-    def runPlugin(self, pluginName: str, show: bool = True, inDock=False):
+
+    # def runDockPlugin(self, pluginName: str, show: bool = True):
+    #     """ Called by dock to keep track of its own plugin
+    #     """
+    #     if self.getPyMapManagerApp() is None:
+    #         return
+    #     pluginDict = self.getPyMapManagerApp().getStackPluginDict()
+
+    #     if pluginName not in pluginDict.keys():
+    #         logger.error(f'Plugin: "{pluginName}" already created')
+    #         return
+    #     else:
+    #         humanName = pluginDict[pluginName]["constructor"]._widgetName
+
+    #         logger.info(f'Running plugin: {pluginName}')
+
+    #         if humanName not in self._openPluginDict:
+    #             newPlugin = pluginDict[pluginName]["constructor"](
+    #                 stackWidget=self,
+    #             )
+    #         else:
+    #             logger.info(f"plugin: {humanName} already in dict")
+    #             newPlugin = self._openPluginDict[humanName]
+
+    #     return newPlugin
+    
+    def runPluginFromDock(self,  pluginName: str, show: bool = True, storedDict : dict = None):
+        """ Stored Dict = dict of plugins that self.pluginDock1 keeps track of
+        """
+        humanName, newPlugin = self.createAndShowNewPlugin(pluginName, show, storedDict)
+        return newPlugin
+
+    def runPlugin(self, pluginName: str, show: bool = True, inDock=False, storeInDoct = False):
         """Run one stack plugin.
 
         Args:
@@ -313,37 +348,63 @@ class stackWidget2(mmWidget2):
         if inDock:
             self.pluginDock1.runPlugin_inDock(pluginName)
             return
-        
-        # run in seperate window
+
+        # 
+        humanName, newPlugin = self.createAndShowNewPlugin(pluginName, show, self._openPluginDict)
+
+        if not newPlugin.getInitError():
+            # self._openPluginSet.add(newPlugin)
+            # check to make sure plugin is not already stored
+            if humanName not in self._openPluginDict: # abj
+                self._openPluginDict[humanName] = newPlugin # key: human name, val: obj
+            logger.info(f"self._openPluginDict {self._openPluginDict}")
+
+    def createAndShowNewPlugin(self, pluginName, show: bool = True, storedDict : dict = None):
+        """ 
+            Creates shows a new stack plugin. Checks to make sure that plugin has not already been created in storedDict.
+            This implementation limits one of each type of stack plugin for both the dock and general stackWidget interface.
+
+        Returns:
+            HumanName = str, used as the key in dict
+            newPlugin = obj, of new plugin that is being kept track of (value in dict)
+        """
+
+        # run in separate window
         pluginDict = self.getPyMapManagerApp().getStackPluginDict()
+
         if pluginName not in pluginDict.keys():
-            logger.error(f'Did not find plugin: "{pluginName}"')
+            logger.error(f'Plugin: "{pluginName}" already created')
             return
         else:
-            # humanName = pluginDict[pluginName]["constructor"]._widgetName
-
+            humanName = pluginDict[pluginName]["constructor"]._widgetName
             logger.info(f'Running plugin: {pluginName}')
+        
+            if humanName not in storedDict:
+                newPlugin = pluginDict[pluginName]["constructor"](
+                    stackWidget=self,
+                )
+            else:
+                logger.info(f"plugin: {humanName} already in dict")
+                newPlugin = storedDict[humanName]
 
-            # TODO: to open PyQt windows, we need to keep a local (persistent) variable
-            newPlugin = pluginDict[pluginName]["constructor"](
-                stackWidget=self,
-            )
+            logger.info(f'Running newPlugin: {newPlugin}')
 
-            # if not newPlugin.getInitError() and show:
-            if  show:
+            if show:
                 newPlugin.getWidget().show()
                 newPlugin.getWidget().setVisible(True)
-                # newPlugin.getWidget().raise_()  # bring to front, raise is a python keyword
-                # newPlugin.getWidget().activateWindow()  # bring to front
-
             else:
                 newPlugin.getWidget().hide()
                 newPlugin.getWidget().setVisible(False)
 
-            if not newPlugin.getInitError():
-                self._openPluginSet.add(newPlugin)
+            # if not newPlugin.getInitError():
+            #     # self._openPluginSet.add(newPlugin)
+            #     # check to make sure plugin is not already stored
+            #     if humanName not in storedDict: # abj
+            #         storedDict[humanName] = newPlugin # key: human name, val: obj
+            #     logger.info(f"self._openPluginDict {self._openPluginDict}")
 
-            return newPlugin
+            return humanName, newPlugin
+
 
     def _buildUI(self):
 
@@ -669,7 +730,7 @@ class stackWidget2(mmWidget2):
             newSpineID = self.getStack().getPointAnnotations().addSpine(
                 segmentID=segmentID,
                 x=x, y=y, z=z)
-            logger.info(f'   newSpineID:{newSpineID}')
+            logger.info(f'   newSpineID: {newSpineID}')
 
             # fill in newSpineID and segmentID
             event._list[_rowIdx]['spineID'] = newSpineID
@@ -1271,3 +1332,65 @@ class stackWidget2(mmWidget2):
         _pmmEvent.setSliceNumber(self._currentSliceNumber)
         self.emitEvent(_pmmEvent, blockSlots=True)
 
+    def closePlugin(self, pluginName: str, inDock = False):
+        """
+            Close one stack widget plugin such as spineInfoWidget
+
+        Args:
+            pluginName : str
+                Name of the plugin,, defined as static member vraible in mmWidget
+            show: bool
+                If True then immediately show the widget
+        """
+        if self.getPyMapManagerApp() is None:
+            return
+        
+        # TODO: close inDock
+        if inDock:
+            self.pluginDock1.closePlugin_inDock(pluginName)
+            return
+        
+        self.closePluginInDict(pluginName, storedDict=self._openPluginDict)
+        
+        # # run in separate window
+        # pluginDict = self.getPyMapManagerApp().getStackPluginDict()
+        # if pluginName not in pluginDict.keys():
+        #     logger.error(f'Did not find plugin: "{pluginName}"')
+        #     return
+        # else:
+        #     humanName = pluginDict[pluginName]["constructor"]._widgetName
+        #     # Issue: user can open multiple plugins of the same name so we need a way to keep track of them when closing
+        #     # newPlugin = pluginDict[pluginName]["constructor"](
+        #     #     stackWidget=self,
+        #     # )
+        #     oldPlugin = self._openPluginDict[humanName]
+        #     logger.info(f'Closing oldPlugin: {oldPlugin}')
+        #     oldPlugin.getWidget().close() 
+
+        #     # When user manually closing plugin, it is not removed from dict
+        #     # So currently the code to remove dict programmatically is turned off
+        #     # self._openPluginDict.pop(humanName)       # remove plugin from dict
+        #     # logger.info(f'self._openPluginDict after closing: {self._openPluginDict}')
+
+        #     # TODO: figure out how to bring plugin into pluginwindow
+        #     # best way to implement it
+        #     # current idea: both plugin1 and stackwindow share the plugin (only of a type can be created at a time)
+        #     #   - issue when user presses x it does not close(), fully delete widget nor pop widget from dict
+
+    def closePluginInDict(self, pluginName: str, storedDict):
+        """"""
+        # run in separate window
+        pluginDict = self.getPyMapManagerApp().getStackPluginDict()
+        if pluginName not in pluginDict.keys():
+            logger.error(f'Did not find plugin: "{pluginName}"')
+            return
+        else:
+            humanName = pluginDict[pluginName]["constructor"]._widgetName
+            oldPlugin = storedDict[humanName]
+            logger.info(f'Closing oldPlugin: {oldPlugin}')
+            oldPlugin.getWidget().close() 
+
+    def getOpenPluginKeys(self):
+        """
+        """
+        self._openPluginDict 

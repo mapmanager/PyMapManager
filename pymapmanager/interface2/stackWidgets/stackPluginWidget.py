@@ -16,6 +16,10 @@ class stackPluginDock():
     def __init__(self, stackWidget):
         self._stackWidget = stackWidget
 
+        self._tabIndexDict = {} # key: humanName of Plugin, val: Index
+
+        self._openDockPluginDict = {} # key: humanName of Plugin, val: plugin obj
+
         self._buildPluginWidgets()
             
     def getPyMapManagerApp(self):
@@ -110,7 +114,8 @@ class stackPluginDock():
 
         pluginName = action.text()
         # newPlugin = self.myPlugins.runPlugin(pluginName, ba, show=False)
-        newPlugin = self.parentStackWidget().runPlugin(pluginName, show=False)
+        # newPlugin = self.parentStackWidget().runPlugin(pluginName, show=False)
+        newPlugin = self.parentStackWidget().runPluginFromDock(pluginName, show=False, storedDict = self._openDockPluginDict)
 
         # only add if plugin wants to be shown
         if newPlugin.getShowSelf():
@@ -154,12 +159,33 @@ class stackPluginDock():
         
         sender = self.myPluginTab1
 
-        newPlugin = self.parentStackWidget().runPlugin(pluginName, show=False)
+        # newPlugin = self.parentStackWidget().runPlugin(pluginName, show=False)
+        newPlugin = self.parentStackWidget().runPluginFromDock(pluginName, show=False, storedDict=self._openDockPluginDict)
+        logger.info(f"runPlugin_inDock testtt {newPlugin}")
         if newPlugin.getShowSelf():
             newTabIndex = sender.addTab(
                 newPlugin.getWidget(), pluginName
             )  # addTab takes ownership
             sender.setCurrentIndex(newTabIndex)
+
+            self._tabIndexDict[pluginName] = newTabIndex
+            self._openDockPluginDict[pluginName] = newPlugin
+
+    # abj
+    def closePlugin_inDock(self, pluginName : str):
+        """ Close a plugin in dock
+        """
+        # self.pluginDock1.show()
+        logger.info(pluginName)
+        sender = self.myPluginTab1
+
+        tabIndex = self._tabIndexDict[pluginName]
+        # oldPlugin = self.parentStackWidget().closePlugin(pluginName)
+        self.slot_closeTab(tabIndex, sender)
+
+        oldPlugin = self.parentStackWidget().closePluginInDict(pluginName, self._openDockPluginDict)
+
+        # self.pluginDock1.close()
 
     def _buildPluginWidgets(self):
         parentStackWidget = self.parentStackWidget()
