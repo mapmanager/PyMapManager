@@ -14,7 +14,6 @@ class Backend(QtCore.QObject):
     def pointClicked(self, x, y):
         self.pointChanged.emit(x, y)
 
-
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
