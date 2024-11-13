@@ -114,6 +114,7 @@ class stackWidget2(mmWidget2):
 
         self._buildUI()
         self._buildMenus()
+        self.setContextMenuPolicy(QtCore.Qt.NoContextMenu) # abj - disabled hidden context menu
     
     def getDisplayOptions(self) -> AppDisplayOptions:
         return self._displayOptionsDict
@@ -413,7 +414,7 @@ class stackWidget2(mmWidget2):
         # keys are the _widgetName of the pmm stack widget
 
         # top toolbar
-        topToobarName = 'top toolbar'
+        topToobarName = 'Top Toolbar'
         self._topToolbar = StackToolBar(self._stack, self._displayOptionsDict)
         self._topToolbar.signalSlidingZChanged.connect(self.updateDisplayOptionsZ)
         # self._topToolbar.signalRadiusChanged.connect(self.updateRadius)
@@ -463,6 +464,8 @@ class stackWidget2(mmWidget2):
         self._statusToolbar = StatusToolbar(numSlices, parent=self)
         # self.signalSetStatus.connect(_statusToolbar.slot_setStatus)
         self.addToolBar(QtCore.Qt.BottomToolBarArea, self._statusToolbar)
+        statusToolBarName = "Status Toolbar"
+        self._widgetDict[statusToolBarName] = self._statusToolbar
 
         # 
         # self._imagePlotWidget.signalMouseMove.connect(self._statusToolbar.slot_updateStatus)
@@ -480,6 +483,8 @@ class stackWidget2(mmWidget2):
         # plugin panel with tabs
         self.pluginDock1 = stackPluginDock(self)
         self.addDockWidget(QtCore.Qt.RightDockWidgetArea, self.pluginDock1.getPluginDock())
+        pluginDockName = "Plugin Dock"
+        self._widgetDict[pluginDockName] = self.pluginDock1  # the dock
 
     def updateDisplayOptionsZ(self, d):
         """

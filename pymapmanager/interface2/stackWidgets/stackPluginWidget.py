@@ -20,6 +20,8 @@ class stackPluginDock():
 
         self._openDockPluginDict = {} # key: humanName of Plugin, val: plugin obj
 
+        self.visible = False
+
         self._buildPluginWidgets()
             
     def getPyMapManagerApp(self):
@@ -220,3 +222,19 @@ class stackPluginDock():
 
     def getPluginDock(self):
         return self.pluginDock1
+    
+    def isVisible(self):
+        """ Return visible state
+        """
+        return self.visible
+    
+    def setVisible(self, visibleBool):
+        """ Set visible and show/hide window
+        """
+
+        self.visible = visibleBool
+
+        if self.visible:
+            self.pluginDock1.show()
+        else:
+            self.pluginDock1.hide()
