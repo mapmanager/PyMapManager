@@ -1082,7 +1082,7 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
 
         for i, index in enumerate(spineIndex):
             if self.spineLengthCheckbox.isChecked():
-                logger.info("Spine length checked")
+                # logger.info("Spine length checked")
                 xVal = spineLength[index]
             else:
                 xVal = self.spineLengthConstant
