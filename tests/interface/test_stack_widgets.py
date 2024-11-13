@@ -43,6 +43,21 @@ def qapp_cls():
 #     #     for k2, v2 in v.items():
 #     #         logger.info(f'  {k2}: {v2}')
 
+# abb
+def test_plugins_empty(qtbot, qapp):
+    """Run all plugins using an empty mmap
+        Just an image stack, no tracing, no spines
+    """
+    mmapPath = mapmanagercore.data.getTiffChannel_1()
+
+    stackWidgetWindow = qapp.loadStackWidget(mmapPath)
+    # stackWidgetWindow = stackWidget2(path=mmapPath)
+
+    # get list of all stack widgets from app, keys are class of plugin
+    stackPluginDict = qapp.getStackPluginDict()
+
+    open_plugins(stackWidgetWindow, stackPluginDict, selection = False)
+
 def test_plugins(qtbot, qapp):
     """Run all plugins through a number of different tests.
     """

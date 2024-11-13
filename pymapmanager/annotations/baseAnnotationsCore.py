@@ -472,6 +472,7 @@ class LineAnnotationsCore(AnnotationsCore):
     def newSegment(self) -> int:
         # self.getMapSegments().newSegment(self.timepoint)
         newSegmentID = self.singleTimepoint.newSegment()
+        logger.info(f'created newSegmentID:{newSegmentID}')
         self._buildTimepoint()
         self._buildDataFrame()
         return newSegmentID

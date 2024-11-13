@@ -556,7 +556,7 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
 
         self.xData = []
         self.yData = []
-        self.columnNameList = []
+        # self.columnNameList = []
 
         self.storedRowIdx = []
         self.filterStrList = None
@@ -583,7 +583,7 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
         self._summaryLaDF = summaryLaDF
 
         # logger.info(f"self._df {self._df}")
-        self.setColumnList()
+        # self.setColumnList()
         self.hueColumnList = hueColumnList
 
         if filterColumn != None:
@@ -615,7 +615,7 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
             # logger.info(f'Cant make float of this type: {type(val)}')
             return False
 
-    def setColumnList(self):
+    def _not_used_setColumnList(self):
         """
             Filter list to only include columns that can be plotted
         """
@@ -634,7 +634,7 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
         """ Update data frame everytime outside dataframe is updated
         """
         self._df = newDF
-        self.setColumnList()
+        # self.setColumnList()
 
     def setFilter(self, filterColumn):
         """ IMPORTANT: This needs to be called within wrapper class 
@@ -646,7 +646,11 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
         # self.filterStrList.append("All") # Need to be able to show all values
 
         # Currently setting first value as current filter type
-        self.dict["filterStr"] = self.filterStrList[0]
+        # abb
+        if len(self.filterStrList) > 0:
+            self.dict["filterStr"] = self.filterStrList[0]
+        else:
+            self.dict["filterStr"] = ''
         self.dict["filterColumn"] = filterColumn
 
     def setHueColumnList(self, hueColumnList):
@@ -756,9 +760,14 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
                         # default value is first color in map
                         myColorMap.append(self.color[0])
 
-            # logger.info("here in setscatterplot")
-            self.scatterPoints = self.axScatter.scatter(xStat, yStat, s = self._markerSize, c = myColorMap, 
-                                                        picker=False, zorder = 2)
+            # abb
+            if len(myColorMap) != len(xStat):
+                logger.warning(f'x/y stat len is {len(xStat)} which is not equal to len myColorMap:{myColorMap}')
+                self.scatterPoints = self.axScatter.scatter([], [])
+            else:
+                # logger.info("here in setscatterplot")
+                self.scatterPoints = self.axScatter.scatter(xStat, yStat, s = self._markerSize, c = myColorMap, 
+                                                            picker=False, zorder = 2)
 
     def _buildMainLayout(self):
         # main layout
@@ -1055,6 +1064,15 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
             self.spineLineDF = pd.DataFrame({"spineLineX": spineLineX, "spineLineY": spineLineY})
 
         """
+        # abb
+        logger.info(f'newSegmentID:"{newSegmentID}"')
+        if not newSegmentID:
+            _empty = []
+            self.segmentLength = 0
+            self.plotDF = pd.DataFrame({"spineX": _empty, "spineY": _empty, "spineIndex": _empty})
+            self.spineLineDF = pd.DataFrame({"spineLineX": _empty, "spineLineY": _empty})
+            return
+        
         newSegmentID = int(newSegmentID)
         self._paDF = self._df
         # logger.info(f"newSegmentID {newSegmentID}")

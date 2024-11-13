@@ -14,7 +14,8 @@ class ImagesCore:
         self._fullMap : TimeSeriesCore = fullMap
 
     def getPixels(self, timepoint, channelIdx, zRange : Union[int, Tuple[int,int]]):
-        # return self._fullMap.getPixels(time=timepoint, channel=channelIdx, z=zRange)
+        # if isinstance(zRange, int):
+        #     zRange = (zRange, zRange)
         return self._fullMap._images.fetchSlices(timepoint, channelIdx, (zRange, zRange+1))
 
     def getAutoContrast(self, timepoint, channel) -> Tuple[int, int]:

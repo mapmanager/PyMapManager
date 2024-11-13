@@ -34,7 +34,7 @@ class AppDisplayOptions():
 
         # interface.stackWidget
         theDict['windowState'] = {}
-        theDict['windowState']['defaultChannel'] = 2
+        theDict['windowState']['defaultChannel'] = 1  # 1 based channel index
         theDict['windowState']['showContrast'] = False
         # TODO: add booleans for all our children (lineListWidget, pointListWidget)
         # TODO: add boolean for children in ImagePlotWidget (_myImage, _aPointPlot, _aLinePlot)

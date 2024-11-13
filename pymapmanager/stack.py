@@ -220,7 +220,7 @@ class stack:
 
 
         zRange = (firstSlice, lastSlice)
-        slices = self._fullMap.getImagesCore().getPixels(
+        slices = self._fullMap.getMapImages().getPixels(
             timepoint=self.timepoint,
             channelIdx=channelIdx,
             zRange=zRange)

@@ -612,14 +612,29 @@ class ScatterPlotWidget(QtWidgets.QWidget):
         """
             Filter list to only include columns that can be plotted
         """
+        self.columnNameList = []
+        for column in self._df.columns:
+            self.columnNameList.append(column)
+        return
+    
         # maybe do more filtering here? Check if all values are nan
+        
+        # abb maybe this?
+        # if len(self._df) == 0:
+            # return
+        
         for column in self._df:
-            firstColVal= self._df[column].iloc[0]
-            # logger.info(f" column Name: {column} firstColVal {firstColVal}")
-            valid = self.checkFloat(firstColVal) 
-            if valid:
-                self.columnNameList.append(column)
- 
+            # abb
+            try:
+                firstColVal= self._df[column].iloc[0]
+                # logger.info(f" column Name: {column} firstColVal {firstColVal}")
+                valid = self.checkFloat(firstColVal) 
+                if valid:
+                    self.columnNameList.append(column)
+            except (IndexError):
+                #logger.warning(f'df appears empty column:"{column}" len:{len(self._df[column])}')
+                pass
+
     def getDF(self):
         return self._df
 
