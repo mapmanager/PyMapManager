@@ -4,8 +4,11 @@ from typing import List, Union  # , Callable, Iterator, Optional
 from qtpy import QtGui, QtCore, QtWidgets
 
 import pymapmanager as pmm
+from pymapmanager.mmMap import mmMap
+
 from pymapmanager.interface2.core.search_widget import myQTableView
-from pymapmanager.interface2.core._data_model import pandasModel
+# from pymapmanager.interface2.core._data_model import pandasModel
+
 from pymapmanager._logger import logger
 
 class mapTableWidget(QtWidgets.QWidget):
@@ -15,9 +18,9 @@ class mapTableWidget(QtWidgets.QWidget):
     _widgetName = "Map Table"
     
     signalOpenStack = QtCore.Signal(object)  # session : int
-    signalOpenRun = QtCore.Signal(int, int)  # start, plusMinus
+    signalOpenRun = QtCore.Signal(int, int)  # start tp, plusMinus tp
 
-    def __init__(self, mmMap : pmm.mmMap):
+    def __init__(self, mmMap : mmMap):
         super().__init__(None)
 
         self._mmMap = None  #mmMap
@@ -30,7 +33,7 @@ class mapTableWidget(QtWidgets.QWidget):
 
         # self._setModel()
 
-    def slot_switchMap(self, mmMap : pmm.mmMap):
+    def slot_switchMap(self, mmMap : mmMap):
         self._mmMap = mmMap
         self._mapNameLabel.setText(mmMap.filename)
         self._setModel()
@@ -129,7 +132,7 @@ class mapTableWidget(QtWidgets.QWidget):
 
 if __name__ == '__main__':
     path = '/Users/cudmore/Sites/PyMapManager-Data/maps/rr30a/rr30a.txt'
-    aMap = pmm.mmMap(path)
+    aMap = mmMap(path)
     # print(aMap.getDataFrame())
 
     # creat the main application

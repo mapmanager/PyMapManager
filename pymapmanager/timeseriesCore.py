@@ -486,6 +486,9 @@ class TimeSeriesCore():
     def getPointDataFrame(self):
         return self._fullMap.points[:]
     
+    def getSegments(self):
+        return self._fullMap.segments
+    
     @property
     def isDirty(self):
         return self._isDirty

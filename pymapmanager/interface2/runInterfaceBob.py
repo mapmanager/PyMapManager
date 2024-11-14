@@ -13,7 +13,7 @@ def run():
 
     #
     # open a single timepoint map with segments and spines
-    path = mapmanagercore.data.getSingleTimepointMap()
+    # path = mapmanagercore.data.getSingleTimepointMap()
 
     # a single timepoint tif file
     # error in images
@@ -27,7 +27,7 @@ def run():
     # path = '/Users/cudmore/Desktop/multi_timepoint_map_seg_connected.mmap'
     
     # all spines connect
-    # path = '/Users/cudmore/Desktop/multi_timepoint_map_seg_spine_connected.mmap'
+    path = '/Users/cudmore/Desktop/multi_timepoint_map_seg_spine_connected.mmap'
 
     # path = mapmanagercore.data.getSingleTimepointMap()
     # sw2 = app.loadStackWidget(path)

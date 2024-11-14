@@ -11,10 +11,10 @@ import matplotlib.pyplot as plt
 from qtpy import QtCore, QtWidgets
 
 from pymapmanager.interface2.stackWidgets import mmWidget2
-from pymapmanager.interface2.stackWidgets.mmWidget2 import pmmEventType, pmmEvent
+# from pymapmanager.interface2.stackWidgets.mmWidget2 import pmmEventType, pmmEvent
 
-from .mmMapPlot2 import getPlotDict2
-from .mmMapPlot2 import mmMapPlot2  # abb core
+from .mmMapPlot_mpl import getPlotDict_mpl, mmMapPlot_mpl
+
 from .mapWidget import mapWidget
 
 from pymapmanager._logger import logger
@@ -22,10 +22,12 @@ from pymapmanager._logger import logger
 class dendrogramWidget2(mmWidget2):
     """A dendrogram widget.
 
-    Plot seesion versus spine position.
+    Plot session versus spine position.
     """
 
     _widgetName = "Map Dendrogram v2"
+
+    signalOpenRun = QtCore.Signal(int, int, int)  # start tp, plusMinus tp, spineID
 
     def __init__(self, mapWidget : mapWidget):
         # super().__init__(mapWidget = mapWidget)
@@ -37,9 +39,43 @@ class dendrogramWidget2(mmWidget2):
 
         self.setWindowTitle('pyqt dendrogram v2')
 
+    def contextMenuEvent(self, event):
+        """Show a right-click menu.
+        
+        This is inherited from QtWidget.
+        """
+        logger.info('')
+        
+        lastClickDict = self.mmmPlot.getLastClickDict()
+        # logger.info(f'lastClickDict:{lastClickDict}')
+        spineID = lastClickDict['spineID']
+        timepoint = lastClickDict['timepoint']
+        logger.info(f'spineID:{spineID} timepoint:{timepoint}')
+
+        _menu = QtWidgets.QMenu(self)
+
+        plotStackAction = _menu.addAction(f'Plot Spine {spineID}')
+        #moveAction.setEnabled(isPointSelection and isOneRowSelection)
+
+        _menu.addSeparator()
+        plotPlusMinus1 = _menu.addAction(f'Plot Spine {spineID} +/- 1 tp')
+        plotPlusMinus2 = _menu.addAction(f'Plot Spine {spineID} +/- 2 tp')
+        plotPlusMinusAll = _menu.addAction(f'Plot Spine {spineID} +/- All')
+
+        # show the menu
+        action = _menu.exec_(self.mapToGlobal(event.pos()))
+        if action == plotStackAction:
+            self.signalOpenRun.emit(timepoint, 0, spineID)
+        elif action == plotPlusMinus1:
+            self.signalOpenRun.emit(timepoint, 1, spineID)
+        elif action == plotPlusMinus2:
+            self.signalOpenRun.emit(timepoint, 2, spineID)
+        elif action == plotPlusMinusAll:
+            self.signalOpenRun.emit(timepoint, float("inf"), spineID)
+
     def _buildUI(self):
 
-        self.plotDict = getPlotDict2()
+        self.plotDict = getPlotDict_mpl()
         plotDict = self.plotDict
         if plotDict['doDark']:
             plt.style.use('dark_background')
@@ -65,19 +101,12 @@ class dendrogramWidget2(mmWidget2):
         # core
         plotDict['xstat'] = 't'
         plotDict['ystat'] = 'spinePosition'
-
-        # mmMapPlot is pure matplotlib (no pyqt)
-        
-        # _map = self.getMap()
-        
+                
         _map = self._mapWidget.getMap()
 
-        # _map = self.myMap
-        # if _map is None:
-        #     logger.error(f'_map is None ???')
-        self.mmmPlot = mmMapPlot2(_map, plotDict, fig=self.fig)
-        
-        # logger.info('TODO: reactivate for core')
+        # pure matplotlib plot (no pyqt)
+        self.mmmPlot = mmMapPlot_mpl(_map, plotDict, fig=self.fig)
+        # connect mpl on pick back to self (simulates pyqt signal/slot)
         self.mmmPlot.connect_on_pick(self._on_pick)
         
         vLayout = QtWidgets.QVBoxLayout()
@@ -98,7 +127,7 @@ class dendrogramWidget2(mmWidget2):
         # plt.show()
 
     def _on_pick(self, d):
-        """Callback on selection in matplotlib.
+        """Callback on selection in child mmMapPlot_mpl (matplotlib).
         """
         logger.info('')
         spineID = d['spineID']

@@ -1,3 +1,4 @@
+import os
 from typing import List, TypedDict  #, Union, Callable, Iterator, Optional
 
 import numpy as np
@@ -52,7 +53,9 @@ class MapSelection:
 class mapWidget(MainWindow):
     """Main Map Widget (similar to stackWidget)
 
-    Shows a table and a dendrogram
+    Shows
+        - (left) a mapTableWidget
+        - (right) a dendrogramWidget2
     """
 
     _widgetName = 'Map Table'
@@ -65,15 +68,15 @@ class mapWidget(MainWindow):
 
         # self._mapSelection : MapSelection = MapSelection(self)
 
-        self._stackWidgetList = []
+        self._stackWidgetDict = {}
         # dict of open stackWidget children
-        # keys are full path to tif
+        # keys are session number
 
         # self._buildMenus()
 
         self._buildUI()
 
-        self.setWindowTitle(self._map.path)
+        self.setWindowTitle(os.path.split(self._map.path)[1])
     
     # def getMapSelection(self) -> MapSelection:
     #     return self._mapSelection
@@ -131,7 +134,7 @@ class mapWidget(MainWindow):
         ----------
         thisStack : pymapmanager.stack
         """
-        for stackWidget in self._stackWidgetList:
+        for tp, stackWidget in self._stackWidgetDict.items():
             stack = stackWidget.getStack()
             if stack == thisStack:
                 return stackWidget
@@ -153,21 +156,32 @@ class mapWidget(MainWindow):
         """
         
         _map = self.getMap()
+        numSessions = _map.numSessions
         
-        firstTp = timepoint-plusMinus
-        if firstTp < 0:
+        _isInf = plusMinus == float('inf')
+
+        if _isInf:
             firstTp = 0
-        lastTp = timepoint + plusMinus + 1
-        if lastTp > _map.numSessions-1:
-            lastTp = _map.numSessions
+            lastTp = numSessions
+        else:
+            firstTp = timepoint-plusMinus
+            if firstTp < 0:
+                firstTp = 0
+            lastTp = timepoint + plusMinus + 1
+            if lastTp > numSessions-1:
+                lastTp = numSessions
 
         numCols = 4
-        numSessions = _map.numSessions
         screenGrid = self.getApp().getScreenGrid(numSessions, numCols)
-         
+        
+        logger.info('firstTp:{firstTp} lastTp:{lastTp} spineID:{spineID}')
+
         for tp in range(firstTp, lastTp):
-            posRect = screenGrid[tp]
-            bsw = self.openStack2(tp, posRect=posRect)
+            if tp in self._stackWidgetDict.keys():
+                bsw = self._stackWidgetDict[tp]
+            else:
+                posRect = screenGrid[tp]
+                bsw = self.openStack2(tp, posRect=posRect)
 
             # toggle interface
             # dict_keys(['top toolbar', 'Point List', 'Line List', 'image plot', 'Histogram'])
@@ -209,46 +223,46 @@ class mapWidget(MainWindow):
         # logger.error(f'posRect:{posRect}')
         
         # stack = self._map.stacks[session]
-        bsw = self.openStack(session=session, posRect=posRect)
+        if session in self._stackWidgetDict.keys():
+            bsw = self._stackWidgetDict[session]
+        else:
+            bsw = self.openStack(session=session, posRect=posRect)
+
         return bsw
 
     def openStack(self,
-                #   path = None,  # not used
-                #   stack = None,  # not used
                   session : int,
                   posRect : List[int] = None,
                   ) -> "pmm.interface2.stackWidget":
-        """Open a stack widget given the tif path.
+        """Open a stack widget for one map session.
         
         Parameters
         ==========
-        path : str
-        stack : pymapmanager.stack
         session : int
         postRect : List[int]
             Position for the window [l, t, w, h]
         """
 
-        bsw = None
-        if bsw is None:
+        if session in self._stackWidgetDict.keys():
+            logger.warning(f'session:{session} already in _stackWidgetDict -->> not opening again')
+            self._stackWidgetDict[session].raise_()
+            return
+        
+        bsw = pmm.interface2.stackWidgets.stackWidget2(timeseriescore=self._map,
+                                                        mapWidget=self,
+                                                        timepoint=session)
 
-            bsw = pmm.interface2.stackWidgets.stackWidget2(timeseriescore=self._map,
-                                                           mapWidget=self,
-                                                           timepoint=session)
+        bsw.setWindowTitle(f'map {os.path.split(self._map.path)[1]} session {session}')
 
-            bsw.setWindowTitle(f'map session {session}')
+        # bsw.signalSelectAnnotation2.connect(self.slot_selectAnnotation)
+        # logger.warning('todo: remove this deep reference of selection signal')
+        # bsw._imagePlotWidget._aPointPlot.signalAnnotationClicked2.connect(self.slot_selectAnnotation)
 
-            # bsw.signalSelectAnnotation2.connect(self.slot_selectAnnotation)
-            # logger.warning('todo: remove this deep reference of selection signal')
-            # bsw._imagePlotWidget._aPointPlot.signalAnnotationClicked2.connect(self.slot_selectAnnotation)
+        # to link widnows, 20230706
+        # logger.warning('put back in 202402')
+        #bsw._imagePlotWidget.signalMouseEvent.connect(self.slot_MouseMoveEvent)
 
-            # to link widnows, 20230706
-            # logger.warning('put back in 202402')
-            #bsw._imagePlotWidget.signalMouseEvent.connect(self.slot_MouseMoveEvent)
-
-            self._stackWidgetList.append(bsw)
-        else:
-            logger.info('recycling existing stack widget')
+        self._stackWidgetDict[session] = bsw
         
         # logger.info(f'  path: {path}')
 
@@ -265,7 +279,7 @@ class mapWidget(MainWindow):
         if self._blockSlots:
             return
         self._blockSlots = True
-        for idx, widget in enumerate(self._stackWidgetList):
+        for tp, widget in self._stackWidgetDict.items():
             _imagePlotWidget = widget._getNamedWidget('image plot')
             _imagePlotWidget.slot_setSlice(slice)
         self._blockSlots = False
@@ -274,7 +288,7 @@ class mapWidget(MainWindow):
         """Link all open plots so they drag together.
         """
         prevPlotWidget = None
-        for idx, widget in enumerate(self._stackWidgetList):
+        for tp, widget in self._stackWidgetDict.items():
             _imagePlotWidget = widget._getNamedWidget('image plot')
             if link and prevPlotWidget is not None:
                 # widget._imagePlotWidget._plotWidget.setYLink(prevPlotWidget)
@@ -358,10 +372,6 @@ class mapWidget(MainWindow):
 
     def _buildUI(self):
         """Open a map widget using index into list of open maps
-        Arguments
-        =========
-        path : str
-            path to map
         """
         logger.info('')
 
@@ -371,6 +381,7 @@ class mapWidget(MainWindow):
         vBoxLayout_main = QtWidgets.QVBoxLayout()
         self._makeCentralWidget(vBoxLayout_main)
 
+        # a table for a map, one row per session
         mapTableWidget = pmm.interface2.mapWidgets.mapTableWidget(self._map)
         mapTableWidget.signalOpenStack.connect(self.openStack2)
         mapTableWidget.signalOpenRun.connect(self.openStackRun)
@@ -381,11 +392,12 @@ class mapWidget(MainWindow):
 
         # vBoxLayout_main.addWidget(self._mapTableWidget)
 
-        logger.warning('abb add dendrogram widget back in')
+        # logger.warning('abb add dendrogram widget back in')
         # dendrogramWidget = pmm.interface2.mapWidgets.dendrogramWidget(self)
         
         # from pymapmanager.interface2.mapWidgets.dendrogramWidget2 import dendrogramWidget2
         dendrogramWidget = pmm.interface2.mapWidgets.dendrogramWidget2(self)
+        dendrogramWidget.signalOpenRun.connect(self.openStackRun)
         
         dendrogramWidgetName = dendrogramWidget._widgetName
         dendrogramDock = self._addDockWidget(dendrogramWidget, 'right', '')
@@ -418,15 +430,19 @@ class mapWidget(MainWindow):
         logger.info('  remove stackwidget window from map list of stack')
         
         _oldWindow = None
-        for _idx, _window in enumerate(self._stackWidgetList):
+        tpToPop = None
+        for tp, _window in self._stackWidgetDict.items():
             if _window == stackWidget:
                 logger.info('removing from list')
-                _oldWindow = self._stackWidgetList.pop(_idx)
-
-        if _oldWindow is None:
-            logger.error(f'did not find stack widget in map widget {stackWidget}')
+                # _oldWindow = self._stackWidgetDict.pop(tp)
+                tpToPop = tp
+                break
+        if tpToPop is not None:
+            _oldWindow = self._stackWidgetDict.pop(tpToPop)
+        else:
+            logger.error(f'did not find stack widget in map widget:{stackWidget} _stackWidgetDict')
             logger.error('available windows are')
-            logger.error(self._stackWidgetList)
+            logger.error(self._stackWidgetDict)
 
 if __name__ == '__main__':
     ms = MapSelection(None)
