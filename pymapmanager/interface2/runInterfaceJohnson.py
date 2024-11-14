@@ -98,18 +98,76 @@ def run5():
     sw2.zoomToPointAnnotation(120, isAlt=True)
     sys.exit(app.exec_())
 
+def runPoochFileDirectly():
+    app = PyMapManagerApp()
+    path = r'C:\Users\johns\AppData\Local\pooch\pooch\Cache\cc845595cddcc942c8f9d3d717ffede4-rr30a_s0u.mmap'
+    # path = 'C:/Users/johns/Documents/TestMMCMaps/rr30a_s0u_newSpineAngle.mmap'
+
+    sw2 = app.loadStackWidget(path)
+    sw2.zoomToPointAnnotation(120, isAlt=True)
+    sys.exit(app.exec_())
+
 def runFirstWindow():
     app = PyMapManagerApp()
     # path = 'C:/Users/johns/Documents/TestMMCMaps/rr30a_s0u_newSpineAngle.mmap'
     sys.exit(app.exec_())
 
+def testingOpenClose():
+
+    # run plugin
+    app = PyMapManagerApp()
+    # pooch path
+    import mapmanagercore.data
+    ## path = mapmanagercore.getSingleTimepointMap()
+    path = mapmanagercore.data.getSingleTimepointMap()
+
+    print("path", path)
+    sw2 = app.loadStackWidget(path)
+    # sw2.runPlugin('Spine Info', inDock=False)
+
+    # sw2.closePlugin('Spine Info')
+    # sw2.runPlugin('Spine Info', inDock=False)
+    # sw2.closePlugin('Spine Info', inDock=False)
+    # sw2.runPlugin('Spine Info', inDock=True)
+    # sw2.closePlugin('Spine Info', inDock=True)
+    # sw2.runPlugin('Histogram', inDock=True)
+
+    sys.exit(app.exec_())
+
+def testingProgrammaticRunClose():
+
+    # run plugin
+    app = PyMapManagerApp()
+    # pooch path
+    import mapmanagercore.data
+    ## path = mapmanagercore.getSingleTimepointMap()
+    path = mapmanagercore.data.getSingleTimepointMap()
+
+    print("path", path)
+    sw2 = app.loadStackWidget(path)
+    sw2.zoomToPointAnnotation(120, isAlt=True)
+    pluginID = sw2.runPlugin('Spine Info', inDock=False)
+    sw2.closePlugin(pluginID)
+
+    # pluginID2 = sw2.runPlugin('Spine Info', inDock=True)
+    # print("reeeee, ", pluginID2)
+    # sw2.closePlugin(pluginID2)
 
 
+    # sw2.runPlugin('Spine Info', inDock=False)
+    # sw2.closePlugin('Spine Info', inDock=False)
+ 
+    # sw2.runPlugin('Histogram', inDock=True)
+
+    sys.exit(app.exec_())
 
 if __name__ == '__main__':
     # run()
     # run2()
     # run3()
     # run4()
-    run5()
+    # run5()
     # runFirstWindow()
+    # testingOpenClose()
+    # runPoochFileDirectly()
+    testingProgrammaticRunClose()

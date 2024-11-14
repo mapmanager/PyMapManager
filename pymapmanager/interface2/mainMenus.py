@@ -184,6 +184,21 @@ class PyMapManagerMenus:
         action.triggered.connect(partial(self._onOpenFolderMenuAction))
         self.windowsMenu.addAction(action)
 
+        # Show all plugin widgets that are opened/ visible
+        try:
+            activeWindow = self.getApp().activeWindow()  # can be 0
+            pluginWidgetDict = activeWindow.getOpenPluginDict()
+
+            for _pluginID, (_pluginName, _pluginObj) in pluginWidgetDict.items():
+                logger.info(f'adding to window:{_pluginName}')
+                action = QtWidgets.QAction(_pluginName, self.getApp(), checkable=True)
+                action.triggered.connect(partial(self._onActivePluginAction, _pluginID))
+                # bring it to the front
+                self.windowsMenu.addAction(action)
+        except:
+            logger.info("Error when adding opened plugins to windows menu!")
+
+
     def _onOpenFirstMenuAction(self):
         self.getApp().openFirstWindow()
 
@@ -213,6 +228,15 @@ class PyMapManagerMenus:
             activeWindow._mapWidget.runPlugin(pluginName)
         else:
             logger.warning(f'did not understand {pluginName} {mapOrStack} with window type {windowType}')
+
+    def _onActivePluginAction(self, pluginID):
+        """ Bring plugin to the front
+        """
+        windowType = self.getApp().getFrontWindowType()
+        activeWindow = self.getApp().activeWindow()  # can be 0
+
+        # assume it is a stackWidget window
+        activeWindow.raisePluginWidget(pluginID)
 
     def _onWindowsMenuAction(self, name):
         logger.info(f'{name}')

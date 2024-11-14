@@ -16,9 +16,8 @@ class stackPluginDock():
     def __init__(self, stackWidget):
         self._stackWidget = stackWidget
 
-        self._tabIndexDict = {} # key: humanName of Plugin, val: Index
-
-        self._openDockPluginDict = {} # key: humanName of Plugin, val: plugin obj
+        # self._tabIndexDict = {} # key: humanName of Plugin, val: Index
+        self._tabIndexDict = {} # key: newPluginID, val: newTabIndex
 
         self.visible = False
 
@@ -70,6 +69,14 @@ class stackPluginDock():
         # 20231229 not need in multiple windows, not keeping track of open plugins
         # self.myPlugins.slot_closeWindow(pluginInstancePointer)
 
+        # abj
+        pluginIDs = [key for key, value in self._tabIndexDict.items() if value == index]
+        pluginID = pluginIDs[0]
+        humanName, newPlugin = self.parentStackWidget().getOpenPluginDict()[pluginID]
+        newPlugin.getWidget().close() # should trigger close event to delete key in stackwidget dict
+
+        self._tabIndexDict.pop(pluginID) # remove it from the dictionary
+
         # remove the tab
         sender.removeTab(index)
     
@@ -117,10 +124,14 @@ class stackPluginDock():
         pluginName = action.text()
         # newPlugin = self.myPlugins.runPlugin(pluginName, ba, show=False)
         # newPlugin = self.parentStackWidget().runPlugin(pluginName, show=False)
-        newPlugin = self.parentStackWidget().runPluginFromDock(pluginName, show=False, storedDict = self._openDockPluginDict)
+        newPluginID = self.parentStackWidget().runPlugin(pluginName, show=False)
+        openPluginDict = self.parentStackWidget().getOpenPluginDict()
+        humanName, newPlugin = self.parentStackWidget().getOpenPluginDict()[newPluginID]
 
         # only add if plugin wants to be shown
         if newPlugin.getShowSelf():
+
+            # logger.info("dock plugin shownnnn")
             # add tab
 
             # 1) either this
@@ -144,6 +155,10 @@ class stackPluginDock():
             # bring tab to front
             sender.setCurrentIndex(newTabIndex)
 
+            # abj
+            self._tabIndexDict[newPluginID] = newTabIndex
+            # self._openDockPluginDict[pluginName] = newPlugin
+
             # ltwhTuple = newPlugin.getWindowGeometry()
 
             # if newPlugin is not None:
@@ -162,32 +177,31 @@ class stackPluginDock():
         sender = self.myPluginTab1
 
         # newPlugin = self.parentStackWidget().runPlugin(pluginName, show=False)
-        newPlugin = self.parentStackWidget().runPluginFromDock(pluginName, show=False, storedDict=self._openDockPluginDict)
+        newPluginID = self.parentStackWidget().runPlugin(pluginName, show=False)
+        openPluginDict = self.parentStackWidget().getOpenPluginDict()
+        humanName, newPlugin = self.parentStackWidget().getOpenPluginDict()[newPluginID]
         logger.info(f"runPlugin_inDock testtt {newPlugin}")
+
         if newPlugin.getShowSelf():
             newTabIndex = sender.addTab(
                 newPlugin.getWidget(), pluginName
             )  # addTab takes ownership
-            sender.setCurrentIndex(newTabIndex)
 
-            self._tabIndexDict[pluginName] = newTabIndex
-            self._openDockPluginDict[pluginName] = newPlugin
+            sender.setCurrentIndex(newTabIndex)
+            self._tabIndexDict[newPluginID] = newTabIndex
+
+        return newPluginID
 
     # abj
-    def closePlugin_inDock(self, pluginName : str):
-        """ Close a plugin in dock
+    # def closePlugin_inDock(self, pluginName : str):
+    def closePlugin_inDock(self, pluginID):
+        """ Programmatically Close a plugin in dock
         """
         # self.pluginDock1.show()
-        logger.info(pluginName)
+        # logger.info(pluginName)
         sender = self.myPluginTab1
-
-        tabIndex = self._tabIndexDict[pluginName]
-        # oldPlugin = self.parentStackWidget().closePlugin(pluginName)
+        tabIndex = self._tabIndexDict[pluginID]
         self.slot_closeTab(tabIndex, sender)
-
-        oldPlugin = self.parentStackWidget().closePluginInDict(pluginName, self._openDockPluginDict)
-
-        # self.pluginDock1.close()
 
     def _buildPluginWidgets(self):
         parentStackWidget = self.parentStackWidget()
