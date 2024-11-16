@@ -552,6 +552,9 @@ class mmWidget2(QtWidgets.QMainWindow):
         """
         super().__init__()
 
+        # abj
+        self._id = id(self)
+
         self._iAmStackWidget = iAmStackWidget
         self._iAmMapWidget = iAmMapWidget
         
@@ -1159,6 +1162,21 @@ class mmWidget2(QtWidgets.QMainWindow):
             
         # elif event.key() in [QtCore.Qt.Key_Delete, QtCore.Qt.Key_Backspace]:
         #     self._deleteSelection()
+
+    # TODO: close event
+    def closeEvent(self, event : QtGui.QKeyEvent):
+
+        # get unique identifier?
+
+        logger.info(f"closing plugin: {self._widgetName} with id: {self._id}")
+        # remove widget from parent stackWidget dictionary
+        try:
+            self._stackWidget.closePluginInDict(pluginId = self._id)
+        except Exception as error:
+            logger.info(f"error: {error}")
+
+    def getID(self):
+        return self._id
 
 if __name__ == '__main__':
     from pymapmanager._logger import setLogLevel
