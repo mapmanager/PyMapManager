@@ -29,7 +29,7 @@ class StackToolBar(QtWidgets.QToolBar):
         # list of channel strings 1,2,3,...
         self._channelList = [str(x+1) for x in range(self._myStack.numChannels+1)]
 
-        iconsFolderPath = ''  # TODO: get from canvas.util'
+        # iconsFolderPath = ''  # TODO: get from canvas.util'
 
         self.setWindowTitle('Stack Toolbar')
 
@@ -118,7 +118,7 @@ class StackToolBar(QtWidgets.QToolBar):
         }
         self.signalSlidingZChanged.emit(d)
 
-    def _on_radius_value_changed(self, value):
+    def _old__on_radius_value_changed(self, value):
         """
             Value to change the radius of the left/ right points.
             When changed the points also change.

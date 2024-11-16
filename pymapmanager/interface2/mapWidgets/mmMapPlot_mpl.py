@@ -161,15 +161,33 @@ class mmMapPlot_mpl():
                                             zorder=zOrderScatter,
                                             picker=True)
                 
+        #
         # line plot (between points in a run)
         linewidth = self.pd['linewidth']
         # creates [matplotlib.lines.Line2D]
-        self.myLinePlot = self.axes.plot(_xPlot, 
-                                        _yPlot,
-                                        c=lineColor,
-                                        linewidth=linewidth,
-                                        zorder=zOrderLines,
-                                        picker=False)
+        # not working at all
+        # self.myLinePlot = self.axes.plot(_xPlot, 
+        #                                 _yPlot,
+        #                                 c=lineColor,
+        #                                 linewidth=linewidth,
+        #                                 zorder=zOrderLines,
+        #                                 picker=False)
+
+        #lines
+        # logger.info(f'lineColor:{lineColor} linewidth:{linewidth} zOrderLines:{zOrderLines}')
+        plotDict = self.pd
+        self.myLinePlotList = []
+        for idx, xPlotLine in enumerate(plotDict['xPlotLines']):
+            yPlotLine = plotDict['yPlotLines'][idx]
+            # logger.info(f'idx:{idx} xPlotLine:{xPlotLine} yPlotLine:{yPlotLine}')
+            _oneLine = self.axes.plot(xPlotLine,
+                                yPlotLine,
+                                c=lineColor,
+                                linewidth=linewidth,
+                                zorder=zOrderLines,
+                                picker=False,
+                                )
+            self.myLinePlotList.append(_oneLine)
 
         # logger.info(f'self.myLinePlot: {self.myLinePlot}')
         # logger.info(f'   self.myLinePlot: {len(self.myLinePlot)}')
@@ -406,8 +424,9 @@ class mmMapPlot_mpl():
         
         logger.info(f'onoff:{onoff} showLines:{showLines}')
 
-        for line in self.myLinePlot:
-            line.set_visible(showLines)
+        for line in self.myLinePlotList:
+            for line0 in line:
+                line0.set_visible(showLines)
 
         self._refreshFigure()
 
@@ -670,8 +689,8 @@ class mmMapPlot_mpl():
         ySpineLineDict = {}
         
         spineIDs = df['spineID'].unique()  # step through connected spineID
-        # xPlotLines = []
-        # yPlotLines = []
+        xPlotLines = []
+        yPlotLines = []
         for spineID in spineIDs:
             # spineID = int(spineID)
             
@@ -681,21 +700,25 @@ class mmMapPlot_mpl():
             xPlotLine = spineDf[xStat].to_list()
             yPlotLine = spineDf[yStat].to_list()
             
-            # xPlotLines.append(xPlotLine)
-            # yPlotLines.append(yPlotLine)
+            # this is redundant, merge with xPlineLineDict
+            xPlotLines.append(xPlotLine)
+            yPlotLines.append(yPlotLine)
             
             xSpineLineDict[spineID] = xPlotLine
             ySpineLineDict[spineID] = yPlotLine
             
             xt = spineDf['t'].to_list()
             if len(xt) == 1:
+                # transient
                 _x1 = np.where((np.array(xyPlotSpineID==spineID)))[0]
                 markerColor[_x1[0]] = 'b'
             else:
                 if xt[0] != 0:
+                    # added
                     _x1 = np.where((np.array(xyPlotSpineID==spineID)))[0]
                     markerColor[_x1[0]] = 'g'
                 if xt[-1] != 4:
+                    # deleted
                     _x1 = np.where((np.array(xyPlotSpineID)==spineID) & (np.array(xyPlotTimepoint)==xt[-1]))[0]
                     # logger.info(f'spineID:{spineID} at tp {xt[-1]} is SUBTRACTED _finalIndex:{_finalIndex}')
                     markerColor[_x1[0]] = 'r'
@@ -707,8 +730,8 @@ class mmMapPlot_mpl():
         pd['y'] = yPlot
         pd['xyPlotSpineID'] = xyPlotSpineID
         pd['xyPlotTimepoint'] = xyPlotTimepoint
-        # pd['xPlotLines'] = xPlotLines
-        # pd['yPlotLines'] = yPlotLines
+        pd['xPlotLines'] = xPlotLines
+        pd['yPlotLines'] = yPlotLines
 
         pd['markerColor'] = markerColor
 

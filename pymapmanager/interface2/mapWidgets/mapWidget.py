@@ -171,10 +171,12 @@ class mapWidget(MainWindow):
             if lastTp > numSessions-1:
                 lastTp = numSessions
 
+        _multipleTp = firstTp != lastTp-1
+
         numCols = 4
         screenGrid = self.getApp().getScreenGrid(numSessions, numCols)
         
-        logger.info('firstTp:{firstTp} lastTp:{lastTp} spineID:{spineID}')
+        logger.info(f'firstTp:{firstTp} lastTp:{lastTp} spineID:{spineID}')
 
         for tp in range(firstTp, lastTp):
             if tp in self._stackWidgetDict.keys():
@@ -185,12 +187,13 @@ class mapWidget(MainWindow):
 
             # toggle interface
             # dict_keys(['top toolbar', 'Point List', 'Line List', 'image plot', 'Histogram'])
-            bsw._toggleWidget("top toolbar", False)
-            bsw._toggleWidget("Point List", False)
-            bsw._toggleWidget("Line List", False)
-            # bsw._toggleWidget("tracing widget qqq", False)
-            bsw._toggleWidget("Histogram", False)
-            # bsw._toggleWidget("Status Bar", False)
+            if _multipleTp:
+                bsw._toggleWidget("top toolbar", False)
+                bsw._toggleWidget("Point List", False)
+                bsw._toggleWidget("Line List", False)
+                # bsw._toggleWidget("tracing widget qqq", False)
+                bsw._toggleWidget("Histogram", False)
+                # bsw._toggleWidget("Status Bar", False)
 
             # select a point and zoom
             if spineID is not None:

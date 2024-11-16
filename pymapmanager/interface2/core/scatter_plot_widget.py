@@ -612,10 +612,12 @@ class ScatterPlotWidget(QtWidgets.QWidget):
         """
             Filter list to only include columns that can be plotted
         """
-        self.columnNameList = []
-        for column in self._df.columns:
-            self.columnNameList.append(column)
-        return
+        
+        # abb
+        # self.columnNameList = []
+        # for column in self._df.columns:
+        #     self.columnNameList.append(column)
+        # return
     
         # maybe do more filtering here? Check if all values are nan
         
@@ -624,7 +626,7 @@ class ScatterPlotWidget(QtWidgets.QWidget):
             # return
         
         for column in self._df:
-            # abb
+            # abb, IndexError on iloc[0] and empty _df
             try:
                 firstColVal= self._df[column].iloc[0]
                 # logger.info(f" column Name: {column} firstColVal {firstColVal}")
@@ -754,7 +756,7 @@ class ScatterPlotWidget(QtWidgets.QWidget):
                     myColorMap.append("white")
                 else:
                     if hueColumn != "None":
-                        # logger.info(f"hueColumn {hueColumn}")
+                        logger.info(f"hueColumn {hueColumn} id:{id}")
                         hueId = self._df[hueColumn].iloc[id]
                         myColorMap.append(self.color[hueId])
 
@@ -793,8 +795,13 @@ class ScatterPlotWidget(QtWidgets.QWidget):
         else:
             self.xDf = self._df.groupby(hueColumn, as_index=False)[
                         columnNameX].agg(aggList)
+            # abb, prepend stat
+            self.xDf.insert(0, 'Stat', columnNameX)
+
             self.yDf = self._df.groupby(hueColumn, as_index=False)[
                         columnNameY].agg(aggList)
+            # abb, prepend stat
+            self.yDf.insert(0, 'Stat', columnNameX)
             
     def _buildMainLayout(self):
         # main layout

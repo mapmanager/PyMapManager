@@ -393,6 +393,7 @@ class stackWidget2(mmWidget2):
             if show:
                 newPlugin.getWidget().show()
                 newPlugin.getWidget().setVisible(True)
+                newPlugin.raise_()  # abb, bring to front
             else:
                 newPlugin.getWidget().hide()
                 newPlugin.getWidget().setVisible(False)

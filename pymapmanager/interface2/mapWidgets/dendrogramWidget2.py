@@ -47,6 +47,8 @@ class dendrogramWidget2(mmWidget2):
         logger.info('')
         
         lastClickDict = self.mmmPlot.getLastClickDict()
+        if lastClickDict is None:
+            return
         # logger.info(f'lastClickDict:{lastClickDict}')
         spineID = lastClickDict['spineID']
         timepoint = lastClickDict['timepoint']

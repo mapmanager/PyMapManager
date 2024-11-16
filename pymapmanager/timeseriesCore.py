@@ -661,25 +661,4 @@ class TimeSeriesCore():
         logger.info('-->> PERFORMING REDO')
         self._fullMap.redo()
 
-class _old_TimeSeriesList():
-    """Manage a liist of TimeSeriesCore (MapAnnotations.
-    """
-    def __init__(self):
-        self._dict = {}
-    
-    def add(self, path) -> TimeSeriesCore:
-        """Add a TimeSeriesCore to the list.
-        """
-        if path not in self._dict.keys():
-            logger.info(f'loading TimeSeriesCore path:{path}')
-            tsc = TimeSeriesCore(path)
-            self._dict[path] = tsc
-        
-        return self._dict[path]
-
-    def get(self, path : str):
-        if path not in self._dict.keys():
-            logger.warning(f'not in list {path}')
-            return
-        return self._dict[path]
     

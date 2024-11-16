@@ -43,7 +43,7 @@ class stack:
             logger.warning(f'EXPENSIVE: loading all image data for {self.numChannels} channels')
             for _channel in range(self.numChannels):
                 _channel += 1
-                logger.warning('TODO: turn loadImages() back on ... ')
+                logger.warning('   TODO: turn loadImages() back on ... ')
                 # self.loadImages(channel=_channel)
 
         # get the first image slice from defaultChannelIdx
