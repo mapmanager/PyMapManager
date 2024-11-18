@@ -260,21 +260,21 @@ class _old_SegmentsCore:
         _length = _lineSegment.length
         return _length
     
-    def _not_used_getMedianZ(self, timepoint : int, segmentID : int):
-        """Get median  z for one segment.
-        Used for plotting.
-        """
-        x = np.nan
-        y = np.nan
-        z = np.nan
-        if self.getNumPoints(timepoint, segmentID) > 2:
-            df = self.getDataFrame()
-            df = df[ df['segmentID']==segmentID ]
-            x = int(np.median(df['x']))
-            y = int(np.median(df['y']))
-            z = int(np.median(df['z']))
+    # def _not_used_getMedianZ(self, timepoint : int, segmentID : int):
+    #     """Get median  z for one segment.
+    #     Used for plotting.
+    #     """
+    #     x = np.nan
+    #     y = np.nan
+    #     z = np.nan
+    #     if self.getNumPoints(timepoint, segmentID) > 2:
+    #         df = self.getDataFrame()
+    #         df = df[ df['segmentID']==segmentID ]
+    #         x = int(np.median(df['x']))
+    #         y = int(np.median(df['y']))
+    #         z = int(np.median(df['z']))
 
-        return (x, y, z)
+    #     return (x, y, z)
 
 class _old_PointsCore:
     def __init__(self, core,

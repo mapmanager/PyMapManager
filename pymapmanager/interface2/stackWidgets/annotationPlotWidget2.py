@@ -317,7 +317,7 @@ class annotationPlotWidget(mmWidget2):
             self._scatterUserSelection = self._view.plot(
                 [],
                 [],
-                # pen=None, # None to not draw lines
+                pen=None, # None to not draw lines
                 symbol=symbol,
                 # symbolColor  = 'red',
                 symbolPen=None,

@@ -358,7 +358,7 @@ class stackWidget2(mmWidget2):
             return
         else:
             humanName = pluginDict[pluginName]["constructor"]._widgetName
-            logger.info(f'Running plugin: {pluginName}')
+            logger.info(f'Running plugin: "{pluginName}"')
 
             newPlugin = pluginDict[pluginName]["constructor"](
                 stackWidget=self,
@@ -422,7 +422,7 @@ class stackWidget2(mmWidget2):
         # lineListName = lineListWidget._widgetName
         llw = lineListWidget(self)
         lineListName = llw._widgetName
-        lineListDock = self._addDockWidget(llw, 'left', 'Lines')
+        lineListDock = self._addDockWidget(llw, 'left', 'Segments')
         self._widgetDict[lineListName] = lineListDock  # the dock, not the widget ???
 
         #
@@ -1332,6 +1332,10 @@ class stackWidget2(mmWidget2):
     def closePluginInDict(self, pluginId):
         """"""
         logger.info(f"bluginId {pluginId}")
+
+        logger.info('  _openPluginDict:')
+        print(self._openPluginDict)
+
         # storedDict = self._openPluginDict
         # logger.info(f"storedDict {storedDict}")
         # run in separate window
@@ -1345,6 +1349,9 @@ class stackWidget2(mmWidget2):
             logger.info(f'Closing oldPlugin: {pluginObj}')
             # pluginObj.getWidget().close() 
             self._openPluginDict.pop(pluginId) # remove plugin permanently
+
+        logger.info('  after _openPluginDict:')
+        print(self._openPluginDict)
 
     def getOpenPluginDict(self):
         """

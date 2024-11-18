@@ -2,7 +2,7 @@ import json
 import os
 import sys
 import math
-from typing import List, Union  # , Callable, Iterator, Optional
+from typing import List, Union, Optional  # , Callable, Iterator
 
 import inspect
 
@@ -221,12 +221,6 @@ class OpenWidgetList:
             logger.error('available keys are')
             logger.error(self._widgetDictList.keys())
 
-        # check if there are any more windows and show load window
-        # activeWindow = self.activeWindow()
-        # logger.info(f'activeWindow:{activeWindow}')
-        # if activeWindow is None:
-        #     self._openFirstWindow.show()
-
         if len(self._widgetDictList.keys()) == 0:
             self._app.openFirstWindow()
 
@@ -398,7 +392,9 @@ class PyMapManagerApp(QtWidgets.QApplication):
         appDir = user_data_dir(appName)
         return appDir
     
-    def getFrontWindow(self):
+    def getFrontWindow(self) -> Optional[QtWidgets.QWidget]:
+        """Get the frontmost window.
+        """
         return self.activeWindow()
     
     def getFrontWindowType(self):

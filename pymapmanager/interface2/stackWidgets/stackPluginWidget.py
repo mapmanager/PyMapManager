@@ -125,7 +125,7 @@ class stackPluginDock():
         # newPlugin = self.myPlugins.runPlugin(pluginName, ba, show=False)
         # newPlugin = self.parentStackWidget().runPlugin(pluginName, show=False)
         newPluginID = self.parentStackWidget().runPlugin(pluginName, show=False)
-        openPluginDict = self.parentStackWidget().getOpenPluginDict()
+        # openPluginDict = self.parentStackWidget().getOpenPluginDict()
         humanName, newPlugin = self.parentStackWidget().getOpenPluginDict()[newPluginID]
 
         # only add if plugin wants to be shown
@@ -178,7 +178,7 @@ class stackPluginDock():
 
         # newPlugin = self.parentStackWidget().runPlugin(pluginName, show=False)
         newPluginID = self.parentStackWidget().runPlugin(pluginName, show=False)
-        openPluginDict = self.parentStackWidget().getOpenPluginDict()
+        # openPluginDict = self.parentStackWidget().getOpenPluginDict()
         humanName, newPlugin = self.parentStackWidget().getOpenPluginDict()[newPluginID]
         logger.info(f"runPlugin_inDock testtt {newPlugin}")
 

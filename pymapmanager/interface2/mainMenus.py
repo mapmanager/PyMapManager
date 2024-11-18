@@ -21,6 +21,8 @@ class PyMapManagerMenus:
         self._app = app
 
     def getApp(self):
+        """Get the pyMapManagerApp2.
+        """
         return self._app
 
     def _buildMenus(self, mainMenu, mainWindow):
@@ -105,51 +107,53 @@ class PyMapManagerMenus:
         return self._helpMenuAction
 
     def _refreshPluginsMenu(self):
-        logger.info('re-create plugin menu with available pligins')
+        """Build a plugin menu with all available stack and map plugins.
+        """
+        logger.info('re-create plugin menu with available stack and map plugins')
+
+        # start with an empy menu
+        self.pluginsMenu.clear()
 
         windowType = self.getApp().getFrontWindowType()
 
-        _activateStackPlugins = windowType in ['stack', 'stackWithMap']
-        _activateMapPlugins = windowType in ['stackWithMap', 'map']
-                                               
-        self.pluginsMenu.clear()
+        # add an inactive placeholder 'Stack Plugins' menu
+        _placeholderAction = QtWidgets.QAction("   Stack Plugins",
+                                   self.getApp(),
+                                   checkable=False,
+                                   enabled=False,
+                                   )
+        self.pluginsMenu.addAction(_placeholderAction)
 
-        action = QtWidgets.QAction("   Stack Plugins", self.getApp(), checkable=False)
-        action.setEnabled(False)
-        self.pluginsMenu.addAction(action)
-        f = action.font()
-        f.setBold(True)
-        f.setItalic(True)
-        action.setFont(f)
-
-        #
-        # list of available stack plugins
+        # app level dict of all available stack plugins
         stackPluginDict = self.getApp().getStackPluginDict()
 
+        _activateStackPlugins = windowType in ['stack', 'stackWithMap']
+        """If our front window is a stack widget."""
         for pluginName in stackPluginDict.keys():
-            # logger.info(f'{pluginName}')
             action = QtWidgets.QAction(pluginName, self.getApp(), checkable=True)
             action.setEnabled(_activateStackPlugins)
-            # action.setChecked(_sanPyWindow.isActiveWindow())
             action.triggered.connect(partial(self._onPluginMenuAction, pluginName, 'stack'))
             self.pluginsMenu.addAction(action)
 
         #
         self.pluginsMenu.addSeparator()
 
-        action = QtWidgets.QAction("   Map Plugins", self.getApp(), checkable=False)
-        action.setEnabled(False)
-        self.pluginsMenu.addAction(action)
+        # add an inactive placeholder 'Map Plugins' menu
+        _placeholderAction = QtWidgets.QAction("   Map Plugins",
+                                   self.getApp(),
+                                   checkable=False,
+                                   enabled=False,
+                                   )
+        self.pluginsMenu.addAction(_placeholderAction)
 
-        #
-        # list of available map plugins
+        # app level dict of all available map plugins
         mapPluginDict = self.getApp().getMapPluginDict()
 
+        _activateMapPlugins = windowType in ['stackWithMap', 'map']
+        """If our front window is a map widget."""
         for pluginName in mapPluginDict.keys():
-            # logger.info(f'{pluginName}')
             action = QtWidgets.QAction(pluginName, self.getApp(), checkable=True)
             action.setEnabled(_activateMapPlugins)
-            # action.setChecked(_sanPyWindow.isActiveWindow())
             action.triggered.connect(partial(self._onPluginMenuAction, pluginName, 'map'))
             self.pluginsMenu.addAction(action)
 
@@ -185,19 +189,37 @@ class PyMapManagerMenus:
         self.windowsMenu.addAction(action)
 
         # Show all plugin widgets that are opened/ visible
-        try:
-            activeWindow = self.getApp().activeWindow()  # can be 0
+        if 0:
+            try:
+                activeWindow = self.getApp().activeWindow()  # can be 0
+                
+                # abb, triggers except (AttributeError) when front window is not a stackWidget2
+                pluginWidgetDict = activeWindow.getOpenPluginDict()
+
+                for _pluginID, (_pluginName, _pluginObj) in pluginWidgetDict.items():
+                    logger.info(f'adding to window:{_pluginName}')
+                    action = QtWidgets.QAction(_pluginName, self.getApp(), checkable=True)
+                    action.triggered.connect(partial(self._onActivePluginAction, _pluginID))
+                    # bring it to the front
+                    self.windowsMenu.addAction(action)
+            # never use a bare except (causes lots of problems)
+            # I think you wanted 'except (AttributeError)' to catch getOpenPluginDict()
+            # when activeWindow was not a stackwidget2
+            except:
+                logger.info("Error when adding opened plugins to windows menu!")
+
+        #abb
+        # Show all plugin widgets that are opened
+        activeWindow = self.getApp().activeWindow()
+        if activeWindow._widgetName == 'Stack Widget':
+            # triggers except (AttributeError) when front window is not a stackWidget2
             pluginWidgetDict = activeWindow.getOpenPluginDict()
 
             for _pluginID, (_pluginName, _pluginObj) in pluginWidgetDict.items():
-                logger.info(f'adding to window:{_pluginName}')
+                logger.info(f'adding "{_pluginName}" to window menu')
                 action = QtWidgets.QAction(_pluginName, self.getApp(), checkable=True)
                 action.triggered.connect(partial(self._onActivePluginAction, _pluginID))
-                # bring it to the front
                 self.windowsMenu.addAction(action)
-        except:
-            logger.info("Error when adding opened plugins to windows menu!")
-
 
     def _onOpenFirstMenuAction(self):
         self.getApp().openFirstWindow()
@@ -210,9 +232,9 @@ class PyMapManagerMenus:
         
         Cases:
          - Plugin is a stack and window is a stack
-         - plugin is a map and window is a map
+         - Plugin is a map and window is a map
          """
-        logger.info(f'{pluginName}')
+        logger.info(f'pluginName:{pluginName} mapOrStack:{mapOrStack}')
         
         # check front window and based on if it is a stack or map, run the plugin
         # self.getApp().runPlugin(pluginName)

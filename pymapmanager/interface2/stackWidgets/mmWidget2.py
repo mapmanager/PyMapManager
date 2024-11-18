@@ -1105,45 +1105,6 @@ class mmWidget2(QtWidgets.QMainWindow):
         # logger.warning(f'{self.getClassName()} base class called')
         pass
 
-    # def _deleteSelection(self):
-    #     """Delete the current selection.
-    #     """
-    #     itemList = self.getSelectedAnnotations()
-    #     if len(itemList) == 0:
-    #         # no selection to delete
-    #         logger.info(f'{self.getName()} no selection to delete')
-    #         return
-    #     if self._annotations is None:
-    #         logger.error(f'_annotations is None ???')
-    #         return
-    #     eventType = pmmEventType.delete
-    #     event = pmmEvent(eventType, self)
-    #     event.setSelection(itemList=itemList)
-    #     self.emitEvent(event, blockSlots=False)
-
-    # def _cancelSelection(self):
-    #     """Cancel the current selection and return to pmmStates
-    #     """
-
-    #     # emit state change back to pmmStates.edit
-    #     # to be safe during development, always do this
-    #     # ideally we don't need this if there is no selection
-    #     eventType = pmmEventType.stateChange
-    #     event = pmmEvent(eventType, self)
-    #     event.setStateChange(pmmStates.edit)
-    #     self.emitEvent(event, blockSlots=False)
-
-    #     itemList = self.getSelectedAnnotations()
-    #     if len(itemList) == 0:
-    #         # no selection to cancel
-    #         return
-
-    #     # emit select []
-    #     eventType = pmmEventType.selection
-    #     event = pmmEvent(eventType, self)
-    #     event.setSelection(itemList=[])
-    #     self.emitEvent(event, blockSlots=False)
-
     def _stateChange(self, state : pmmStates):
         """Emit a state change.
         """

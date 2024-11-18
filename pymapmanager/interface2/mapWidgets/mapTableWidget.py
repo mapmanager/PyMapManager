@@ -3,11 +3,9 @@ from typing import List, Union  # , Callable, Iterator, Optional
 
 from qtpy import QtGui, QtCore, QtWidgets
 
-import pymapmanager as pmm
-from pymapmanager.mmMap import mmMap
-
 from pymapmanager.interface2.core.search_widget import myQTableView
-# from pymapmanager.interface2.core._data_model import pandasModel
+
+from pymapmanager.timeseriesCore import TimeSeriesCore
 
 from pymapmanager._logger import logger
 
@@ -20,22 +18,20 @@ class mapTableWidget(QtWidgets.QWidget):
     signalOpenStack = QtCore.Signal(object)  # session : int
     signalOpenRun = QtCore.Signal(int, int)  # start tp, plusMinus tp
 
-    def __init__(self, mmMap : mmMap):
+    def __init__(self, timeSeriesCore : TimeSeriesCore):
         super().__init__(None)
 
-        self._mmMap = None  #mmMap
-
-        # self.setWindowTitle(mmMap.filePath)
+        self._timeSeriesCore : TimeSeriesCore = timeSeriesCore  #timeSeroesCore
         
         self._buildUI()
 
-        self.slot_switchMap(mmMap)
+        self.slot_switchMap(timeSeriesCore)
 
         # self._setModel()
 
-    def slot_switchMap(self, mmMap : mmMap):
-        self._mmMap = mmMap
-        self._mapNameLabel.setText(mmMap.filename)
+    def slot_switchMap(self, timeSeriesCore : TimeSeriesCore):
+        self._timeSeriesCore = timeSeriesCore
+        self._mapNameLabel.setText(timeSeriesCore.filename)
         self._setModel()
 
     def contextMenuEvent(self, event):
@@ -124,22 +120,8 @@ class mapTableWidget(QtWidgets.QWidget):
         
         TODO: we need to limit this to roiType like (spineRoi, controlPnt)
         """
-        dfPoints = self._mmMap.getMapDataFrame()
+        dfPoints = self._timeSeriesCore.getMapDataFrame()
         # myModel = pandasModel(dfPoints)
         # self._myTableView.mySetModel(myModel)
 
         self._myTableView.updateDataFrame(dfPoints)
-
-if __name__ == '__main__':
-    path = '/Users/cudmore/Sites/PyMapManager-Data/maps/rr30a/rr30a.txt'
-    aMap = mmMap(path)
-    # print(aMap.getDataFrame())
-
-    # creat the main application
-    app = pmm.interface2.PyMapManagerApp()
-
-    mmmt = mapTableWidget(aMap)
-    mmmt.show()
-    
-    # run the Qt event loop
-    sys.exit(app.exec_())

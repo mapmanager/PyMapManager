@@ -248,15 +248,6 @@ class ImagePlotWidget(mmWidget2):
             acs = AutoConnectSpineEvent(self, firstPointSelection)
             self.emitEvent(acs)
 
-            # eventType = pmmEventType.autoConnectSpine
-            # event = pmmEvent(eventType, self)
-            # event.setSliceNumber(self._currentSlice)
-            # self.emitEvent(event)
-
-            # event = pmmEvent(pmmEventType.stateChange, self)
-            # # event.setStateChange(pmmStates.autoConnectSpine)
-            # self.emitEvent(event, blockSlots=True)
-
         elif action == deleteAction:
             logger.warning('deleting the selected annotation')
             # self._deleteAnnotation()
