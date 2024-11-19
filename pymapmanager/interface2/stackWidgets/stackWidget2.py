@@ -1212,16 +1212,25 @@ class stackWidget2(mmWidget2):
         if ext == ".mmap":
             self.getStack().save()
             self.setDirtyFalse()
-        elif ext == ".tif":
+        elif ext == ".tif": # users start with tif file, but must begin using .mmap after saving
             self.fileSaveAs()
         else:
             logger.info("Extension not understood, nothing is saved")
 
     def fileSaveAs(self):
         # ('C:/Users/johns/Documents/GitHub/MapManagerCore/data/test', 'All Files (*)')
+
+        # filter = "(*.mmap)"
         saveAsPath = QtWidgets.QFileDialog.getSaveFileName(None, 'Save File')[0]
         logger.info(f"name {saveAsPath}")
-        self.getStack().saveAs(saveAsPath)
+
+        ext = os.path.splitext(saveAsPath)[1]
+        if ext != '.mmap':
+            logger.error(f'map must have extension ".mmap", got "{ext}" -->> did not save.')
+            QtWidgets.QMessageBox.critical(self, "Error: Incorrect Extension", "Please use .mmap as the file extension to save")
+            return
+        else:
+            self.getStack().saveAs(saveAsPath)
 
     def getLastSaveTime(self):
         return self.getStack().getLastSaveTime()

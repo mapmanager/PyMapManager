@@ -646,10 +646,12 @@ class TimeSeriesCore():
             that user types in through dialog
         """
         
-        ext = os.path.splitext(path)[1]
-        if ext != '.mmap':
-            logger.error(f'map must have extension ".mmap", got "{ext}" -->> did not save.')
-            return
+        # ext = os.path.splitext(path)[1]
+        # if ext != '.mmap':
+        #     logger.error(f'map must have extension ".mmap", got "{ext}" -->> did not save.')
+        #     QMessageBox.critical(self, "Error", "An error has occurred.")
+
+        #     return
         
         self._fullMap.save(path)
 

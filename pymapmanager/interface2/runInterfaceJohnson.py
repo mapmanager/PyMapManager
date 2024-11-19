@@ -63,7 +63,7 @@ def run():
 
     sys.exit(app.exec_())
 
-def run2():
+def run2_tif():
     app = PyMapManagerApp()
     path = '/Users/johns/Documents/GitHub/PyMapManager-Data/one-timepoint/rr30a_s0_ch1.tif'
     # path = '/Users/johns/Documents/GitHub/PyMapManager-Data/one-timepoint/rr30a_s0_ch1.mmap'
@@ -170,4 +170,5 @@ if __name__ == '__main__':
     # runFirstWindow()
     # testingOpenClose()
     # runPoochFileDirectly()
-    testingProgrammaticRunClose()
+    # testingProgrammaticRunClose()
+    run2_tif()
