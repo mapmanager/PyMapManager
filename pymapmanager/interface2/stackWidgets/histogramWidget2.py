@@ -5,7 +5,7 @@ import numpy as np
 from qtpy import QtGui, QtCore, QtWidgets
 import pyqtgraph as pg
 
-from .mmWidget2 import mmWidget2, pmmEvent
+from pymapmanager.interface2.stackWidgets.base.mmWidget2 import mmWidget2, pmmEvent
 from pymapmanager._logger import logger
 
 class HistogramWidget(mmWidget2):
@@ -27,7 +27,6 @@ class HistogramWidget(mmWidget2):
 
         self._sliceNumber = 0
         self._channel = 0
-        # self._maxValue = 2**self._myStack.header['bitDepth']  # will default to 8 if not found
         self._maxValue = 2**self._contrastDict[0]['displayBitDepth']
         self._sliceImage = None  # set by 
 
@@ -271,7 +270,6 @@ class _histogram(QtWidgets.QWidget):
         
         # assuming multichannel images have same bit depth for all channels
         # # TODO: pull this from ch 1 of contrast dict
-        # self._maxValue = 2**self._myStack.header['bitDepth']  # will default to 8 if not found
         self._maxValue = 2 ** contrastDict[0]['displayBitDepth']
 
         self._sliceImage = None  # set by 

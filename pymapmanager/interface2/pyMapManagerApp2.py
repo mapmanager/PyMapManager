@@ -11,13 +11,12 @@ from platformdirs import user_data_dir
 from qtpy import QtGui, QtWidgets  # QtCore
 
 import qdarktheme
+# enable_hi_dpi() must be called before the instantiation of QApplication.
+qdarktheme.enable_hi_dpi()
 
-import pymapmanager.interface2.openFirstWindow
+from pymapmanager.interface2.openFirstWindow import OpenFirstWindow
 from pymapmanager.interface2.openFolderWindow import OpenFolderWindow
 from pymapmanager.interface2.stackWidgets.analysisParamWidget2 import AnalysisParamWidget
-
-# Enable HiDPI.
-qdarktheme.enable_hi_dpi()
 
 import mapmanagercore
 
@@ -30,7 +29,7 @@ import pymapmanager.interface2.mapWidgets
 
 from pymapmanager.interface2.mapWidgets.mapWidget import mapWidget
 
-from pymapmanager.interface2.stackWidgets import stackWidget2
+from pymapmanager.interface2.stackWidgets.stackWidget2 import stackWidget2
 from pymapmanager.interface2.openFirstWindow import OpenFirstWindow
 from pymapmanager.interface2.mainMenus import PyMapManagerMenus
 
@@ -38,8 +37,11 @@ from pymapmanager._logger import logger, setLogLevel
 from pymapmanager.pmmUtils import getBundledDir
 import pymapmanager.pmmUtils
 
-def loadPlugins(verbose=False, pluginType='stack') -> dict:
-    """Load stack plugins from both:
+def loadPlugins(pluginType : str, verbose = False) -> dict:
+    """Load stack/map plugins:
+
+    Parameters:
+    pluginType : Either 'stack' or 'map'
         - Package: pymapmanager.interface2.stackPlugins
         - Package: pymapmanager.interface2.mapPlugins
         
@@ -50,17 +52,11 @@ def loadPlugins(verbose=False, pluginType='stack') -> dict:
 
     pluginDict = {}
 
-    # Enum is to ignore bPlugins.py class ResponseType(Enum)
-    # remove, all sanpy widget
-    ignoreModuleList = [
-        "sanpyPlugin",
-        "myWidget",
-        "ResponseType",
-        "SpikeSelectEvent",
-        "basePlotTool",
-        "NavigationToolbar2QT",
-        "myStatListWidget",
-    ]
+    # TODO: remove, all sanpy widget
+    # ignoreModuleList = [
+    #     # "myStatListWidget",
+    #     # 'StackWidget2'
+    # ]
 
     #
     # system plugins from sanpy.interface.plugins
@@ -78,9 +74,9 @@ def loadPlugins(verbose=False, pluginType='stack') -> dict:
         # logger.info(f'moduleName:{moduleName} obj:{obj}')
         if inspect.isclass(obj):
             # logger.info(f'obj is class moduleName: {moduleName}')
-            if moduleName in ignoreModuleList:
-                # our base plugin class
-                continue
+            # if moduleName in ignoreModuleList:
+            #     # our base plugin class
+            #     continue
             # loadedList.append(moduleName)
             fullModuleName = _rootModuleStr + moduleName
             
@@ -93,6 +89,10 @@ def loadPlugins(verbose=False, pluginType='stack') -> dict:
             
             # don't add widgets with no specific name
             if _widgetName == 'not assigned':
+                continue
+
+            # don't add widgets with no specific name
+            if _widgetName == 'Stack Widget':
                 continue
 
             # _showInMenu = obj.showInMenu  # showInMenu is a static bool
@@ -116,7 +116,7 @@ def loadPlugins(verbose=False, pluginType='stack') -> dict:
     pluginDict = dict(sorted(pluginDict.items()))
 
     # print the loaded plugins
-    logger.info(f'loaded {len(pluginDict.keys())} stack widget plugins:')
+    logger.info(f'loaded {len(pluginDict.keys())} {pluginType} widget plugins:')
     if verbose:
         for k,v in pluginDict.items():
             logger.info(f'   {k}')
@@ -319,7 +319,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
         # dictionary of open stack widgets
         # keys are full path to stack
 
-        self._stackWidgetPluginsDict = loadPlugins()
+        self._stackWidgetPluginsDict = loadPlugins(pluginType='stack')
         # application wide stack widgets
         
         self._mapWidgetPluginsDict = loadPlugins(pluginType='map')

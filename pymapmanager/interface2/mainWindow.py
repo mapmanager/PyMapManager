@@ -1,7 +1,7 @@
 from qtpy import QtCore, QtWidgets, QtGui
 
 import pymapmanager
-from pymapmanager.interface2.stackWidgets import mmWidget2
+from pymapmanager.interface2.stackWidgets.base.mmWidget2 import mmWidget2
 
 from pymapmanager._logger import logger
 

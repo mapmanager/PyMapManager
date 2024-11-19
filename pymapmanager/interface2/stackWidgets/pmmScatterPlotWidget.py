@@ -10,12 +10,11 @@ from qtpy import QtGui, QtCore, QtWidgets
 
 from pymapmanager._logger import logger
 
-import pymapmanager.annotations
+# import pymapmanager.annotations
 
 from pymapmanager.interface2.core.scatter_plot_widget import ScatterPlotWidget
-# from pymapmanager.interface2.core._data_model import pandasModel
 
-from pymapmanager.interface2.stackWidgets.mmWidget2  import mmWidget2, pmmEventType, pmmEvent, pmmStates
+from pymapmanager.interface2.stackWidgets.base.mmWidget2  import mmWidget2, pmmEventType, pmmEvent, pmmStates
 from pymapmanager.interface2.stackWidgets.event.spineEvent import DeleteSpineEvent, EditSpinePropertyEvent
 
 class PmmScatterPlotWidget(mmWidget2):

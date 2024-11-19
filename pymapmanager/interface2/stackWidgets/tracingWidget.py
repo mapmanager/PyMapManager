@@ -4,14 +4,13 @@ from qtpy import QtCore, QtWidgets
 
 from pymapmanager._logger import logger
 
-from .mmWidget2 import mmWidget2
-from .mmWidget2 import pmmEventType, pmmEvent, pmmStates
+from .base.mmWidget2 import mmWidget2, pmmEventType, pmmEvent, pmmStates
 
 from pymapmanager.interface2.stackWidgets.event.segmentEvent import (
     AddSegmentEvent, DeleteSegmentEvent)
 
 class TracingWidget(mmWidget2):
-    _widgetName = 'Tracing'
+    # _widgetName = 'Tracing'
 
     # radius changed is a proper pmmEventType
     # signalRadiusChanged = QtCore.Signal(object)  # dict : {checked, upDownSlices}

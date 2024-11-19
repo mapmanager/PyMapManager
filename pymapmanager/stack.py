@@ -7,6 +7,7 @@ import pandas as pd
 
 from mapmanagercore.lazy_geo_pd_images import Metadata
 
+from pymapmanager.stackcontras import StackContrast
 from pymapmanager.annotations.baseAnnotationsCore import SpineAnnotationsCore, LineAnnotationsCore
 from pymapmanager.timeseriesCore import TimeSeriesCore
 from pymapmanager._logger import logger
@@ -43,14 +44,20 @@ class stack:
             logger.warning(f'EXPENSIVE: loading all image data for {self.numChannels} channels')
             for _channel in range(self.numChannels):
                 _channel += 1
-                logger.warning('   TODO: turn loadImages() back on ... ')
+                logger.warning(f'   _channel:{_channel} TODO: turn loadImages() back on ... ')
                 # self.loadImages(channel=_channel)
 
         # get the first image slice from defaultChannelIdx
         self.getImageSlice(0, defaultChannelIdx)
 
+        # self._stackContrast = StackContrast(self)
+
         logger.info(f'loaded stack timepoint: {self}')
               
+    @property
+    def contrast(self) -> StackContrast:
+        return self._stackContrast
+    
     def getTimeSeriesCore(self) -> TimeSeriesCore:
         return self._fullMap
 
@@ -144,9 +151,11 @@ class stack:
     def getLineAnnotations(self) -> LineAnnotationsCore:
         return self._lines
 
-    def getAutoContrast(self, channel):
-        # channelIdx = channel - 1
-        channelIdx = channel # abj
+    def getAutoContrast(self, channelIdx):
+        """Get auto contrast for an entire stack
+        
+        Expensive as this loads the entire stack
+        """
         _min, _max = self._fullMap.getMapImages().getAutoContrast(self.timepoint, channel=channelIdx)
         return _min, _max
 
@@ -167,7 +176,6 @@ class stack:
         logger.info(f'imageSlice:{imageSlice} channel:{channel}')
         
         channelIdx = channel - 1
-        # channelIdx = channel # abj
         
         if not isinstance(imageSlice, int):
             imageSlice = int(imageSlice)
@@ -178,7 +186,7 @@ class stack:
                                                           channelIdx=channelIdx,
                                                           zRange=imageSlice)
 
-        # get pixels returns
+        # getPixels() -> returns
         # mapmanagercore.lazy_geo_pd_images.image_slices.ImageSlice
         # _imgData = _imgData._image
     

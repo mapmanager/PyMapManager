@@ -21,18 +21,15 @@ from qtpy import QtGui, QtCore, QtWidgets
 import pyqtgraph as pg
 
 import pymapmanager
-from .mmWidget2 import mmWidget2, pmmEventType, pmmStates, pmmEvent, StackSelection
-from .stackToolbar import StackToolBar
-from .stackStatusbar import StatusToolbar
-from .stackPluginWidget import stackPluginDock
+from pymapmanager.interface2.stackWidgets.base.mmWidget2 import mmWidget2, pmmEventType, pmmStates, pmmEvent, StackSelection
+from .base.stacktoolbar import StackToolBar
+from .base.stackstatusbar import StatusToolbar
+from .base.stackplugindock import StackPluginDock
 from .annotationListWidget2 import pointListWidget, lineListWidget
 from .imagePlotWidget2 import ImagePlotWidget
 
 from pymapmanager.timeseriesCore import TimeSeriesCore
 
-# from .tracingWidget import tracingWidget
-# from .histogramWidget2 import HistogramWidget
-# from .searchWidget2 import SearchWidget2
 from pymapmanager.interface2.stackWidgets.event.spineEvent import (AddSpineEvent, 
                                                                    DeleteSpineEvent,  
                                                                    UndoSpineEvent,
@@ -48,8 +45,6 @@ class stackWidget2(mmWidget2):
     _widgetName = 'Stack Widget'
 
     def __init__(self,
-                    # path,
-                    # stack : pymapmanager.stack = None,
                     timeseriescore : TimeSeriesCore,
                     mapWidget : "pymapmanager.interface2.mapWidget.mapWidget" = None,
                     timepoint : int = 0,
@@ -58,10 +53,8 @@ class stackWidget2(mmWidget2):
         
         Parameters
         ----------
-        path : str
-            Full path to tif image.
-        stack : pymapmanager.stack
-            Optional existing stack (used in maps.
+        timeseriescore : TimeSeriesCore
+            Main file loader from backend
         mapWidget
             Used in maps
         timepoint : int
@@ -73,14 +66,6 @@ class stackWidget2(mmWidget2):
                          mapWidget=mapWidget,
                          iAmStackWidget=True,
                          iAmMapWidget=iAmMapWidget)
-
-        # if stack is not None:
-        #     self._stack = stack
-        # else:
-        #     logger.info('loading stack from path:')
-        #     logger.info(f'   timepoint:{timepoint}')
-        #     logger.info(f'   path:{path}')
-        #     self._stack = pymapmanager.stack(path, timepoint=timepoint)
 
         self._stack = pymapmanager.stack(timeseriescore, timepoint=timepoint)
 
@@ -101,14 +86,10 @@ class stackWidget2(mmWidget2):
         self._channelColor = ['g', 'r', 'b']
         self._buildColorLut()
         
-        self._contrastDict = {}
+        # self._contrastDict = {}
         self._setDefaultContrastDict()
 
         self._displayOptionsDict : pymapmanager.interface2.AppDisplayOptions = pymapmanager.interface2.AppDisplayOptions()
-
-        # from pymapmanager.interface2.stackWidgets.event.undoRedo import UndoRedoEvent
-        # # self._undoRedo = UndoRedoEvent(self)
-        # self._undoRedo = UndoRedoEvent()
 
         self.setWindowTitle(self._stack.getFileName())
 
@@ -132,7 +113,7 @@ class stackWidget2(mmWidget2):
         
         if self.getMapWidgetParent() is not None:
             self.getMapWidgetParent().closeStackWindow(self)
-            self._disconnectFromMap()
+            # self._disconnectFromMap()
             
         else:
             self.getPyMapManagerApp().closeStackWindow(self)
@@ -448,15 +429,16 @@ class stackWidget2(mmWidget2):
 
         self._topToolbar.signalChannelChange.connect(self.slot_setChannel)
 
-        _histWidget = pymapmanager.interface2.stackWidgets.histogramWidget2.HistogramWidget(self)
-        _histWidgetName = _histWidget._widgetName
-        _histDock = self._addDockWidget(_histWidget, 'bottom', 'Histogram')
-        self._widgetDict[_histWidgetName] = _histWidget  # the dock, not the widget ???
-        self._widgetDict[_histWidgetName].hide()  # hide histogram by default
+        # abb removed 20241118
+        # _histWidget = pymapmanager.interface2.stackWidgets.histogramWidget2.HistogramWidget(self)
+        # _histWidgetName = _histWidget._widgetName
+        # _histDock = self._addDockWidget(_histWidget, 'bottom', 'Histogram')
+        # self._widgetDict[_histWidgetName] = _histWidget  # the dock, not the widget ???
+        # self._widgetDict[_histWidgetName].hide()  # hide histogram by default
 
         #
         # plugin panel with tabs
-        self.pluginDock1 = stackPluginDock(self)
+        self.pluginDock1 = StackPluginDock(self)
         self.addDockWidget(QtCore.Qt.RightDockWidgetArea, self.pluginDock1.getPluginDock())
         pluginDockName = "Plugin Dock"
         self._widgetDict[pluginDockName] = self.pluginDock1  # the dock
@@ -1053,7 +1035,7 @@ class stackWidget2(mmWidget2):
             logger.info(f"channelIdx, {channelIdx}")
             # Channel index = actual index of channel  (0,1,2)
             # channel number = number shown to user (1,2,3)
-            minAutoContrast, maxAutoContrast = self._stack.getAutoContrast(channel=channelIdx)
+            minAutoContrast, maxAutoContrast = self._stack.getAutoContrast(channelIdx=channelIdx)
             #   self._contrastDict[channelNumber]
             self._contrastDict[channelIdx] = { # abj: 10/15/24 - changed from channelNumber to channelIdx
                 'channel': channelNumber,

@@ -18,27 +18,10 @@ from pymapmanager.interface2.stackWidgets.event.segmentEvent import (
     AddSegmentPoint, SetSegmentPivot
 )
 
-from .mmWidget2 import mmWidget2, pmmEventType, pmmEvent, pmmStates
-from .annotationPlotWidget2 import pointPlotWidget, linePlotWidget
+from pymapmanager.interface2.stackWidgets.base.mmWidget2 import mmWidget2, pmmEventType, pmmEvent, pmmStates
+from .base.annotationPlotWidget2 import pointPlotWidget, linePlotWidget
 
 from pymapmanager._logger import logger
-
-# class stackWidgetState(enum.Enum):
-#     """
-#     Enum to encapsulate one widget state
-    
-#     baseState:
-#         The base/default state.
-#     movePointState:
-#         The user is moving a point (spine for now)
-#             Next mouse click will specify new position (z,y,x)
-#     connectSpineState:
-#         The user is selecting a manual connection point (on the line)
-#             Next mouse click (on the line) will specify the connectionIdx
-#     """
-#     baseState = "stateBase"
-#     movePointState = "movePointState"
-#     connectSpineState = "connectSpineState"
 
 class ImagePlotWidget(mmWidget2):
     """A plot widget (pg.PlotWidget) to plot
@@ -49,7 +32,7 @@ class ImagePlotWidget(mmWidget2):
         - wheel event (wheelEvent)
         - key press event (keyPressEvent)
     """
-    _widgetName = 'image plot'
+    _widgetName = 'Image Viewer'
     # Name of the widget (must be unique)
 
     signalUpdateSlice = QtCore.Signal(object) # (int) : slice number
@@ -585,7 +568,6 @@ class ImagePlotWidget(mmWidget2):
     def _setContrast(self):
         # rgb
         if self._channelIsRGB():
-            logger.warning('implement this')
             tmpLevelList = []  # list of [min,max]
             for channelIdx in range(self._myStack.numChannels):
                 # channelNumber = channelIdx + 1
@@ -594,8 +576,9 @@ class ImagePlotWidget(mmWidget2):
                 oneMaxContrast = self._contrastDict[channelNumber]['maxContrast']
 
                 # convert to [0..255]
-                bitDepth = self._myStack.header['bitDepth']
-                maxInt = 2**bitDepth
+                #bitDepth = self._myStack.header['bitDepth']
+                #maxInt = 2**bitDepth
+                maxInt = 2**8  # rgb has bit depth of 8 per color channel
                 oneMinContrast = int(oneMinContrast / maxInt * 255)
                 oneMaxContrast = int(oneMaxContrast / maxInt * 255)
 

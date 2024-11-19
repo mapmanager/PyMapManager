@@ -26,7 +26,14 @@ class PyMapManagerMenus:
         return self._app
 
     def _buildMenus(self, mainMenu, mainWindow):
-        
+        """
+        Parameters
+        ----------
+        mainMenu : QtWidgets.QMenuBar
+            Usually the menubar of the QMainWindow
+        mainWindow : QtWidgets.QMainMenu
+            Owner/parent of the mainMenu
+        """
         #
         # file
         self.fileMenu = mainMenu.addMenu("&File")

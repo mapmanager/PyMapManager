@@ -1,6 +1,6 @@
 from typing import List, TypedDict, Self
 
-from pymapmanager.interface2.stackWidgets.mmWidget2 import (
+from pymapmanager.interface2.stackWidgets.base.mmWidget2 import (
     mmWidget2, pmmEvent, pmmEventType)
 
 from pymapmanager._logger import logger

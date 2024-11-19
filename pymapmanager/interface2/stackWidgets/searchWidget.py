@@ -1,10 +1,9 @@
 
 from qtpy import QtGui, QtCore, QtWidgets
 
-import pymapmanager.annotations
+# import pymapmanager.annotations
 
-from .mmWidget2 import mmWidget2
-
+from pymapmanager.interface2.stackWidgets.base.mmWidget2 import mmWidget2
 from pymapmanager.interface2.core.search_widget import myQTableView
 
 from pymapmanager._logger import logger

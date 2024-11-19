@@ -1,14 +1,11 @@
 import copy
 from functools import partial
-import json
 import math
-from pymapmanager._logger import logger
-from qtpy import QtGui, QtCore, QtWidgets
-# from pymapmanager import AnalysisParams
+from qtpy import QtCore, QtWidgets
 import pymapmanager
-from pymapmanager.interface2.stackWidgets.mmWidget2  import mmWidget2, pmmEventType, pmmEvent, pmmStates
-# from pymapmanager.interface2.stackWidgets.event.spineEvent import DeleteSpineEvent, EditSpinePropertyEvent
+from pymapmanager.interface2.stackWidgets.base.mmWidget2  import mmWidget2, pmmEventType, pmmEvent, pmmStates
 from pymapmanager.interface2.stackWidgets import stackWidget2
+from pymapmanager._logger import logger
 
 class AnalysisParamWidget(mmWidget2):
 

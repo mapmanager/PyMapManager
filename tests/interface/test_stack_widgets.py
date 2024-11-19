@@ -8,13 +8,12 @@ from pymapmanager.interface2.pyMapManagerApp2 import PyMapManagerApp
 from pymapmanager.interface2.stackWidgets import stackWidget2
 
 from pymapmanager._logger import logger
-# from pymapmanager.interface2.stackWidgets.event.spineEvent import AddSpineEvent, MoveSpineEvent, SelectSpine
 from pymapmanager.interface2.stackWidgets.event.spineEvent import (AddSpineEvent,
                                                                    DeleteSpineEvent,
                                                                    MoveSpineEvent,
                                                                    UndoSpineEvent,
                                                                    SelectSpine)
-from pymapmanager.interface2.stackWidgets.mmWidget2 import pmmEvent, pmmEventType
+from pymapmanager.interface2.stackWidgets.base.mmWidget2 import pmmEvent, pmmEventType
 
 
 # Make sure each stack widget will open when 

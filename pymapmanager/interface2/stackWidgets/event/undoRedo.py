@@ -1,7 +1,7 @@
 from typing import List, Union, Optional
 
 # from pymapmanager.interface2.stackWidgets import stackWidget2
-from pymapmanager.interface2.stackWidgets.mmWidget2 import pmmEvent, pmmEventType
+from pymapmanager.interface2.stackWidgets.base.mmWidget2 import pmmEvent, pmmEventType
 # from pymapmanager.interface2.stackWidgets.event.spineEvent import (AddSpineEvent,
 #                                                                    DeleteSpineEvent,
 #                                                                    MoveSpineEvent,

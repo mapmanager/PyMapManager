@@ -3,11 +3,11 @@ from functools import partial
 
 from qtpy import QtCore, QtWidgets
 
-from pymapmanager._logger import logger
-
-from .mmWidget2 import mmWidget2
+from .base.mmWidget2 import mmWidget2
 from .event.spineEvent import  EditSpinePropertyEvent
 from .stackWidget2 import stackWidget2
+
+from pymapmanager._logger import logger
 
 """
 To add a new display value, like spineLength (not editable)

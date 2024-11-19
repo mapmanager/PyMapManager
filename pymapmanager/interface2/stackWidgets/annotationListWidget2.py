@@ -16,7 +16,7 @@ import pymapmanager.annotations
 from pymapmanager.interface2.core.search_widget import myQTableView
 from pymapmanager.interface2.core._data_model import pandasModel
 
-from pymapmanager.interface2.stackWidgets.mmWidget2  import mmWidget2, pmmEventType, pmmEvent, pmmStates
+from pymapmanager.interface2.stackWidgets.base.mmWidget2  import mmWidget2, pmmEventType, pmmEvent, pmmStates
 
 from pymapmanager.interface2.stackWidgets.event.spineEvent import DeleteSpineEvent
 from pymapmanager.interface2.stackWidgets.event.segmentEvent import AddSegmentEvent, DeleteSegmentEvent
@@ -308,7 +308,7 @@ class pointListWidget(annotationListWidget):
 
 class lineListWidget(annotationListWidget):
 
-    _widgetName = 'Line List'
+    _widgetName = 'Segment List'
 
     def __init__(self, stackWidget : stackWidget2):
         annotations = stackWidget.getStack().getLineAnnotations()
@@ -454,7 +454,7 @@ class lineListWidget(annotationListWidget):
         # aLabel = QtWidgets.QLabel(self._title)
         #vControlLayout.addWidget(aLabel)
 
-        from pymapmanager.interface2.stackWidgets import TracingWidget
+        from pymapmanager.interface2.stackWidgets.tracingWidget import TracingWidget
         self.tracingWidget = TracingWidget(self.getStackWidget())
         self.tracingWidget.signalRadiusChanged.connect(self.updateSegmentRadius)
         vControlLayout.addWidget( self.tracingWidget, alignment=QtCore.Qt.AlignTop)

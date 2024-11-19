@@ -5,24 +5,13 @@ Can display according to spine length, angle
 Always displays spine side (left/ right) and each segment individually
 """
 
-import sys
-from typing import List, Optional
-
-import matplotlib as mpl
-from matplotlib.backends import backend_qt5agg
-import numpy as np
-import pandas as pd
-from qtpy import QtGui, QtCore, QtWidgets
+from qtpy import QtGui, QtWidgets
 
 from pymapmanager._logger import logger
 
-import pymapmanager.annotations
-
-# from pymapmanager.interface2.core.scatter_plot_widget import ScatterPlotWidget
 from pymapmanager.interface2.core.dendrogram_widget import DendrogramPlotWidget
-# from pymapmanager.interface2.core._data_model import pandasModel
 
-from pymapmanager.interface2.stackWidgets.mmWidget2  import mmWidget2, pmmEventType, pmmEvent, pmmStates
+from pymapmanager.interface2.stackWidgets.base.mmWidget2  import mmWidget2, pmmEventType, pmmEvent
 from pymapmanager.interface2.stackWidgets.event.spineEvent import DeleteSpineEvent, EditSpinePropertyEvent
 import pyqtgraph as pg
 

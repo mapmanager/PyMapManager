@@ -10,8 +10,7 @@ import matplotlib.pyplot as plt
 
 from qtpy import QtCore, QtWidgets
 
-from pymapmanager.interface2.stackWidgets import mmWidget2
-# from pymapmanager.interface2.stackWidgets.mmWidget2 import pmmEventType, pmmEvent
+from pymapmanager.interface2.stackWidgets.base.mmWidget2 import mmWidget2
 
 from .mmMapPlot_mpl import getPlotDict_mpl, mmMapPlot_mpl
 
