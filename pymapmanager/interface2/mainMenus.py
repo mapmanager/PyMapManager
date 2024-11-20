@@ -222,10 +222,12 @@ class PyMapManagerMenus:
             # triggers except (AttributeError) when front window is not a stackWidget2
             pluginWidgetDict = activeWindow.getOpenPluginDict()
 
-            for _pluginID, (_pluginName, _pluginObj) in pluginWidgetDict.items():
+            # for _pluginID, (_pluginName, _pluginObj) in pluginWidgetDict.items():
+            for pluginKey, _pluginObj in pluginWidgetDict.items():
+                (_pluginName, _pluginID) = pluginKey
                 logger.info(f'adding "{_pluginName}" to window menu')
-                action = QtWidgets.QAction(_pluginName, self.getApp(), checkable=True)
-                action.triggered.connect(partial(self._onActivePluginAction, _pluginID))
+                action = QtWidgets.QAction(_pluginName + " " + str(_pluginID), self.getApp(), checkable=True)
+                action.triggered.connect(partial(self._onActivePluginAction, pluginKey))
                 self.windowsMenu.addAction(action)
 
     def _onOpenFirstMenuAction(self):
@@ -258,14 +260,14 @@ class PyMapManagerMenus:
         else:
             logger.warning(f'did not understand {pluginName} {mapOrStack} with window type {windowType}')
 
-    def _onActivePluginAction(self, pluginID):
+    def _onActivePluginAction(self, pluginKey):
         """ Bring plugin to the front
         """
         windowType = self.getApp().getFrontWindowType()
         activeWindow = self.getApp().activeWindow()  # can be 0
 
         # assume it is a stackWidget window
-        activeWindow.raisePluginWidget(pluginID)
+        activeWindow.raisePluginWidget(pluginKey)
 
     def _onWindowsMenuAction(self, name):
         logger.info(f'{name}')

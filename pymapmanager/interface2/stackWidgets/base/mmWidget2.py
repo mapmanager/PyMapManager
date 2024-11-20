@@ -1125,16 +1125,15 @@ class mmWidget2(QtWidgets.QMainWindow):
         # elif event.key() in [QtCore.Qt.Key_Delete, QtCore.Qt.Key_Backspace]:
         #     self._deleteSelection()
 
-    # TODO: close event
     def closeEvent(self, event : QtGui.QKeyEvent):
-
-        # get unique identifier?
-
-        logger.info(f"closing plugin: {self._widgetName} with id: {self._id}")
+        # logger.info(f"closing plugin: {self._widgetName} with id: {self._id}")
         # remove widget from parent stackWidget dictionary
         try:
-            self._stackWidget.closePluginInDict(pluginId = self._id)
-        except Exception as error:
+            # self._stackWidget.closePluginInDict(pluginId = self._id)
+            # check for value in dictionary and delete/pop
+            self._stackWidget.closePluginInDict(self)
+
+        except Exception as error: # Note: this will catch error for dock plugins that arent being stored in dict
             logger.info(f"error: {error}")
 
     def getID(self):
