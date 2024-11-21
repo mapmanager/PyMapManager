@@ -24,8 +24,16 @@ class MainWindow(mmWidget2):
                          mapWidget=mapWidget,
                          iAmStackWidget=iAmStackWidget,
                          iAmMapWidget=iAmMapWidget)
-        
+
+        self.statusBar = QtWidgets.QStatusBar()
+        self.setStatusBar(self.statusBar)
+
         self._buildMenus()
+
+        self.setStatus('Ready')
+
+    def setStatus(self, txt : str):
+        self.statusBar.showMessage(txt)
 
     def _buildMenus(self):
         # close

@@ -146,7 +146,11 @@ class TimeSeriesCore():
         # self._segmentCore = SegmentsCore(self, self._fullMap)
 
         # every mutation sets to True
-        self._isDirty = False
+
+        if _ext == '.tif':
+            self._isDirty = True
+        else:
+            self._isDirty = False
 
         self._undoRedoManager = UndoRedoManager()
 

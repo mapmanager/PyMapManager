@@ -549,12 +549,16 @@ class myQTableView(QtWidgets.QTableView):
     def getSelectedRows(self):
         
         # Don't use params, use self.selectedIndexes()
-        selectedIndexes = [self.proxyModel.mapToSource(modelIndex).row()
+        selectedRows = [self.proxyModel.mapToSource(modelIndex).row()
                             for modelIndex in self.selectedIndexes()]
-        
+
         # reduce to list of unique values (selected indices are often repeated?)
-        selectedIndexes = list(set(selectedIndexes))
+        selectedRows = list(set(selectedRows))
         
+        selectedIndexes = []
+        for selectedRow in selectedRows:
+            selectedIndexes.append(self.df.index[selectedRow])
+
         return selectedIndexes
     
         # indexes = []
@@ -599,15 +603,20 @@ class myQTableView(QtWidgets.QTableView):
         isAlt = modifiers == QtCore.Qt.AltModifier
         
         # Don't use `item` param, use self.selectedIndexes()
-        selectedIndexes = [self.proxyModel.mapToSource(modelIndex).row()
+        
+        selectedRows = [self.proxyModel.mapToSource(modelIndex).row()
                             for modelIndex in self.selectedIndexes()]
         
         # reduce to list of unique values (selected indices are often repeated?)
-        selectedIndexes = list(set(selectedIndexes))
+        selectedRows = list(set(selectedRows))
 
-        # logger.info(f'-->> "{self.getMyName()}" signalSelectionChanged.emit selectedIndexes:{selectedIndexes} isAlt:{isAlt}')
+        mapSelectedIndexes = []
+        for selectedRow in selectedRows:
+            mapSelectedIndexes.append(self.df.index[selectedRow])
 
-        self.signalSelectionChanged.emit(selectedIndexes, isAlt)
+        logger.info(f'-->> "{self.getMyName()}" signalSelectionChanged.emit mapSelectedIndexes:{mapSelectedIndexes} isAlt:{isAlt}')
+
+        self.signalSelectionChanged.emit(mapSelectedIndexes, isAlt)
 
     def on_double_clicked(self, item):
         """Respond to user double click.

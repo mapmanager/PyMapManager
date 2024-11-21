@@ -125,11 +125,21 @@ class OpenFirstWindow(MainWindow):
         path = self.recentMapDictList[rowIdx]["Path"]
         logger.info(f'rowId:{rowIdx} path:{path}')
 
-        if os.path.isdir(path): # abj (10/14/24) - using directory mmap moving forward
-        # if os.path.isfile(path):
-            self.getApp().loadStackWidget(path)
+        # abj (10/14/24) - using directory mmap moving forward
+        # abb we open both zip and folder zarr!
+        if os.path.isdir(path) or os.path.isfile(path):
+            _aWidget = self.getApp().loadStackWidget(path)
+            if _aWidget is None:
+                _statusStr = f'error opening path: {path}'
+                logger.error(_statusStr)
+            else:
+                _statusStr = f'loaded path: {path}'
+
         else:
-            logger.error(f'did not find dir path: {path}')
+            _statusStr = f'did not find path: {path}'
+            logger.error(_errStr)
+        
+        self.setStatus(_statusStr)
 
     def _on_open_button_click(self, name : str):
         logger.info(name)

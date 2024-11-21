@@ -66,10 +66,13 @@ def loadPlugins(pluginType : str, verbose = False) -> dict:
     if pluginType == 'stack':
         members = inspect.getmembers(pymapmanager.interface2.stackWidgets)
         _rootModuleStr = "pymapmanager.interface2.stackWidgets."
-    else:
+    elif pluginType == 'map':
         members = inspect.getmembers(pymapmanager.interface2.mapWidgets)
         _rootModuleStr = "pymapmanager.interface2.mapWidgets."
-
+    else:
+        logger.error(f'did not understand pluginType:"{pluginType}"')
+        return {}
+    
     for moduleName, obj in members:
         # logger.info(f'moduleName:{moduleName} obj:{obj}')
         if inspect.isclass(obj):
@@ -152,6 +155,7 @@ class OpenWidgetList:
         """
         if path not in self._widgetDictList.keys():
             logger.info(f'loading widget path:{path}')
+            
             # open timeseries core
             _timeSeriesCore = TimeSeriesCore(path)
         
@@ -174,18 +178,22 @@ class OpenWidgetList:
             self._app.closeFirstWindow()
 
             self._widgetDictList[path] = _aWidget
-
-        # add to recent opened maps
-        # self._app.getConfigDict().addMapPath(path)
-
-        logger.info(f"numTimepoints {numTimepoints}")
-        lastSaveTime = _timeSeriesCore.getLastSaveTime()
-        # abj:
-        pathDict = {"Path": path,
-                    "Last Save Time": str(lastSaveTime), # needs to be updated
-                    "Timepoints": str(numTimepoints)}
         
-        self._app.getConfigDict().addMapPathDict(pathDict)
+        # both stack and map widgets share some API
+        stackOrMapWidget = self._widgetDictList[path]
+        stackOrMapWidget.show()  # bring to front
+        _timeSeriesCore = stackOrMapWidget.getTimeSeriesCore()
+
+        # TODO: do not add if path was .tif (.tif open as Untitled and requires user to save)
+        if path.endswith('.tif'):
+            pass
+        else:
+            numTimepoints = _timeSeriesCore.numSessions
+            lastSaveTime = _timeSeriesCore.getLastSaveTime()
+            pathDict = {"Path": path,
+                        "Last Save Time": str(lastSaveTime), # needs to be updated
+                        "Timepoints": str(numTimepoints)}
+            self._app.getConfigDict().addMapPathDict(pathDict)
 
         return self._widgetDictList[path]
 
@@ -593,11 +601,11 @@ class PyMapManagerApp(QtWidgets.QApplication):
             _ext = os.path.splitext(openFilePath)[1]
             window = self.activeWindow() 
             if openFilePath == "":
-                logger.info(f"error: openFilePath is None/ Empty")
+                logger.warning("openFilePath is Empty")
                 # QtWidgets.QMessageBox.critical(window, "Error", "File Path is Empty")
                 return
             elif _ext != '.mmap': # could make this into a for loop until user inputs .mmap
-                logger.info(f"error: incorrect directory type, must be of extension: (.mmap)") 
+                logger.warning(f"incorrect directory type, must be of extension: (.mmap)") 
                 QtWidgets.QMessageBox.critical(window, "Error", "Incorrect directory type, must be of extension: (.mmap)")
                 return
             

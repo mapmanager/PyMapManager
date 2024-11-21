@@ -18,7 +18,7 @@ def run():
     # a single timepoint tif file
     # error in images
     # IndexError: index -2 is out of bounds for axis 0 with size 1
-    # path = mapmanagercore.data.getTiffChannel_1()
+    path = mapmanagercore.data.getTiffChannel_1()
 
     # map with segments and spines (no segments connected)
     # path = '/Users/cudmore/Desktop/multi_timepoint_map.mmap'
@@ -40,14 +40,13 @@ def run():
     # mw will be map widget if path has multiple timepoints, otherwise mw is a stackwidget2
     mw = app.loadStackWidget(path)
 
+    # delete a spine (like spine 1 or 2)
+
     # multi timepoint map
     # centerTimepoint = 2
     # plusMinusTimepoint = 1
     # spineID = 139
     # mw.openStackRun(centerTimepoint, plusMinusTimepoint, spineID=spineID)
-
-    # debug tracing plugin
-    # mw.runPlugin('Tracing', inDock=True)
 
     sys.exit(app.exec_())
 

@@ -91,6 +91,9 @@ class stackWidget2(mmWidget2):
         self._buildMenus()
         self.setContextMenuPolicy(QtCore.Qt.NoContextMenu) # abj - disabled hidden context menu
 
+    def getTimeSeriesCore(self):
+        return self._stack.getTimeSeriesCore()
+    
     @property
     def currentSliceNumber(self):
         """Get the current color channel index.
