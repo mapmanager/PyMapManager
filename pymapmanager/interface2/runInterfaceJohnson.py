@@ -63,7 +63,7 @@ def run():
 
     sys.exit(app.exec_())
 
-def run2():
+def run2_tif():
     app = PyMapManagerApp()
     path = '/Users/johns/Documents/GitHub/PyMapManager-Data/one-timepoint/rr30a_s0_ch1.tif'
     # path = '/Users/johns/Documents/GitHub/PyMapManager-Data/one-timepoint/rr30a_s0_ch1.mmap'
@@ -132,6 +132,17 @@ def testingOpenClose():
     # sw2.closePlugin('Spine Info', inDock=True)
     # sw2.runPlugin('Histogram', inDock=True)
 
+    # sw2.runPlugin('Spine Info', inDock=False)
+    # sw2.closePlugin(('Spine Info', 1))
+
+    # sw2.runPlugin('Spine Info', inDock=False)
+    # sw2.runPlugin('Spine Info', inDock=False)
+
+    sw2.runPlugin('Spine Info', inDock=True)
+    sw2.closePluginInDock('Spine Info')
+
+    sw2.runPlugin('Spine Info', inDock=True)
+
     sys.exit(app.exec_())
 
 def testingProgrammaticRunClose():
@@ -168,6 +179,7 @@ if __name__ == '__main__':
     # run4()
     # run5()
     # runFirstWindow()
-    # testingOpenClose()
+    testingOpenClose()
     # runPoochFileDirectly()
-    testingProgrammaticRunClose()
+    # testingProgrammaticRunClose()
+    # run2_tif()

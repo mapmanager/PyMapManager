@@ -116,8 +116,39 @@ class stackWidget2(mmWidget2):
         """
         logger.warning('NEED TO CHECK IF DIRTY AND PROMPT TO SAVE')
         
-        # logger.info(self.geometry())
-        
+        # logger.info(self.geometry())t
+        temp = len(self._openPluginDict)
+        logger.info(f"temp {temp}")
+
+        # check if openPluginDict is not empty
+        if len(self._openPluginDict) > 0:
+            # open warning before closing
+            # Create a message box
+            msg_box = QtWidgets.QMessageBox()
+
+            # Set the title and message
+            msg_box.setWindowTitle("Confirmation")
+            msg_box.setText("We are going to close all plugins. Do you want to continue?")
+
+            # Set the icon (optional)
+            msg_box.setIcon(QtWidgets.QMessageBox.Warning)  # or QMessageBox.Information, QMessageBox.Critical, etc.
+
+            # Set the buttons
+            msg_box.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+            msg_box.setDefaultButton(QtWidgets.QMessageBox.No)  # Set the default button
+            result = msg_box.exec_()
+            if result == QtWidgets.QMessageBox.Yes:
+                # User clicked Yes
+                print("User clicked Yes")
+                self._openPluginDict.clear() # clears dictionary and close all the plugins
+                pass # proceed to closing stackwindow
+            else:
+                # User clicked No or closed the dialog so we cancel the event
+                print("User clicked No or closed the dialog")
+                # prevent window from closing
+                event.ignore()
+                return
+
         if self.getMapWidgetParent() is not None:
             self.getMapWidgetParent().closeStackWindow(self)
             # self._disconnectFromMap()
@@ -289,6 +320,10 @@ class stackWidget2(mmWidget2):
             _lambda = lambda val, name=_name: self._toggleWidget(name, val)
             aAction.triggered.connect(_lambda)
             viewMenu.addAction(aAction)
+    
+    def createDockPlugin(self, pluginName: str, show: bool = True):
+        humanName, newPlugin, pluginNumber = self.createAndShowNewPlugin(pluginName)
+        return humanName, newPlugin
 
     def runPlugin(self, pluginName: str, show: bool = True, inDock=False):
         """Run one stack plugin.
@@ -306,25 +341,41 @@ class stackWidget2(mmWidget2):
             return
         
         if inDock:
-            pluginID = self.pluginDock1.runPlugin_inDock(pluginName)
-            return pluginID
-
+            # pluginKey = 
+            self.pluginDock1.runPlugin_inDock(pluginName)
+            return
+            # return pluginKey
         # 
-        humanName, newPlugin = self.createAndShowNewPlugin(pluginName, show)
+        humanName, newPlugin, pluginNumber = self.createAndShowNewPlugin(pluginName, show)
 
         if not newPlugin.getInitError():
-            logger.info("here")
-            # self._openPluginSet.add(newPlugin)
+            # logger.info("here")
             # check to make sure plugin is not already stored
-            if humanName not in self._openPluginDict: # abj
-                logger.info("here 2")
-                pluginID = newPlugin.getID()
-                self._openPluginDict[pluginID] = humanName, newPlugin # key: plugin ID, val: obj
-                # self._openPluginDict[humanName] = newPlugin # key: human name, val: obj
-                logger.info(f"pluginID {pluginID}")
+            # if humanName not in self._openPluginDict: # abj
+                # logger.info("here 2")
+            pluginKey = (humanName, pluginNumber)
+            self._openPluginDict[pluginKey] = newPlugin
+            # logger.info(f"pluginID {pluginID}")
             logger.info(f"self._openPluginDict {self._openPluginDict}")
 
-            return pluginID
+            return pluginKey
+        
+    def getPluginWindowNumber(self, pluginName):
+        if not any(pluginName in keyTuple for keyTuple in self._openPluginDict):
+            pluginID = 1
+            # self._openPluginDict[(pluginName, pluginID)] = pluginName
+        else:
+            # get pluginID with the highest ID and increment by 1
+            currentID = 1
+            for key, val in self._openPluginDict.items():
+                logger.info(f"key {key}")
+                (name, id) = key
+                if name == pluginName:
+                    currentID = id
+
+            pluginID = currentID + 1
+
+        return pluginID
 
     def createAndShowNewPlugin(self, pluginName, show: bool = True):
         """ 
@@ -354,7 +405,11 @@ class stackWidget2(mmWidget2):
 
             logger.info(f'Running newPlugin: {newPlugin}')
 
+            # check if plugin has been run befor/ stored in dictionary
+            pluginNumber = self.getPluginWindowNumber(pluginName)
+
             if show:
+                newPlugin.setWindowTitle(humanName + " " + str(pluginNumber)) # Display plugin number
                 newPlugin.getWidget().show()
                 newPlugin.getWidget().setVisible(True)
                 newPlugin.raise_()  # abb, bring to front
@@ -362,10 +417,10 @@ class stackWidget2(mmWidget2):
                 newPlugin.getWidget().hide()
                 newPlugin.getWidget().setVisible(False)
 
-            return humanName, newPlugin
+            return humanName, newPlugin, pluginNumber
         
-    def raisePluginWidget(self, pluginID):
-        pluginName, pluginObj = self._openPluginDict[pluginID]
+    def raisePluginWidget(self, pluginKey):
+        pluginObj = self._openPluginDict[pluginKey]
         pluginObj.showNormal() # brings window back up if minimized
         # pluginObj.activateWindow() # Brings the window to the front of the desktop
         pluginObj.raise_() # brings window to the front of all windows
@@ -1090,16 +1145,25 @@ class stackWidget2(mmWidget2):
         if ext == ".mmap":
             self.getStack().save()
             self.setDirtyFalse()
-        elif ext == ".tif":
+        elif ext == ".tif": # users start with tif file, but must begin using .mmap after saving
             self.fileSaveAs()
         else:
             logger.info("Extension not understood, nothing is saved")
 
     def fileSaveAs(self):
         # ('C:/Users/johns/Documents/GitHub/MapManagerCore/data/test', 'All Files (*)')
+
+        # filter = "(*.mmap)"
         saveAsPath = QtWidgets.QFileDialog.getSaveFileName(None, 'Save File')[0]
         logger.info(f"name {saveAsPath}")
-        self.getStack().saveAs(saveAsPath)
+
+        ext = os.path.splitext(saveAsPath)[1]
+        if ext != '.mmap':
+            logger.error(f'map must have extension ".mmap", got "{ext}" -->> did not save.')
+            QtWidgets.QMessageBox.critical(self, "Error: Incorrect Extension", "Please use .mmap as the file extension to save")
+            return
+        else:
+            self.getStack().saveAs(saveAsPath)
 
     def getLastSaveTime(self):
         return self.getStack().getLastSaveTime()
@@ -1172,43 +1236,62 @@ class stackWidget2(mmWidget2):
         _pmmEvent.setSliceNumber(self._currentSliceNumber)
         self.emitEvent(_pmmEvent, blockSlots=True)
 
-    def closePlugin(self, pluginId):
+    def closePluginInDock(self, pluginName):
+        self.pluginDock1.closePlugin_inDock(pluginName)
+
+    def closePlugin(self, pluginKey: tuple):
         """
             Close one stack widget plugin such as spineInfoWidget
 
+        Intended for programmatic use and unit testing
+
         Args:
-            pluginName : str
-                Name of the plugin,, defined as static member vraible in mmWidget
+            pluginKey : tuple (plugin Name, id: numbered instance of plugin)
+                plugin Name: of the plugin, defined as static member vraible in mmWidget
             show: bool
                 If True then immediately show the widget
         """
         if self.getPyMapManagerApp() is None:
             return
         
-        pluginName, pluginObj = self._openPluginDict[pluginId]
-        pluginObj.getWidget().close() 
-        # self.closePluginInDict(pluginId)
+        pluginObj = self._openPluginDict[pluginKey]
+        # pluginObj.getWidget().close() 
+        self.closePluginInDict(pluginObj)
 
-    def closePluginInDict(self, pluginId):
-        """"""
-        logger.info(f"bluginId {pluginId}")
+    # def closePluginInDict(self, pluginId):
+    def closePluginInDict(self, pluginObj):
+        """ Delete the plugin obj that is passed in from openPluginDict
 
-        logger.info('  _openPluginDict:')
-        print(self._openPluginDict)
+        This function is called by closeEvent by all widgets and can be called programmatically.
+        """
+        logger.info(f"pluginObj {pluginObj}")
+
+        # logger.info('  _openPluginDict:')
+        # print(self._openPluginDict)
 
         # storedDict = self._openPluginDict
         # logger.info(f"storedDict {storedDict}")
         # run in separate window
         pluginDict = self.getPyMapManagerApp().getStackPluginDict()
 
-        pluginName, pluginObj = self._openPluginDict[pluginId]
+        # get key by checking value in pluginDict
+        # pluginKey = [i for i in pluginDict if pluginDict[i]==pluginObj]
+        keyList = list(self._openPluginDict.keys())
+        valList = list(self._openPluginDict.values())
+        # logger.info(f"valList {valList}")
+        position = valList.index(pluginObj)
+        pluginKey = keyList[position]
+        # logger.info(f"pluginKeyyyy {pluginKey}")
+        (pluginName, id) = pluginKey
+
+        # pluginName, pluginObj = self._openPluginDict[pluginId]
         if pluginName not in pluginDict.keys():
             logger.error(f'Did not find plugin: "{pluginName}"')
             return
         else:
             logger.info(f'Closing oldPlugin: {pluginObj}')
             # pluginObj.getWidget().close() 
-            self._openPluginDict.pop(pluginId) # remove plugin permanently
+            self._openPluginDict.pop((pluginName, id)) # remove plugin permanently
 
         logger.info('  after _openPluginDict:')
         print(self._openPluginDict)

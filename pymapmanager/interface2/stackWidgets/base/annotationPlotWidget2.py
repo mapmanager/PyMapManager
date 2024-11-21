@@ -1323,20 +1323,26 @@ class linePlotWidget(annotationPlotWidget):
         yRight = []
         _lineConnectLeft = None
         _lineConnectRight = None
-        if self.showRadiusLines:
+
+        zPlusMinus = self._displayOptions["zPlusMinus"]
+        dfLeft = self._annotations.getLeftRadiusPlot(sliceNumber, zPlusMinus)
+        dfRight = self._annotations.getRightRadiusPlot(sliceNumber, zPlusMinus)
+
+        if self.showRadiusLines and dfLeft is not None and dfRight is not None:
+        # if self.showRadiusLines:
             # logger.info("showing radius lines")
             # xLeft = self._dfPlot['xLeft'].to_numpy()
             # yLeft = self._dfPlot['yLeft'].to_numpy()
             # xRight = self._dfPlot['xRight'].to_numpy()
             # yRight = self._dfPlot['yRight'].to_numpy()
             zPlusMinus = self._displayOptions["zPlusMinus"]
-            dfLeft = self._annotations.getLeftRadiusPlot(sliceNumber, zPlusMinus)
+            # dfLeft = self._annotations.getLeftRadiusPlot(sliceNumber, zPlusMinus)
             if dfLeft is not None:
                 xLeft = dfLeft["x"].to_numpy()
                 yLeft = dfLeft["y"].to_numpy()
                 _lineConnectLeft = self.old_getScatterConnect(dfLeft)
             
-            dfRight = self._annotations.getRightRadiusPlot(sliceNumber, zPlusMinus)
+            # dfRight = self._annotations.getRightRadiusPlot(sliceNumber, zPlusMinus)
             if dfRight is not None:
                 xRight = dfRight["x"].to_numpy()
                 yRight = dfRight["y"].to_numpy()
