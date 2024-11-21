@@ -697,7 +697,8 @@ def main():
     
     This is an entry point specified in setup.py and used by PyInstaller.
     """
-    # logger.info('Starting PyMapManagerApp in main()')
+    logger.info('Starting PyMapManagerApp in main()')
+    
     app = PyMapManagerApp(sys.argv)
     sys.exit(app.exec_())
 

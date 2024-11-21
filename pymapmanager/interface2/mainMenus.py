@@ -411,25 +411,28 @@ class PyMapManagerMenus:
         isDirty = False
 
         frontWindow = self.getApp().getFrontWindow()
+
         if isinstance(frontWindow, stackWidget2):
             enableUndo = frontWindow.getUndoRedo().numUndo() > 0
             enableRedo = frontWindow.getUndoRedo().numRedo() > 0
             isDirty = frontWindow.getDirty()
             logger.info(f"isDirty: {isDirty}")
 
+        # save
         saveFileAction = QtWidgets.QAction("Save", self.getApp())
         saveFileAction.setCheckable(False)  # setChecked is True by default?
         saveFileAction.setShortcut("Ctrl+S")
         # saveFileAction.setEnabled(enableUndo and isDirty)
-        saveFileAction.setEnabled(isDirty and (enableUndo or enableRedo))
-
+        saveFileAction.setEnabled(isDirty)
         saveFileAction.triggered.connect(self.getApp().saveFile)
         self.fileMenu.addAction(saveFileAction)
         
+        # save as
         saveAsFileAction = QtWidgets.QAction("Save As", self.getApp())
         saveAsFileAction.setCheckable(False)  # setChecked is True by default?
         saveAsFileAction.triggered.connect(self.getApp().saveAsFile)
         self.fileMenu.addAction(saveAsFileAction)
+        
         self.fileMenu.addSeparator()
 
         # open recent (submenu) will show two lists, one for files and then one for folders
