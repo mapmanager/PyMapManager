@@ -9,7 +9,7 @@ from shapely import Point
 
 import pymapmanager.interface2
 import pymapmanager.interface2.stackWidgets
-import pymapmanager.interface2.stackWidgets.histogramWidget2
+# import pymapmanager.interface2.stackWidgets.histogramWidget2
 if TYPE_CHECKING:
     from pymapmanager.interface2 import PyMapManagerApp, AppDisplayOptions
 
@@ -83,12 +83,6 @@ class stackWidget2(mmWidget2):
         
         self._currentSliceNumber = 0
 
-        self._channelColor = ['g', 'r', 'b']
-        self._buildColorLut()
-        
-        # self._contrastDict = {}
-        self._setDefaultContrastDict()
-
         self._displayOptionsDict : pymapmanager.interface2.AppDisplayOptions = pymapmanager.interface2.AppDisplayOptions()
 
         self.setWindowTitle(self._stack.getFileName())
@@ -96,7 +90,20 @@ class stackWidget2(mmWidget2):
         self._buildUI()
         self._buildMenus()
         self.setContextMenuPolicy(QtCore.Qt.NoContextMenu) # abj - disabled hidden context menu
+
+    @property
+    def currentSliceNumber(self):
+        """Get the current color channel index.
+        """
+        # return self._widgetDict[self._imagePlotName]._displayThisChannelIdx
+        return self._currentSliceNumber
     
+    @property
+    def currentColorChannelIdx(self):
+        """Get the current color channel index.
+        """
+        return self._widgetDict[self._imagePlotName]._displayThisChannelIdx
+
     def getDisplayOptions(self) -> AppDisplayOptions:
         return self._displayOptionsDict
     
@@ -371,8 +378,8 @@ class stackWidget2(mmWidget2):
 
         # top toolbar
         topToobarName = 'Top Toolbar'
-        self._topToolbar = StackToolBar(self._stack, self._displayOptionsDict)
-        self._topToolbar.signalSlidingZChanged.connect(self.updateDisplayOptionsZ)
+        self._topToolbar = StackToolBar(self._stack, self._displayOptionsDict, parent=self)
+        self._topToolbar.signalSlidingZChanged.connect(self.updateDisplayOptionsZ)  # removed 20241119
         # self._topToolbar.signalRadiusChanged.connect(self.updateRadius)
         self._topToolbar.signalPlotCheckBoxChanged.connect(self.updatePlotBoxes)
         self.addToolBar(QtCore.Qt.TopToolBarArea, self._topToolbar)
@@ -443,6 +450,9 @@ class stackWidget2(mmWidget2):
         pluginDockName = "Plugin Dock"
         self._widgetDict[pluginDockName] = self.pluginDock1  # the dock
 
+        # set focus to image plot widget
+        self._widgetDict[imagePlotName].setFocus()
+
     def updateDisplayOptionsZ(self, d):
         """
             Update Z Plus Minus values within Display options whenever z slider is changed within 
@@ -456,7 +466,7 @@ class stackWidget2(mmWidget2):
                     'upDownSlices': upDownSlices,
                     }
         """
-        self._displayOptionsDict['windowState']['doSlidingZ'] = d['checked']
+        # self._displayOptionsDict['windowState']['doSlidingZ'] = d['checked']
         self._displayOptionsDict['windowState']['zPlusMinus'] = d["upDownSlices"]
         
         self._displayOptionsDict['pointDisplay']['zPlusMinus'] = d["upDownSlices"]
@@ -956,7 +966,6 @@ class stackWidget2(mmWidget2):
         """
         _pmmEvent = pmmEvent(pmmEventType.setColorChannel, self)
         _pmmEvent.setColorChannel(colorChannel)
-        # logger.info(f"set colorChannel {colorChannel}")
         self.emitEvent(_pmmEvent)
 
     def slot_setStatus(self, text : str):
@@ -964,89 +973,8 @@ class stackWidget2(mmWidget2):
         """
         self._statusToolbar.slot_setStatus(text)
 
-    def _buildColorLut(self):
-        """Build standard color lookup tables (LUT).
-        """
-        self._colorLutDict = {}
-
-        pos = np.array([0.0, 0.5, 1.0])
-        #
-        grayColor = np.array([[0,0,0,255], [128,128,128,255], [255,255,255,255]], dtype=np.ubyte)
-        map = pg.ColorMap(pos, grayColor)
-        lut = map.getLookupTable(0.0, 1.0, 256)
-        self._colorLutDict['gray'] = lut
-
-        grayColor_r = np.array([[255,255,255,255], [128,128,128,255], [0,0,0,255]], dtype=np.ubyte)
-        map = pg.ColorMap(pos, grayColor_r)
-        lut = map.getLookupTable(0.0, 1.0, 256)
-        self._colorLutDict['gray_r'] = lut
-
-        greenColor = np.array([[0,0,0,255], [0,128,0,255], [0,255,0,255]], dtype=np.ubyte)
-        map = pg.ColorMap(pos, greenColor)
-        lut = map.getLookupTable(0.0, 1.0, 256)
-        self._colorLutDict['green'] = lut
-        self._colorLutDict['g'] = lut
-
-        redColor = np.array([[0,0,0,255], [128,0,0,255], [255,0,0,255]], dtype=np.ubyte)
-        map = pg.ColorMap(pos, redColor)
-        lut = map.getLookupTable(0.0, 1.0, 256)
-        self._colorLutDict['red'] = lut
-        self._colorLutDict['r'] = lut
-
-        blueColor = np.array([[0,0,0,255], [0,0,128,255], [0,0,255,255]], dtype=np.ubyte)
-        map = pg.ColorMap(pos, blueColor)
-        lut = map.getLookupTable(0.0, 1.0, 256)
-        self._colorLutDict['blue'] = lut
-        self._colorLutDict['b'] = lut
-
-    def slot_contrastChanged(self, contrastDict):
-        self._widgetDict[self._imagePlotName].slot_setContrast(contrastDict)
-
-    def _setDefaultContrastDict(self):
-        """Remember contrast setting and color LUT for each channel.
-        """
-        # logger.info(f'num channels is: {self._stack.numChannels}')
-        self._contrastDict = {}
-        for channelIdx in range(self._stack.numChannels):
-            # logger.info(f"channelidx {channelIdx}")
-            # abb 20240721 not sure if is index or index  +1 
-            channelNumber = channelIdx + 1
-            # channelNumber = channelIdx - 1
-            # channelNumber = channelIdx
-
-            _defaultDisplayBitDepth = 11
-            
-            # logger.warning('removed on merge core 20240513')
-            # _stackData = self._stack.getImageChannel(channel=channelNumber)
-
-            # minStackIntensity = 0  # np.min(_stackData)
-            # maxStackIntensity = 2**_defaultDisplayBitDepth  # 2048  # np.max(_stackData)
-
-            # if minStackIntensity is None:
-            #     minStackIntensity = 0
-            # if maxStackIntensity is None:
-            #     maxStackIntensity = 255
-
-            # logger.warning('need to fix this when there is no image data')
-            # logger.info(f'  channel {channelIdx} minStackIntensity:{minStackIntensity} maxStackIntensity:{maxStackIntensity}')
-
-            # expensive, get once
-            # channelIdx = channelNumber
-            logger.info(f"channelIdx, {channelIdx}")
-            # Channel index = actual index of channel  (0,1,2)
-            # channel number = number shown to user (1,2,3)
-            minAutoContrast, maxAutoContrast = self._stack.getAutoContrast(channelIdx=channelIdx)
-            #   self._contrastDict[channelNumber]
-            self._contrastDict[channelIdx] = { # abj: 10/15/24 - changed from channelNumber to channelIdx
-                'channel': channelNumber,
-                'colorLUT': self._channelColor[channelIdx],
-                'minContrast': minAutoContrast,  # set by user
-                'maxContrast': maxAutoContrast,  # set by user
-                'minAutoContrast': minAutoContrast,
-                'maxAutoContrast': maxAutoContrast,
-                # 'bitDepth': self._stack.header['bitDepth']
-                'displayBitDepth': _defaultDisplayBitDepth
-            }
+    def slot_contrastChanged(self):
+        self._widgetDict[self._imagePlotName].slot_contrastChanged()
 
     def zoomToPointAnnotation(self,
                               idx : int,
@@ -1100,57 +1028,7 @@ class stackWidget2(mmWidget2):
         """
         self.move(left,top)
         self.resize(width, height)
-
-    # abj
-    def _old_acceptPoint(self, event):
-        """ Changes the value set in the isBad Column of the selected Spine Point
-        
-        """
-
-        logger.info("Now accepting point")
-        _stackSelection = self.getStackSelection()
-        # _stackSelection = event.getStackSelection()
-        
-        if not _stackSelection.hasPointSelection():
-            errStr = 'Did not Accept Point, need spine selection'
-            logger.error(errStr)
-            self.slot_setStatus(errStr)
-            return
-        
-        items = _stackSelection.getPointSelection()
-        spineIndex = items[0]
-
-        _pointAnnotations = self.getStack().getPointAnnotations()
-        # _lineAnnotations = self.getStack().getLineAnnotations()
-
-        # _pointAnnotations
-        currentIsBad = _pointAnnotations.getValue('isBad', spineIndex)
-
-        logger.info(f"CurrentIsBad {currentIsBad}")
-        logger.info(f"Type of CurrentIsBad {type(currentIsBad)}")
-        logger.info(f"Type of CurrentIsBad {currentIsBad == np.nan}")
-        if currentIsBad is False:
-            newIsBad = True
-        else:
-            newIsBad = False
-        # newIsBad = not currentIsBad
-
-        logger.info(f"newIsBad {newIsBad}")
-        _pointAnnotations.setValue('isBad', spineIndex, newIsBad)
-        
-        newEvent = pmmEvent(pmmEventType.selection, self)
-        newEvent.getStackSelection().setPointSelection(items)
-
-        sliceNum = self.getStack().getPointAnnotations().getValue("z", spineIndex)
-        logger.info(f"accept Point sliceNum {sliceNum}")
-        newEvent.setSliceNumber(sliceNum)
-
-        self._afterEdit(newEvent)
-
-    # 20240904 moved to pmmWidget2
-    def _old_getUndoRedo(self):
-        return self._undoRedo
-        
+     
     def undoEvent(self, event : UndoSpineEvent):
 
         logger.warning('=== ===   STACK WIDGET PERFORMING Undo   === ===')

@@ -117,13 +117,13 @@ def getUserAnalysisParamJsonData():
     readFile = open(_dstPath)
 
     if not os.path.exists(_dstPath):
-        logger.info(f"Could not find path {_dstPath}")
+        logger.warning(f"Could not find path {_dstPath}")
     else:
         try:
             jsonString = json.load(readFile)
             jsonDict = json.loads(jsonString)
-        except:
-            logger.info("error loading in user json")
+        except (json.JSONDecodeError) as e:
+            logger.error(f'error loading in user json: {e}')
 
         # logger.info(f"jsonDict {jsonDict}")
         return jsonDict

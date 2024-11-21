@@ -1,3 +1,5 @@
+from functools import partial
+
 from qtpy import QtGui, QtCore, QtWidgets
 
 # from pymapmanager.stack import stack
@@ -61,52 +63,59 @@ class StackToolBar(QtWidgets.QToolBar):
             The stack to dislpay in the widget
         """
         self._myStack = theStack
-        
-        numChannels = self._myStack.numChannels
 
-        # toogle toolbar actions
-        for action in self._actionList:
-            actionName = action.statusTip()  # like '1', '2', '3', 'rgb'
-            action.setVisible(True)
-            if actionName == '1' and numChannels == 1:
-                action.setVisible(False)
-            if actionName == '2' and numChannels < 2:
-                action.setVisible(False)
-            if actionName == '3' and numChannels < 3:
-                action.setVisible(False)
-            if actionName == 'rgb' and numChannels < 2:
-                action.setVisible(False)
+        # all disabled and hidden
+        for actionKey, actionWidget in self._actionDict.items():
+            actionWidget.setDisabled(True)
+            actionWidget.setVisible(False)
+
+        for channelIdx in range(self._myStack.numChannels):
+            self._actionDict[channelIdx].setDisabled(False)
+            self._actionDict[channelIdx].setVisible(True)
+        
+        if self._myStack.numChannels > 1:
+            self._actionDict['rgb'].setDisabled(False)
+            self._actionDict['rgb'].setVisible(True)
 
         self.slidingUpDown.setMaximum(self._myStack.numSlices)
 
-    def _on_channel_callback(self, checked, index):
+    def _on_channel_callback(self, toolNameStr : str, checked : bool):
         """
         this REQUIRES a list of actions, self.tooList
         """
-        # logger.info(f'checked:{checked} index:{index}')
+        logger.info(f'checked:{checked} toolNameStr:{toolNameStr} {type(toolNameStr)}')
         
-        action = self._actionList[index]
-        actionName = action.statusTip()
-        isChecked = action.isChecked()
-        
-        logger.info(f'actionName:"{actionName}" isChecked:{isChecked}')
-
-        if actionName in self._channelList:
-            # channel 1,2,3
-            channel = int(actionName)
+        if toolNameStr in ['1', '2', '3']:
+            channelIdx = int(toolNameStr) - 1
         else:
-            # rgb
-            channel = actionName
+            channelIdx = toolNameStr  # rgb
+    
+        logger.info(f'   -->> channelIdx:{channelIdx}')
+
+        # action = self._actionList[index]
+        # # actionName = action.statusTip()
+        # actionName = action.text()  # like '1', '2', '3', 'rgb'
+        # isChecked = action.isChecked()
+        
+        # logger.info(f'actionName:"{actionName}" isChecked:{isChecked} index:{index}')
+
+        # if actionName in self._channelList:
+        #     # channel 1,2,3
+        #     channelNumber = int(actionName)
+        #     channelIdx = channelNumber - 1
+        # else:
+        #     # rgb
+        #     channelIdx = actionName
 
         # logger.info(f"actionName {actionName}")
         # logger.info(f"channel emit {channel}")
 
         # getting sloppy
-        self.slot_setChannel(channel)
+        self.slot_setChannel(channelIdx)
 
-        self.signalChannelChange.emit(channel)  # channel can be 'rgb'
+        self.signalChannelChange.emit(channelIdx)  # channel can be 'rgb'
 
-    def _on_slidingz_checkbox(self, state):
+    def _old_on_slidingz_checkbox(self, state):
         checked = state == 2
         upDownSlices = self.slidingUpDown.value()
         
@@ -137,98 +146,84 @@ class StackToolBar(QtWidgets.QToolBar):
     #     self.signalRadiusChanged.emit(value)
 
     def _on_slidingz_value_changed(self, value):
-        checked = self.slidingCheckbox.isChecked()
+        # checked = self.slidingCheckbox.isChecked()
         upDownSlices = value
         d = {
-            'checked': checked,
+            # 'checked': checked,
             'upDownSlices': upDownSlices,
         }
         self.signalSlidingZChanged.emit(d)
 
-    def slot_setChannel(self, channel):
+    def slot_setChannel(self, channelIdx):
         """Turn on button for slected channel.
         
         These are a disjoint list, only one can be active. Others automatically disable.
         """
-        logger.info(f'bTopToolbar channel:{channel}')
-        if channel == 'rgb':
-            channelIdx = 3
-            # channelIdx = 2 # abj
-        else:
-            channelIdx = channel - 1
-            # channelIdx = channel # abj
-
+        logger.info(f'channelIdx:{channelIdx} {type(channelIdx)}')
+        
         # turn off sliding z
-        slidingEnabled = channel != 'rgb'
-        logger.info(f'  slidingEnabled:{slidingEnabled}')
-        self.slidingUpDown.setEnabled(slidingEnabled)
-        self.slidingCheckbox.setEnabled(slidingEnabled)
-        #self.colorPopup.setEnabled(slidingEnabled)
-        # logger.info(f'channelIdx:{channelIdx}')
-        action = self._actionList[channelIdx]
-        action.setChecked(True)
+        # slidingEnabled = channelIdx != 'rgb'
+        # self.slidingCheckbox.setEnabled(slidingEnabled)
+        # self.slidingUpDown.setEnabled(slidingEnabled)
+
+        # activate one action in [1, 2, 3, rgb]
+        self._actionDict[channelIdx].setChecked(True)
 
     def _buildUI(self):
+        # see: https://stackoverflow.com/questions/45511056/pyqt-how-to-make-a-toolbar-button-appeared-as-pressed
         _defaultChannel = self._displayOptionsDict['windowState']['defaultChannel']
+
+        self._actionDict = {}
 
         # make ['1', '2', '3', 'rgb'] disjoint selections
         self.channelActionGroup = QtWidgets.QActionGroup(self)
 
-        self._actionList = []
-        _channelList = ['1', '2', '3', 'rgb']
-        toolIndex = 0
-        for toolName in _channelList:
+        for channelIdx in range(self._myStack.maxNumChannels):
             iconPath = ''  # use toolName to get from canvas.util
             theIcon = QtGui.QIcon(iconPath)
 
-            # see: https://stackoverflow.com/questions/45511056/pyqt-how-to-make-a-toolbar-button-appeared-as-pressed
-            theAction = QtWidgets.QAction(theIcon, toolName)
+            toolNameStr = str(channelIdx + 1)
+            
+            theAction = QtWidgets.QAction(theIcon, toolNameStr)
             theAction.setCheckable(True)
-            if toolName == str(_defaultChannel):
+            if toolNameStr == str(_defaultChannel):
                 theAction.setChecked(True)
-            theAction.setStatusTip(toolName) # USED BY CALLBACK, do not change
-            if toolName in ['1', '2', '3']:
-                # do not set shortcut, handled by main stack widget
-                #theAction.setShortcut('1')# or 'Ctrl+r' or '&r' for alt+r
-                theAction.setToolTip(f'View Channel {toolName} [{toolName}]')
-            elif toolName == 'rgb':
-                theAction.setToolTip('View RGB')
+            # do not set shortcut, handled by main stack widget
+            #theAction.setShortcut('1')# or 'Ctrl+r' or '&r' for alt+r
+            theAction.setToolTip(f'View Channel {toolNameStr}')
 
-            theAction.triggered.connect(lambda checked, index=toolIndex: self._on_channel_callback(checked, index))
+            theAction.triggered.connect(partial(self._on_channel_callback, toolNameStr))
 
             # add action
-            self._actionList.append(theAction)
             self.addAction(theAction)
             self.channelActionGroup.addAction(theAction)
+            self._actionDict[channelIdx] = theAction
 
-            #logger.info('TODO: implement slot_setStack(theStack) to show/hide based on channels')
-            # if toolIndex==1:
-                # theAction.setVisible(False)
-
-            toolIndex += 1
         #
-        self.slidingCheckbox = QtWidgets.QCheckBox('Sliding Z')
-        self.slidingCheckbox.stateChanged.connect(self._on_slidingz_checkbox)
-        self.addWidget(self.slidingCheckbox)
+        toolNameStr = 'rgb'
+        theAction = QtWidgets.QAction(theIcon, toolNameStr)
+        theAction.setCheckable(True)
+        theAction.setToolTip(f'View Channel {toolNameStr}')
+        theAction.triggered.connect(partial(self._on_channel_callback, toolNameStr))
+        # add action
+        self.addAction(theAction)
+        self.channelActionGroup.addAction(theAction)
+        self._actionDict[toolNameStr] = theAction
 
-        self.slidingUpDownLabel = QtWidgets.QLabel('+/-')
+        #
+        # abb 20241119, we are always in sliding z, 0 will just be one image plane
+        # self.slidingCheckbox = QtWidgets.QCheckBox('Sliding Z')
+        # self.slidingCheckbox.stateChanged.connect(self._on_slidingz_checkbox)
+        # self.addWidget(self.slidingCheckbox)
+
+        self.slidingUpDownLabel = QtWidgets.QLabel('+/- Images')
         self.slidingUpDown = QtWidgets.QSpinBox()
         self.slidingUpDown.setMaximum(self._myStack.numSlices)
-        self.slidingUpDown.setValue(3)
-        self.slidingUpDown.setEnabled(False)
+        self.slidingUpDown.setValue(0)
+        self.slidingUpDown.setEnabled(True)  # 20241119, we are always in sliding z
         self.slidingUpDown.valueChanged.connect(self._on_slidingz_value_changed)
         self.addWidget(self.slidingUpDownLabel)
         self.addWidget(self.slidingUpDown)
-
-        # add radius - deprecated
-        # self.radiusLabel = QtWidgets.QLabel('radius')
-        # self._radiusSpinBox = QtWidgets.QSpinBox()
-        # self._radiusSpinBox.setMaximum(10)
-        # self._radiusSpinBox.setValue(3)
-        # self._radiusSpinBox.setEnabled(True)
-        # self._radiusSpinBox.valueChanged.connect(self._on_radius_value_changed)
-        # self.addWidget(self.radiusLabel)
-        # self.addWidget(self._radiusSpinBox)
 
         # Drop Box to hide different parts of plot
         plotMenuButton = QtWidgets.QPushButton("Plots")
@@ -255,6 +250,8 @@ class StackToolBar(QtWidgets.QToolBar):
         # self.colorPopup = QtWidgets.QComboBox()
         # self.colorPopup.addItems(colorList)
         # self.addWidget(self.colorPopup)
+
+        #self.setFocus()
 
     def labelBoxUpdate(self):
         """ Part of plot menu Change
@@ -298,9 +295,6 @@ class StackToolBar(QtWidgets.QToolBar):
 
         elif action.text() == "Image":
             self.channelActionGroup.setEnabled(action.isChecked())
-            # self.slidingUpDownLabel.setEnabled(action.isChecked())
-            # self.slidingUpDown.setEnabled(action.isChecked())
-            # self.slidingCheckbox.setEnabled(action.isChecked())
         
         if action.text() == "Spines":
             self.labelBoxUpdate()

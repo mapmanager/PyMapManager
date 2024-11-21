@@ -57,44 +57,20 @@ class ImagePlotWidget(mmWidget2):
         super().__init__(stackWidget)
         
         self._myStack = stackWidget.getStack()
-        self._contrastDict = stackWidget._contrastDict
-        self._colorLutDict = stackWidget._colorLutDict
         self._displayOptionsDict = stackWidget._displayOptionsDict
         
         self._currentSlice = 0
         
-        # TODO: 7/17 - change this to detect amount of channels?
-        _channel = self._displayOptionsDict['windowState']['defaultChannel']
+        _channelNumber = self._displayOptionsDict['windowState']['defaultChannel']  # 1 based
 
-        self._displayThisChannel = _channel  # 1->0, 2->1, 3->2, etc
+        self._displayThisChannelIdx = _channelNumber - 1
         
-        # self._doSlidingZ = False
-        
-        # a dictionary of contrast, one key per channel
-        #self._setDefaultContrastDict()  # assigns _contrastDict
-
         self._sliceImage = None
-
-        # self._state = stackWidgetState.baseState
-        # not used
-        
-        # self._mouseMovedState = False
-        # Variable to keep track of State, Used for Moving Spine ROI
-
-        # self._mouseConnectState = False
-        # Variable to keep track of State, Used creating new connection to an existing Spine ROI
-
         self._sliderBlocked = False
 
         self._buildUI()
 
-        #self._setChannel(1)  # removed feb 25 2023
-
-        # 20220824, playing with this ... does not work.
-        # self.autoContrast()
-
-        # self.refreshSlice()
-
+        # self.setFocus()
 
     def wheelEvent_monkey_patch(self, event):
         """Respond to mouse wheel and set new slice.
@@ -267,10 +243,12 @@ class ImagePlotWidget(mmWidget2):
             self._setFullView()
 
         elif event.key() == QtCore.Qt.Key_1:
-            self._setChannel(1)
+            logger.warning(f'move this code out of imagePlotWidget??? key:"{event.key()}"')
+            self._setChannel(0)
             self.refreshSlice()
         elif event.key() == QtCore.Qt.Key_2:
-            self._setChannel(2)
+            logger.warning(f'move this code out of imagePlotWidget??? key:"{event.key()}"')
+            self._setChannel(1)
             self.refreshSlice()
 
         # normally mmWidget2 base class handles these
@@ -447,8 +425,7 @@ class ImagePlotWidget(mmWidget2):
             intensity = float('nan')
         else:
             # TODO: fix issue with intensity (mapmanagercore throwing errors)
-            _channelIdx = self._displayThisChannel - 1
-            intensity = self._myStack.getPixel(_channelIdx,
+            intensity = self._myStack.getPixel(self._displayThisChannelIdx,
                             self._currentSlice,
                             y, x)
 
@@ -460,7 +437,7 @@ class ImagePlotWidget(mmWidget2):
         self.signalMouseMove.emit(mouseMoveDict)
 
     def _channelIsRGB(self):
-        return self._displayThisChannel == 'rgb'
+        return self._displayThisChannelIdx == 'rgb'
 
     def _setFullView(self):
         """Set view to full size of image.
@@ -519,61 +496,68 @@ class ImagePlotWidget(mmWidget2):
             return
         self._setSlice(sliceNumber, doEmit=doEmit)
 
-    def slot_setContrast(self, contrastDict):
+    def slot_contrastChanged(self):
         #logger.info(f'contrastDict:')
         #pprint(contrastDict)
 
-        channel = contrastDict['channel']
-        self._contrastDict[channel] = contrastDict
+        # channel = contrastDict['channel']
+        # self._contrastDict[channel] = contrastDict
         self._setContrast()
 
     def slot_setChannel(self, channel):
-        logger.info(f'channel:{channel}')
+        logger.info(f'channel:{channel} {type(channel)}')
         self._setChannel(channel, doEmit=False)
 
-    def _setChannel(self, channel, doEmit=True):
+    def _setChannel(self, channelIdx, doEmit=True):
         """
-        channel: 1 based
+        channelIdx: 0 based
         """
-        if channel=='rgb' or channel <= self._myStack.numChannels:
-            self._displayThisChannel = channel
-                        
-            self.refreshSlice()
+        logger.info(f'channelIdx:{channelIdx} {type(channelIdx)}')
+        
+        self._displayThisChannelIdx = channelIdx
+                    
+        self.refreshSlice()
 
-            if doEmit:
-                self.signalChannelChange.emit(self._displayThisChannel)
+        if doEmit:
+            self.signalChannelChange.emit(self._displayThisChannelIdx)
 
-                _pmmEvent = pmmEvent(pmmEventType.setColorChannel, self)
-                _pmmEvent.setColorChannel(channel)
-                self.emitEvent(_pmmEvent)
+            _pmmEvent = pmmEvent(pmmEventType.setColorChannel, self)
+            _pmmEvent.setColorChannel(self._displayThisChannelIdx)
+            self.emitEvent(_pmmEvent)
 
     def _setColorLut(self, update=False):
+        """TODO: 20241118
+        
+        Switch this over to
+
+        cm = pg.colormap.get('Greens_r', source='matplotlib')
+        self.myImageItem.setColorMap(cm)
+
+        Get rid of self._colorLutDict
+        """
         # rgb uses its own (r,g,b) LUT
         if not self._channelIsRGB():
-            channel = self._displayThisChannel
-            channelIdx = channel - 1
-            # channelIdx = channel #abj
+            colorStr = self._myStack.contrast.getValue(self._displayThisChannelIdx, 'colorLUT')  # like 'r', 
 
-            colorStr = self._contrastDict[channelIdx]['colorLUT']
-            
-            try:
-                colorStr = self._contrastDict[channelIdx]['colorLUT']
-                colorLut = self._colorLutDict[colorStr] # like (green, red, blue, gray, gray_r, ...)
-                #logger.info(f'colorStr:{colorStr}')
-                self._myImage.setLookupTable(colorLut, update=update)
-            except (KeyError) as e:
-                logger.error(e)
-                print(self._contrastDict)
+            if colorStr == 'r':
+                cm = pg.colormap.get('Reds_r', source='matplotlib')
+            elif colorStr == 'g':
+                cm = pg.colormap.get('Greens_r', source='matplotlib')
+            elif colorStr == 'b':
+                cm = pg.colormap.get('Blues_r', source='matplotlib')
+            else:
+                logger.warning(f'did not understand color {colorStr} -->> defaulting to Greys_r')
+                cm = pg.colormap.get('Greys_r', source='matplotlib')
+
+            self._myImage.setColorMap(cm)
 
     def _setContrast(self):
         # rgb
         if self._channelIsRGB():
             tmpLevelList = []  # list of [min,max]
             for channelIdx in range(self._myStack.numChannels):
-                # channelNumber = channelIdx + 1
-                channelNumber = channelIdx #abj, dictionary will use 0 based indexing
-                oneMinContrast = self._contrastDict[channelNumber]['minContrast']
-                oneMaxContrast = self._contrastDict[channelNumber]['maxContrast']
+                oneMinContrast = self._myStack.contrast.getValue(channelIdx, 'minAutoContrast-rgb')
+                oneMaxContrast = self._myStack.contrast.getValue(channelIdx, 'maxAutoContrast-rgb')
 
                 # convert to [0..255]
                 #bitDepth = self._myStack.header['bitDepth']
@@ -592,20 +576,21 @@ class ImagePlotWidget(mmWidget2):
             levelList[2] = tmpLevelList[1]
 
             #
-            logger.info(f'{self._displayThisChannel} levelList:{levelList}')
-            self._myImage.setLookupTable(False)
+            # logger.info(f'{self._displayThisChannelIdx} levelList:{levelList}')
             self._myImage.setLevels(levelList, update=True)
+
         else:
             # one channel
-            _channelIdx = self._displayThisChannel - 1
-            minContrast = self._contrastDict[_channelIdx]['minContrast']
-            maxContrast = self._contrastDict[_channelIdx]['maxContrast']
+            minContrast = self._myStack.contrast.getValue(self._displayThisChannelIdx, 'minAutoContrast')
+            maxContrast = self._myStack.contrast.getValue(self._displayThisChannelIdx, 'maxAutoContrast')
             
             #logger.info(f'channel {self._displayThisChannel} minContrast:{minContrast} maxContrast:{maxContrast}')
             
             levelList = []
             levelList.append([minContrast, maxContrast])
             levelList = levelList[0]
+
+            #
             self._myImage.setLevels(levelList, update=True)
 
     def refreshSlice(self):
@@ -634,43 +619,48 @@ class ImagePlotWidget(mmWidget2):
 
         self._currentSlice = sliceNumber
         
-        # order matters
-        # channel = self._displayThisChannel
-        # channelIdx = self._displayThisChannel - 1
+        # abb 20241120, is always on
+        # _doSlidingZ = self._displayOptionsDict['windowState']['doSlidingZ']
 
-        _doSlidingZ = self._displayOptionsDict['windowState']['doSlidingZ']
-        # logger.info(f'_doSlidingZ:{_doSlidingZ}')
+        upDownSlices = self._displayOptionsDict['windowState']['zPlusMinus']
 
         if self._channelIsRGB():
-            ch1_image = self._myStack.getImageSlice(imageSlice=sliceNumber, channel=1)
-            ch2_image = self._myStack.getImageSlice(imageSlice=sliceNumber, channel=2)
+            logger.warning('TODO: remove hard coded two channel assumption for rgb')
+            
+            # ch1_image = self._myStack.getImageSlice(imageSlice=sliceNumber, channelIdx=0)
+            # ch2_image = self._myStack.getImageSlice(imageSlice=sliceNumber, channelIdx=1)
+            ch0_image = self._myStack.getMaxProjectSlice(sliceNumber,
+                                    channelIdx=0,
+                                    upSlices=upDownSlices, downSlices=upDownSlices,
+                                    func=np.max)
+            ch1_image = self._myStack.getMaxProjectSlice(sliceNumber,
+                                    channelIdx=1,
+                                    upSlices=upDownSlices, downSlices=upDownSlices,
+                                    func=np.max)
             
             # rgb requires 8-bit images
+            ch0_image = ch0_image/ch0_image.max() * 2**8
             ch1_image = ch1_image/ch1_image.max() * 2**8
-            ch2_image = ch2_image/ch2_image.max() * 2**8
 
+            ch0_image = ch0_image.astype(np.uint8)
             ch1_image = ch1_image.astype(np.uint8)
-            ch2_image = ch2_image.astype(np.uint8)
             
             # print('2) ch1_image:', ch1_image.shape, ch1_image.dtype)
 
+            # magenta is blue + red
             sliceImage = np.ndarray((1024,1024,3))
-            sliceImage[:,:,1] = ch1_image  # green
-            sliceImage[:,:,0] = ch2_image  # red
-            sliceImage[:,:,2] = ch2_image  # blue
+            sliceImage[:,:,0] = ch1_image  # red
+            sliceImage[:,:,1] = ch0_image  # green
+            sliceImage[:,:,2] = ch1_image  # blue
 
-        elif _doSlidingZ:
-            upDownSlices = self._displayOptionsDict['windowState']['zPlusMinus']
-            # logger.warning(f're-implement with core upDownSlices:{upDownSlices}')
-            channelIdx = self._displayThisChannel - 1
+        else:
             sliceImage = self._myStack.getMaxProjectSlice(sliceNumber,
-                                    channelIdx,
+                                    self._displayThisChannelIdx,
                                     upDownSlices, upDownSlices,
                                     func=np.max)
-        else:
-            # one channel
-            channelIdx = self._displayThisChannel - 1
-            sliceImage = self._myStack.getImageSlice(imageSlice=sliceNumber, channel=channelIdx)
+        # else:
+        #     # one channel
+        #     sliceImage = self._myStack.getImageSlice(imageSlice=sliceNumber, channelIdx=self._displayThisChannelIdx)
 
         autoLevels = True
         levels = None

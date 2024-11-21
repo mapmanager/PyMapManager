@@ -7,7 +7,7 @@ import pandas as pd
 
 from mapmanagercore.lazy_geo_pd_images import Metadata
 
-from pymapmanager.stackcontras import StackContrast
+from pymapmanager.stackcontrast import StackContrast
 from pymapmanager.annotations.baseAnnotationsCore import SpineAnnotationsCore, LineAnnotationsCore
 from pymapmanager.timeseriesCore import TimeSeriesCore
 from pymapmanager._logger import logger
@@ -16,6 +16,8 @@ class stack:
 
     # the file types that we can load
     loadTheseExtension = ['.mmap', '.tif']
+
+    channelColors = ['g', 'r', 'b']
 
     def __init__(self,
                 timeseriescore : TimeSeriesCore,
@@ -38,6 +40,8 @@ class stack:
         self._annotations = SpineAnnotationsCore(self._fullMap, timepoint=self.timepoint)  #, defaultColums=defaultColums)
         self._lines = LineAnnotationsCore(self._fullMap, timepoint=self.timepoint)  #, defaultColums=defaultColums)
 
+        self._maxNumChannels = 3
+
         self._buildHeader()
 
         if loadImageData:
@@ -50,10 +54,14 @@ class stack:
         # get the first image slice from defaultChannelIdx
         self.getImageSlice(0, defaultChannelIdx)
 
-        # self._stackContrast = StackContrast(self)
+        self._stackContrast = StackContrast(self)
 
         logger.info(f'loaded stack timepoint: {self}')
               
+    @property
+    def maxNumChannels(self) -> int:
+        return self._maxNumChannels
+    
     @property
     def contrast(self) -> StackContrast:
         return self._stackContrast
@@ -155,13 +163,15 @@ class stack:
         """Get auto contrast for an entire stack
         
         Expensive as this loads the entire stack
+
+        Note: called once on creation of StackContrast()
         """
-        _min, _max = self._fullMap.getMapImages().getAutoContrast(self.timepoint, channel=channelIdx)
-        return _min, _max
+        _min, _max, _globalMin, _globalMax = self._fullMap.getMapImages().getAutoContrast(self.timepoint, channel=channelIdx)
+        return _min, _max, _globalMin, _globalMax
 
     def getImageSlice(self,
                       imageSlice : int,
-                      channel : int = 1
+                      channelIdx : int = 1
                       ) -> Optional[np.ndarray]:
         """Get a single image slice from a channel.
 
@@ -173,9 +183,9 @@ class stack:
             np.ndarray of image data, None if image is not loaded.
         """
 
-        logger.info(f'imageSlice:{imageSlice} channel:{channel}')
+        # logger.info(f'imageSlice:{imageSlice} channel:{channel}')
         
-        channelIdx = channel - 1
+        # channelIdx = channel - 1
         
         if not isinstance(imageSlice, int):
             imageSlice = int(imageSlice)
@@ -196,9 +206,9 @@ class stack:
     
     def getMaxProjectSlice(self, 
                             imageSlice : int, 
-                            channel : int = 1, 
-                            upSlices : int = 3, 
-                            downSlices : int = 3,
+                            channelIdx : int = 1, 
+                            upSlices : int = 1, 
+                            downSlices : int = 1,
                             func = np.max
                             ) -> Optional[np.ndarray]:
         """Get a maximal intensity projection of image slices for one channel.
@@ -215,7 +225,7 @@ class stack:
             #logger.warning('not an integer, converting')
             imageSlice = int(imageSlice)
 
-        channelIdx = channel - 1
+        # channelIdx = channel - 1
         # channelIdx = channel # abj
 
         firstSlice = imageSlice - upSlices
@@ -233,7 +243,9 @@ class stack:
             channelIdx=channelIdx,
             zRange=zRange)
 
-        return slices._image
+        # logger.info(f'{slices.shape}')
+        # return slices._image
+        return slices
 
     def getPixel(self, channel : int, imageSlice : int, y, x) -> int:
         """Get the intensity of a pixel.
@@ -245,7 +257,7 @@ class stack:
         """
         
         if self._currentImageSlice is None:
-            logger.info('no _currentImageSlice yet')
+            logger.warning('no _currentImageSlice yet')
         
         # _image = self.getImageSlice(imageSlice=imageSlice, channel=channel)
         _image = self._currentImageSlice

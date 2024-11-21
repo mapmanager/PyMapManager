@@ -44,9 +44,9 @@ class AppDisplayOptions():
         theDict['windowState']['width'] = 700  # position on screen
         theDict['windowState']['height'] = 500  # position on screen
 
-        # TODO: pass into imageplotwidget
-        theDict['windowState']['doSlidingZ'] = False  # added 20240706
-        theDict['windowState']['zPlusMinus'] = 3
+        # 20241119, we are always in sliding-z, zPlusMinus==0 means -->> show one image plane
+        theDict['windowState']['doSlidingZ'] = True
+        theDict['windowState']['zPlusMinus'] = 1
         
         # interface.pointPlotWidget
         theDict['pointDisplay'] = {}

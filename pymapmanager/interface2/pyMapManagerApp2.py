@@ -644,7 +644,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
                 try:
                     _aWidget = self._openWidgetList.openWidgetFromPath(openFilePath)
                     logger.info(f"opened PATH {openFilePath}")
-                    self.shownFolderPathsList .append(openFilePath)
+                    self.shownFolderPathsList.append(openFilePath)
                 except:
                     logger.info(f"failed to open path {openFilePath}")
 
