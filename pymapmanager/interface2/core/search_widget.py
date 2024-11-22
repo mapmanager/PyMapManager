@@ -134,13 +134,8 @@ class TableModel(QAbstractTableModel):
         This will replace Pandas Model 
     """
     def __init__(self, data : pd.DataFrame):
-        # QtCore.QAbstractTableModel.__init__(self)
         super().__init__()
-        self._data = data # pandas dataframe
-
-    def old_getSelectedRow(self):
-        selectedRows = self.selectionModel().selectedRows()
-        # logger.info(f'selectedRows {selectedRows}')
+        self._data : pd.DataFrame = data
 
     # NOTE: Only necessary in editable Table View
     # https://www.pythonguis.com/faq/editing-pyqt-tableview/
@@ -168,69 +163,12 @@ class TableModel(QAbstractTableModel):
                 # vertical headers, the section number corresponds to the row number
                 return self._data.index.tolist()[section]
             
-    # TODO: Modify rows 
+    # abb 20241121
+    # def index(self, visualRowIdx : int):
+    #     _ret = self._data.index[visualRowIdx]
+    #     logger.info(f'visualRowIdx:{visualRowIdx} _ret:{_ret}')
+    #     return _ret
     
-    # Adding a new spine always appends to end of dataframe
-    def _old_insertRows(self, position, rows, QModelIndex, rowContent):
-        """
-        Called when a new spine point is created 
-
-        Args:
-            position: starting row index
-            rows: how many rows being inserted
-            QModelIndex: index within widget
-                - always invalid and does not matter 
-                - reference: https://stackoverflow.com/questions/38998467/how-to-construct-a-qmodelindex-with-valid-parent
-            rowContent: actual data being inserted
-        """
-        # self.beginInsertRows(QModelIndex, position, position+rows-1)
-        # default_row = ['']*len(self._data[0])  # or _headers if you have that defined.
-        # for i in range(rows):
-        #     self._data.insert(position, rowContent)
-
-        # 10/3 - data is already being updated by the backend by this point
-        # print("rowContent", rowContent)
-        self.beginInsertRows(QModelIndex, self.rowCount(None), self.rowCount(None))
-        print("insert df before", self._data)
-        self._data.loc[self.rowCount] = rowContent
-        print("insert df after", self._data)
-        self.endInsertRows()
-        # self.layoutChanged.emit()
-        # return True
-
-    def _old_removeRows(self, position, rows, parent = QModelIndex()):
-        """ Called when a spine is deleted from the backend
-
-        Args:
-            position: starting row index
-            rows: how many rows being inserted
-            QModelIndex: index within widget
-                - here we give it an already instantiated index for simplicity
-        """
-        # print("parent", parent)
-
-        # # if self.hasIndex(position, rows, parent):
-        # self.beginRemoveRows(parent, position, position)
-        # # print("test", position)
-        # print("inside df before", self._data)
-        # # self._data = self._data.drop([self._data.index[position]])
-        # self._data.drop([position], inplace = True)
-        # print("inside df after", self._data)
-        # self.endRemoveRows()
-        self.myRefreshModel()
-
-    # NOTE: Only necessary in editable Table View
-    # def setData(self, row, col, value, role = None):
-    #     """ 
-    #         index: row index
-    #     """
-    #     #  Acquire q model index from row
-    #     # print("iloc", self._data.iloc[index.row(),index.column()])
-    #     tableIndex =  self.index(row, col)
-    #     self._data.iloc[tableIndex.row(),tableIndex.column()] = value
-    #     # self.data_changed.emit(tableIndex,tableIndex)
-    #     print("self._data", self._data)
- 
     def data(self, index, role):
         """
         data(const QModelIndex &index, int role = Qt::DisplayRole)
@@ -547,7 +485,8 @@ class myQTableView(QtWidgets.QTableView):
             self.setColList()
 
     def getSelectedRows(self):
-        
+        """Get selected row labels from df index (not visual row index).
+        """
         # Don't use params, use self.selectedIndexes()
         selectedRows = [self.proxyModel.mapToSource(modelIndex).row()
                             for modelIndex in self.selectedIndexes()]
@@ -612,7 +551,7 @@ class myQTableView(QtWidgets.QTableView):
 
         mapSelectedIndexes = []
         for selectedRow in selectedRows:
-            mapSelectedIndexes.append(self.df.index[selectedRow])
+            mapSelectedIndexes.append(int(self.df.index[selectedRow]))
 
         logger.info(f'-->> "{self.getMyName()}" signalSelectionChanged.emit mapSelectedIndexes:{mapSelectedIndexes} isAlt:{isAlt}')
 
@@ -700,46 +639,33 @@ class myQTableView(QtWidgets.QTableView):
 
         Notes
         -----
-        Called by parent like annotationListWidget.
+        Called by other widgets like annotationPlotWidget
         """
 
-        # logger.info(f'{self.getMyName()} rowList:{rowList}')
+        logger.info(f'programattic select of row(s) -->> {self.getMyName()} rowList:{rowList}')
         
         if rowList is None or len(rowList)==0:
             with self._blockSlotsManager():
                 super().clearSelection()
             return
 
-        # here we will use a context manager to block slots
+        # here we use a context manager to block slots
         # if we get a runtime error within the 'with'
-        # the conext manager will set blockSlots to false
+        # the context manager will set `blockSlots`` to False
         with self._blockSlotsManager():
 
             # Remove previously selected rows
             super().clearSelection()
             
-            # test context manager exception
-            # logger.info('testing raise ValueError')
-            # raise ValueError
-        
-            # 2nd argument is column
-            # here we default to zero since we will select the entire row regardless
             for _idx, rowIdx in enumerate(rowList):
-                # modelIndex = self.model.index(rowIdx, 0)
-                # modelSeries = self.model._data.loc[rowIdx]  # pandas.core.series.Series
-                # QModelIndex
-                # proxyIndex = self.proxyModel.mapFromSource(modelIndex)
-                logger.info(f"rowIdx {rowIdx}")
-                # _get_loc = self.model._data.index.get_loc(rowIdx)  # abb new # abj: 10/31 removed due to failing pytest
-                # modelIndex = self.model.index(_get_loc, 0)
+                # abb already row label
+                # abb 20241121 -->> this is not getting the correct row
+
+                # 2nd argument is column
+                # here we default to zero since we will select the entire row regardless
                 modelIndex = self.model.index(rowIdx, 0)
                 proxyIndex = self.proxyModel.mapFromSource(modelIndex)
-
-                # logger.info(f"_get_loc {_get_loc} modelIndex {modelIndex} proxyIndex {proxyIndex}")
-
-                # works
-                # logger.warning(f'_get_loc:{_get_loc}')
-                # logger.warning(f'proxyIndex.row():{proxyIndex.row()}')
+                logger.info(f'   modelIndex.row():{modelIndex.row()} proxyIndex.row():{proxyIndex.row()}')
 
                 mode = QtCore.QItemSelectionModel.Select | QtCore.QItemSelectionModel.Rows
                 self.mySelectionModel.select(proxyIndex, mode)
@@ -760,9 +686,4 @@ class myQTableView(QtWidgets.QTableView):
         logger.info(f"_selectNewRow rowIdx: {rowIdx-1}")
         self._selectRow(rowIdx-1)
 
-    def _old__selectModelRow(self, rowIdx):
-        """ Selects a given row by index
-        """
-        logger.info(f"_selectModelRow rowIdx: {rowIdx}")
-        self._selectRow(rowIdx)
 

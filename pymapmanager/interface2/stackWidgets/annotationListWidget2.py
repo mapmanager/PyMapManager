@@ -246,8 +246,14 @@ class pointListWidget(annotationListWidget):
         self._myTableView.doSearch('spineROI')
 
     def selectedEvent(self, event):
-        # logger.info(event)
+        """
+        abb 20241121, try and block this slot when user clicks on row.
+        """
+        if self._blockSlots:
+            return
         
+        logger.info(f'{self.getClassName()} {event}')
+    
         pointSelection = event.getStackSelection().getPointSelection()        
 
         # logger.info(f'{self.getClassName()} pointSelection:{pointSelection}')
@@ -280,18 +286,20 @@ class pointListWidget(annotationListWidget):
         # if itemList is None:
         #     itemList = []
         
-        rowLabelList = self._getSelectedRowLabels()
-        logger.warning(f'{self.getClassName()} rowLabelList:{rowLabelList}')
+        # abb 20241121, alread row label
+        # rowLabelList = self._getSelectedRowLabels()
+        # logger.warning(f'{self.getClassName()} rowLabelList:{rowLabelList}')
 
         eventType = pmmEventType.selection
         event = pmmEvent(eventType, self)
-        event.getStackSelection().setPointSelection(rowLabelList)
+        # event.getStackSelection().setPointSelection(rowLabelList)
+        event.getStackSelection().setPointSelection(itemList)
         event.setAlt(isAlt)
 
         logger.info(f'emit -->> event: {event}')
         
-        self.emitEvent(event, blockSlots=False)        
-        # self.slot_pmmEvent(event)
+        # abb turned on blockSlots
+        self.emitEvent(event, blockSlots=True)        
 
     def _deleteSelected(self):
         """Delete currently selected annotations.
@@ -323,6 +331,12 @@ class lineListWidget(annotationListWidget):
             self._myTableView.setEnabled(False)
     
     def selectedEvent(self, event):
+        """
+        abb 20241121, try and block this slot when user clicks on row.
+        """
+        if self._blockSlots:
+            return
+
         logger.warning(f'{self.getClassName()} event stack selection is:')
         # logger.warning(f'{event.getStackSelection()}')
         

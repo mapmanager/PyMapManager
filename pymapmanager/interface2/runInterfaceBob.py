@@ -18,7 +18,7 @@ def run():
     # a single timepoint tif file
     # error in images
     # IndexError: index -2 is out of bounds for axis 0 with size 1
-    path = mapmanagercore.data.getTiffChannel_1()
+    # path = mapmanagercore.data.getTiffChannel_1()
 
     # map with segments and spines (no segments connected)
     # path = '/Users/cudmore/Desktop/multi_timepoint_map.mmap'
