@@ -1250,7 +1250,7 @@ class stackWidget2(mmWidget2):
 
         Args:
             pluginKey : tuple (plugin Name, id: numbered instance of plugin)
-                plugin Name: of the plugin, defined as static member vraible in mmWidget
+                plugin Name: of the plugin, defined as static member variable in mmWidget
             show: bool
                 If True then immediately show the widget
         """
