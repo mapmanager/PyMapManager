@@ -4,7 +4,7 @@ Includes utilities that uses classes within pymapmanager
 import json
 import sys, os
 import math
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 from scipy.spatial import ConvexHull
@@ -107,18 +107,18 @@ def saveAnalysisParamJsonFile(jsonData):
     with open(_dstPath, 'w') as file:
         json.dump(jsonData, file) 
 
-def getUserAnalysisParamJsonData():
-    """
-        get User's Json data for Analysis Parameters
-    
+def getUserAnalysisParamJsonData() -> Optional[dict]:
+
+    """Get User's Json data for Analysis Parameters.
     """
     pmmFolder = _getUserPmmFolder()
     _dstPath = os.path.join(pmmFolder, "userAnalysisParameters.Json")
-    readFile = open(_dstPath)
 
     if not os.path.exists(_dstPath):
         logger.warning(f"Could not find path {_dstPath}")
-    else:
+        return
+    
+    with open(_dstPath) as readFile:
         try:
             jsonString = json.load(readFile)
             jsonDict = json.loads(jsonString)

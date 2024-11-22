@@ -16,7 +16,9 @@ def qapp_cls():
 def stackWidgetObject(qtbot, qapp):
 	# path = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
     path = mapmanagercore.data.getSingleTimepointMap()
-    sw = stackWidget2(path=path)
+    
+    # sw = stackWidget2(path=path)
+    sw = qapp.loadStackWidget(path)
 
 	# sw.showScatterPlot2(show=True)
 	# sw.showAnalysisParams()

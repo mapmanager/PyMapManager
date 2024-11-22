@@ -7,6 +7,7 @@ import pymapmanager
 import pymapmanager.annotations
 import pymapmanager.interface2
 from pymapmanager.interface2.stackWidgets.event.spineEvent import (
+                SelectSpine,
                 EditSpinePropertyEvent,
                 AddSpineEvent,
                 MoveSpineEvent,
@@ -891,7 +892,7 @@ class ImagePlotWidget(mmWidget2):
         # self.setCentralWidget(centralWidget)
 
     # abb 20240906
-    def selectedSpine(self, event : "SelectSpine"):
+    def selectedSpine(self, event : SelectSpine):
         logger.info('TODO: check if each spine is in our timepoint')
         # for spine in event:
         #     logger.info(spine)

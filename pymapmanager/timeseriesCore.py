@@ -1,8 +1,15 @@
+# circular import for typechecking
+# from pymapmanager.interface2 import PyMapManagerApp
+# see: https://stackoverflow.com/questions/39740632/python-type-hinting-without-cyclic-imports
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from pymapmanager.interface2.stackWidgets.base.mmWidget2 import pmmEvent
+
 import os
 from typing import Optional, Tuple, Union
-# from datetime import datetime
 import pandas as pd
-from shapely.geometry import LineString
+# from shapely.geometry import LineString
 
 from mapmanagercore import MapAnnotations, MultiImageLoader
 from mapmanagercore.analysis_params import AnalysisParams
@@ -67,13 +74,13 @@ class UndoRedoManager:
         
         return retStr
     
-    def addUndo(self, event : "pymapmanager.interface2.stackWidgets.mmWidget2.pmmEvent") -> None:
+    def addUndo(self, event : pmmEvent) -> None:
         self._undoList.append(event)
 
-    def _addRedo(self, event : "pymapmanager.interface2.stackWidgets.mmWidget2.pmmEvent") -> None:
+    def _addRedo(self, event : pmmEvent) -> None:
         self._redoList.append(event)
 
-    def doUndo(self) -> "pymapmanager.interface2.stackWidgets.mmWidget2.pmmEvent":
+    def doUndo(self) -> pmmEvent:
         """Undo the last edit event.
         """
 
@@ -89,7 +96,7 @@ class UndoRedoManager:
 
         return undoEvent
         
-    def doRedo(self) -> Optional["pymapmanager.interface2.stackWidgets.mmWidget2.pmmEvent"]:
+    def doRedo(self) -> Optional[pmmEvent]:
         if self.numRedo() == 0:
             logger.info('nothing to redo')
             return
@@ -154,7 +161,8 @@ class TimeSeriesCore():
 
         self._undoRedoManager = UndoRedoManager()
 
-    def getTimepoint(self, timepoint : int):
+    from mapmanagercore.annotations.single_time_point import SingleTimePointAnnotations
+    def getTimepoint(self, timepoint : int) -> SingleTimePointAnnotations:
         return self._fullMap.getTimePoint(timepoint)
     
     def getUndoRedo(self):

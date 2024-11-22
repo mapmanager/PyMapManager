@@ -356,7 +356,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
         """
         return self._analysisParams
 
-    def getUserJsonData(self):
+    def getUserJsonData(self) -> Optional[dict]:
         return pymapmanager.pmmUtils.getUserAnalysisParamJsonData()
     
     def saveAnalysisParams(self, dict):
@@ -567,7 +567,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
         return self._openWidgetList.getDict()
     
     def loadStackWidget(self, path : str = None) -> Union[stackWidget2, mapWidget]:
-        """Load a stack from a path.
+        """Load a stack from a path and open a stackWidget2 or mapWidget
 
         Path can be a .mmap or .tif file.
         

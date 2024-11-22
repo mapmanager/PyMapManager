@@ -19,7 +19,11 @@ def test_app(qtbot, qapp):
 def stackWidgetObject(qtbot, qapp):
 	# path = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
     path = mapmanagercore.data.getSingleTimepointMap()
-    sw = stackWidget2(path=path)
+    
+    # abb we would need to open stackWidget2 with a TimeSeriesCore(from path)
+    # instead, open it with the PyMqpMqnqgerApp
+    # sw = stackWidget2(path=path)
+    sw = qapp.loadStackWidget(path)
 
 	# sw.showScatterPlot2(show=True)
 	# sw.showAnalysisParams()

@@ -13,7 +13,7 @@ def run():
 
     #
     # open a single timepoint map with segments and spines
-    path = mapmanagercore.data.getSingleTimepointMap()
+    # path = mapmanagercore.data.getSingleTimepointMap()
 
     # a single timepoint tif file
     # error in images

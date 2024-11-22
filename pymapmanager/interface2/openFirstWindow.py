@@ -137,7 +137,7 @@ class OpenFirstWindow(MainWindow):
 
         else:
             _statusStr = f'did not find path: {path}'
-            logger.error(_errStr)
+            logger.error(_statusStr)
         
         self.setStatus(_statusStr)
 

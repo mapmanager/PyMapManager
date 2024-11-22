@@ -1,13 +1,16 @@
-from pymapmanager import stack
+from mapmanagercore.data import getMultiTimepointMap
+
+from pymapmanager import stack, TimeSeriesCore
 
 from pymapmanager._logger import logger, setLogLevel
 
 def _tmpCudmoreTest():
-    zarrPath = '/Users/cudmore/Sites/MapManagerCore/sandbox/data/rr30a_s1.mmap'
+    zarrPath = getMultiTimepointMap()
     
     # _map = AnnotationsBaseMut(Loader())
     # _map = MapAnnotations(MMapLoader(zarrPath).cached())
-    _stack = stack(zarrPath)
+    tsc = TimeSeriesCore(zarrPath)
+    _stack = stack(timeseriescore=tsc, timepoint=0)
 
     # update spine does not make sense before we add spine?
     # _map.updateSpine(("spine_id", 0), {"z": 0})

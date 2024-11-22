@@ -7,6 +7,8 @@ import pandas as pd
 import shapely
 
 import mapmanagercore
+from mapmanagercore.annotations.single_time_point import SingleTimePointAnnotations
+
 # from mapmanagercore import MapAnnotations
 # from mapmanagercore import MapAnnotations, MultiImageLoader
 # from mapmanagercore.annotations.single_time_point.base import SingleTimePointFrame
@@ -50,7 +52,7 @@ class AnnotationsCore:
         self._singleTimePoint = self._fullMap.getTimepoint(self._timepoint)
 
     @property
-    def singleTimepoint(self) -> "SingleTimePointAnnotations":
+    def singleTimepoint(self) -> SingleTimePointAnnotations:
         return self._singleTimePoint
     
     # def getMapPoints(self):

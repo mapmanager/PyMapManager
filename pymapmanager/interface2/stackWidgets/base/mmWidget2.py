@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pymapmanager.interface2.stackWidgets import stackWidget2
+    from pymapmanager.interface2.stackWidgets.event import SelectSpine
 
 import copy
 from enum import Enum, auto
@@ -1013,7 +1014,7 @@ class mmWidget2(QtWidgets.QMainWindow):
 
         return stackselection
     
-    def selectedSpine(self, event : "SelectSpine"):
+    def selectedSpine(self, event : SelectSpine):
         pass
 
     def selectedEvent(self, event : pmmEvent):

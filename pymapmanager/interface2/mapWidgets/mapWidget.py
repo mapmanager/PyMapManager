@@ -283,7 +283,7 @@ class mapWidget(MainWindow):
             return
         self._blockSlots = True
         for tp, widget in self._stackWidgetDict.items():
-            _imagePlotWidget = widget._getNamedWidget('image plot')
+            _imagePlotWidget = widget._getNamedWidget('Image Viewer')
             _imagePlotWidget.slot_setSlice(slice)
         self._blockSlots = False
 
@@ -292,7 +292,7 @@ class mapWidget(MainWindow):
         """
         prevPlotWidget = None
         for tp, widget in self._stackWidgetDict.items():
-            _imagePlotWidget = widget._getNamedWidget('image plot')
+            _imagePlotWidget = widget._getNamedWidget('Image Viewer')
             if link and prevPlotWidget is not None:
                 # widget._imagePlotWidget._plotWidget.setYLink(prevPlotWidget)
                 # widget._imagePlotWidget._plotWidget.setXLink(prevPlotWidget)

@@ -512,22 +512,3 @@ class lineListWidget(annotationListWidget):
         # reselect current segment
         self._myTableView._selectRow([segmentID])
         
-if __name__ == '__main__':
-    import pymapmanager
-    
-    path = '/Users/cudmore/Sites/PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
-
-    aStack = pymapmanager.stack(path)
-
-    pa = aStack.getPointAnnotations()
-
-    app = QtWidgets.QApplication(sys.argv)
-
-    plw = pointListWidget(pa)
-    plw.show()
-
-    # debug our slot to respond to user selections
-    # from, for example, a pqyqtgraph plot of point
-    plw.slot_selectAnnotation([3,5,7,9])
-
-    sys.exit(app.exec_())

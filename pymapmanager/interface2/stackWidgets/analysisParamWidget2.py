@@ -1,7 +1,9 @@
 import copy
 from functools import partial
 import math
+
 from qtpy import QtCore, QtWidgets
+
 import pymapmanager
 from pymapmanager.interface2.stackWidgets.base.mmWidget2  import mmWidget2, pmmEventType, pmmEvent, pmmStates
 from pymapmanager.interface2.stackWidgets import stackWidget2
@@ -36,6 +38,8 @@ class AnalysisParamWidget(mmWidget2):
             # self._analysisParameters = stackWidget.getAnalysisParams() 
             self.setWindowTitle('Analysis Parameters (Application)')
             # Get analysis Parameters from app that is save within user/documents
+            
+            # abb, this will be None if file does not exist
             _dict = pmmApp.getUserJsonData()
             logger.info(f"app _dict: {_dict}")
 
@@ -358,15 +362,3 @@ class AnalysisParamWidget(mmWidget2):
     #     self.widgetDict["segmentRadius"].setValue(newRadius)
 
     #     self.enableButtons()
-
-
-if __name__ == '__main__':
-    dp = AnalysisParams()
-
-    import pymapmanager.interface
-    app = pymapmanager.interface.PyMapManagerApp()
-    dpWidget = AnalysisParamWidget(dp)
-
-    import sys
-    sys.exit(app.exec_())
-    # print(dp._getDocs())
