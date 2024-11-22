@@ -6,7 +6,14 @@ import sys
 # from qtpy import QtWidgets
 
 from pymapmanager.interface2 import PyMapManagerApp
+from pymapmanager.interface2.stackWidgets.base.mmWidget2 import pmmEvent, pmmEventType
 from stackWidgets import stackWidget2
+
+from pymapmanager.interface2.stackWidgets.event.spineEvent import (AddSpineEvent,
+                                                                   DeleteSpineEvent,
+                                                                   MoveSpineEvent,
+                                                                   UndoSpineEvent,
+                                                                   SelectSpine)
 
 def _old_AddRandomColumns(df):
     import numpy as np  # remember, never do this in production code
@@ -57,7 +64,24 @@ def run():
     # sw2.getStack().getPointAnnotations().intializeIsBad()
     # sw2.getStack().getPointAnnotations().intializeUserType()
     # sw2.forceRefresh()
-    sw2.zoomToPointAnnotation(5, isAlt=True)
+    # sw2.zoomToPointAnnotation(1, isAlt=True)
+
+    sw2.zoomToPointAnnotation(1, isAlt=True)
+    spineID = 1
+    deleteEvent = DeleteSpineEvent(sw2, spineID)
+    # deleteEvent = DeleteSpineEvent(sw2)
+    # deleteEvent.addDeleteSpine(spineID)
+    # sw2.deletedEvent(deleteEvent)
+    # sw2.emitEvent(deleteEvent, blockSlots=False)
+    sw2.slot_pmmEvent(deleteEvent)
+
+
+    # _pmmEvent = pmmEvent(pmmEventType.delete, sw2)
+    # _pmmEvent.setValue("pointSelection", [1])
+    # sw2.emitEvent(_pmmEvent)
+    # sw2.slot_pmmEvent(_pmmEvent)
+
+    # sw2.deletedEvent()
 
     # sw2.runPlugin('Scatter Plot', inDock=True)
 
@@ -173,13 +197,13 @@ def testingProgrammaticRunClose():
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
-    # run()
+    run()
     # run2()
     # run3()
     # run4()
     # run5()
     # runFirstWindow()
-    testingOpenClose()
+    # testingOpenClose()
     # runPoochFileDirectly()
     # testingProgrammaticRunClose()
     # run2_tif()

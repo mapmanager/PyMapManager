@@ -63,20 +63,14 @@ class myQSortFilterProxyModel(QSortFilterProxyModel):
         # logger.error(f'   sourceParent:{sourceParent} {type(sourceParent)}')
         
         # super().filterAcceptsRow(sourceRow)
-
-        # Specific column is already set in QTableView
-        # and comparison value
+        # Specific column is already set in QTableView and comparison value
 
         # row, column, qmodelindx
         filterCol = self.filterKeyColumn()
-
         # logger.error(f'   filterCol:{filterCol}')
-
         valIndex = self.sourceModel().index(sourceRow, filterCol, sourceParent)
-        # yearIndex = self.sourceModel().index(sourceRow, 1, sourceParent)
         role = QtCore.Qt.DisplayRole
         val = self.sourceModel().data(valIndex, role)
-        # year = self.sourceModel().data(yearIndex)
 
         # logger.info(f'self.nameRegExp pattern: {self.nameRegExp.pattern()}, valIndex: {valIndex}, val: {val}')
         # logger.info(f'ComparisonValue: {self.currentComparisonValue}, ComparisonSymbol : {self.currentComparisonSymbol}')
@@ -169,11 +163,11 @@ class TableModel(QAbstractTableModel):
     #     logger.info(f'visualRowIdx:{visualRowIdx} _ret:{_ret}')
     #     return _ret
     
-    def data(self, index, role):
+    def data(self, index, role) -> str:
         """
         data(const QModelIndex &index, int role = Qt::DisplayRole)
 
-        Returns the data stored under the given role for the item referred to by the index.
+        Returns the data stored under the given role for the item referred to by the index. (in str form)
         """
         # print("data", self.rowCount(None))
         # print("role: ", type(role))
@@ -415,7 +409,6 @@ class myQTableView(QtWidgets.QTableView):
         # How do we get this working with the current filtering?
         # New problem, how do we reset the rows? when comparison is done
 
-
     def setColList(self):
         """ Acquires all column names in dataframe and places them in a list
         """
@@ -499,18 +492,9 @@ class myQTableView(QtWidgets.QTableView):
             selectedIndexes.append(self.df.index[selectedRow])
 
         return selectedIndexes
-    
-        # indexes = []
-        # for index in selection.indexes():
-        #     if index.column() == 0:
-        #         indexes.append(index.data())
-
-        # # logger.info(f'indexes: {indexes} ') #data {item.data()}
-        # return indexes
 
     # def keyPressEvent(self, event : QtGui.QKeyEvent):
     #     super().keyPressEvent(event)
-
     #     # abb on_selectionChanged is not using its params
     #     # self.on_selectionChanged(None)
 
@@ -586,13 +570,8 @@ class myQTableView(QtWidgets.QTableView):
     def doSearch(self, searchStr):
         """Receive new word and filters df accordingly
         """
-
         self.currentSearchStr = searchStr
-        # self.df = self.df.reset_index()
-        # print("df", self.df)
-
         if self.currentColName != "":
-            # print("we have a col Name")
             colIdx = self.df.columns.get_loc(self.currentColName)
             self.proxyModel.setFilterKeyColumn(colIdx)
             # self.proxyModel.setFilterFixedString(searchStr)
@@ -617,10 +596,6 @@ class myQTableView(QtWidgets.QTableView):
         # self.model.removeRows(index, 1)
         self.update_data()
 
-    # def setData(self, row, col, value):
-    #     # self.model.setData(row, col, value)
-    #     self.update_data()
-
     @contextmanager
     def _blockSlotsManager(self):
         try:
@@ -633,7 +608,7 @@ class myQTableView(QtWidgets.QTableView):
             raise e
         finally:
             self._blockSignalSelectionChanged = False
-            
+        
     def _selectRow(self, rowList):
         """Programatically select rows of model via mySelectionModel
 
@@ -660,10 +635,16 @@ class myQTableView(QtWidgets.QTableView):
             for _idx, rowIdx in enumerate(rowList):
                 # abb already row label
                 # abb 20241121 -->> this is not getting the correct row
+                logger.info(f"rowIdx in _selectRow{rowIdx}")
+
+                modelIndex = self.findModelIndex(column=0, value=rowIdx) # column = 0, assuming index is always first column
+                logger.info(f"modelIdx in _selectRow {modelIndex}")
+
+                # find the correct model.index get a spine Index(rowIndex)
 
                 # 2nd argument is column
                 # here we default to zero since we will select the entire row regardless
-                modelIndex = self.model.index(rowIdx, 0)
+                # modelIndex = self.model.index(rowIdx, 0)
                 proxyIndex = self.proxyModel.mapFromSource(modelIndex)
                 logger.info(f'   modelIndex.row():{modelIndex.row()} proxyIndex.row():{proxyIndex.row()}')
 
@@ -686,4 +667,18 @@ class myQTableView(QtWidgets.QTableView):
         logger.info(f"_selectNewRow rowIdx: {rowIdx-1}")
         self._selectRow(rowIdx-1)
 
+    def findModelIndex(self, column, value):
+        """ Given a column (index) and value (selected Spine Index) return the model index so
+        that we can programatically select it
+        """
+        role = QtCore.Qt.DisplayRole
+        for row in range(self.model.rowCount(None)):
+            index = self.model.index(row, column)
+            modelData = int(self.model.data(index, role))
+            # logger.info(f"index {index} modelData! {modelData}")
+            if modelData == value:
+                return index
+        
+        logger.info("Model Index not found")
+        return QModelIndex()  # Return an invalid index if not found
 
