@@ -70,6 +70,7 @@ class StackToolBar(QtWidgets.QToolBar):
             actionWidget.setVisible(False)
 
         for channelIdx in range(self._myStack.numChannels):
+            # logger.info(f"channelIdx visible {channelIdx} ")
             self._actionDict[channelIdx].setDisabled(False)
             self._actionDict[channelIdx].setVisible(True)
         
@@ -179,6 +180,7 @@ class StackToolBar(QtWidgets.QToolBar):
         self.channelActionGroup = QtWidgets.QActionGroup(self)
 
         for channelIdx in range(self._myStack.maxNumChannels):
+            # logger.info(f"channel idx {channelIdx}")
             iconPath = ''  # use toolName to get from canvas.util
             theIcon = QtGui.QIcon(iconPath)
 

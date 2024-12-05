@@ -1,6 +1,7 @@
 import os
 from typing import Optional, Tuple, Union
 # from datetime import datetime
+import numpy as np
 import pandas as pd
 from shapely.geometry import LineString
 
@@ -47,6 +48,9 @@ class ImagesCore:
     
     def metadata(self, timepoint):
         return self._fullMap.metadata(timepoint)
+    
+    def getTotalChannels(self):
+        return self._fullMap._images.channels()
     
     # def shape(self, timepoint):
     #     self._fullMap.shape(t=timepoint)
@@ -236,6 +240,12 @@ class TimeSeriesCore():
         """
         return len(self._fullMap.segments[:].index.unique(0))
     
+    # @property # abj
+    # def numChannels(self):
+    #     """Number of timepoints in the map.
+    #     """
+    #     return self._fullMap.getNumTimepoints()
+    
     def getMapDataFrame(self):
         """Get a dataframe representing the map, one row per session.
         
@@ -338,3 +348,24 @@ class TimeSeriesCore():
         logger.info('-->> PERFORMING REDO')
         self._fullMap.redo()
 
+    def loadInNewChannel(self, path: Union[str, np.ndarray], time: int = 0, channel: int = 0):
+        """ Call loadInNewChannel in backend MapManagerCore
+
+        args:
+            path
+            time
+            channel: if channel = None, then backend will automatically increment it
+        """
+
+        # totalChannels = self._imagesCore.getTotalChannels()
+        # logger.info(f"before total channel in timeseriescore: {totalChannels}")
+
+        self._fullMap.loadInNewChannel(path, time, channel)
+
+        # totalChannels = self._imagesCore.getTotalChannels()
+        # logger.info(f"after total channel in timeseriescore: {totalChannels}")
+
+    def getImagesCoreTotalChannels(self):
+        """ Get total number of channels loaded within Images core
+        """
+        return self._imagesCore.getTotalChannels()

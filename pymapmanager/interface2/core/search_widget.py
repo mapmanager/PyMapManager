@@ -51,77 +51,77 @@ class myQSortFilterProxyModel(QSortFilterProxyModel):
     #     self.invalidateFilter()
 
     # Write a test function for this for the different cases
-    def filterAcceptsRow(self, sourceRow, sourceParent):
-        """
-        This function overrides the parent class' function
-        Args:
-            sourceRow: row that is being looked at
-            QModelIndex: QModelIndex of parent that contians source row
-        """
-        # logger.error('')
-        # logger.error(f'   sourceRow:{sourceRow} {type(sourceRow)}')
-        # logger.error(f'   sourceParent:{sourceParent} {type(sourceParent)}')
+    # def filterAcceptsRow(self, sourceRow, sourceParent):
+    #     """
+    #     This function overrides the parent class' function
+    #     Args:
+    #         sourceRow: row that is being looked at
+    #         QModelIndex: QModelIndex of parent that contians source row
+    #     """
+    #     # logger.error('')
+    #     # logger.error(f'   sourceRow:{sourceRow} {type(sourceRow)}')
+    #     # logger.error(f'   sourceParent:{sourceParent} {type(sourceParent)}')
         
-        # super().filterAcceptsRow(sourceRow)
-        # Specific column is already set in QTableView and comparison value
+    #     # super().filterAcceptsRow(sourceRow)
+    #     # Specific column is already set in QTableView and comparison value
 
-        # row, column, qmodelindx
-        filterCol = self.filterKeyColumn()
-        # logger.error(f'   filterCol:{filterCol}')
-        valIndex = self.sourceModel().index(sourceRow, filterCol, sourceParent)
-        role = QtCore.Qt.DisplayRole
-        val = self.sourceModel().data(valIndex, role)
+    #     # row, column, qmodelindx
+    #     filterCol = self.filterKeyColumn()
+    #     # logger.error(f'   filterCol:{filterCol}')
+    #     valIndex = self.sourceModel().index(sourceRow, filterCol, sourceParent)
+    #     role = QtCore.Qt.DisplayRole
+    #     val = self.sourceModel().data(valIndex, role)
 
-        # logger.info(f'self.nameRegExp pattern: {self.nameRegExp.pattern()}, valIndex: {valIndex}, val: {val}')
-        # logger.info(f'ComparisonValue: {self.currentComparisonValue}, ComparisonSymbol : {self.currentComparisonSymbol}')
+    #     # logger.info(f'self.nameRegExp pattern: {self.nameRegExp.pattern()}, valIndex: {valIndex}, val: {val}')
+    #     # logger.info(f'ComparisonValue: {self.currentComparisonValue}, ComparisonSymbol : {self.currentComparisonSymbol}')
 
-        checkPattern = self.nameRegExp.pattern() in val
-        checkComparisonVal = self.currentComparisonValue != ""
+    #     checkPattern = self.nameRegExp.pattern() in val
+    #     checkComparisonVal = self.currentComparisonValue != ""
 
-        #Check for float conversion?
-        if checkPattern:
-            if (checkComparisonVal):
-                # Change this to an enumerated type
-                if (self.currentComparisonSymbol == ""):
-                    return True
-                elif(self.currentComparisonSymbol == "="):
-                    if float(self.currentComparisonValue) == float(val):
-                        return True
-                    else:
-                        return False
-                elif(self.currentComparisonSymbol == ">"):
-                    if float(val) > float(self.currentComparisonValue):
-                        # logger.info(f"here in > !!!")
-                        return True
-                        # return False
-                    else:
-                        return False
-                elif(self.currentComparisonSymbol == "<"):
-                    if float(val) < float(self.currentComparisonValue):
-                        return True
-                    else:
-                        return False
-                elif(self.currentComparisonSymbol== "<="):
-                    if float(val) <= float(self.currentComparisonValue):
-                        return True
-                    else:
-                        return False
-                elif(self.currentComparisonSymbol == ">="):
-                    if float(val) >= float(self.currentComparisonValue):
-                        return True
-                    else:
-                        return False
-                elif(self.currentComparisonSymbol == "None"):
-                    return True
-                else:
-                    # Any unaccounted for symbol will be False
-                    logger.info(f'Warning: Symbol is not accounted for.')
-                    return False
-            else:
-                # When there is no comparison value show row
-                return True
-        else:
-            return False
+    #     #Check for float conversion?
+    #     if checkPattern:
+    #         if (checkComparisonVal):
+    #             # Change this to an enumerated type
+    #             if (self.currentComparisonSymbol == ""):
+    #                 return True
+    #             elif(self.currentComparisonSymbol == "="):
+    #                 if float(self.currentComparisonValue) == float(val):
+    #                     return True
+    #                 else:
+    #                     return False
+    #             elif(self.currentComparisonSymbol == ">"):
+    #                 if float(val) > float(self.currentComparisonValue):
+    #                     # logger.info(f"here in > !!!")
+    #                     return True
+    #                     # return False
+    #                 else:
+    #                     return False
+    #             elif(self.currentComparisonSymbol == "<"):
+    #                 if float(val) < float(self.currentComparisonValue):
+    #                     return True
+    #                 else:
+    #                     return False
+    #             elif(self.currentComparisonSymbol== "<="):
+    #                 if float(val) <= float(self.currentComparisonValue):
+    #                     return True
+    #                 else:
+    #                     return False
+    #             elif(self.currentComparisonSymbol == ">="):
+    #                 if float(val) >= float(self.currentComparisonValue):
+    #                     return True
+    #                 else:
+    #                     return False
+    #             elif(self.currentComparisonSymbol == "None"):
+    #                 return True
+    #             else:
+    #                 # Any unaccounted for symbol will be False
+    #                 logger.info(f'Warning: Symbol is not accounted for.')
+    #                 return False
+    #         else:
+    #             # When there is no comparison value show row
+    #             return True
+    #     else:
+    #         return False
     
 class TableModel(QAbstractTableModel):
     """
@@ -197,9 +197,31 @@ class TableModel(QAbstractTableModel):
 
                 # print('qqq Table model used "at" to get row', row, 'colName', colName, 'returnVal:', returnVal)
 
-                # print(f"row: {row} col: {col} colName: {colName} returnVal: {returnVal} returnVal type: {type(returnVal)}")=
+                # print(f"row: {row} col: {col} colName: {colName} returnVal: {returnVal} returnVal type: {type(returnVal)}")
                 # TODO: possible type checking
-                return str(returnVal)
+                # return str(returnVal)
+                # return returnVal
+                # data does not like returning numpy ints
+                # type checking to see if value can be converted to int
+
+                try:
+                    checkVal = float(returnVal)
+                except TypeError:
+                    checkVal = None
+                    # logger.info(f"Col {colName} values do not have the correct type")
+                except ValueError:
+                    checkVal = None
+                    # logger.info("table data value is not a float")
+
+                if checkVal is not None and not checkVal.is_integer():
+                      return round(float(returnVal), 2)
+                elif str(returnVal).isdigit(): # check for int
+                    # logger.info(f"colName: {colName}")
+                    return int(returnVal)
+                else:
+                    return str(returnVal)
+
+                # TODO: check if filtering still works after this
             except KeyError:
                 print(f'Error occurred when accessing dataframe: {KeyError}')
 
@@ -617,7 +639,7 @@ class myQTableView(QtWidgets.QTableView):
         Called by other widgets like annotationPlotWidget
         """
 
-        logger.info(f'programattic select of row(s) -->> {self.getMyName()} rowList:{rowList}')
+        # logger.info(f'programattic select of row(s) -->> {self.getMyName()} rowList:{rowList}')
         
         if rowList is None or len(rowList)==0:
             with self._blockSlotsManager():
@@ -635,10 +657,10 @@ class myQTableView(QtWidgets.QTableView):
             for _idx, rowIdx in enumerate(rowList):
                 # abb already row label
                 # abb 20241121 -->> this is not getting the correct row
-                logger.info(f"rowIdx in _selectRow{rowIdx}")
+                # logger.info(f"rowIdx in _selectRow{rowIdx}")
 
                 modelIndex = self.findModelIndex(column=0, value=rowIdx) # column = 0, assuming index is always first column
-                logger.info(f"modelIdx in _selectRow {modelIndex}")
+                # logger.info(f"modelIdx in _selectRow {modelIndex}")
 
                 # find the correct model.index get a spine Index(rowIndex)
 
@@ -646,7 +668,7 @@ class myQTableView(QtWidgets.QTableView):
                 # here we default to zero since we will select the entire row regardless
                 # modelIndex = self.model.index(rowIdx, 0)
                 proxyIndex = self.proxyModel.mapFromSource(modelIndex)
-                logger.info(f'   modelIndex.row():{modelIndex.row()} proxyIndex.row():{proxyIndex.row()}')
+                # logger.info(f'   modelIndex.row():{modelIndex.row()} proxyIndex.row():{proxyIndex.row()}')
 
                 mode = QtCore.QItemSelectionModel.Select | QtCore.QItemSelectionModel.Rows
                 self.mySelectionModel.select(proxyIndex, mode)

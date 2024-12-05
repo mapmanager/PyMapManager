@@ -487,9 +487,16 @@ class myStatListWidget(QtWidgets.QWidget):
     def getCurrentStat(self):
         # assuming single selection
         row = self.getCurrentRow()
-        currentStat = self.myTableWidget.item(row, 0).text()
+        # currentStat = self.myTableWidget.item(row, 0).text()
 
-        return currentStat
+        # return currentStat
+        logger.info(f"row {row}")
+        tableItem = self.myTableWidget.item(row, 0)
+        if tableItem is not None:
+            currentStat = tableItem.text()
+            return currentStat
+        else:
+            return None
     
     # @QtCore.pyqtSlot()
     def on_scatter_toolbar_table_click(self):
@@ -756,7 +763,7 @@ class ScatterPlotWidget(QtWidgets.QWidget):
                     myColorMap.append("white")
                 else:
                     if hueColumn != "None":
-                        logger.info(f"hueColumn {hueColumn} id:{id}")
+                        # logger.info(f"hueColumn {hueColumn} id:{id}")
                         hueId = self._df[hueColumn].iloc[id]
                         myColorMap.append(self.color[hueId])
 
@@ -994,24 +1001,28 @@ class ScatterPlotWidget(QtWidgets.QWidget):
             self.filteredDF, indexList = self.getfilteredDFWithIndexList(filterStr=filterStr, filterColumn=filterColumn)   
         else:     # when there is no filterStr
             self.filteredDF, indexList = self.getfilteredDFWithIndexList(filterStr=None, filterColumn=None)
-
-        xDFStat = np.array(self.filteredDF[columnNameX].tolist())
-        yDFStat = np.array(self.filteredDF[columnNameY].tolist())
-        indexList = np.array(indexList)
-
-        self.setScatterPlot(xDFStat, yDFStat, indexList)
-
-        self.axScatter.set_xlabel(columnNameX)
-        self.axScatter.set_ylabel(columnNameY)
-
-        # Added to test histogram
-        self.scatter_hist(xDFStat, yDFStat, self.axHistX, self.axHistY)
-
-        # self.scatterPoints.set_data(xStat, yStat)
-        self.axScatter.invert_yaxis()
-        self.static_canvas.draw()
         
-        self.myHighlighter = Highlighter(self, self.axScatter, xDFStat, yDFStat, indexList)
+        if columnNameX is not None:
+            xDFStat = np.array(self.filteredDF[columnNameX].tolist())
+            yDFStat = np.array(self.filteredDF[columnNameY].tolist())
+            indexList = np.array(indexList)
+
+            self.setScatterPlot(xDFStat, yDFStat, indexList)
+
+            self.axScatter.set_xlabel(columnNameX)
+            self.axScatter.set_ylabel(columnNameY)
+
+            # Added to test histogram
+            self.scatter_hist(xDFStat, yDFStat, self.axHistX, self.axHistY)
+
+            # self.scatterPoints.set_data(xStat, yStat)
+            self.axScatter.invert_yaxis()
+            self.static_canvas.draw()
+            
+            self.myHighlighter = Highlighter(self, self.axScatter, xDFStat, yDFStat, indexList)
+
+        else:
+            self.myHighlighter = None
 
         plotWidget = QtWidgets.QWidget()
         vLayoutPlot = QtWidgets.QVBoxLayout()
@@ -1219,7 +1230,8 @@ class ScatterPlotWidget(QtWidgets.QWidget):
             self.axHistX = None
             self.axHistY = None
 
-        self.myHighlighter.resetHighlighter(self.axScatter, np.array([]), np.array([]), np.array([]))
+        if self.myHighlighter is not None: # TODO: go back and retest after adding points
+            self.myHighlighter.resetHighlighter(self.axScatter, np.array([]), np.array([]), np.array([]))
 
     # IMPORTANT SIGNAL-SLOT CONNECTION (outside wrapper -> inside)
     def selectHighlighterPoints(self, rowIndexes):    

@@ -653,8 +653,8 @@ class PyMapManagerApp(QtWidgets.QApplication):
                     _aWidget = self._openWidgetList.openWidgetFromPath(openFilePath)
                     logger.info(f"opened PATH {openFilePath}")
                     self.shownFolderPathsList.append(openFilePath)
-                except:
-                    logger.info(f"failed to open path {openFilePath}")
+                except Exception as e: #  exception: 'timePoints'
+                    logger.info(f"failed to open path {openFilePath} with exception: {e}")
 
             if len(self.shownFolderPathsList) > 0:
                 self.enableFolderWindow = True
@@ -699,6 +699,19 @@ class PyMapManagerApp(QtWidgets.QApplication):
 
         # refresh first window 
         self._openFirstWindow.refreshUI()
+
+    def importNewTIF(self):
+        pass
+
+        frontStackWindow = self.getFrontWindow()
+        # bring up directory
+
+        # get newTifPath
+
+        # try calling map.loadInNewChannel(self, path: Union[str, np.ndarray], time: int = 0, channel: int = 0):
+        frontStackWindow.loadInNewChannel()
+        # might need to somehow refresh stackwidget?
+
     
 def main():
     """Run the PyMapMAnager app.
