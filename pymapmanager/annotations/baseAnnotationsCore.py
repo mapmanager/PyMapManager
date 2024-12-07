@@ -291,27 +291,46 @@ class SpineAnnotationsCore(AnnotationsCore):
                 logger.error(f'error getting x/y allSpinesDf is: {type(allSpinesDf)}')
                 print(allSpinesDf)
 
-        allSpinesDf['roiType'] = 'spineROI'
         allSpinesDf.insert(0,'index', allSpinesDf.index)  # index is first column (use this as row label)
+        
+        addTheseColumns = ['roiType', 'markerColor', 'mplMarker']
+        for aColumn in addTheseColumns:
+            allSpinesDf[aColumn] = None
 
-        # if len(allSpinesDf) > 0:
-            # TODO make this work
-            # marker color
-            # allSpinesDf['markerColor'] = 'm'
-            # try:
-            #     _notAcceptRowLabels = allSpinesDf[ not allSpinesDf['accept'] ]
-            #     allSpinesDf.loc[_notAcceptRowLabels, 'markerColor'] = 'w'
-            # except (KeyError) as e:
-            #     logger.error(f'{e}')
-            #     logger.error(f'available columns are: {allSpinesDf.columns}')
+        # logger.info('allSpinesDf is:')
+        # print(allSpinesDf.columns)
+        # print(allSpinesDf.index)
+        # print(allSpinesDf)
 
-            # TODO make this work
-            # _userTypeMarkers = getUserTypeMarkers_mpl()
-            # allSpinesDf['mplMarker'] = 'o'
-            # for userType in range(10):
-            #     # 10 user types
-            #     _userTypeRowLabels = allSpinesDf[ allSpinesDf['userType'] == userType]
-            #     allSpinesDf.loc[_userTypeRowLabels, 'mplMarker'] = _userTypeMarkers[userType]
+        allSpinesDf['roiType'] = 'spineROI'
+
+        if len(allSpinesDf) > 0:
+            allSpinesDf['markerColor'] = 'm'
+            try:
+                _notAcceptRowLabels = allSpinesDf[ ~allSpinesDf['accept'] ]
+                # logger.warning(f'_notAcceptRowLabels:{_notAcceptRowLabels}')
+                # ValueError: The truth value of a Series is ambiguous.
+                # Use a.empty, a.bool(), a.item(), a.any() or a.all().
+                if len(_notAcceptRowLabels)>0:
+                    allSpinesDf.loc[_notAcceptRowLabels.index, 'markerColor'] = 'w'
+            except (KeyError) as e:
+                logger.error(f'{e}')
+                logger.error(f'available columns are: {allSpinesDf.columns}')
+                logger.info('_notAcceptRowLabels is:')
+                print(_notAcceptRowLabels)
+                logger.error('allSpinesDf is:')
+                print(allSpinesDf)
+
+            _userTypeMarkers = getUserTypeMarkers_mpl()
+            # logger.info(f'_userTypeMarkers:{_userTypeMarkers}')
+            allSpinesDf['mplMarker'] = 'o'
+            for userType in range(10):
+                # 10 user types
+                _userTypeRowLabels = allSpinesDf[ allSpinesDf['userType'] == userType]
+                # logger.info(f'userType:{userType}')
+                # logger.info('_userTypeRowLabels.index:')
+                # print(_userTypeRowLabels.index)
+                allSpinesDf.loc[_userTypeRowLabels.index, 'mplMarker'] = _userTypeMarkers[userType]
 
         self._df = allSpinesDf
 

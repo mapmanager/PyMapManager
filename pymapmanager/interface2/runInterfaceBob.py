@@ -35,7 +35,7 @@ def run():
     # random ome zarr file (local)
     # path = '/Users/cudmore/Dropbox/data/ome-zarr/6001240.ome.zarr'
 
-    # a single timepoint tif file
+    # a single timepoint tif file (import)
     # path = mapmanagercore.data.getTiffChannel_1()
 
     # map with segments and spines (no segments connected)
@@ -53,7 +53,7 @@ def run():
     
     # a mmap with multiple timepoints, connects segments and spines
     # path = '/Users/cudmore/Desktop/multi_timepoint_map_seg_spine_connected.mmap'
-    path = mapmanagercore.data.getMultiTimepointMap()
+    # path = mapmanagercore.data.getMultiTimepointMap()
 
     # mw will be map widget if path has multiple timepoints, otherwise mw is a stackwidget2
     mw = app.loadStackWidget(path)
