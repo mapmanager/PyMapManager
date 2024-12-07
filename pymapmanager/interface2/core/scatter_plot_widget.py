@@ -503,7 +503,7 @@ class myStatListWidget(QtWidgets.QWidget):
         statName = self.myTableWidget.item(row,0).text()
         self.signalUpdateStat.emit(self._id, statName)
     
-class ScatterPlotWidget(QtWidgets.QWidget):
+class ScatterPlotWidget_(QtWidgets.QWidget):
     """Plot x/y statistics as a scatter.
 
     Get stat names and variables from sanpy.bAnalysisUtil.getStatList()
@@ -721,8 +721,7 @@ class ScatterPlotWidget(QtWidgets.QWidget):
         return df, indexList
     
     def getFilteredIndexList(self, filterDF):
-        """
-            Calculate the new list of indexes after hue filtering DF
+        """Calculate the new list of indexes after hue filtering DF.
         """
         hueColumn = self.dict["hueColumn"]
         currentHueID = float(self.dict["currentHueID"]) 
@@ -756,7 +755,7 @@ class ScatterPlotWidget(QtWidgets.QWidget):
                     myColorMap.append("white")
                 else:
                     if hueColumn != "None":
-                        logger.info(f"hueColumn {hueColumn} id:{id}")
+                        logger.info(f'hueColumn: "{hueColumn}" id:{id}')
                         hueId = self._df[hueColumn].iloc[id]
                         myColorMap.append(self.color[hueId])
 
@@ -1222,7 +1221,7 @@ class ScatterPlotWidget(QtWidgets.QWidget):
         self.myHighlighter.resetHighlighter(self.axScatter, np.array([]), np.array([]), np.array([]))
 
     # IMPORTANT SIGNAL-SLOT CONNECTION (outside wrapper -> inside)
-    def selectHighlighterPoints(self, rowIndexes):    
+    def selectHighlighterPoints(self, rowIndexes : List[int]):    
         """ Select Data in Highlighter Class
 
         This function needs to be connected within wrapper class. 
@@ -1230,31 +1229,20 @@ class ScatterPlotWidget(QtWidgets.QWidget):
         Args:
             rowIndexes: indexes of rows that need to be selected within highlighter plot
         """
-
-        # If nothing is selected empty highlighter plot
-        if rowIndexes == None:
+        if rowIndexes is None or rowIndexes == []:
             self.myHighlighter._setData([], [])
         else: 
-            # Otherwise get the appropriate values and plot
             columnNameX = self.xPlotWidget.getCurrentStat()
             columnNameY = self.yPlotWidget.getCurrentStat()
-
-            # Get column values into respective lists
-            xFilteredVals =  self._df[columnNameX].tolist()
-            yFilteredVals = self._df[columnNameY].tolist()
-            # logger.info(f"rowIndexes {rowIndexes}")
-            # logger.info(f"xFilteredVals {xFilteredVals}")
-            # logger.info(f"yFilteredVals {yFilteredVals}")
             
-            # Acquire only selected rowIndexes from the lists
-            xDFStat = [xFilteredVals[i] for i in rowIndexes]
-            yDFStat = [yFilteredVals[i] for i in rowIndexes]
-            self.myHighlighter._setData(xDFStat, yDFStat)
+            # pull x/y values from selected row(s)
+            xSelectValues =  self._df.loc[rowIndexes, columnNameX].tolist()
+            ySelectValues = self._df.loc[rowIndexes, columnNameY].tolist()
+
+            self.myHighlighter._setData(xSelectValues, ySelectValues)
 
             # Store selected rows for later use
             self.storedRowIdx = rowIndexes
-            logger.info(f"self.storedRowIdx {self.storedRowIdx}")
-            logger.info("select Highlighter Points called")
 
     def getHighlightedIndexes(self):
         return self.storedRowIdx

@@ -22,6 +22,9 @@ from pymapmanager import TimeSeriesCore
 
 from pymapmanager._logger import logger
 
+def getUserTypeMarkers_mpl():
+    return ['o', 'v', '^', '<', '>', 'D', 'd', '*', 'p' ,'h']
+
 class AnnotationsCore:
     def __init__(self,
                  timeSeriesCore : TimeSeriesCore,  # multi timepoint
@@ -262,7 +265,7 @@ class AnnotationsCore:
         return self._isDirty 
 
 class SpineAnnotationsCore(AnnotationsCore):
-        
+    
     def _buildDataFrame(self):
         """Dataframe representing backend spines, one row per spine.
         
@@ -289,7 +292,26 @@ class SpineAnnotationsCore(AnnotationsCore):
                 print(allSpinesDf)
 
         allSpinesDf['roiType'] = 'spineROI'
-        allSpinesDf.insert(0,'index', allSpinesDf.index)  # index is first column
+        allSpinesDf.insert(0,'index', allSpinesDf.index)  # index is first column (use this as row label)
+
+        # if len(allSpinesDf) > 0:
+            # TODO make this work
+            # marker color
+            # allSpinesDf['markerColor'] = 'm'
+            # try:
+            #     _notAcceptRowLabels = allSpinesDf[ not allSpinesDf['accept'] ]
+            #     allSpinesDf.loc[_notAcceptRowLabels, 'markerColor'] = 'w'
+            # except (KeyError) as e:
+            #     logger.error(f'{e}')
+            #     logger.error(f'available columns are: {allSpinesDf.columns}')
+
+            # TODO make this work
+            # _userTypeMarkers = getUserTypeMarkers_mpl()
+            # allSpinesDf['mplMarker'] = 'o'
+            # for userType in range(10):
+            #     # 10 user types
+            #     _userTypeRowLabels = allSpinesDf[ allSpinesDf['userType'] == userType]
+            #     allSpinesDf.loc[_userTypeRowLabels, 'mplMarker'] = _userTypeMarkers[userType]
 
         self._df = allSpinesDf
 
@@ -740,6 +762,8 @@ class LineAnnotationsCore(AnnotationsCore):
         
         # find pivotDistance within point distance, that is what we plot
         pivotDistances = self._summaryDf["Pivot Distance"]
+        """List[float], one item per segment id"""
+        
         pointDistance = self._summaryDf["Point Distances"]
 
         returnPointX = []

@@ -188,11 +188,9 @@ class mapWidget(MainWindow):
             # toggle interface
             # dict_keys(['top toolbar', 'Point List', 'Line List', 'image plot', 'Histogram'])
             if _multipleTp:
-                bsw._toggleWidget("top toolbar", False)
+                bsw._toggleWidget("Top Toolbar", False)
                 bsw._toggleWidget("Point List", False)
-                bsw._toggleWidget("Line List", False)
-                # bsw._toggleWidget("tracing widget qqq", False)
-                bsw._toggleWidget("Histogram", False)
+                bsw._toggleWidget("Segment List", False)
                 # bsw._toggleWidget("Status Bar", False)
 
             # select a point and zoom

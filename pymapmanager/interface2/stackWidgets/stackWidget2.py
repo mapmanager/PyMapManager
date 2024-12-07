@@ -272,7 +272,7 @@ class stackWidget2(mmWidget2):
         try:
             self._widgetDict[name].setVisible(visible)
         except (KeyError):
-            logger.warning(f'did not find key {name}, available keys are:')
+            logger.warning(f'did not find key "{name}", available keys are:')
             logger.warning(f'{self._widgetDict.keys()}')
     
     def _getNamedWidget(self, name):
@@ -633,7 +633,7 @@ class stackWidget2(mmWidget2):
     def addedSegmentEvent(self, event : AddSegmentEvent):
         """Derived classes need to perform action of selection event.
         """
-        logger.warning('=== ===   STACK WIDGET PERFORMING ADD Segment   === ===')
+        logger.info('=== ===   STACK WIDGET PERFORMING ADD Segment   === ===')
 
         newSegmentID = self.getStack().getLineAnnotations().newSegment()
         
@@ -665,7 +665,7 @@ class stackWidget2(mmWidget2):
     def addedSegmentPointEvent(self, event : pmmEvent):
         """Derived classes need to perform action of selection event.
         """
-        logger.warning('=== ===   STACK WIDGET PERFORMING ADD SEGMENT POINT   === ===')
+        logger.info('=== ===   STACK WIDGET PERFORMING ADD SEGMENT POINT   === ===')
 
         logger.info(event)
 

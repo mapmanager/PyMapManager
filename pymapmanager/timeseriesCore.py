@@ -139,12 +139,18 @@ class TimeSeriesCore():
 
         self._fullMap : MapAnnotations = None
 
+        # TODO just use endswith(), splitext does not handle '.ome.zarr'
         _ext = os.path.splitext(path)[1]
+        
         if _ext == '.mmap':
             self._load_zarr()
         elif _ext == '.tif':
             self._import_tiff()
+        # elif path.endswith('.ome.zarr'):
+        elif path.endswith('.zarr'):
+            self._import_ome_zarr()
         else:
+            # TODO properly handle this
             logger.error(f'did not load file extension: {_ext}')
 
         self._imagesCore = ImagesCore(self._fullMap)
@@ -154,10 +160,16 @@ class TimeSeriesCore():
 
         # every mutation sets to True
 
-        if _ext == '.tif':
-            self._isDirty = True
-        else:
+        # TODO only .mmap ext is not dirty (all other path ext were import)
+        if _ext == '.mmap':
             self._isDirty = False
+        else:
+            self._isDirty = True
+
+        # if _ext == '.tif' or path.endswith('.ome.zarr'):
+        #     self._isDirty = True
+        # else:
+        #     self._isDirty = False
 
         self._undoRedoManager = UndoRedoManager()
 
@@ -296,6 +308,10 @@ class TimeSeriesCore():
         """Load from tif file.
         
         Result is a single timepoint with no segments and no spines.
+        
+        Notes
+        -----
+        This only loads one channel
         """
         path = self.path
 
@@ -309,8 +325,18 @@ class TimeSeriesCore():
                             lineSegments=pd.DataFrame(),
                             points=pd.DataFrame())
 
+        # map.points[:]
+        # map.segments[:]
+
         self._fullMap : MapAnnotations = map
-            
+    
+    def _import_ome_zarr(self):
+        from mapmanagercore.image_importers.image_importer_ome_zarr import ImageImporter_Ome_Zarr
+        path = self.path
+        flz = ImageImporter_Ome_Zarr(path)
+        map = flz.getMapAnnotations()
+        self._fullMap : MapAnnotations = map
+
     def save(self):
         """ Stack saves changes to its .mmap Zarr file that is stored
         """

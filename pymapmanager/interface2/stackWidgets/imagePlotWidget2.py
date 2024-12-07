@@ -648,8 +648,11 @@ class ImagePlotWidget(mmWidget2):
             
             # print('2) ch1_image:', ch1_image.shape, ch1_image.dtype)
 
+            _xShape = ch0_image.shape[0]
+            _yShape = ch0_image.shape[1]
+            sliceImage = np.ndarray((_xShape,_yShape,3))
+            
             # magenta is blue + red
-            sliceImage = np.ndarray((1024,1024,3))
             sliceImage[:,:,0] = ch1_image  # red
             sliceImage[:,:,1] = ch0_image  # green
             sliceImage[:,:,2] = ch1_image  # blue
