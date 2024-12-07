@@ -76,7 +76,7 @@ class stackWidget2(mmWidget2):
         # """Set of open plugins."""
 
         self._openPluginDict = {} # abj
-        """Dict of open plugins. Key: unique PluginID, Value: Plugin Name, Plugin Obj"""
+        """Dict of open plugins.Key = (humanName, pluginNumber), Value: Plugin Obj"""
 
         self._stackSelection = StackSelection(self._stack)
         """One stack selection (state) shared by all children mmWidget2."""
@@ -1303,3 +1303,49 @@ class stackWidget2(mmWidget2):
         """
         """
         return self._openPluginDict 
+    
+    def loadInNewChannel(self):
+        """ self, path: Union[str, np.ndarray], time: int = 0, channel: int = 0):
+        """
+
+        newTifPath = QtWidgets.QFileDialog.getOpenFileName(None, 'New Tif File')[0]
+
+        # check to ensure it is a tif file, Note: might need to expand to list of supported files
+        ext = os.path.splitext(newTifPath)[1]
+        if ext != '.tif':
+            logger.error(f'map must have extension ".tif", got "{ext}" -->> did not load.')
+            QtWidgets.QMessageBox.critical(self, "Error: Incorrect Extension", "Please use .tif as the file extension to save")
+            return
+
+        #Check to ensure it is a valid image channel (same size)
+        from PIL import Image
+        
+        with Image.open(newTifPath) as img:
+            newImgWidth, newImgHeight = img.size
+            # print("Width:", newImgWidth)
+            # print("Height:", newImgHeight)
+            newImgSlices = img.n_frames  # z dimension
+    
+        # Get old tif path
+        stackHeader = self.getStack().header
+        x = stackHeader["xPixels"]
+        y = stackHeader["yPixels"]
+        z = stackHeader["numSlices"]
+        if newImgHeight != y or newImgWidth != x or newImgSlices != z:
+            logger.error(f'Incorrect shape when loading in new image.')
+            QtWidgets.QMessageBox.critical(self, "Error: Incorrect Image Size", 
+                                           f"Please upload an image with size x: {x}, y: {y}, z: {z} ")
+            return
+        
+    
+        self.getTimeSeriesCore().loadInNewChannel(newTifPath, time=0, channel=None)
+
+        # totalChannels = self._stack.getTimeSeriesTotalChannels()
+        # logger.info(f"after maxChannels {totalChannels}")
+
+        # reset stackToolBar
+        self._topToolbar._setStack(theStack=self._stack)
+
+        # reset stack Contrast
+        self._stack.resetStackContrast()
+

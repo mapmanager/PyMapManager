@@ -212,7 +212,7 @@ class PyMapManagerMenus:
             # never use a bare except (causes lots of problems)
             # I think you wanted 'except (AttributeError)' to catch getOpenPluginDict()
             # when activeWindow was not a stackwidget2
-            except:
+            except AttributeError:
                 logger.info("Error when adding opened plugins to windows menu!")
 
         #abb
@@ -454,6 +454,11 @@ class PyMapManagerMenus:
         analysisParametersAction = QtWidgets.QAction('App Analysis Parameters', self.getApp())
         analysisParametersAction.triggered.connect(self.getApp()._showAnalysisParameters)
         self.fileMenu.addAction(analysisParametersAction)
+
+        self.fileMenu.addSeparator()
+        importNewTIFAction = QtWidgets.QAction('Import new TIF (channel)', self.getApp())
+        importNewTIFAction.triggered.connect(self.getApp().importNewTIF)
+        self.fileMenu.addAction(importNewTIFAction)
 
     def _refreshOpenRecent(self):
         """Dynamically generate the open recent stack/map menu.

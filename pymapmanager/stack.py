@@ -138,7 +138,10 @@ class stack:
     @property
     def numChannels(self):
         # TODO (cudmore): implement this in the backend
-        return self.header['numChannels']
+        # return self.header['numChannels']
+
+        # abj
+        return self.getTimeSeriesTotalChannels()
     
     def getFileName(self) -> str:
         return self._fullMap.filename
@@ -273,6 +276,12 @@ class stack:
             return np.nan
         return _intensity
     
+    # abj
+    # def getChannelTotal(self):
+    #     """ Return total amount of channels in map
+    #     """
+    #     return self._fullMap.getChannelTotal()
+    
     def undo(self):
         _ret = self._fullMap.undo()
 
@@ -301,4 +310,17 @@ class stack:
     def getLastSaveTime(self):
         return self._fullMap.getLastSaveTime()
 
+    def getTimeSeriesTotalChannels(self) -> int:
+        """ Accesses images core in timeseries and returns total number of channels that have been imported
         
+        """
+        totalChannels = self._fullMap.getImagesCoreTotalChannels()
+        return totalChannels
+        logger.info(f"totalChannels {totalChannels}")
+    
+    def resetStackContrast(self):
+        """ Recreates Stack Contrast with current Stack
+
+        Currently called whenever a new channel is imported
+        """
+        self._stackContrast = StackContrast(theStack=self)

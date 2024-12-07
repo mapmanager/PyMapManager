@@ -67,13 +67,13 @@ def run():
     # sw2.zoomToPointAnnotation(1, isAlt=True)
 
     sw2.zoomToPointAnnotation(1, isAlt=True)
-    spineID = 1
-    deleteEvent = DeleteSpineEvent(sw2, spineID)
-    # deleteEvent = DeleteSpineEvent(sw2)
-    # deleteEvent.addDeleteSpine(spineID)
-    # sw2.deletedEvent(deleteEvent)
-    # sw2.emitEvent(deleteEvent, blockSlots=False)
-    sw2.slot_pmmEvent(deleteEvent)
+    # spineID = 1
+    # deleteEvent = DeleteSpineEvent(sw2, spineID)
+    # # deleteEvent = DeleteSpineEvent(sw2)
+    # # deleteEvent.addDeleteSpine(spineID)
+    # # sw2.deletedEvent(deleteEvent)
+    # # sw2.emitEvent(deleteEvent, blockSlots=False)
+    # sw2.slot_pmmEvent(deleteEvent)
 
 
     # _pmmEvent = pmmEvent(pmmEventType.delete, sw2)
@@ -197,7 +197,7 @@ def testingProgrammaticRunClose():
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
-    run()
+    # run()
     # run2()
     # run3()
     # run4()
@@ -206,4 +206,4 @@ if __name__ == '__main__':
     # testingOpenClose()
     # runPoochFileDirectly()
     # testingProgrammaticRunClose()
-    # run2_tif()
+    run2_tif()
