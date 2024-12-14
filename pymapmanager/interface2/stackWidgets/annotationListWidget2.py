@@ -184,7 +184,7 @@ class annotationListWidget(mmWidget2):
 
     # abb 20240725
     def _getSelectedRowLabels(self):
-        """Get selected row labels (points or segment) using row labels (index).
+        """Get selected row labels (points or segment) using row index of table
         """
         selectedRows = self._myTableView.getSelectedRows()
         
@@ -197,6 +197,12 @@ class annotationListWidget(mmWidget2):
             try:
                 # rowLabel = self._myTableView.model._data.index.get_loc(row)  # abb new
                 rowLabel = self._myTableView.model._data.index[row]  # abb new
+                # modelRowIndex = self._myTableView.model.index(row, 0)  # abj, (row, column=0) -> index column is always 0
+                # logger.info(f"modelRowIndex {modelRowIndex}")
+                # role = QtCore.Qt.DisplayRole
+                # rowLabel = int(self._myTableView.model.data(modelRowIndex, role)) # get value stored at model
+                # logger.info(f"rowLabelllll{rowLabel}")
+
                 rowLabel = int(rowLabel)
                 rowLabelList.append(rowLabel)
             except (KeyError) as e:

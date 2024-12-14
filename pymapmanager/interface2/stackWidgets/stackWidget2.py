@@ -762,6 +762,12 @@ class stackWidget2(mmWidget2):
                 x=x, y=y, z=z)
             logger.info(f'   newSpineID: {newSpineID}')
 
+            # MapManagerCore returns None for NewSpineID if there was a problems:
+            # Cases: Spine is outside of img, ROI outside of img
+            if newSpineID is None:
+                logger.info("newSpineID added event aborted")
+                return
+
             # fill in newSpineID and segmentID
             event._list[_rowIdx]['spineID'] = newSpineID
             event._list[_rowIdx]['segmentID'] = segmentID

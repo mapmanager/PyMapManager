@@ -500,20 +500,22 @@ class myQTableView(QtWidgets.QTableView):
             self.setColList()
 
     def getSelectedRows(self):
-        """Get selected row labels from df index (not visual row index).
+        """ New: Get the integer row value of selected row within table
+        
+        Old: Get selected row labels from df index (not visual row index).
+
+        Example:
+            Dataframe has a row 2 with its column index as 3
+            we are returning the value 2, and then use that to get the actual value within table
         """
         # Don't use params, use self.selectedIndexes()
-        selectedRows = [self.proxyModel.mapToSource(modelIndex).row()
+        selectedRows = [self.proxyModel.mapToSource(modelIndex).row() # get the actual row with model corresponding to selected modelIndex
                             for modelIndex in self.selectedIndexes()]
 
         # reduce to list of unique values (selected indices are often repeated?)
         selectedRows = list(set(selectedRows))
-        
-        selectedIndexes = []
-        for selectedRow in selectedRows:
-            selectedIndexes.append(self.df.index[selectedRow])
-
-        return selectedIndexes
+        # logger.info(f"selectedRows {selectedRows}")
+        return selectedRows
 
     # def keyPressEvent(self, event : QtGui.QKeyEvent):
     #     super().keyPressEvent(event)
@@ -554,6 +556,8 @@ class myQTableView(QtWidgets.QTableView):
         
         # reduce to list of unique values (selected indices are often repeated?)
         selectedRows = list(set(selectedRows))
+
+        # logger.info(f'-->> "{self.getMyName()}" signalSelectionChanged.emit selectedRows:{selectedRows} ')
 
         mapSelectedIndexes = []
         for selectedRow in selectedRows:
