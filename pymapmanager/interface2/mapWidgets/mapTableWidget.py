@@ -11,6 +11,8 @@ from pymapmanager._logger import logger
 
 class mapTableWidget(QtWidgets.QWidget):
     """A widget to show an mmMap as a table.
+
+    One timepoint per row.
     """
 
     _widgetName = "Map Table"
@@ -31,7 +33,7 @@ class mapTableWidget(QtWidgets.QWidget):
 
     def slot_switchMap(self, timeSeriesCore : TimeSeriesCore):
         self._timeSeriesCore = timeSeriesCore
-        self._mapNameLabel.setText(timeSeriesCore.filename)
+        # self._mapNameLabel.setText(timeSeriesCore.filename)
         self._setModel()
 
     def contextMenuEvent(self, event):
@@ -74,11 +76,15 @@ class mapTableWidget(QtWidgets.QWidget):
 
     def _getToolbar(self) -> QtWidgets.QVBoxLayout:
         hLayout = QtWidgets.QHBoxLayout()
+        hLayout.setAlignment(QtCore.Qt.AlignLeft)
 
-        self._mapNameLabel = QtWidgets.QLabel()
-        hLayout.addWidget(self._mapNameLabel)
+        # self._mapNameLabel = QtWidgets.QLabel()
+        # hLayout.addWidget(self._mapNameLabel)
 
-        linkCheckbox = QtWidgets.QCheckBox()
+        # aLabel = QtWidgets.QLabel('Link')
+        # hLayout.addWidget(aLabel)
+
+        linkCheckbox = QtWidgets.QCheckBox('Link')
         hLayout.addWidget(linkCheckbox)
 
         closeAllButton = QtWidgets.QPushButton('Close All')

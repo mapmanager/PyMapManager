@@ -11,7 +11,7 @@ from matplotlib.widgets import RectangleSelector  # To click+drag rectangular se
 from pymapmanager import TimeSeriesCore
 from pymapmanager._logger import logger
 
-def getPlotDict_mpl():
+def _old_getPlotDict_mpl():
     """Get a new default plot dictionary.
 
     The plot dictionary is used to tell plot functions what to plot (e.g. ['xstat'] and ['ystat']).
@@ -231,10 +231,10 @@ class mmMapPlot_mpl():
     def _getUserSelection(self, ind : int) -> dict:
         """Get use selection from _on_pick.
         """
-        logger.info(f'ind:{ind}')
+        # logger.info(f'ind:{ind}')
         
         ret = {
-            'ind' : ind,
+            'ind' : int(ind),
             'x' : self.pd['x'][ind],
             'y' : self.pd['y'][ind],
 
@@ -635,7 +635,7 @@ class mmMapPlot_mpl():
         self.axes.set_ylim(self._origYLim)
         self._refreshFigure()
         
-    def getMapValues3(self, pd):
+    def _old_getMapValues3(self, pd):
         """Get values of a stack annotation across all stacks in the map.
 
         Args:
@@ -756,8 +756,9 @@ class mmMapPlot_mpl():
         return pd
 
     def rebuildPlotDict(self):
-        self.pd = self.getMapValues3(self.pd)
-        # self._printPlotDict()
+        # self.pd = self.getMapValues3(self.pd)
+        from mapmanagercore.map_utils import getMapValues3
+        self.pd = getMapValues3(self.map._fullMap, self.pd)
 
     def _printPlotDict(self):
         logger.info('pd is:')

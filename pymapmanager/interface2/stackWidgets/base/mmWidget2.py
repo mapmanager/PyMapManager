@@ -662,7 +662,10 @@ class mmWidget2(QtWidgets.QMainWindow):
         centralWidget.setLayout(layout)
         self.setCentralWidget(centralWidget)
 
-    def _addDockWidget(self, widget : "mmWidget2", position : str, name : str = '') -> QtWidgets.QDockWidget:
+    def _addDockWidget(self,
+                       widget : "mmWidget2",
+                       position : str,
+                       name : str = '') -> QtWidgets.QDockWidget:
         """
         Parameters
         ----------

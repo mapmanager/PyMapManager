@@ -238,7 +238,8 @@ class pointListWidget(annotationListWidget):
         super().__init__(stackWidget, annotations, name='pointListWidget')
 
         # limit the displayed columns
-        colList = ['index', 'userType', 'z', 'roiType', 'segmentID', 'accept', 'note', 'spineSide', 'spineAngle']
+        # colList = ['index', 'userType', 'z', 'roiType', 'segmentID', 'accept', 'note', 'spineSide', 'spineAngle']
+        colList = ['index', 'segmentID', 'z', 'spinePosition', 'userType', 'accept', 'note', 'spineSide', 'spineAngle']
         self._myTableView.showTheseColumns(colList)
 
         # limit the rows based on roiType
@@ -252,7 +253,7 @@ class pointListWidget(annotationListWidget):
         if self._blockSlots:
             return
         
-        logger.info(f'{self.getClassName()} {event}')
+        # logger.info(f'{self.getClassName()} {event}')
     
         pointSelection = event.getStackSelection().getPointSelection()        
 
@@ -503,7 +504,7 @@ class lineListWidget(annotationListWidget):
     def settedSegmentPivot(self, event):
 
         # uncheck Pivot box in tracing widget after setting segment pivot
-        self.tracingWidget.updatePivotSpinBox(False)
+        self.tracingWidget.updateSetPivotCheckBox(False)
 
         # refresh linelistWidget
         self._setModel()

@@ -55,7 +55,7 @@ class mapWidget(MainWindow):
 
     Shows
         - (left) a mapTableWidget
-        - (right) a dendrogramWidget2
+        - (right) a MapDendrogramWidget
     """
 
     _widgetName = 'Map Table'
@@ -108,24 +108,6 @@ class mapWidget(MainWindow):
         """
         _undoEvent = UndoSpineEvent(self, None)
         self.slot_pmmEvent(_undoEvent)
-
-    def _old__buildMenus(self):
-        mainMenu = self.menuBar()
-
-        self._mainMenu = pymapmanager.interface2.PyMapManagerMenus(self.getApp())
-        self._mainMenu._buildMenus(mainMenu, self)
-
-    # def getApp(self) -> "pmm.interface2.pyMapManagerApp":
-    #     return QtWidgets.QApplication.instance()
-
-    # def _findStackWidget(self, path):
-    #     """Find an open stack widget.
-    #     """
-    #     for stackWidget in self._stackWidgetList:
-    #         zarrPath = stackWidget.getStack().getPath()
-    #         if zarrPath == path:
-    #             return stackWidget
-    #     return None
     
     def _findStackWidget(self, thisStack):
         """Find an open stack widget.
@@ -152,7 +134,9 @@ class mapWidget(MainWindow):
         timepoint : int
             Center timepoint
         plusMinus : int
-            Plus and minus from center timepoint.
+            Plus and minus from center timepoint. If 0 then open single stack widget (bigger)
+        spineID : None | int
+            If specified then select a zoom to spineID
         """
         
         _map = self.getMap()
@@ -173,7 +157,7 @@ class mapWidget(MainWindow):
 
         _multipleTp = firstTp != lastTp-1
 
-        numCols = 4
+        numCols = 3
         screenGrid = self.getApp().getScreenGrid(numSessions, numCols)
         
         logger.info(f'firstTp:{firstTp} lastTp:{lastTp} spineID:{spineID}')
@@ -182,7 +166,10 @@ class mapWidget(MainWindow):
             if tp in self._stackWidgetDict.keys():
                 bsw = self._stackWidgetDict[tp]
             else:
-                posRect = screenGrid[tp]
+                if _multipleTp:
+                    posRect = screenGrid[tp]
+                else:
+                    posRect = [10, 10, 500, 500]
                 bsw = self.openStack2(tp, posRect=posRect)
 
             # toggle interface
@@ -197,7 +184,8 @@ class mapWidget(MainWindow):
             if spineID is not None:
                 bsw.zoomToPointAnnotation(spineID, isAlt=True, select=True)
 
-        self.linkOpenPlots(link=True)
+        if spineID and _multipleTp:
+            self.linkOpenPlots(link=True)
 
     def getNumSessions(self):
         return self.getMap().numSessions
@@ -234,7 +222,7 @@ class mapWidget(MainWindow):
     def openStack(self,
                   session : int,
                   posRect : List[int] = None,
-                  ) -> "pmm.interface2.stackWidget":
+                  ) -> stackWidget2:
         """Open a stack widget for one map session.
         
         Parameters
@@ -277,7 +265,9 @@ class mapWidget(MainWindow):
         return bsw
 
     def linkOpenPlot_slice(self, slice):
+        logger.info(f'slice:{slice}')
         if self._blockSlots:
+            logger.info(f'  -->> return block slots True')
             return
         self._blockSlots = True
         for tp, widget in self._stackWidgetDict.items():
@@ -376,33 +366,35 @@ class mapWidget(MainWindow):
         """
         logger.info('')
 
-        self._widgetDict = {}
+        # self._widgetDict = {}
 
-        # main h box to hold left control panel and image plot
-        vBoxLayout_main = QtWidgets.QVBoxLayout()
-        self._makeCentralWidget(vBoxLayout_main)
+        # main h box
+        hBoxLayout_main = QtWidgets.QHBoxLayout()
+        self._makeCentralWidget(hBoxLayout_main)
 
         # a table for a map, one row per session
         mapTableWidget = pmm.interface2.mapWidgets.mapTableWidget(self._map)
         mapTableWidget.signalOpenStack.connect(self.openStack2)
         mapTableWidget.signalOpenRun.connect(self.openStackRun)
         
-        mapTableName = mapTableWidget._widgetName
-        mapTableDock = self._addDockWidget(mapTableWidget, 'left', '')
-        self._widgetDict[mapTableName] = mapTableDock  # the dock, not the widget ???
+        self._addDockWidget(mapTableWidget, 'left', mapTableWidget._widgetName)
+        # self._widgetDict[mapTableName] = mapTableDock  # the dock, not the widget ???
 
         # vBoxLayout_main.addWidget(self._mapTableWidget)
 
         # logger.warning('abb add dendrogram widget back in')
         # dendrogramWidget = pmm.interface2.mapWidgets.dendrogramWidget(self)
         
-        # from pymapmanager.interface2.mapWidgets.dendrogramWidget2 import dendrogramWidget2
-        dendrogramWidget = pmm.interface2.mapWidgets.dendrogramWidget2(self)
+        # to hide form circular imports
+        from pymapmanager.interface2.mapWidgets.mapDendrogramWidget import MapDendrogramWidget
+        dendrogramWidget = MapDendrogramWidget(self)
         dendrogramWidget.signalOpenRun.connect(self.openStackRun)
         
-        dendrogramWidgetName = dendrogramWidget._widgetName
-        dendrogramDock = self._addDockWidget(dendrogramWidget, 'right', '')
-        self._widgetDict[dendrogramWidgetName] = dendrogramDock  # the dock, not the widget ???
+        # as a dock
+        # dendrogramWidgetName = dendrogramWidget._widgetName
+        # dendrogramDock = self._addDockWidget(dendrogramWidget, 'right', '')
+        # self._widgetDict[dendrogramWidgetName] = dendrogramDock  # the dock, not the widget ???
+        hBoxLayout_main.addWidget(dendrogramWidget)
 
     def contextMenu(self):
         logger.info('')

@@ -297,39 +297,25 @@ class SpineAnnotationsCore(AnnotationsCore):
         for aColumn in addTheseColumns:
             allSpinesDf[aColumn] = None
 
-        # logger.info('allSpinesDf is:')
-        # print(allSpinesDf.columns)
-        # print(allSpinesDf.index)
-        # print(allSpinesDf)
-
         allSpinesDf['roiType'] = 'spineROI'
 
         if len(allSpinesDf) > 0:
             allSpinesDf['markerColor'] = 'm'
             try:
-                _notAcceptRowLabels = allSpinesDf[ ~allSpinesDf['accept'] ]
-                # logger.warning(f'_notAcceptRowLabels:{_notAcceptRowLabels}')
-                # ValueError: The truth value of a Series is ambiguous.
-                # Use a.empty, a.bool(), a.item(), a.any() or a.all().
+                # after we add a spine, pandas is converting
+                # dtype of column 'accept' from bool to object?
+                _notAcceptRowLabels = allSpinesDf[ ~allSpinesDf['accept'].astype(bool) ]
                 if len(_notAcceptRowLabels)>0:
                     allSpinesDf.loc[_notAcceptRowLabels.index, 'markerColor'] = 'w'
             except (KeyError) as e:
                 logger.error(f'{e}')
-                logger.error(f'available columns are: {allSpinesDf.columns}')
-                logger.info('_notAcceptRowLabels is:')
-                print(_notAcceptRowLabels)
-                logger.error('allSpinesDf is:')
-                print(allSpinesDf)
-
+                raise(e)
+            
             _userTypeMarkers = getUserTypeMarkers_mpl()
-            # logger.info(f'_userTypeMarkers:{_userTypeMarkers}')
             allSpinesDf['mplMarker'] = 'o'
             for userType in range(10):
                 # 10 user types
                 _userTypeRowLabels = allSpinesDf[ allSpinesDf['userType'] == userType]
-                # logger.info(f'userType:{userType}')
-                # logger.info('_userTypeRowLabels.index:')
-                # print(_userTypeRowLabels.index)
                 allSpinesDf.loc[_userTypeRowLabels.index, 'mplMarker'] = _userTypeMarkers[userType]
 
         self._df = allSpinesDf

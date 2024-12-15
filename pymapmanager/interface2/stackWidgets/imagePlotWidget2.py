@@ -301,35 +301,46 @@ class ImagePlotWidget(mmWidget2):
             #logger.warning(f'key not understood {event.text()}')
 
     def _onMouseClick_scene(self, event):
-        """If we get shift+click, make new annotation.
+        """Take an action on mouse click.
         
         Note:
         -----
-        This seems to get called AFTER _on_mouse_click in our annotation plots?
+        This gets called after _on_mouse_click in annotation scatter plots?
 
         Parameters
         ----------
         event: pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent
         """
-        # logger.info(f'mouse click event:{type(event)}')
+
+        # logger.info(f'event.currentItem:{event.currentItem}')
+        # click on image
+        #   -->> pyqtgraph.graphicsItems.ViewBox.ViewBox
+        # click on scatter
+        #   -->> pyqtgraph.graphicsItems.ScatterPlotItem
+
+        if not isinstance(event.currentItem, pg.graphicsItems.ViewBox.ViewBox):
+            # reject all clicks on scatter plot items
+            logger.info(f'rejecting click on {event.currentItem}')
+            return
         
-        modifiers = QtWidgets.QApplication.queryKeyboardModifiers()
+        # get from app
+        # modifiers = QtWidgets.QApplication.queryKeyboardModifiers()
+        # get from event
+        modifiers = event.modifiers()
         isShift = modifiers == QtCore.Qt.ShiftModifier
         #isAlt = modifiers == QtCore.Qt.AltModifier
-
 
         pos = event.pos()
         imagePos : QtCore.QPointF = self._myImage.mapFromScene(pos)
         x = int(imagePos.x())
         y = int(imagePos.y())
         z = self._currentSlice
-                
-        # logger.info(f'-->> selectionEvent.type {_selectionEvent.type}')
-        # logger.info(f'-->> check type.emit {pymapmanager.annotations.lineAnnotations}')
-            
-        _state = self.getStackWidget().getStackSelection().getState()
-        if _state == pmmStates.movingPnt:
 
+        _state = self.getStackWidget().getStackSelection().getState()
+        
+        logger.info(f'x:{x} y:{y} z:{z} isShift:{isShift} _state:{_state}')
+
+        if _state == pmmStates.movingPnt:
             _stackSelection = self.getStackWidget().getStackSelection()
             if _stackSelection.hasPointSelection():
                 items = _stackSelection.getPointSelection()
@@ -339,7 +350,6 @@ class ImagePlotWidget(mmWidget2):
                 self.emitEvent(event, blockSlots=True)
 
         elif _state == pmmStates.manualConnectSpine:
-
             _stackSelection = self.getStackWidget().getStackSelection()
             if _stackSelection.hasPointSelection():
                 items = _stackSelection.getPointSelection()
@@ -350,17 +360,9 @@ class ImagePlotWidget(mmWidget2):
 
         elif _state == pmmStates.tracingSegment:
             if isShift:
-                pos = event.pos()
-                imagePos : QtCore.QPointF = self._myImage.mapFromScene(pos)
-
-                x = int(imagePos.x())
-                y = int(imagePos.y())
-                z = self._currentSlice
-                
-                # logger.info(f'stack selection is: {self.getStackWidget().getStackSelection()}')
-                
                 if not self.getStackWidget().getStackSelection().hasSegmentSelection():
                     logger.error('no segment selection???')
+                    self.getStackWidget().slot_setStatus('Please select a segment -> no point added')
                     return
                 else:
                     _segmentID = self.getStackWidget().getStackSelection().getSegmentSelection()
@@ -369,40 +371,23 @@ class ImagePlotWidget(mmWidget2):
                     addSegmentPoint = AddSegmentPoint(self, segmentID=_segmentID, x=x, y=y, z=z)
                     self.emitEvent(addSegmentPoint)
 
-        elif _state == pmmStates.settingSegmentPivot: # abj
-        
-            pos = event.pos()
-            imagePos : QtCore.QPointF = self._myImage.mapFromScene(pos)
-            x = int(imagePos.x())
-            y = int(imagePos.y())
-            z = self._currentSlice
-            
+        elif _state == pmmStates.settingSegmentPivot: # abj            
             if not self.getStackWidget().getStackSelection().hasSegmentSelection():
                 logger.error('no segment selection???')
                 return
             else:
                 _segmentID = self.getStackWidget().getStackSelection().getSegmentSelection()
                 _segmentID = _segmentID[0]
-                logger.info(f'-->> emit AddSegmentPoint segmentID:{_segmentID} x:{x} y:{y} z:{z}')
-                # addSegmentPoint = AddSegmentPoint(self, segmentID=_segmentID, x=x, y=y, z=z)
+                logger.info(f'-->> emit SetSegmentPivot segmentID:{_segmentID} x:{x} y:{y} z:{z}')
                 event = SetSegmentPivot(self, segmentID=_segmentID, x=x, y=y, z=z)
                 event.setSegmentSelection([_segmentID])
                 self.emitEvent(event)
 
         elif isShift:
-            # make a new spine
-
-            pos = event.pos()
-            imagePos : QtCore.QPointF = self._myImage.mapFromScene(pos)
-
-            x = int(imagePos.x())
-            y = int(imagePos.y())
-            z = self._currentSlice
-            
-            # _stackSelection = self.getStackWidget().getStackSelection()
-            # _segmentSelection = _stackSelection.getSegmentSelection()
-            
-            addSpineEvent = AddSpineEvent(self, x=x, y=y, z=z)
+            # make a new spine            
+            addSpineEvent = AddSpineEvent(self, x=x, y=y, z=z)            
+            logger.info('--> emitEvent addSpineEvent')
+            logger.info(addSpineEvent)
             self.emitEvent(addSpineEvent)
 
     def _onMouseMoved_scene(self, pos):
@@ -415,13 +400,6 @@ class ImagePlotWidget(mmWidget2):
         x = int(round(x))  # int
         y = int(round(y))
 
-        # get intensity from stack (x/y is swapped)
-        # x/y swapped stack is (row, col)
-        
-        # logger.warning('TURN BACK ON')
-        # return
-
-        #abj: 6/21 turned back on
         if self._channelIsRGB():
             intensity = float('nan')
         else:
@@ -459,14 +437,14 @@ class ImagePlotWidget(mmWidget2):
         
         halfZoom = zoomFieldOfView / 2
         
-        l = x - halfZoom
+        left = x - halfZoom
         t = y - halfZoom
         r = x + halfZoom
         b = y + halfZoom
 
-        w = r - l
+        w = r - left
         h = b - t
-        _zoomRect = QtCore.QRectF(l, t, w, h)
+        _zoomRect = QtCore.QRectF(left, t, w, h)
 
         padding = 0.0
         self._plotWidget.setRange(_zoomRect, padding=padding)

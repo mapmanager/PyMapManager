@@ -20,7 +20,8 @@ class TracingWidget(mmWidget2):
         super().__init__(stackWidget)
         self._buildUI()
         
-        self._editState = False  # if edit segment is checked
+        self._editState : bool = False  # if edit segment is checked
+        """If edit segment is checked -->> in pmmStates.tracingSegment"""
 
         self.currentSegmentID = None
         self.prevSegmentID = None
@@ -46,11 +47,11 @@ class TracingWidget(mmWidget2):
         vControlLayout.addLayout(hBoxLayout)
 
         # edit segment checkbox
-        aCheckbox = QtWidgets.QCheckBox('Edit Segment')
-        aCheckbox.setToolTip('Toggle tracing on/off')
-        aCheckbox.setChecked(tracingSegment)
-        aCheckbox.stateChanged.connect(self.on_segment_edit_checkbox)
-        hBoxLayout.addWidget(aCheckbox, alignment=_alignLeft)
+        self._editSegmentCheckbox = QtWidgets.QCheckBox('Edit Segment')
+        self._editSegmentCheckbox.setToolTip('Toggle tracing on/off')
+        self._editSegmentCheckbox.setChecked(tracingSegment)
+        self._editSegmentCheckbox.stateChanged.connect(self.on_edit_segment_checkbox)
+        hBoxLayout.addWidget(self._editSegmentCheckbox, alignment=_alignLeft)
 
         # new line segment button
         self._addSegmentButton = QtWidgets.QPushButton('+')
@@ -135,27 +136,11 @@ class TracingWidget(mmWidget2):
         if self.currentSegmentID != self.prevSegmentID:
             self.signalRadiusChanged.emit(value)
 
-    def updatePivotSpinBox(self, value):
+    def updateSetPivotCheckBox(self, value):
         self._setPivotCheckBox.setChecked(value)
 
-    def _on_set_pivot_checkbox(self, checked):
-        """
-        Notes
-        =====
-        TODO: emit new event pmmEventType.settingSegmentPivot
-
-        When in settingSegmentPivot we wait for click near the segment (in image plot)
-            and then set the core 'segmentPivot'
-        """
-        checked = checked > 0
-        logger.info(checked)
-
-        event = pmmEvent(pmmEventType.stateChange, self)
-        event.setStateChange(pmmStates.settingSegmentPivot)
-        self.emitEvent(event)
-    
-    def on_segment_edit_checkbox(self, state : int):
-        """Respond to user toggling segment edit checkbox.
+    def on_edit_segment_checkbox(self, state : int):
+        """Respond to user toggling "edit segment" checkbox.
 
         A little complicated, we want to
         change the text in _traceCancelButton b/w 'Trace' and 'Cancel'
@@ -175,6 +160,26 @@ class TracingWidget(mmWidget2):
             event.setStateChange(pmmStates.edit)
 
         logger.info(f'  -->> emit {event.getStateChange()}')
+        self.emitEvent(event)
+
+    def _on_set_pivot_checkbox(self, checked):
+        """
+        Notes
+        =====
+        TODO: emit new event pmmEventType.settingSegmentPivot
+
+        When in settingSegmentPivot we wait for click near the segment (in image plot)
+            and then set the core 'segmentPivot'
+        """
+        checked = checked > 0
+        logger.info(checked)
+
+        event = pmmEvent(pmmEventType.stateChange, self)
+        if checked:
+            event.setStateChange(pmmStates.settingSegmentPivot)
+        else:
+            logger.info('cancel pmmStates.settingSegmentPivot')
+            event.setStateChange(pmmStates.edit)
         self.emitEvent(event)
 
     def on_segment_button_clicked(self, state, buttonName : str):
@@ -202,11 +207,19 @@ class TracingWidget(mmWidget2):
         else:
             logger.warning(f'did not understand buttonName:{buttonName}')
 
+    def stateChangedEvent(self, event):
+        # if event.getStateChange() != pmmStates.settingSegmentPivot:
+        #     self.updateSetPivotCheckBox(False)
+        # if event.getStateChange() != pmmStates.tracingSegment:
+        #     self._editSegmentCheckbox.setChecked(False)
+        if event.getStateChange() == pmmStates.edit:
+            self.updateSetPivotCheckBox(False)
+            self._editSegmentCheckbox.setChecked(False)
+
+
     def setGui(self):
    
         segmentID = self.getSelectedSegment()
-
-        # abj
         self.currentSegmentID = segmentID
 
         isEnabled = self._editState and (segmentID is not None)
@@ -227,11 +240,14 @@ class TracingWidget(mmWidget2):
             self._radiusSpinBox.setValue(_radius)
 
         self._setPivotCheckBox.setEnabled(isEnabled)
+        if not isEnabled:
+            self._setPivotCheckBox.setChecked(False)
 
     def selectedEvent(self, event: pmmEvent):
         """
         """
-
+        logger.info('')
+        
         if self.currentSegmentID is None:
             self.prevSegmentID = None
         else:

@@ -91,6 +91,12 @@ class stackWidget2(mmWidget2):
         self._buildMenus()
         self.setContextMenuPolicy(QtCore.Qt.NoContextMenu) # abj - disabled hidden context menu
 
+        # abb
+        _pmmEvent = pmmEvent(pmmEventType.setSlice, self)
+        _pmmEvent.setSliceNumber(self._currentSliceNumber)
+        logger.info(f'  -->> emit updateDisplayOptionsZ() self._currentSliceNumber :{self._currentSliceNumber}')
+        self.emitEvent(_pmmEvent, blockSlots=True)
+
     def getTimeSeriesCore(self):
         return self._stack.getTimeSeriesCore()
     
@@ -206,7 +212,7 @@ class stackWidget2(mmWidget2):
         state = _selection.getState()
         if state != pmmStates.edit:
             # revert to edit state
-            logger.info("not in edit state - reverting to edit state")
+            logger.info(f'in state "{state}" -> reverting to edit state')
             event = pmmEvent(pmmEventType.stateChange, self)
             event.setStateChange(pmmStates.edit)
             self.slot_pmmEvent(event)
@@ -264,6 +270,13 @@ class stackWidget2(mmWidget2):
         """Get the current stack selection.
         """
         return self._stackSelection
+
+    def setAllWidgetsVisible(self, visible : bool):
+        for k,v in self._widgetDict.items():
+            if k == 'Image Viewer':
+                continue
+            # logger.info(k)
+            self._toggleWidget(k, visible)
 
     def _toggleWidget(self, name : str, visible : bool):
         """Toggle a named mmWidget visibility.
@@ -515,8 +528,6 @@ class stackWidget2(mmWidget2):
         """
             Update Z Plus Minus values within Display options whenever z slider is changed within 
             top tool bar
-
-
 
             Arguments: 
                 d = {
