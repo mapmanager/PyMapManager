@@ -499,7 +499,8 @@ class annotationPlotWidget(mmWidget2):
             # x = dfPrint['x'].tolist()
             # y = dfPrint['y'].tolist()
 
-        # logger.info(f'selecting annotation index:{dbIdx}')
+        logger.info(f'selecting annotation index:{dbIdx}')
+        # logger.info(f'xplot {xPlot} yPlot {yPlot}')
 
         self._scatterUserSelection.setData(xPlot, yPlot)
         # set data calls this?
@@ -556,12 +557,14 @@ class annotationPlotWidget(mmWidget2):
             # logger.error(dfPlot)
             return
         
+        # logger.info(f"slot set slice x: {x} y: {y}")
         # TODO: Can get rid of this and just use dfPlot, use dfPlot at index 
         # self._currentPlotIndex = dfPlot['index'].tolist()
         self._currentPlotIndex = dfPlot.index.tolist()
         
         _symbolBrush = self._getScatterColor()
         _connect = self._getScatterConnect(dfPlot)
+        # _pen = self._getPen()
 
         if self.showScatter:
             self._scatter.setData(x, y,
@@ -934,7 +937,10 @@ class pointPlotWidget(annotationPlotWidget):
         
         for spineID in event.getSpines():
             # add new spine to markers and spine lines
-            self._addAnnotation(spineID)
+            if spineID is None: # abj:
+                continue
+            else:
+                self._addAnnotation(spineID)
 
         self._refreshSlice()
 
@@ -1165,8 +1171,9 @@ class linePlotWidget(annotationPlotWidget):
         
         super().__init__(stackWidget, lineAnnotations, pgView, lineDisplayOptions)
 
-        # define the roi types we will display, see: slot_setDisplayTypes()
         self.showRadiusLines = True
+        
+        # define the roi types we will display, see: slot_setDisplayTypes()
         self._roiTypes = ["linePnt"]
         self._buildUI()
 
@@ -1230,8 +1237,27 @@ class linePlotWidget(annotationPlotWidget):
         )
 
         self._pivotPoints.setZValue(
-            10
+            11
         )  #
+
+        color= "yellow"
+        _pen = pg.mkPen(width=3, color=color)
+        self._selectedLines = self._view.plot(
+            [],
+            [],
+            pen=_pen,  # None to not draw lines
+            symbol= "o",
+            symbolColor  = 'color',
+            # symbolPen=None,
+            fillOutline=False,
+            # markeredgewidth=0.0,
+            symbolBrush = color,
+            # connect='finite',
+        )
+
+        self._selectedLines.setZValue(
+            10
+        )  # put it on top, may need to change '10'
 
     def toggleRadiusLines(self):
         self.showRadiusLines = not self.showRadiusLines
@@ -1261,10 +1287,12 @@ class linePlotWidget(annotationPlotWidget):
         _stackSelection = self.getStackWidget().getStackSelection()
         _segmentSelection = _stackSelection.getSegmentSelection()
 
-        if _segmentSelection is not None and len(_segmentSelection) > 0:
-            _tmp = dfPlot.loc[ dfPlot.index.isin(_segmentSelection) ]            
-            dfPlot.loc[_tmp.index, 'color'] = 'y'
-        
+        logger.info(f"_segmentSelection {_segmentSelection}")
+
+        # if _segmentSelection is not None and len(_segmentSelection) > 0:
+        #     # _tmp = dfPlot.loc[ dfPlot.index.isin(_segmentSelection) ]      
+        #     dfPlot.loc[_tmp.index, 'color'] = 'y'
+
         return dfPlot['color'].tolist()
     
     def _getScatterConnect(self, df : pd.DataFrame) -> Optional[np.ndarray]:
@@ -1299,6 +1327,8 @@ class linePlotWidget(annotationPlotWidget):
             Build a connect array with
                 1 : connect to next
                 0 : do not connect to next
+
+        Currently used to connect left/ right radius lines
         """
         # logger.info(df)
 
@@ -1373,6 +1403,17 @@ class linePlotWidget(annotationPlotWidget):
 
         # logger.warning('turned off left/right segment plot.')
         # _lineConnect = self._getScatterConnect(self._dfPlot)
+        
+        # _symbolBrush = self._getScatterColor()
+        selectedDFplot = self._selectedDataFrame()
+        # logger.info(f"selectedDFplot {selectedDFplot}")
+        if selectedDFplot is not None:
+            _connect = self._getScatterConnect(selectedDFplot)
+
+            # convert from series to list to be able to plot
+            selectedX = self._dfPlot.loc[selectedDFplot.index, 'x'].tolist()
+            selectedY = self._dfPlot.loc[selectedDFplot.index, 'y'].tolist()
+            self._selectedLines.setData(selectedX, selectedY, connect=_connect)
 
         pivotPointXs, pivotPointYs = self._annotations.getPivotPoint()
         self._pivotPoints.setData(pivotPointXs, pivotPointYs)
@@ -1390,7 +1431,11 @@ class linePlotWidget(annotationPlotWidget):
         # this updates color of selected segment
         self.slot_setSlice(self._currentSlice)
 
-        # _stackSelection = event.getStackSelection()
+        _stackSelection = event.getStackSelection()
+
+        if not _stackSelection.hasSegmentSelection():
+            logger.info(f'   "{self.getClassName()}" NO SEGMENT SELECTION')
+            self._selectedLines.setData([], [])
         
         # if _stackSelection.hasSegmentSelection():
         #     _selectedSegments = _stackSelection.getSegmentSelection()
@@ -1418,3 +1463,27 @@ class linePlotWidget(annotationPlotWidget):
 
     def settedSegmentPivot(self, event):
         self._refreshSlice()
+
+    def _selectedDataFrame(self):
+        """ Filters dataframe, leaving only rows where segmentID is equal to that of the selected Segment
+        """
+        
+        dfPlot = self._dfPlot
+
+        if len(dfPlot) == 0:
+            return
+        
+        # abb having trouble with pandas setting a slice on a copy
+        pd.options.mode.chained_assignment = None  # default='warn'
+
+        _stackSelection = self.getStackWidget().getStackSelection()
+        _segmentSelection = _stackSelection.getSegmentSelection()
+
+        # logger.info(f"_segmentSelection {_segmentSelection}")
+
+        if _segmentSelection is not None and len(_segmentSelection) > 0:    
+            highlightedDataframe = dfPlot.loc[dfPlot["segmentID"].isin(_segmentSelection)]
+        else:
+            return None
+        
+        return highlightedDataframe

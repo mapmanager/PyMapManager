@@ -197,7 +197,7 @@ def testingProgrammaticRunClose():
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
-    # run()
+    run()
     # run2()
     # run3()
     # run4()
@@ -206,4 +206,4 @@ if __name__ == '__main__':
     # testingOpenClose()
     # runPoochFileDirectly()
     # testingProgrammaticRunClose()
-    run2_tif()
+    # run2_tif()

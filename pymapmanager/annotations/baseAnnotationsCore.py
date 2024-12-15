@@ -401,6 +401,9 @@ class SpineAnnotationsCore(AnnotationsCore):
                                x=x,
                                y=y,
                                z=z)
+        
+        if newSpineID is None: # User made an incorrect spine Addition (Out of image)
+            return None # -> send None for StackWidget 2 to handle 
 
         newSpineID = int(newSpineID)
 
