@@ -221,11 +221,11 @@ class PyMapManagerMenus:
         if activeWindow._widgetName == 'Stack Widget':
             # triggers except (AttributeError) when front window is not a stackWidget2
             pluginWidgetDict = activeWindow.getOpenPluginDict()
-
-            # for _pluginID, (_pluginName, _pluginObj) in pluginWidgetDict.items():
             for pluginKey, _pluginObj in pluginWidgetDict.items():
                 (_pluginName, _pluginID) = pluginKey
-                logger.info(f'adding "{_pluginName}" to window menu')
+                # logger.info(f'adding "{_pluginName}" to window menu')
+                if _pluginID == 1:
+                    _pluginID = "" # Show first plugin as having no number
                 action = QtWidgets.QAction(_pluginName + " " + str(_pluginID), self.getApp(), checkable=True)
                 action.triggered.connect(partial(self._onActivePluginAction, pluginKey))
                 self.windowsMenu.addAction(action)

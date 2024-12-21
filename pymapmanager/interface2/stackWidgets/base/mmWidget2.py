@@ -694,6 +694,9 @@ class mmWidget2(QtWidgets.QMainWindow):
     def getStackWidget(self) -> stackWidget2:
         return self._stackWidget
     
+    def setStackWidget(self, stackWidget) -> stackWidget2: # abj
+        self._stackWidget = stackWidget
+    
     def getStack(self):
         if self.getStackWidget() is None:
             return
@@ -1127,10 +1130,24 @@ class mmWidget2(QtWidgets.QMainWindow):
 
     def closeEvent(self, event : QtGui.QKeyEvent):
         # logger.info(f"closing plugin: {self._widgetName} with id: {self._id}")
+        stackWidget = self.getStackWidget()
+        # logger.info(f"stackWidget {temp}")
         # remove widget from parent stackWidget dictionary
+
+        if stackWidget is None:
+            logger.info(f"No stackwidget!")
+            return
+        
+        openPluginDict = stackWidget.getOpenPluginDict()
+        pluginObjList = list(openPluginDict.values())
+        if self not in pluginObjList: # Catch circular closing
+            # logger.info(f"object is no longer in pluginDict: do nothing")
+            return
+
         try:
             # self._stackWidget.closePluginInDict(pluginId = self._id)
             # check for value in dictionary and delete/pop
+            logger.info(f"closing plugin: {self._widgetName} with id: {self._id}")
             self._stackWidget.closePluginInDict(self)
 
         except Exception as error: # Note: this will catch error for dock plugins that arent being stored in dict

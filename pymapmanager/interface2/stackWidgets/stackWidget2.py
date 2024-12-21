@@ -143,7 +143,10 @@ class stackWidget2(mmWidget2):
             if result == QtWidgets.QMessageBox.Yes:
                 # User clicked Yes
                 print("User clicked Yes")
-                self._openPluginDict.clear() # clears dictionary and close all the plugins
+                # self._openPluginDict.clear() # clears dictionary and close all the plugins
+                pluginObjList = list(self._openPluginDict.values())
+                for pluginObj in pluginObjList:
+                    self.closePluginInDict(pluginObj)
                 pass # proceed to closing stackwindow
             else:
                 # User clicked No or closed the dialog so we cancel the event
@@ -352,14 +355,10 @@ class stackWidget2(mmWidget2):
         humanName, newPlugin, pluginNumber = self.createAndShowNewPlugin(pluginName, show)
 
         if not newPlugin.getInitError():
-            # logger.info("here")
-            # check to make sure plugin is not already stored
-            # if humanName not in self._openPluginDict: # abj
-                # logger.info("here 2")
             pluginKey = (humanName, pluginNumber)
             self._openPluginDict[pluginKey] = newPlugin
             # logger.info(f"pluginID {pluginID}")
-            logger.info(f"self._openPluginDict {self._openPluginDict}")
+            # logger.info(f"self._openPluginDict {self._openPluginDict}")
 
             return pluginKey
         
@@ -403,16 +402,21 @@ class stackWidget2(mmWidget2):
             logger.info(f'Running plugin: "{pluginName}"')
 
             newPlugin = pluginDict[pluginName]["constructor"](
-                stackWidget=self,
+                stackWidget=self
             )
+            newPlugin.setStackWidget(self)
 
             logger.info(f'Running newPlugin: {newPlugin}')
 
             # check if plugin has been run befor/ stored in dictionary
             pluginNumber = self.getPluginWindowNumber(pluginName)
+            if pluginNumber == 1:
+                _pluginNumber = "" # Dont show first plugin as numbered
+            else:
+                _pluginNumber = pluginNumber
 
             if show:
-                newPlugin.setWindowTitle(humanName + " " + str(pluginNumber)) # Display plugin number
+                newPlugin.setWindowTitle(humanName + " " + str(_pluginNumber)) # Display plugin number
                 newPlugin.getWidget().show()
                 newPlugin.getWidget().setVisible(True)
                 newPlugin.raise_()  # abb, bring to front
@@ -1069,7 +1073,7 @@ class stackWidget2(mmWidget2):
         _indexList = _pointAnnotations.getDataFrame().index.to_list()
         if not idx in _indexList:
             logger.warning(f'bad point index {idx}')
-            logger.warning(f'available index is: {_indexList}')
+            # logger.warning(f'available index is: {_indexList}')
             return
         
         event = pmmEvent(pmmEventType.selection, self)
@@ -1273,24 +1277,20 @@ class stackWidget2(mmWidget2):
 
         This function is called by closeEvent by all widgets and can be called programmatically.
         """
-        logger.info(f"pluginObj {pluginObj}")
+        # logger.info(f"pluginObj {pluginObj}")
 
         # logger.info('  _openPluginDict:')
         # print(self._openPluginDict)
 
-        # storedDict = self._openPluginDict
-        # logger.info(f"storedDict {storedDict}")
         # run in separate window
         pluginDict = self.getPyMapManagerApp().getStackPluginDict()
 
-        # get key by checking value in pluginDict
-        # pluginKey = [i for i in pluginDict if pluginDict[i]==pluginObj]
         keyList = list(self._openPluginDict.keys())
         valList = list(self._openPluginDict.values())
+
         # logger.info(f"valList {valList}")
         position = valList.index(pluginObj)
         pluginKey = keyList[position]
-        # logger.info(f"pluginKeyyyy {pluginKey}")
         (pluginName, id) = pluginKey
 
         # pluginName, pluginObj = self._openPluginDict[pluginId]
@@ -1298,11 +1298,12 @@ class stackWidget2(mmWidget2):
             logger.error(f'Did not find plugin: "{pluginName}"')
             return
         else:
-            logger.info(f'Closing oldPlugin: {pluginObj}')
-            # pluginObj.getWidget().close() 
             self._openPluginDict.pop((pluginName, id)) # remove plugin permanently
+            # logger.info(f'Closing oldPlugin: {pluginObj}')
+            # close plugin
+            pluginObj.getWidget().close() 
 
-        logger.info('  after _openPluginDict:')
+        logger.info('dict of open plugins:')
         print(self._openPluginDict)
 
     def getOpenPluginDict(self):
