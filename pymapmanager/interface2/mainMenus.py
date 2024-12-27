@@ -23,7 +23,10 @@ class PyMapManagerMenus:
     def getApp(self):
         """Get the pyMapManagerApp2.
         """
-        return self._app
+        if self._app is None:
+            logger.error('pymapmanager app is None')
+        else:
+            return self._app
 
     def _buildMenus(self, mainMenu, mainWindow):
         """
@@ -137,6 +140,7 @@ class PyMapManagerMenus:
         _activateStackPlugins = windowType in ['stack', 'stackWithMap']
         """If our front window is a stack widget."""
         for pluginName in stackPluginDict.keys():
+            logger.info(f'pluginName:{pluginName}')
             action = QtWidgets.QAction(pluginName, self.getApp(), checkable=True)
             action.setEnabled(_activateStackPlugins)
             action.triggered.connect(partial(self._onPluginMenuAction, pluginName, 'stack'))
@@ -396,7 +400,9 @@ class PyMapManagerMenus:
         loadFileAction = QtWidgets.QAction("Open...", self.getApp())
         loadFileAction.setCheckable(False)  # setChecked is True by default?
         loadFileAction.setShortcut("Ctrl+O")
-        loadFileAction.triggered.connect(self.getApp().openFile)
+        _app = self.getApp()
+        if _app is not None:
+            loadFileAction.triggered.connect(_app.openFile)
         self.fileMenu.addAction(loadFileAction)
         
         # loadFolderAction = QtWidgets.QAction("Open Time-Series...", self.getApp())

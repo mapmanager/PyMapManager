@@ -615,7 +615,8 @@ class mmWidget2(QtWidgets.QMainWindow):
     def getApp(self) -> "pymapmanager.interface2.PyMapManagerApp":
         """Get running application.
         """
-        return QtWidgets.QApplication.instance()
+        from PyQt5.QtWidgets import QApplication 
+        return QApplication.instance()
 
     def getMapWidgetParent(self):
         return self._mapWidget
@@ -1137,8 +1138,9 @@ class mmWidget2(QtWidgets.QMainWindow):
             # check for value in dictionary and delete/pop
             self._stackWidget.closePluginInDict(self)
 
-        except Exception as error: # Note: this will catch error for dock plugins that arent being stored in dict
-            logger.info(f"error: {error}")
+        except (AttributeError) as e: 
+            # Note: this will catch error for dock plugins that arent being stored in dict
+            logger.info(f"error: {e}")
 
     def getID(self):
         return self._id

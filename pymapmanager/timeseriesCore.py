@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 import os
 from typing import Optional, Tuple, Union
 import pandas as pd
-# from shapely.geometry import LineString
+import numpy as np
 
 from mapmanagercore import MapAnnotations, MultiImageLoader
 from mapmanagercore.analysis_params import AnalysisParams
@@ -46,17 +46,12 @@ class ImagesCore:
         # channelIdx = channel # abj
         _min, _max, _globalMin, _globalMax = self._fullMap.getAutoContrast_qt(timepoint, channel=channel)
         return _min, _max, _globalMin, _globalMax
-
-    def _old_getShape(self, timepoint):
-        logger.error('RETURNING FAKE SHAPE')
-        return (1,1024,1024,70)
-        # return self._fullMap.shape(t=timepoint)
     
     def metadata(self, timepoint):
         return self._fullMap.metadata(timepoint)
     
-    def getTotalChannels(self):
-        return self._fullMap._images.channels()
+    def getTotalChannels(self, tp):
+        return self._fullMap._images.channels(tp)
     
     # def shape(self, timepoint):
     #     self._fullMap.shape(t=timepoint)
@@ -142,20 +137,23 @@ class TimeSeriesCore():
 
         self._fullMap : MapAnnotations = None
 
+        self._isDirty : bool = False
+        
         # TODO just use endswith(), splitext does not handle '.ome.zarr'
         _ext = os.path.splitext(path)[1]
         
-        if _ext == '.mmap':
+        if path.endswith('.mmap') or path.endswith('.mmap/'):
             self._load_zarr()
-        elif _ext == '.tif':
+        elif path.endswith('.tif'):
             self._import_tiff()
         # elif path.endswith('.ome.zarr'):
-        elif path.endswith('.zarr'):
-            self._import_ome_zarr()
+        # elif path.endswith('.zarr') or path.endswith('.zarr/'):
+        #     self._import_ome_zarr()
         else:
             # TODO properly handle this
-            logger.error(f'did not load file extension: {_ext}')
-
+            logger.error(f'did not load file extension: "{_ext}"')
+            return
+        
         self._imagesCore = ImagesCore(self._fullMap)
         
         # self._pointsCore = PointsCore(self, self._fullMap)
@@ -330,7 +328,8 @@ class TimeSeriesCore():
         # TEMPORARY, fake second channel, to debug single channel stack
         # loader.read(path, channel=1)
 
-        map = MapAnnotations(loader.build(),
+        # map = MapAnnotations(loader.build(),
+        map = MapAnnotations(loader,
                             lineSegments=pd.DataFrame(),
                             points=pd.DataFrame())
 
@@ -373,6 +372,9 @@ class TimeSeriesCore():
         
         self._fullMap.save(path)
 
+        # abb 20241221
+        self._path = path
+
     def undo(self):
         logger.info('-->> PERFORMING UNDO')
         self._fullMap.undo()
@@ -398,7 +400,7 @@ class TimeSeriesCore():
         # totalChannels = self._imagesCore.getTotalChannels()
         # logger.info(f"after total channel in timeseriescore: {totalChannels}")
 
-    def getImagesCoreTotalChannels(self):
+    def getImagesCoreTotalChannels(self, tp):
         """ Get total number of channels loaded within Images core
         """
-        return self._imagesCore.getTotalChannels()
+        return self._imagesCore.getTotalChannels(tp)

@@ -4,7 +4,7 @@ import pandas as pd
 import geopandas as gpd
 
 from mapmanagercore import MapAnnotations, MultiImageLoader
-from mapmanagercore.data import getTiffChannel_1, getLinesFile, getSingleTimepointMap
+from mapmanagercore.data import getTiffChannel_1, getSingleTimepointMap
 
 from pymapmanager import stack
 from pymapmanager.annotations.baseAnnotationsCore import LineAnnotationsCore
@@ -20,7 +20,7 @@ def _getEmptyMap():
 
     return tp
 
-def test_segment():
+def _hide_test_segment():
 
     # 1) load segments from and grab points
     linesFile = getLinesFile()

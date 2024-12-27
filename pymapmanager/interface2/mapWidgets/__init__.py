@@ -10,6 +10,8 @@
 # this works but requires us to import each plugin (not optimal)
 # from .searchWidget2 import searchWidget2
 
+from pymapmanager._logger import logger
+
 from inspect import isclass
 from pkgutil import iter_modules
 from pathlib import Path
@@ -20,6 +22,7 @@ package_dir = Path(__file__).resolve().parent
 for (_, module_name, _) in iter_modules([package_dir]):
 
     # import the module and iterate through its attributes
+    logger.info(f'import_module __name__:{__name__} module_name:{module_name}')
     module = import_module(f"{__name__}.{module_name}")
     for attribute_name in dir(module):
         attribute = getattr(module, attribute_name)

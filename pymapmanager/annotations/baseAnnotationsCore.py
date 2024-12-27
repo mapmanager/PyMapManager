@@ -51,7 +51,9 @@ class AnnotationsCore:
         self._buildDataFrame()
     
     def _buildTimepoint(self):
-        logger.warning(f'{self.getClassName()}')
+        """Build single timepoint by calling getTimepoint(timepoint).
+        """
+        logger.warning(f'building SingleTimePointAnnotations {self.getClassName()}')
         self._singleTimePoint = self._fullMap.getTimepoint(self._timepoint)
 
     @property
@@ -408,7 +410,7 @@ class SpineAnnotationsCore(AnnotationsCore):
         newSpineID = int(newSpineID)
 
         # do not need to rebuild after addSpine
-        self._buildTimepoint()
+        # self._buildTimepoint()
 
         self._buildDataFrame()
 
@@ -507,6 +509,7 @@ class LineAnnotationsCore(AnnotationsCore):
         logger.info(f'created newSegmentID:{newSegmentID}')
         self._buildTimepoint()
         self._buildDataFrame()
+        self._setDirty(True) #abb
         return newSegmentID
     
     def deleteSegment(self, segmentID : int):
@@ -515,6 +518,7 @@ class LineAnnotationsCore(AnnotationsCore):
         # _deleted = self.getMapSegments().deleteSegment(self.timepoint, segmentID)
         _deleted = self.singleTimepoint.deleteSegment(segmentID)
         self._buildDataFrame()
+        self._setDirty(True) #abb
         return _deleted
     
     def appendSegmentPoint(self, segmentID : int, x : int, y: int, z : int):
@@ -527,6 +531,7 @@ class LineAnnotationsCore(AnnotationsCore):
 
         if _added is not None:
             self._buildDataFrame()
+            self._setDirty(True) #abb
 
         return _added
     
@@ -767,7 +772,9 @@ class LineAnnotationsCore(AnnotationsCore):
             returnPointX: List of Y values of pivot points
             
         """
-        
+        logger.info('self._summaryDf:')
+        logger.info(f'{self._summaryDf}')
+
         # find pivotDistance within point distance, that is what we plot
         pivotDistances = self._summaryDf["Pivot Distance"]
         """List[float], one item per segment id"""
@@ -777,23 +784,25 @@ class LineAnnotationsCore(AnnotationsCore):
         returnPointX = []
         returnPointY = []
 
+        logger.error(f'abb turn back on')
         # pivotIndexList = None # len of segmentIDs
-        for segmentID, pList in enumerate(pointDistance):
-            # print("p ", p)
-            if pivotDistances[segmentID] in pList:
-                pivotDistance = pivotDistances[segmentID]
-                pointID = pList.index(pivotDistance)
-                # print("pList", pList)
-                # print("found pivot ", pivotDistances[segmentID], "at point index: ", pointID)
-                # # logger.info(f"pivot x : {linePointX[pointID]} y: {linePointY[pointID]}")
-                filteredDF = self._df.loc[self._df["segmentID"] == segmentID]
-                filteredDF = filteredDF.reset_index() # reset index since mmc uses index based on each segment
-   
-                linePointX = filteredDF["x"]
-                linePointY = filteredDF["y"]
+        if 0:
+            for segmentID, pList in enumerate(pointDistance):
+                # print("p ", p)
+                if pivotDistances[segmentID] in pList:
+                    pivotDistance = pivotDistances[segmentID]
+                    pointID = pList.index(pivotDistance)
+                    # print("pList", pList)
+                    # print("found pivot ", pivotDistances[segmentID], "at point index: ", pointID)
+                    # # logger.info(f"pivot x : {linePointX[pointID]} y: {linePointY[pointID]}")
+                    filteredDF = self._df.loc[self._df["segmentID"] == segmentID]
+                    filteredDF = filteredDF.reset_index() # reset index since mmc uses index based on each segment
+    
+                    linePointX = filteredDF["x"]
+                    linePointY = filteredDF["y"]
 
-                returnPointX.append(linePointX[pointID])
-                returnPointY.append(linePointY[pointID])
+                    returnPointX.append(linePointX[pointID])
+                    returnPointY.append(linePointY[pointID])
    
         return returnPointX, returnPointY
     

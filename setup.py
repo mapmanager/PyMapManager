@@ -55,14 +55,13 @@ setup(
     #    'pymapmanager.mmio'
     #],
     install_requires=[
-        "mapmanagercore",
-        # "numpy==1.23.4",
+        # "mapmanagercore",
         "numpy",
         "pandas",
-        "scipy",
-        "scikit-image",
-        "tifffile",
-        "geopandas",
+        # "scipy",
+        # "scikit-image",
+        # "tifffile",
+        # "geopandas",
         "shapely",
         "platformdirs",
         # pip install will always instal gui (now that we have mapmanagercore)
@@ -124,7 +123,7 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'pymapmanager=pymapmanager.interface2.pyMapManagerApp2:main',
+            'pymapmanager=pymapmanager.interface2.pyMapManagerApp2:run',
         ]
     },
 

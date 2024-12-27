@@ -44,19 +44,19 @@ class stack:
 
         self._buildHeader()
 
-        if loadImageData:
-            logger.warning(f'EXPENSIVE: loading all image data for {self.numChannels} channels')
-            for _channel in range(self.numChannels):
-                _channel += 1
-                logger.warning(f'   _channel:{_channel} TODO: turn loadImages() back on ... ')
-                # self.loadImages(channel=_channel)
+        # if loadImageData:
+        #     logger.warning(f'EXPENSIVE: loading all image data for {self.numChannels} channels')
+        #     for _channel in range(self.numChannels):
+        #         _channel += 1
+        #         logger.warning(f'   _channel:{_channel} TODO: turn loadImages() back on ... ')
+        #         # self.loadImages(channel=_channel)
 
         # get the first image slice from defaultChannelIdx
         self.getImageSlice(0, defaultChannelIdx)
 
         self._stackContrast = StackContrast(self)
 
-        logger.info(f'loaded stack timepoint: {self}')
+        # logger.info(f'loaded stack timepoint: {self}')
               
     @property
     def maxNumChannels(self) -> int:
@@ -103,11 +103,16 @@ class stack:
         # _shape = self._fullMap.getMapImages().getShape(self.timepoint)
         _shape = self._annotations.singleTimepoint.shape  # shape of image in single timepoint
 
+        logger.info(f'_shape:{_shape}')
+        logger.info(f'numChannels:{self._annotations.singleTimepoint.numChannels}')
+
+        # abb s-dev merge
         #_numChannels = self.sessionMap.numChannels
-        _numChannels = _shape[0]
-        z = _shape[1]
-        x = _shape[2]
-        y = _shape[3]
+        # _numChannels = _shape[0]
+        _numChannels = self._annotations.singleTimepoint.numChannels
+        z = _shape[0]
+        x = _shape[1]
+        y = _shape[2]
 
         self._header = {
             'dtype' : "Uint16",  # image0._image.dtype,
@@ -314,9 +319,9 @@ class stack:
         """ Accesses images core in timeseries and returns total number of channels that have been imported
         
         """
-        totalChannels = self._fullMap.getImagesCoreTotalChannels()
-        return totalChannels
+        totalChannels = self._fullMap.getImagesCoreTotalChannels(self._timepoint)
         logger.info(f"totalChannels {totalChannels}")
+        return len(totalChannels)
     
     def resetStackContrast(self):
         """ Recreates Stack Contrast with current Stack

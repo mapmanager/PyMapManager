@@ -7,6 +7,7 @@ from qtpy import QtCore, QtWidgets
 import pymapmanager
 from pymapmanager.interface2.stackWidgets.base.mmWidget2  import mmWidget2, pmmEventType, pmmEvent, pmmStates
 from pymapmanager.interface2.stackWidgets import stackWidget2
+from pymapmanager.interface2 import pyMapManagerApp2
 from pymapmanager._logger import logger
 
 class AnalysisParamWidget(mmWidget2):
@@ -16,16 +17,16 @@ class AnalysisParamWidget(mmWidget2):
     signalSaveParameters = QtCore.Signal(dict) # dict
     signalReplotWidgetsWithNewParams = QtCore.Signal(dict) # dict
 
-    def __init__(self, stackWidget: stackWidget2, pmmApp = None):
+    def __init__(self, stackWidget: stackWidget2, pmmApp : pyMapManagerApp2 = None):
         """
             paramDict: detectionParamDict class
 
         """
-        super().__init__(None)
+        super().__init__(stackWidget)
 
         self.pmmApp = pmmApp
         self.widgetDict = {}
-        self.stackWidget = stackWidget
+        # self.stackWidget = stackWidget
         self.canApply = False
         self.canSave = False
 
@@ -121,17 +122,18 @@ class AnalysisParamWidget(mmWidget2):
                 currentValue = val["currentValue"]
                 defaultValue = val["defaultValue"]
                 # valueType = "int" # Currently all values are int. TODO: have a 'types' key in the backend
-                valueType = val[
-                    "type"
-                ]  # from ('int', 'float', 'boolean', 'string', detectionTypes_)
-                # try:
-                #     valueType = val[
-                #         "type"
-                #     ]  # from ('int', 'float', 'boolean', 'string', detectionTypes_)
-                # except (KeyError) as e:
-                #     logger.warning(e)
-                #     logger.warning(f'fpr key:{key}, available keys are:{val.keys()}')
-                #     # normally we abort, but not for now...
+                # valueType = val[
+                #     "type"
+                # ]  # from ('int', 'float', 'boolean', 'string', detectionTypes_)
+                try:
+                    valueType = val[
+                        "type"
+                    ]  # from ('int', 'float', 'boolean', 'string', detectionTypes_)
+                except (KeyError) as e:
+                    logger.error(e)
+                    logger.error(f'bad key:"{key}", available keys are:{val.keys()}')
+                    continue
+                    # normally we abort, but not for now...
 
                 # units = val["units"]
                 # humanName = val["humanName"]

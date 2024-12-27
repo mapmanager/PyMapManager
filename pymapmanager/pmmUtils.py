@@ -2,21 +2,22 @@
 Includes utilities that uses classes within pymapmanager
 """
 import json
-import sys, os
+import sys
+import os
 import math
-from typing import List, Optional
+from typing import Optional
 
 import numpy as np
-from scipy.spatial import ConvexHull
+# from scipy.spatial import ConvexHull
 import matplotlib.pyplot as plt
 
 import pandas as pd
-import scipy
+# import scipy
 from matplotlib.path import Path
 
 import pymapmanager as pmm
 
-from pymapmanager.utils import _findBrightestIndex
+# from pymapmanager.utils import _findBrightestIndex
 from pymapmanager._logger import logger
 import pathlib
 import shutil
@@ -51,11 +52,11 @@ def addUserPath(jsonDump):
 
     userPmmFolder = _getUserPmmFolder()
 
-    if not userPmmFolder in sys.path:
+    if userPmmFolder not in sys.path:
         logger.info(f"Adding to sys.path: {userPmmFolder}")
         sys.path.append(userPmmFolder)
 
-    logger.info("sys.path is now:")
+    # logger.info("sys.path is now:")
     for path in sys.path:
         logger.info(f"    {path}")
 
@@ -82,19 +83,20 @@ def _makePmmFolders(analysisParamJson):
         os.makedirs(pmmFolder)
         madeUserFolder = True
 
-        # _bundDir = getBundledDir()
-
         # Save json file to create pmm folder
         # _dstPath = pathlib.Path(pmmFolder)
-        _dstPath = os.path.join(pmmFolder, "userAnalysisParameters.Json")
-        logger.info(f"    _dstPath:{_dstPath}")
+        # _dstPath = os.path.join(pmmFolder, "userAnalysisParameters.json")
+        # logger.info(f"    _dstPath:{_dstPath}")
 
+        # with open(_dstPath, 'w') as file:
+        #     json.dump(analysisParamJson, file, indent = 4) 
+
+    # Save json file to create pmm folder
+    # _dstPath = pathlib.Path(pmmFolder)
+    _dstPath = os.path.join(pmmFolder, "userAnalysisParameters.json")
+    if not os.path.isfile(_dstPath):
         with open(_dstPath, 'w') as file:
             json.dump(analysisParamJson, file, indent = 4) 
-
-    else:
-        # already exists, make sure we have all sub-folders that are expected
-        pass
 
     return madeUserFolder
 
@@ -102,17 +104,18 @@ def saveAnalysisParamJsonFile(jsonData):
     """ Save/ overwrite new data to user analysis parameters json file
     """
     pmmFolder = _getUserPmmFolder()
-    _dstPath = os.path.join(pmmFolder, "userAnalysisParameters.Json")
+    _dstPath = os.path.join(pmmFolder, "userAnalysisParameters.json")
 
     with open(_dstPath, 'w') as file:
         json.dump(jsonData, file) 
 
 def getUserAnalysisParamJsonData() -> Optional[dict]:
-
     """Get User's Json data for Analysis Parameters.
+
+    See: /Users/<user>/Documents/Pymapmanager-User-Files
     """
     pmmFolder = _getUserPmmFolder()
-    _dstPath = os.path.join(pmmFolder, "userAnalysisParameters.Json")
+    _dstPath = os.path.join(pmmFolder, "userAnalysisParameters.json")
 
     if not os.path.exists(_dstPath):
         logger.warning(f"Could not find path {_dstPath}")
@@ -353,7 +356,7 @@ def getOffset(distance, numPts):
 # Code to create brightest index called when user creates a new spine
 # Save dictionary original spine ROI mask by itself
 # Called when user creates a new spine
-def calculateCandidateMasks(mask, distance, numPts, originalSpinePoint, img):
+def _old_calculateCandidateMasks(mask, distance, numPts, originalSpinePoint, img):
     """ 
     Args:
         mask: The mask that will be moved around to check for intensity at various positions

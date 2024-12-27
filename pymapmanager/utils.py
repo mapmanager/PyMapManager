@@ -9,11 +9,9 @@ from ast import Tuple
 from typing import List
 import math
 import numpy as np
-import pandas as pd
 import skimage
 from matplotlib.path import Path
-from scipy import ndimage
-import scipy
+# import scipy
 from math import atan2
 
 from pymapmanager._logger import logger
@@ -509,6 +507,8 @@ def calculateLineROIcoords(lineIndex, radius, lineAnnotations, forFinalMask):
     # Check for the segmentID for the lineIdex
     # Get list of points just within that SegmentID
 
+    import scipy
+    
     totalPoints = list(range(-radius, radius+1))
 
     # logger.info(f'len(lineAnnotations):{len(lineAnnotations)}')
@@ -838,10 +838,11 @@ def getCloserPointSide(spinePoint, leftRadiusPoint, rightRadiusPoint):
         return "Right"
     # return closestPoint
 
-def checkLabel(mask, _xSpine, _ySpine):
+def _old_checkLabel(mask, _xSpine, _ySpine):
     """ Filters out a mask so that extra segments will be removed
     Returns the label of the segment which contains the original spinePoint
     """
+    from scipy import ndimage
     labelArray, numLabels = ndimage.label(mask)
     # print("current labelArray", labelArray)
 

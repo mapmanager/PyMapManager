@@ -1,10 +1,10 @@
-import os
+# import os
 from pprint import pprint
 
 import pandas as pd
 import numpy as np
 
-from pymapmanager.annotations.pointAnnotations import pointAnnotations
+# from pymapmanager.annotations.pointAnnotations import pointAnnotations
 from pymapmanager.stack import stack
 
 from pymapmanager._logger import logger

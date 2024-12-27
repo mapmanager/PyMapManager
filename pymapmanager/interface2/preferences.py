@@ -95,6 +95,9 @@ class Preferences:
                 return index
         return None # none if not found
 
+    def clearMapPathDict(self):
+        self.configDict["recentMapDicts"] = []
+        
     def addMapPathDict(self, mapPathDict : dict):
         """Add a map path dict to recent maps
 

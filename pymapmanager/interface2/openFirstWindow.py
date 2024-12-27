@@ -27,7 +27,6 @@ class OpenFirstWindow(MainWindow):
                  parent=None):
         super().__init__(parent)
 
-        logger.info("NEW OPEN FIRST WINDOW")
         self._app : PyMapManagerApp = pyMapManagerApp
 
         # self.recentStackList = self.getApp().getConfigDict().getRecentStacks()
@@ -58,7 +57,7 @@ class OpenFirstWindow(MainWindow):
     #     return self._app
     
     # def _makeRecentTable(self, pathList : List[str], headerStr = ''):
-    def _makeRecentTable(self, pathDictList : List[dict], headerStr = ''):
+    def _makeRecentTable(self, pathDictList : List[dict], headerStr = '') -> QtWidgets.QTableWidget:
         """Given a list of file/folder path, make a table.
         
         Caller needs to connect to cellClick()
@@ -126,7 +125,8 @@ class OpenFirstWindow(MainWindow):
         logger.info(f'rowId:{rowIdx} path:{path}')
 
         # abj (10/14/24) - using directory mmap moving forward
-        # abb we open both zip and folder zarr!
+        # abb we open both zip and folder mmap zarr!
+        # if os.path.isdir(path) or os.path.isfile(path) or path.startswith('http'):
         if os.path.isdir(path) or os.path.isfile(path):
             _aWidget = self.getApp().loadStackWidget(path)
             if _aWidget is None:
@@ -149,6 +149,15 @@ class OpenFirstWindow(MainWindow):
         elif name == 'Open Folder...':
             self._app.loadFolder()  # load a folder of mmap
 
+        elif name == 'Clear Files':
+            self._clearFileList()
+
+    def _clearFileList(self):
+        self.getApp().getConfigDict().clearMapPathDict()
+
+        # clear self._recentFolderTable
+        self._recentFolderTable.clearContents()
+        
     def refreshUI(self): # abj
         self._buildUI()
 
@@ -207,15 +216,22 @@ class OpenFirstWindow(MainWindow):
         # recentFileTable.cellDoubleClicked.connect(self._on_recent_stack_click)
         # recent_vBoxLayout.addWidget(recentFileTable)
 
+        h1 = QtWidgets.QHBoxLayout()
+        recent_vBoxLayout.addLayout(h1)
+
         aLabel = QtWidgets.QLabel('Recent Files')
-        recent_vBoxLayout.addWidget(aLabel)
+        h1.addWidget(aLabel)
+
+        aButton = QtWidgets.QPushButton('Clear Files')
+        aButton.clicked.connect(partial(self._on_open_button_click, 'Clear Files'))
+        h1.addWidget(aButton)
 
         # headerStr='Recent Files (double-click to open)'
         headerStr = ''
-        recentFolderTable = self._makeRecentTable(self.recentMapDictList,
+        self._recentFolderTable = self._makeRecentTable(self.recentMapDictList,
                                                   headerStr=headerStr)
-        recentFolderTable.cellDoubleClicked.connect(self._on_recent_map_click)
-        recent_vBoxLayout.addWidget(recentFolderTable)
+        self._recentFolderTable.cellDoubleClicked.connect(self._on_recent_map_click)
+        recent_vBoxLayout.addWidget(self._recentFolderTable)
 
         _mainVLayout.addLayout(recent_vBoxLayout)
 
@@ -252,17 +268,7 @@ class DragAndDropWidget(QtWidgets.QPushButton):
             # Create new image loader iwth path
             # emit f = path to file
              
-
-def test():
-    import sys
-    from sanpy.interface import SanPyApp
-
-    app = SanPyApp([])
-    
-    of = OpenFirstWindow(app)
-    of.show()
-
-    sys.exit(app.exec_())
-
 if __name__ == '__main__':
-    test()
+    logger.error('xxx')
+    pass
+    # test()

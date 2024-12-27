@@ -11,14 +11,14 @@ import pymapmanager.interface2
 import pymapmanager.interface2.stackWidgets
 # import pymapmanager.interface2.stackWidgets.histogramWidget2
 if TYPE_CHECKING:
-    from pymapmanager.interface2 import PyMapManagerApp, AppDisplayOptions
+    from pymapmanager.interface2.pyMapManagerApp2 import PyMapManagerApp
+    from pymapmanager.interface2.appDisplayOptions import AppDisplayOptions
 
 from typing import Optional  # List, Union, Tuple
 
-import numpy as np
+# import numpy as np
 
 from qtpy import QtGui, QtCore, QtWidgets
-import pyqtgraph as pg
 
 import pymapmanager
 from pymapmanager.interface2.stackWidgets.base.mmWidget2 import mmWidget2, pmmEventType, pmmStates, pmmEvent, StackSelection
@@ -84,6 +84,7 @@ class stackWidget2(mmWidget2):
         self._currentSliceNumber = 0
 
         self._displayOptionsDict : pymapmanager.interface2.AppDisplayOptions = pymapmanager.interface2.AppDisplayOptions()
+        # self._displayOptionsDict : AppDisplayOptions = AppDisplayOptions()
 
         self.setWindowTitle(self._stack.getFileName())
 
@@ -91,10 +92,10 @@ class stackWidget2(mmWidget2):
         self._buildMenus()
         self.setContextMenuPolicy(QtCore.Qt.NoContextMenu) # abj - disabled hidden context menu
 
-        # abb
+        # abb, on creation set to first slice
         _pmmEvent = pmmEvent(pmmEventType.setSlice, self)
         _pmmEvent.setSliceNumber(self._currentSliceNumber)
-        logger.info(f'  -->> emit updateDisplayOptionsZ() self._currentSliceNumber :{self._currentSliceNumber}')
+        # logger.info(f'  -->> emit updateDisplayOptionsZ() self._currentSliceNumber :{self._currentSliceNumber}')
         self.emitEvent(_pmmEvent, blockSlots=True)
 
     def getTimeSeriesCore(self):
@@ -163,7 +164,10 @@ class stackWidget2(mmWidget2):
             # self._disconnectFromMap()
             
         else:
-            self.getPyMapManagerApp().closeStackWindow(self)
+            if self.getApp() is None:
+                logger.error('app is None')
+            else:
+                self.getPyMapManagerApp().closeStackWindow(self)
 
         self.close()
 
@@ -176,18 +180,20 @@ class stackWidget2(mmWidget2):
     #     """
     #     return self._timePoint
     
-    def getPyMapManagerApp(self) -> Optional[PyMapManagerApp]:
-        """Get the running PyMapManagerApp(QApplication).
+    # def getPyMapManagerApp(self) -> Optional[PyMapManagerApp]:
+    #     """Get the running PyMapManagerApp(QApplication).
         
-        If not PyMapManagerApp, will return None.
-        """
+    #     If not PyMapManagerApp, will return None.
+    #     """
         
-        # the running QApplication
-        app = QtWidgets.QApplication.instance()
-        if isinstance(app, pymapmanager.interface2.pyMapManagerApp2.PyMapManagerApp):
-            return app
-    
-    def getStack(self) -> pymapmanager.stack:
+    #     # the running QApplication
+    #     app = QtWidgets.QApplication.instance()
+    #     if isinstance(app, PyMapManagerApp):
+    #         return app
+    #     else:
+    #         logger.error(f'fail to get PyMapManagerApp, got {app}')
+
+    def getStack(self) -> "pymapmanager.stack":
         """Get the backend stack.
         """
         return self._stack
@@ -303,7 +309,9 @@ class stackWidget2(mmWidget2):
         mainMenu = self.menuBar()
 
         # 20240903 was this
-        self._mainMenu = pymapmanager.interface2.PyMapManagerMenus(self.getPyMapManagerApp())
+        # from pymapmanager.interface2.mainMenus import PyMapManagerMenus
+        # self._mainMenu = PyMapManagerMenus(self.getPyMapManagerApp())
+        self._mainMenu = pymapmanager.interface2.PyMapManagerMenus(self.getApp())
         self._mainMenu._buildMenus(mainMenu, self)
 
         #_mainMenu = self.getApp().getMainMenu()
@@ -353,7 +361,8 @@ class stackWidget2(mmWidget2):
         Return:
             pluginID: Id of plugin that was just ran. User can use this id to programmatically close widget
         """
-        if self.getPyMapManagerApp() is None:
+        if self.getApp() is None:
+            logger.error('app is None')
             return
         
         if inDock:
@@ -404,7 +413,11 @@ class stackWidget2(mmWidget2):
         """
 
         # run in separate window
-        pluginDict = self.getPyMapManagerApp().getStackPluginDict()
+        if self.getApp() is None:
+            logger.errror('app is None')
+            return
+        
+        pluginDict = self.getApp().getStackPluginDict()
 
         # ensure it is a valid plugin
         if pluginName not in pluginDict.keys():
@@ -1184,6 +1197,7 @@ class stackWidget2(mmWidget2):
             return
         else:
             self.getStack().saveAs(saveAsPath)
+            self.setWindowTitle(self._stack.getFileName())
 
     def getLastSaveTime(self):
         return self.getStack().getLastSaveTime()
@@ -1260,8 +1274,7 @@ class stackWidget2(mmWidget2):
         self.pluginDock1.closePlugin_inDock(pluginName)
 
     def closePlugin(self, pluginKey: tuple):
-        """
-            Close one stack widget plugin such as spineInfoWidget
+        """Close one stack widget plugin such as spineInfoWidget
 
         Intended for programmatic use and unit testing
 
@@ -1271,8 +1284,8 @@ class stackWidget2(mmWidget2):
             show: bool
                 If True then immediately show the widget
         """
-        if self.getPyMapManagerApp() is None:
-            return
+        # if self.getApp() is None:
+        #     return
         
         pluginObj = self._openPluginDict[pluginKey]
         # pluginObj.getWidget().close() 
@@ -1292,7 +1305,11 @@ class stackWidget2(mmWidget2):
         # storedDict = self._openPluginDict
         # logger.info(f"storedDict {storedDict}")
         # run in separate window
-        pluginDict = self.getPyMapManagerApp().getStackPluginDict()
+        if self.getApp() is None:
+            logger.error('app is None')
+            return
+        
+        pluginDict = self.getApp().getStackPluginDict()
 
         # get key by checking value in pluginDict
         # pluginKey = [i for i in pluginDict if pluginDict[i]==pluginObj]
@@ -1356,9 +1373,6 @@ class stackWidget2(mmWidget2):
         
     
         self.getTimeSeriesCore().loadInNewChannel(newTifPath, time=0, channel=None)
-
-        # totalChannels = self._stack.getTimeSeriesTotalChannels()
-        # logger.info(f"after maxChannels {totalChannels}")
 
         # reset stackToolBar
         self._topToolbar._setStack(theStack=self._stack)

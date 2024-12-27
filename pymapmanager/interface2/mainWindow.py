@@ -1,8 +1,8 @@
-from qtpy import QtCore, QtWidgets, QtGui
+from qtpy import QtWidgets, QtGui
 
 import pymapmanager
 from pymapmanager.interface2.stackWidgets.base.mmWidget2 import mmWidget2
-
+# from pymapmanager.interface2.mainMenus import PyMapManagerMenus
 from pymapmanager._logger import logger
 
 class MainWindow(mmWidget2):

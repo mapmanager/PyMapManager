@@ -9,11 +9,11 @@ from qtpy import QtWidgets, QtCore
 
 from mapmanagercore.map_utils import ConnectSpines
 
-from pymapmanager.interface2.stackWidgets.base.mmWidget2 import pmmEventType, pmmEvent
+# from pymapmanager.interface2.stackWidgets.base.mmWidget2 import pmmEventType, pmmEvent
 from pymapmanager.timeseriesCore import TimeSeriesCore
-from pymapmanager.interface2.mainWindow import MainWindow
 from pymapmanager.interface2.core.search_widget import myQTableView
 from pymapmanager.interface2.stackWidgets.stackWidget2 import stackWidget2
+from pymapmanager.interface2.mainWindow import MainWindow
 from pymapmanager._logger import logger
 
 class mapConnectPointsWidget(MainWindow):

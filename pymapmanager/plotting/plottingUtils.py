@@ -2,9 +2,9 @@
 """
 import matplotlib.pyplot as plt
 
-import pymapmanager.stack
+# from pymapmanager.stack import stack
 
-def plotMax(stack: pymapmanager.stack,
+def plotMax(stack: "stack",
             channel : int = 2,
             plotLines : bool = True,
             segmentID : list = [],
@@ -53,21 +53,13 @@ def plotMax(stack: pymapmanager.stack,
             plt.plot(xLine, yLine, '-y', linewidth=0.5)  # TODO (cudmore) disjoint segments are incorrectly connected by a line
 
     if plotAnnotations:
-        roiType = pymapmanager.annotations.pointTypes.spineROI
+        roiType = 'spineROI'
         xyzAnnotation = stack.getPointAnnotations().getRoiType_xyz(roiType=roiType)
         print('xyzAnnotation:', type(xyzAnnotation))
         xAnnotation = xyzAnnotation[:,2]
         yAnnotation = xyzAnnotation[:,1]
         plt.scatter(xAnnotation, yAnnotation, s=5, c='k')
 
-def run():
-    tifPath = '../PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
-    myStack = pymapmanager.stack(tifPath)
-    thisChannel = 2
-    myStack.loadImages(channel=thisChannel)
-    print(myStack)
-    plotMax(myStack, channel=thisChannel)
-    plt.show()
-
 if __name__ == '__main__':
-    run()
+    pass
+    # run()

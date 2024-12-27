@@ -151,6 +151,8 @@ class TracingWidget(mmWidget2):
         self._editState = state
         # self._addSegmentButton.setEnabled(state)
         
+        # abb removed, rely on stateChangedEvent()
+        # logger.warning('REMOVED CALL TO setGui()')
         self.setGui()
 
         event = pmmEvent(pmmEventType.stateChange, self)
@@ -244,9 +246,9 @@ class TracingWidget(mmWidget2):
             self._setPivotCheckBox.setChecked(False)
 
     def selectedEvent(self, event: pmmEvent):
+        """Respond to a spine or segment selection
         """
-        """
-        logger.info('')
+        logger.warning('')
         
         if self.currentSegmentID is None:
             self.prevSegmentID = None

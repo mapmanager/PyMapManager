@@ -7,10 +7,9 @@ from qtpy import QtWidgets
 
 from pymapmanager.timeseriesCore import TimeSeriesCore
 
-import pymapmanager
-import pymapmanager as pmm
-from pymapmanager.interface2.mainWindow import MainWindow
 from pymapmanager.interface2.stackWidgets.stackWidget2 import stackWidget2
+from pymapmanager.interface2.mapWidgets.mapTableWidget import mapTableWidget
+from pymapmanager.interface2.mainWindow import MainWindow
 
 from pymapmanager.interface2.stackWidgets.event.spineEvent import (AddSpineEvent, 
                                                                    DeleteSpineEvent,  
@@ -58,7 +57,7 @@ class mapWidget(MainWindow):
         - (right) a MapDendrogramWidget
     """
 
-    _widgetName = 'Map Table'
+    _widgetName = 'Map Widget'
 
     # def __init__(self, mmMap : pmm.mmMap):
     def __init__(self, timeseriescore : TimeSeriesCore):
@@ -237,7 +236,7 @@ class mapWidget(MainWindow):
             self._stackWidgetDict[session].raise_()
             return
         
-        bsw = pmm.interface2.stackWidgets.stackWidget2(timeseriescore=self._map,
+        bsw = stackWidget2(timeseriescore=self._map,
                                                         mapWidget=self,
                                                         timepoint=session)
 
@@ -373,11 +372,11 @@ class mapWidget(MainWindow):
         self._makeCentralWidget(hBoxLayout_main)
 
         # a table for a map, one row per session
-        mapTableWidget = pmm.interface2.mapWidgets.mapTableWidget(self._map)
-        mapTableWidget.signalOpenStack.connect(self.openStack2)
-        mapTableWidget.signalOpenRun.connect(self.openStackRun)
+        _mapTableWidget = mapTableWidget(self._map)
+        _mapTableWidget.signalOpenStack.connect(self.openStack2)
+        _mapTableWidget.signalOpenRun.connect(self.openStackRun)
         
-        self._addDockWidget(mapTableWidget, 'left', mapTableWidget._widgetName)
+        self._addDockWidget(_mapTableWidget, 'left', _mapTableWidget._widgetName)
         # self._widgetDict[mapTableName] = mapTableDock  # the dock, not the widget ???
 
         # vBoxLayout_main.addWidget(self._mapTableWidget)

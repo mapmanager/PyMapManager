@@ -12,19 +12,13 @@ def run():
     app = PyMapManagerApp(sys.argv)
 
     # open a single timepoint map with segments and spines
-    # path = mapmanagercore.data.getSingleTimepointMap()
+    path = mapmanagercore.data.getSingleTimepointMap()
 
-    # path = '/Users/cudmore/Sites/data/rr30a_s0u_20241205.mmap'
-
-    # path = '/Users/cudmore/Dropbox/data/ome-zarr/single_timepoint_v2.ome.zarr'
-
-    # .mmap (zarr folder, local)
-    # path = '/Users/cudmore/Sites/MapManagerCore-Data/data/multi_timepoint_map.mmap'
-
-    # .mmap (zip file, local)
-    # path = '/Users/cudmore/Sites/MapManagerCore-Data/data/multi_timepoint_map_zip.mmap'
+    # a single timepoint tif file (import)
+    # path = mapmanagercore.data.getTiffChannel_1()
 
     # .ome.zar (local)
+    # path = '/Users/cudmore/Sites/MapManagerCore-Data/data/single_timepoint_v3.ome.zarr'
     # path = '/Users/cudmore/Sites/MapManagerCore-Data/data/single_timepoint.ome.zarr'
 
     # .ome.zar (remote)
@@ -35,30 +29,24 @@ def run():
     # random ome zarr file (local)
     # path = '/Users/cudmore/Dropbox/data/ome-zarr/6001240.ome.zarr'
 
-    # a single timepoint tif file (import)
-    # path = mapmanagercore.data.getTiffChannel_1()
-
-    # map with segments and spines (no segments connected)
-    # path = '/Users/cudmore/Desktop/multi_timepoint_map.mmap'
-    
-    # map with segments and spines, all segments connected
-    # path = '/Users/cudmore/Desktop/multi_timepoint_map_seg_connected.mmap'
-    
-    # all spines connected
-    # path = '/Users/cudmore/Desktop/multi_timepoint_map_seg_spine_connected.mmap'
-
     # path = mapmanagercore.data.getSingleTimepointMap()
-    # sw2 = app.loadStackWidget(path)
-    # sw2.zoomToPointAnnotation(120, isAlt=True)
     
     # a mmap with multiple timepoints, connects segments and spines
     # path = '/Users/cudmore/Desktop/multi_timepoint_map_seg_spine_connected.mmap'
-    path = mapmanagercore.data.getMultiTimepointMap()
+    # path = mapmanagercore.data.getMultiTimepointMap()
+
+    # path = '/Users/cudmore/Desktop/yyy4.mmap'
+    # path = '/Users/cudmore/Desktop/single_timepoint.mmap'
+
+    # path = 'https://github.com/mapmanager/MapManagerCore-Data/raw/main/data/single_timepoint.zip.mmap'
+
+    logger.info(path)
 
     # mw will be map widget if path has multiple timepoints, otherwise mw is a stackwidget2
     mw = app.loadStackWidget(path)
 
-    # delete a spine (like spine 1 or 2)
+    # zoom to point (single timepoint)
+    # sw2.zoomToPointAnnotation(120, isAlt=True)
 
     # multi timepoint map
     # centerTimepoint = 2
@@ -68,20 +56,38 @@ def run():
 
     sys.exit(app.exec_())
 
-def tryCore(map):
-    from mapmanagercore.annotations.layers import AnnotationsOptions, ImageViewSelection, AnnotationsSelection
+def loadUrl():
+    from pprint import pprint
+    import zarr
+    # path = 'https://github.com/mapmanager/MapManagerCore-Data/raw/main/data/single_timepoint.mmap/'
+    path = '/Users/cudmore/Desktop/multi_timepoint_seg_spine_connected.mmap'
+    metadataPath = path + 'images/0/metadata'
+    
+    store = zarr.DirectoryStore(path)
+    rootGroup = zarr.group(store=store)
 
-    options = AnnotationsOptions(
-        selection=ImageViewSelection(z=(0,50)),
-        annotationSelections=AnnotationsSelection(spineID=10, segmentID=0, segmentIDEditing=0),
-        showSpines=True,
-        showLineSegments=False,
-        showAnchors=True,
-        showLabels=False,
-        showLineSegmentsRadius=False
-    )
+    print('rootGroup info:')
+    print(rootGroup.info)
 
-    layerList = map.getAnnotations(options)
+    print('rootGroup tree():')
+    print(rootGroup.tree())
+
+    # print(f'rootGroup keys:{rootGroup.keys()}')
+    imagesGroup = rootGroup['images']
+    for t, g2 in imagesGroup.groups():
+        print(t,g2)
+
+    return
+
+    for k,v in group.attrs.items():
+        if isinstance(v, dict):
+            print(k)
+            pprint(v)
+        else:
+            print(f'{k}: {v} {type(v)}')
 
 if __name__ == '__main__':
     run()
+
+    # loadUrl()
+	

@@ -8,13 +8,11 @@ if TYPE_CHECKING:
     from .pyMapManagerApp2 import PyMapManagerApp
 
 import os
-from functools import partial
 from typing import List
 
-from qtpy import QtCore, QtWidgets, QtGui
+from qtpy import QtWidgets
 
-import pymapmanager
-from pymapmanager.interface2.mainWindow import MainWindow
+# from pymapmanager.interface2.mainWindow import MainWindow
 
 from pymapmanager._logger import logger
 

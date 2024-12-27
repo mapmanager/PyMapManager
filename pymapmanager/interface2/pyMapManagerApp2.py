@@ -1,3 +1,7 @@
+# see: https://stackoverflow.com/questions/63871662/python-multiprocessing-freeze-support-error
+from multiprocessing import freeze_support
+freeze_support()
+
 import json
 import os
 import sys
@@ -11,31 +15,31 @@ from platformdirs import user_data_dir
 from qtpy import QtGui, QtWidgets  # QtCore
 
 import qdarktheme
-# enable_hi_dpi() must be called before the instantiation of QApplication.
-qdarktheme.enable_hi_dpi()
+
+import pymapmanager
+
+from mapmanagercore.analysis_params import AnalysisParams
 
 from pymapmanager.interface2.openFirstWindow import OpenFirstWindow
 from pymapmanager.interface2.openFolderWindow import OpenFolderWindow
 from pymapmanager.interface2.stackWidgets.analysisParamWidget2 import AnalysisParamWidget
+# from pymapmanager.interface2.preferences import Preferences
 
-import mapmanagercore
+# import mapmanagercore
 
-import pymapmanager.interface2
+#import pymapmanager.interface2
 
 from pymapmanager.timeseriesCore import TimeSeriesCore
-
-import pymapmanager.interface2.stackWidgets
-import pymapmanager.interface2.mapWidgets
 
 from pymapmanager.interface2.mapWidgets.mapWidget import mapWidget
 
 from pymapmanager.interface2.stackWidgets.stackWidget2 import stackWidget2
 from pymapmanager.interface2.openFirstWindow import OpenFirstWindow
-from pymapmanager.interface2.mainMenus import PyMapManagerMenus
+# from pymapmanager.interface2.mainMenus import PyMapManagerMenus
 
 from pymapmanager._logger import logger, setLogLevel
 from pymapmanager.pmmUtils import getBundledDir
-import pymapmanager.pmmUtils
+# import pymapmanager.pmmUtils
 
 def loadPlugins(pluginType : str, verbose = False) -> dict:
     """Load stack/map plugins:
@@ -49,6 +53,9 @@ def loadPlugins(pluginType : str, verbose = False) -> dict:
 
     See: sanpy.fileLoaders.fileLoader_base.getFileLoader()
     """
+
+    import pymapmanager.interface2.stackWidgets
+    import pymapmanager.interface2.mapWidgets
 
     pluginDict = {}
 
@@ -119,7 +126,7 @@ def loadPlugins(pluginType : str, verbose = False) -> dict:
     pluginDict = dict(sorted(pluginDict.items()))
 
     # print the loaded plugins
-    logger.info(f'loaded {len(pluginDict.keys())} {pluginType} widget plugins:')
+    logger.info(f'loaded {len(pluginDict.keys())} {pluginType} widget plugins')
     if verbose:
         for k,v in pluginDict.items():
             logger.info(f'   {k}')
@@ -276,10 +283,10 @@ class OpenWidgetList:
     
         
 class PyMapManagerApp(QtWidgets.QApplication):
-    def __init__(self, argv=[], deferFirstWindow=False):        
+    def __init__(self, argv):        
         super().__init__(argv)
 
-        self._analysisParams = mapmanagercore.analysis_params.AnalysisParams()
+        self._analysisParams : AnalysisParams= AnalysisParams()
         
         firstTimeRunning = self._initUserDocuments()
 
@@ -287,7 +294,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
             logger.info("  We created <user>/Documents/Pymapmanager-User-Files and need to restart")
 
         self._config = pymapmanager.interface2.Preferences(self)
-        # util class to save/load app preferences including recent paths
+        """Preferences() util class to save/load app preferences including recent paths."""
 
         # set the log level
         logLevel = self.getConfigDict()['logLevel']
@@ -349,7 +356,8 @@ class PyMapManagerApp(QtWidgets.QApplication):
         jsonDump = self._analysisParams.getJson()
 
         # Create user's pmm directory in user/documents if necessary and save json to it
-        return pymapmanager.pmmUtils.addUserPath(jsonDump)
+        from pymapmanager.pmmUtils import addUserPath
+        return addUserPath(jsonDump)
     
     def getAnalysisParams(self):
         """ get analysis params from json file within user documents
@@ -357,7 +365,8 @@ class PyMapManagerApp(QtWidgets.QApplication):
         return self._analysisParams
 
     def getUserJsonData(self) -> Optional[dict]:
-        return pymapmanager.pmmUtils.getUserAnalysisParamJsonData()
+        from pymapmanager.pmmUtils import getUserAnalysisParamJsonData
+        return getUserAnalysisParamJsonData()
     
     def saveAnalysisParams(self, dict):
         """
@@ -448,7 +457,6 @@ class PyMapManagerApp(QtWidgets.QApplication):
     def openFirstWindow(self):
         """Toggle or create an OpenFirstWindow.
         """
-        logger.info('')
         
         if self._openFirstWindow is None:
             self._openFirstWindow = OpenFirstWindow(self)        
@@ -496,8 +504,8 @@ class PyMapManagerApp(QtWidgets.QApplication):
     #abj
     def _showAnalysisParameters(self):
 
-        _frontWidget = self.getFrontWindow()
-        self.apWidget = AnalysisParamWidget(stackWidget=_frontWidget, pmmApp=self)
+        # _frontWidget = self.getFrontWindow()
+        self.apWidget = AnalysisParamWidget(stackWidget=None, pmmApp=self)
         self.apWidget.show()
 
     def _undo_action(self):
@@ -582,7 +590,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
         """
         
         if path is None:
-            logger.warning('TODO: write a file open dialog to open an mmap file')
+            # logger.warning('TODO: write a file open dialog to open an mmap file')
             # openFilePath, fileType = QtWidgets.QFileDialog.getOpenFileName(None, "Open File", "", "Zarr (*.mmap)")
             # customDialog = QtWidgets.QFileDialog.setNameFilter(None, "zarr directory (*.mmap)")
             # openFilePath = customDialog.getExistingDirectory(None)
@@ -713,15 +721,18 @@ class PyMapManagerApp(QtWidgets.QApplication):
         # might need to somehow refresh stackwidget?
 
     
-def main():
+def run():
     """Run the PyMapMAnager app.
     
     This is an entry point specified in setup.py and used by PyInstaller.
     """
     logger.info('Starting PyMapManagerApp in main()')
     
+    # enable_hi_dpi() must be called before the instantiation of QApplication.
+    qdarktheme.enable_hi_dpi()
+
     app = PyMapManagerApp(sys.argv)
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
-    main()
+    run()
