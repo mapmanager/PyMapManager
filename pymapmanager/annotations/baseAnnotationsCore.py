@@ -16,7 +16,7 @@ from mapmanagercore.annotations.single_time_point import SingleTimePointAnnotati
 from mapmanagercore.layers.line import clipLines
 # from mapmanagercore.lazy_geo_pandas import LazyGeoFrame
 
-from pymapmanager.interface2.stackWidgets.event.spineEvent import EditSpinePropertyEvent
+# from pymapmanager.interface2.stackWidgets.event.spineEvent import EditSpinePropertyEvent
 
 from pymapmanager import TimeSeriesCore
 
@@ -435,11 +435,12 @@ class SpineAnnotationsCore(AnnotationsCore):
 
         return True
     
-    def editSpine(self, editSpineProperty : EditSpinePropertyEvent):
+    def editSpine(self, editSpineProperty : List[dict]):
         # spineID:117 col:isBad value:True
         # logger.info(editSpineProperty)
         logger.info(f"stack widget editSpineProperty {editSpineProperty}")
         for item in editSpineProperty:
+            # item is like: {'spineID': 43, 'sessionID': 0, 'col': 'userType', 'value': '1'}
             spineID = item['spineID']
             col = item['col']
             value = item['value']

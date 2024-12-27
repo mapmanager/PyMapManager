@@ -1,15 +1,13 @@
-import os
-import time
-from typing import List, Union, Optional
+from typing import Optional
 
 import numpy as np
-import pandas as pd
 
 from mapmanagercore.lazy_geo_pd_images import Metadata
 
+import pymapmanager
 from pymapmanager.stackcontrast import StackContrast
 from pymapmanager.annotations.baseAnnotationsCore import SpineAnnotationsCore, LineAnnotationsCore
-from pymapmanager.timeseriesCore import TimeSeriesCore
+# from pymapmanager.timeseriesCore import TimeSeriesCore
 from pymapmanager._logger import logger
 
 class stack:
@@ -20,7 +18,7 @@ class stack:
     channelColors = ['g', 'r', 'b']
 
     def __init__(self,
-                timeseriescore : TimeSeriesCore,
+                timeseriescore : pymapmanager.TimeSeriesCore,
                 loadImageData : bool = True,
                 timepoint : int = 0,
                 defaultChannelIdx = 0):
@@ -34,7 +32,7 @@ class stack:
             Timepoint in timeseriescore
         """
 
-        self._fullMap : TimeSeriesCore = timeseriescore
+        self._fullMap : pymapmanager.TimeSeriesCore = timeseriescore
         self._timepoint = timepoint
 
         self._annotations = SpineAnnotationsCore(self._fullMap, timepoint=self.timepoint)  #, defaultColums=defaultColums)
@@ -66,7 +64,7 @@ class stack:
     def contrast(self) -> StackContrast:
         return self._stackContrast
     
-    def getTimeSeriesCore(self) -> TimeSeriesCore:
+    def getTimeSeriesCore(self) -> pymapmanager.TimeSeriesCore:
         return self._fullMap
 
     def getMetadata(self) -> Metadata:

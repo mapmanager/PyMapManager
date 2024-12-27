@@ -33,7 +33,8 @@ from pymapmanager.timeseriesCore import TimeSeriesCore
 from pymapmanager.interface2.stackWidgets.event.spineEvent import (AddSpineEvent, 
                                                                    DeleteSpineEvent,  
                                                                    UndoSpineEvent,
-                                                                   RedoSpineEvent)
+                                                                   RedoSpineEvent,
+                                                                   EditSpinePropertyEvent)
 
 from pymapmanager.interface2.stackWidgets.event.segmentEvent import (AddSegmentEvent,
                                                                      DeleteSegmentEvent,
@@ -832,7 +833,8 @@ class stackWidget2(mmWidget2):
 
         return _deleted
     
-    def editedEvent(self, event : pmmEvent) -> bool:
+    # def editedEvent(self, event : pmmEvent) -> bool:
+    def editedEvent(self, event : EditSpinePropertyEvent) -> bool:
         """A spine has been edited, set it in the backend.
         
         This can be an update for the row value of any column (for example)
@@ -848,6 +850,8 @@ class stackWidget2(mmWidget2):
         """
         logger.info('=== ===   STACK WIDGET PERFORMING edited spine   === ===')
         logger.info(event)
+        
+        # abb removed passing event (annotations are backend, do not know about pyqt events
         self.getStack().getPointAnnotations().editSpine(event)
 
         self.getUndoRedo().addUndo(event)
