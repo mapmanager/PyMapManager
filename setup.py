@@ -30,12 +30,12 @@ https://pypi.python.org/pypi/pymapmanager
     `requests` is required by pymapmanager.mmio
 '''
 
-exec (open('pymapmanager/version.py').read())
+# exec (open('pymapmanager/version.py').read())
 
 setup(
     name='pymapmanager',
-    version=__version__,
-    description='Load, analyze, and visualize Map Manager files',
+    # version=__version__,
+    description='Desktop GUI for analysis of neuronal spines.',
     url='http://github.com/pymapmanager/PyMapManager',
     author='Robert H Cudmore',
     author_email='robert.cudmore@gmail.com',
@@ -49,11 +49,10 @@ setup(
                             'pymapmanager.interface2.stackWidgets',
                             'pymapmanager.interface2.mapWidgets',
                             ]),
-    #packages = find_packages(exclude=['version']),
-    #packages=[
-    #    'pymapmanager',
-    #    'pymapmanager.mmio'
-    #],
+
+    use_scm_version=True,
+    setup_requires=['setuptools_scm'],
+
     install_requires=[
         # "mapmanagercore",
         "numpy",
