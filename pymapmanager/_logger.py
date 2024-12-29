@@ -42,6 +42,7 @@ def getLoggerFilePath():
     return logFilePath
 
 # Create a custom logger with the name as the module name
+print(f'global _logger namespace using __name__:{__name__}')
 logger = logging.getLogger(__name__)
 
 handler = logging.StreamHandler(sys.stdout)

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pymapmanager.interface2.stackWidgets import stackWidget2
-    from pymapmanager.interface2.stackWidgets.event import SelectSpine
+    from pymapmanager.interface2.stackWidgets.event.spineEvent import SelectSpine
 
 import copy
 from enum import Enum, auto
@@ -14,9 +14,6 @@ from typing import List, Optional, Tuple, TypedDict, Self
 from qtpy import QtGui, QtCore, QtWidgets
 
 import pymapmanager
-
-# abb 20240906
-# from pymapmanager.interface2.stackWidgets.event.spineEvent import SelectSpine
 
 from pymapmanager._logger import logger
 

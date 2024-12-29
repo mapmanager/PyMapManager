@@ -30,7 +30,7 @@ def test_deleteSpine(stackWidgetObject, qapp):
     dse = DeleteSpineEvent(stackWidgetObject, spineID=spineID)
 
 def test_editSpineProperty(stackWidgetObject, qapp):
-    logger.info('')
+    logger.info(f'{stackWidgetObject}')
 
     assert stackWidgetObject is not None
     assert isinstance(stackWidgetObject, stackWidget2)

@@ -10,24 +10,24 @@
 # this works but requires us to import each plugin (not optimal)
 # from .searchWidget2 import searchWidget2
 
-from pymapmanager._logger import logger
+# from pymapmanager._logger import logger
 
-from inspect import isclass
-from pkgutil import iter_modules
-from pathlib import Path
-from importlib import import_module
+# from inspect import isclass
+# from pkgutil import iter_modules
+# from pathlib import Path
+# from importlib import import_module
 
-# iterate through the modules in the current package
-package_dir = Path(__file__).resolve().parent
-for (_, module_name, _) in iter_modules([package_dir]):
+# # iterate through the modules in the current package
+# package_dir = Path(__file__).resolve().parent
+# for (_, module_name, _) in iter_modules([package_dir]):
 
-    # import the module and iterate through its attributes
-    logger.info(f'import_module __name__:{__name__} module_name:{module_name}')
-    module = import_module(f"{__name__}.{module_name}")
-    for attribute_name in dir(module):
-        attribute = getattr(module, attribute_name)
+#     # import the module and iterate through its attributes
+#     logger.info(f'import_module __name__:{__name__} module_name:{module_name}')
+#     module = import_module(f"{__name__}.{module_name}")
+#     for attribute_name in dir(module):
+#         attribute = getattr(module, attribute_name)
 
-        if isclass(attribute):            
-            # Add the class to this package's variables
-            # print('adding attribute to globals()', attribute)
-            globals()[attribute_name] = attribute
+#         if isclass(attribute):            
+#             # Add the class to this package's variables
+#             # print('adding attribute to globals()', attribute)
+#             globals()[attribute_name] = attribute

@@ -56,7 +56,7 @@ def addUserPath(jsonDump):
         logger.info(f"Adding to sys.path: {userPmmFolder}")
         sys.path.append(userPmmFolder)
 
-    # logger.info("sys.path is now:")
+    logger.info("sys.path is now:")
     for path in sys.path:
         logger.info(f"    {path}")
 

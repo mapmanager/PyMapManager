@@ -18,28 +18,120 @@ import qdarktheme
 
 import pymapmanager
 
+# required so pyinstaller includes all plugins in bundle
+from pymapmanager.interface2.stackWidgets import *
+
 from mapmanagercore.analysis_params import AnalysisParams
 
 from pymapmanager.interface2.openFirstWindow import OpenFirstWindow
 from pymapmanager.interface2.openFolderWindow import OpenFolderWindow
 from pymapmanager.interface2.stackWidgets.analysisParamWidget2 import AnalysisParamWidget
-# from pymapmanager.interface2.preferences import Preferences
-
-# import mapmanagercore
-
-#import pymapmanager.interface2
-
 from pymapmanager.timeseriesCore import TimeSeriesCore
 
 from pymapmanager.interface2.mapWidgets.mapWidget import mapWidget
-
 from pymapmanager.interface2.stackWidgets.stackWidget2 import stackWidget2
 from pymapmanager.interface2.openFirstWindow import OpenFirstWindow
 # from pymapmanager.interface2.mainMenus import PyMapManagerMenus
 
 from pymapmanager._logger import logger, setLogLevel
-from pymapmanager.pmmUtils import getBundledDir
-# import pymapmanager.pmmUtils
+
+def _importPlugins(pluginType : str, verbose = False):
+    from inspect import isclass
+    from pkgutil import iter_modules
+    from importlib import import_module, invalidate_caches
+
+    import pymapmanager
+    import pymapmanager.interface2.stackWidgets
+    import pymapmanager.interface2.mapWidgets
+
+    if pluginType == 'stackWidgets':
+        _modulePath = 'pymapmanager.interface2.stackWidgets'
+        # _folderPath = 'stackWidgets'
+    elif pluginType == 'mapWidgets':
+        _modulePath = 'pymapmanager.interface2.mapWidgets'
+        # _folderPath = 'mapWidgets'
+
+    numAdded = 0
+
+    # CRITICAL: abb this list is not complete in pyinstaller
+    invalidate_caches()  # ???
+    m1 = import_module(_modulePath)
+    if verbose:
+        logger.info('m1 is:')
+        print(m1)
+        # <module 'pymapmanager.interface2.stackWidgets' from '/Users/cudmore/Sites/PyMapManager/pymapmanager/interface2/stackWidgets/__init__.py'>
+        print(f'=== "{pluginType}" Found nested modules m1: import_module({_modulePath})')
+        _tmpCount = 0
+        for _a, _item, _b in list(iter_modules(m1.__path__, m1.__name__ + ".")):
+            print(_tmpCount)
+            print(f'   {_a}')
+            print(f'   {_item}')
+            print(f'   {_b}')
+            _tmpCount += 1
+
+    # verbose = False
+
+    skipModules = [pymapmanager.interface2.stackWidgets.stackWidget2,
+                   pymapmanager.interface2.stackWidgets.base,
+                   pymapmanager.interface2.stackWidgets.event]
+
+    # for (_a, module_name, _b) in iter_modules([package_dir]):
+    _newModuleList = list(iter_modules(m1.__path__, m1.__name__ + "."))
+    for (_a, module_name, _b) in _newModuleList:
+
+        # import the module and iterate through its attributes
+        if module_name in skipModules:
+            continue
+
+        module = import_module(module_name)
+        if verbose:
+            logger.info(f'   module_name:{module_name}')
+            logger.info(f'   module:{module}')
+            logger.info(f'dir(module): {dir(module)}')
+        
+        for attribute_name in dir(module):
+            attribute = getattr(module, attribute_name)
+
+            if not isclass(attribute):
+                # if verbose:
+                #     logger.info(f'      -->> skipping not a class "{attribute_name}"')
+                continue
+
+            try:
+                _widgetName = attribute._widgetName  # myHumanName is a static str
+            except (AttributeError) as e:
+                # not a pmmWidget !
+                if verbose:
+                    logger.info(f'      -->> skipping (_widgetName attribute): {e}')
+                continue
+
+            # don't add widgets with no specific name
+            if _widgetName == 'not assigned':
+                if verbose:
+                    logger.info(f'      -->> skipping (not assigned) "{_widgetName}"')
+                continue
+
+            # don't add widgets with no specific name
+            if _widgetName == 'Stack Widget':
+                if verbose:
+                    logger.info(f'      -->> skipping (Stack Widget) "{_widgetName}"')
+                continue
+
+            if verbose:
+                logger.info(f'--->>> setattr() for _widgetName:{_widgetName}')
+                logger.info(f'   attribute_name:{attribute_name}')
+                logger.info(f'   attribute:{attribute}')
+
+            # TODO: for some reasone line and point widgets are geting aded twice?
+            # logger.info(f'adding attribute_name:{attribute_name} attribute:{attribute}')
+            if pluginType == 'stackWidgets':
+                setattr(pymapmanager.interface2.stackWidgets, attribute_name, attribute)
+            elif pluginType == 'mapWidgets':
+                setattr(pymapmanager.interface2.mapWidgets, attribute_name, attribute)
+            
+            numAdded += 1
+
+    logger.info(f'imported {numAdded} {pluginType} (attr)')
 
 def loadPlugins(pluginType : str, verbose = False) -> dict:
     """Load stack/map plugins:
@@ -54,35 +146,33 @@ def loadPlugins(pluginType : str, verbose = False) -> dict:
     See: sanpy.fileLoaders.fileLoader_base.getFileLoader()
     """
 
-    import pymapmanager.interface2.stackWidgets
-    import pymapmanager.interface2.mapWidgets
+    # import pymapmanager.interface2.stackWidgets
+    # import pymapmanager.interface2.mapWidgets
+
+    verbose = False
 
     pluginDict = {}
 
-    # TODO: remove, all sanpy widget
-    # ignoreModuleList = [
-    #     # "myStatListWidget",
-    #     # 'StackWidget2'
-    # ]
+    _importPlugins(pluginType, pluginType == 'stackWidgets')
 
-    #
-    # system plugins from sanpy.interface.plugins
-    # print('loadPlugins sanpy.interface.plugins:', sanpy.interface.plugins)
-    # loadedList = []
-
-    if pluginType == 'stack':
+    if pluginType == 'stackWidgets':
         members = inspect.getmembers(pymapmanager.interface2.stackWidgets)
         _rootModuleStr = "pymapmanager.interface2.stackWidgets."
-    elif pluginType == 'map':
+    elif pluginType == 'mapWidgets':
         members = inspect.getmembers(pymapmanager.interface2.mapWidgets)
         _rootModuleStr = "pymapmanager.interface2.mapWidgets."
     else:
         logger.error(f'did not understand pluginType:"{pluginType}"')
         return {}
     
+    # if verbose:
+    #     logger.info(f'members:{members}')
+
     for moduleName, obj in members:
-        # logger.info(f'moduleName:{moduleName} obj:{obj}')
+        # logger.info(f'1) moduleName:{moduleName} obj:{obj}')
         if inspect.isclass(obj):
+            
+        
             # logger.info(f'obj is class moduleName: {moduleName}')
             # if moduleName in ignoreModuleList:
             #     # our base plugin class
@@ -94,7 +184,7 @@ def loadPlugins(pluginType : str, verbose = False) -> dict:
                 _widgetName = obj._widgetName  # myHumanName is a static str
             except (AttributeError) as e:
                 # not a pmmWidget !
-                # logger.info(e)
+                logger.info(f'not a pmmWidget:{e}')
                 continue
             
             # don't add widgets with no specific name
@@ -105,6 +195,7 @@ def loadPlugins(pluginType : str, verbose = False) -> dict:
             if _widgetName == 'Stack Widget':
                 continue
 
+            logger.info(f'   adding {pluginType} moduleName:{moduleName} _widgetName:{_widgetName}')
             # _showInMenu = obj.showInMenu  # showInMenu is a static bool
             onePluginDict = {
                 "pluginClass": moduleName,
@@ -281,10 +372,14 @@ class OpenWidgetList:
         
         return False
     
-        
 class PyMapManagerApp(QtWidgets.QApplication):
     def __init__(self, argv):        
         super().__init__(argv)
+
+        # immediately set the log level so we can see initial activity
+        logLevel = 'DEBUG'
+        logger.info(f'Starting PyMapManagerApp() logLevel:{logLevel} argv:{argv}')
+        setLogLevel('DEBUG')
 
         self._analysisParams : AnalysisParams= AnalysisParams()
         
@@ -296,11 +391,9 @@ class PyMapManagerApp(QtWidgets.QApplication):
         self._config = pymapmanager.interface2.Preferences(self)
         """Preferences() util class to save/load app preferences including recent paths."""
 
-        # set the log level
+        # set the log level from saved config
         logLevel = self.getConfigDict()['logLevel']
         setLogLevel(logLevel)
-
-        logger.info(f'Starting PyMapManagerApp() logLevel:{logLevel} argv:{argv}')
 
         self.setTheme()
         # set theme to loaded config dict
@@ -334,10 +427,10 @@ class PyMapManagerApp(QtWidgets.QApplication):
         # dictionary of open stack widgets
         # keys are full path to stack
 
-        self._stackWidgetPluginsDict = loadPlugins(pluginType='stack')
+        self._stackWidgetPluginsDict = loadPlugins(pluginType='stackWidgets', verbose=False)
         # application wide stack widgets
         
-        self._mapWidgetPluginsDict = loadPlugins(pluginType='map')
+        self._mapWidgetPluginsDict = loadPlugins(pluginType='mapWidgets', verbose=False)
         # application wide stack widgets
         
         # logger.info('building PyMapManagerMenus()')
@@ -425,15 +518,16 @@ class PyMapManagerApp(QtWidgets.QApplication):
 
         _windowType = None
         
-        if isinstance(activeWindow, pymapmanager.interface2.stackWidgets.stackWidget2):
+        # if isinstance(activeWindow, pymapmanager.interface2.stackWidgets.stackWidget2):
+        if isinstance(activeWindow, stackWidget2):
             _hasMap = activeWindow._mapWidget is not None
             if _hasMap:
                 _windowType = 'stackWithMap'
             else:
                 _windowType = 'stack'
-        elif isinstance(activeWindow, pymapmanager.interface2.mapWidgets.mapWidget):
+        elif isinstance(activeWindow, mapWidget):
             _windowType = 'map'
-        elif isinstance(activeWindow, pymapmanager.interface2.openFirstWindow.OpenFirstWindow):
+        elif isinstance(activeWindow, OpenFirstWindow):
             pass
         else:
             logger.warning('Did not understand type of front window, not in: stack, map, or open first?')
@@ -472,6 +566,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
             self._openFirstWindow = None
 
     def getAppIconPath(Self):
+        from pymapmanager.pmmUtils import getBundledDir
         return os.path.join(getBundledDir(), 'interface2', 'icons', 'mapmanager-icon.png')
     
     def getConfigDict(self) -> "pymapmanager.interface2.Preferences":
@@ -732,7 +827,31 @@ def run():
     qdarktheme.enable_hi_dpi()
 
     app = PyMapManagerApp(sys.argv)
+
+    # these imports are needed by pyinstaller so they are included in our plugin system
+    # we will need similar 'fake' import for all our map widget
+    from pymapmanager.interface2.stackWidgets.scatterplotwidget import ScatterPlotWidget
+    from pymapmanager.interface2.stackWidgets.dendrogramWidget import DendrogramWidget
+    from pymapmanager.interface2.stackWidgets.spineInfoWidget import SpineInfoWidget
+    from pymapmanager.interface2.stackWidgets.histogramWidget2 import HistogramWidget
+                                                                        
+    
+    # from pymapmanager.interface2.stackWidgets.stackWidget2 import stackWidget2
+    # from pymapmanager.timeseriesCore import TimeSeriesCore
+    # # import mapmanagercore
+    # import mapmanagercore.data
+    # path = mapmanagercore.data.getTiffChannel_1()
+    # tsc = TimeSeriesCore(path)
+    # sw = stackWidget2(tsc)
+    # spw = ScatterPlotWidget(sw)
+    # print(f'spw:{spw}')
+    # spw.show()
+
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
     run()
+    
+    # logger.setLevel('DEBUG')
+    # loadPlugins('stackWidgets', False)
+    # loadPlugins('mapWidgets', False)

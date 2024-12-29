@@ -1,21 +1,12 @@
-"""
-Widget to plot columns within backend dataframe (in the form of a scatterplot + histogram)
-"""
+from typing import List
 
-import sys
-from typing import List, Optional
-
-import pandas as pd
-from qtpy import QtGui, QtCore, QtWidgets
-
-from pymapmanager._logger import logger
-
-# import pymapmanager.annotations
+from qtpy import QtGui, QtWidgets
 
 from pymapmanager.interface2.core.scatter_plot_widget import ScatterPlotWidget_
-
-from pymapmanager.interface2.stackWidgets.base.mmWidget2  import mmWidget2, pmmEventType, pmmEvent, pmmStates
+from pymapmanager.interface2.stackWidgets.base.mmWidget2  import mmWidget2, pmmEventType, pmmEvent
 from pymapmanager.interface2.stackWidgets.event.spineEvent import DeleteSpineEvent, EditSpinePropertyEvent
+
+from pymapmanager._logger import logger
 
 class ScatterPlotWidget(mmWidget2):
 
