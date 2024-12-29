@@ -25,7 +25,6 @@
     
 ## Preparing PMB seminar Dec 19, 2024
 
-
 - stack widget
     - Implement a simple export to csv for both spines and segments
     - refactor left toolbar as a dock. Inherit from `Main Window` add dock 'left'. This way the user can visually drag it bigger/small and hide it. See scatter widget.

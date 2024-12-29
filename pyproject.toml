@@ -25,14 +25,26 @@ dependencies = [
     ]
 requires-python = ">=3.11"
 
-# [tool.setuptools.packages.find]
-# exclude = ["*docs/*", "*tests/*"]
-
 [project.scripts]
 pymapmanager = "pymapmanager.interface2.pyMapManagerApp2:run"
 
 [tool.setuptools_scm]
 version_file = "src/pymapmanager/_version.py"
+
+[project.optional-dependencies]
+test = [
+    'pytest',
+    'pytest-cov',
+    'pytest-qt',
+    'flake8',
+]
+docs = [
+    'mkdocs',
+    'mkdocs-material',
+    'mkdocs-jupyter',
+    'mkdocstrings',
+    'mkdocstrings-python', # resolve error as of April 30, 2023
+]
 
 [tool.ruff]
 ignore = [
