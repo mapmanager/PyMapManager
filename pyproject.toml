@@ -1,16 +1,38 @@
 [build-system]
-requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2", "wheel"]
+requires = ["setuptools>=45", "setuptools_scm>=6.2", "wheel"]
 build-backend = "setuptools.build_meta"
 
-# [project]
-# # version = "0.0.1"  # Remove any existing version parameter.
-# dynamic = ["version"]
+[project]
+name = "pymapmanager"
+dynamic = ["version"]
+dependencies = [
+        "mapmanagercore",
+        "numpy",
+        "pandas",
+        # "scipy",
+        # "scikit-image",
+        # "tifffile",
+        # "geopandas",
+        "shapely",
+        "platformdirs",
+        'matplotlib',
+        'seaborn',
+        'qtpy',
+        'PyQt5',  # This will not work on macOS arm
+        'pyqtgraph',
+        'pyqtdarktheme',
+        # 'plotly'
+    ]
+requires-python = ">=3.11"
+
+# [tool.setuptools.packages.find]
+# exclude = ["*docs/*", "*tests/*"]
+
+[project.scripts]
+pymapmanager = "pymapmanager.interface2.pyMapManagerApp2:run"
 
 [tool.setuptools_scm]
-write_to = "pymapmanager/_version.py"
-# version_scheme = "post-release"
-# #local_scheme = "dirty-tag"
-# local_scheme = "no-local-version"
+version_file = "src/pymapmanager/_version.py"
 
 [tool.ruff]
 ignore = [
@@ -18,7 +40,7 @@ ignore = [
 ]
 
 [tool.black]
-line-length = 79
+line_length = 79
 
 [tool.isort]
 profile = "black"
