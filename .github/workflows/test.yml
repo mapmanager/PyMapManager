@@ -43,6 +43,7 @@ jobs:
         # pytest ./src/pymapmanager -s --cov=./src/pymapmanager --cov-report=xml src/pymapmanager
         # pytest ./src/pymapmanager -s --cov=./src/pymapmanager --cov-report=xml src/pymapmanager
         #coverage run -m pytest  -s src/pymapmanager/tests  
+        # 20241229, this WORKS!!!!!!!!!!
         pytest src/pymapmanager/tests -s --cov=src/pymapmanager/tests --cov-report=xml src/pymapmanager/tests
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v4.0.1

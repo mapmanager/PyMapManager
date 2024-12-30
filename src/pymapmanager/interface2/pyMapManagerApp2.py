@@ -69,8 +69,6 @@ def _importPlugins(pluginType : str, verbose = False):
             print(f'   {_b}')
             _tmpCount += 1
 
-    # verbose = False
-
     skipModules = [pymapmanager.interface2.stackWidgets.stackWidget2,
                    pymapmanager.interface2.stackWidgets.base,
                    pymapmanager.interface2.stackWidgets.event]
@@ -148,8 +146,6 @@ def loadPlugins(pluginType : str, verbose = False) -> dict:
 
     # import pymapmanager.interface2.stackWidgets
     # import pymapmanager.interface2.mapWidgets
-
-    verbose = False
 
     pluginDict = {}
 
