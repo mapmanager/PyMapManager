@@ -42,7 +42,7 @@ jobs:
         # pytest --cov=./tests --cov-report=xml --ignore=tests/test_gen_example_notebook.py
         # need to specify tests/ folder because now we have a
         # MapManagerCore folder which has its own tests/
-        pytest ./src -s --cov=./tests --cov-report=xml tests/
+        pytest ./src -s --cov=./src --cov-report=xml src/
         # pytest tests/interface/test_app_tmp.py
 
     - name: Upload coverage reports to Codecov
