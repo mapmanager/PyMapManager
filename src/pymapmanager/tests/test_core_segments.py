@@ -10,12 +10,12 @@ from pymapmanager import stack
 from pymapmanager.annotations.baseAnnotationsCore import LineAnnotationsCore
 from pymapmanager._logger import logger
 
-def _getEmptyMap():
+def test_empty_map():
     # add image channels to the loader
     loader = MultiImageLoader()
     loader.read(getTiffChannel_1(), channel=0)
 
-    map = MapAnnotations(loader.build())
+    map = MapAnnotations(loader)
     tp = map.getTimePoint(0)
 
     return tp
@@ -58,38 +58,6 @@ def _getEmptyMap():
 #     # when there is just one segment, we get a LineString, not a df of linestring?
 #     print('rough tracing length:', tp.segments[:]['roughTracing'].length)
 
-def test_qt_undo():
-    zarrPath = getSingleTimepointMap()
-    # zarrPath = getTiffChannel_1()  # make a mmap with no segments, no spine
-
-    from pymapmanager import TimeSeriesCore
-    tsc = TimeSeriesCore(zarrPath)
-
-    _stack = stack(tsc, timepoint=0)
-    print('_stack is:')
-    print(_stack)
-
-    pac = _stack.getPointAnnotations()
-
-    segmentID = 4
-    newSpineID = pac.addSpine(segmentID=segmentID, x=100, y=120, z=10)
-    print('newSpineID:', newSpineID)
-
-    _stack.undo()
-
-    print(f'=== after undo newSpineID:{newSpineID} singleTimepoint points[:] is:')
-    print(pac.singleTimepoint.points[:])
-
-    print('=== after undo tsc _fullMap points[:] is:')
-    print(tsc._fullMap.points[:])
-
-    _stack.redo()
-
-    print(f'=== after redo newSpineID:{newSpineID} singleTimepoint points[:] is:')
-    print(pac.singleTimepoint.points[:])
-
-    print('=== after redo tsc _fullMap points[:] is:')
-    print(tsc._fullMap.points[:])
 
 def test_qt_segments():
     """Load zarr, test core segment
@@ -197,62 +165,14 @@ def test_qt_segments():
     # print('=== pac.getDataFrame()')
     # print(pac.getDataFrame())
 
-def debug_copy():
-    from pymapmanager import TimeSeriesCore
-
-    zarrPath = getSingleTimepointMap()    
-    tsc = TimeSeriesCore(zarrPath)
-    
-    stp = tsc._fullMap.getTimePoint(0)
-    logger.info(f'stp:{type(stp)}')
-
-    # core calls: self._annotations._images.shape(self._t)
-    print(f'stp.shape:{stp.shape}')  # (2, 70, 1024, 1024)
-
-def debugMemory():
-    from pymapmanager import TimeSeriesCore
-
-    # zarrPath = getSingleTimepointMap()    
-    zarrPath = '/Users/cudmore/Desktop/multi_timepoint_map_seg_spine_connected.mmap'
-    
-    tsc = TimeSeriesCore(zarrPath)
-
-    # stp = tsc._fullMap.getTimePoint(0)
-    # segments = stp.segments[:]
-    # print(segments)
-
-    import psutil
-
-    m1 = psutil.Process().memory_info().rss / (1024 * 1024)
-
-    timepoint = 2
-    channelIdx = 0
-    zRange = 10
-    
-    _img = tsc._fullMap._images.fetchSlices(timepoint, channelIdx, (0,1))
-    print(_img.shape, type(_img))
-    return
-
-    _pixels = []
-    for z in range(20):
-        # <mapmanagercore.lazy_geo_pd_images.image_slices.ImageSlice object at 0x15ae6a290>
-        _pixels1 = tsc._fullMap.getPixels(time=timepoint, channel=channelIdx, z=z)
-        _pixels.append(_pixels1)
-
-    # print(_pixels)
-    
-    m2 = psutil.Process().memory_info().rss / (1024 * 1024)
-
-    print(m1, m2)
-
 if __name__ == '__main__':
     logger.setLevel('DEBUG')
     
-    # test_segment()
-    # test_qt_segments()
+    test_empty_map()
+    test_qt_segments()
 
     # test_qt_undo()
 
     # debug_copy()
 
-    debugMemory()
+    # debugMemory()

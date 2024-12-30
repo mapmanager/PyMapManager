@@ -1248,9 +1248,14 @@ class ScatterPlotWidget_(QtWidgets.QWidget):
             columnNameY = self.yPlotWidget.getCurrentStat()
             
             # pull x/y values from selected row(s)
-            xSelectValues =  self._df.loc[rowIndexes, columnNameX].tolist()
-            ySelectValues = self._df.loc[rowIndexes, columnNameY].tolist()
-
+            try:
+                xSelectValues =  self._df.loc[rowIndexes, columnNameX].tolist()
+                ySelectValues = self._df.loc[rowIndexes, columnNameY].tolist()
+            except (KeyError) as e:
+                logger.error(f'rowIndexes:{rowIndexes} either columnNameX:{columnNameX} or columnNameY:{columnNameY}')
+                logger.error(e)
+                return
+            
             self.myHighlighter._setData(xSelectValues, ySelectValues)
 
             # Store selected rows for later use

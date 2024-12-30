@@ -378,10 +378,17 @@ class TimeSeriesCore():
     def undo(self):
         logger.info('-->> PERFORMING UNDO')
         self._fullMap.undo()
+        
+        # self.getPointAnnotations()._buildDataFrame()
 
     def redo(self):
         logger.info('-->> PERFORMING REDO')
         self._fullMap.redo()
+        
+        # self.getPointAnnotations()._buildDataFrame()
+
+        # self.getPointAnnotations()._buildTimepoint()  # rebuild single timepoint
+        # self.getPointAnnotations()._buildDataFrame()
 
     def loadInNewChannel(self, path: Union[str, np.ndarray], time: int = 0, channel: int = 0):
         """ Call loadInNewChannel in backend MapManagerCore

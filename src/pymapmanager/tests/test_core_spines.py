@@ -4,13 +4,13 @@ from pymapmanager import stack, TimeSeriesCore
 
 from pymapmanager._logger import logger, setLogLevel
 
-def _tmpCudmoreTest():
+def test_timeseriescore():
     zarrPath = getMultiTimepointMap()
     
     # _map = AnnotationsBaseMut(Loader())
     # _map = MapAnnotations(MMapLoader(zarrPath).cached())
-    tsc = TimeSeriesCore(zarrPath)
-    _stack = stack(timeseriescore=tsc, timepoint=0)
+    # tsc = TimeSeriesCore(zarrPath)
+    _stack = stack(timeseriescore=TimeSeriesCore(zarrPath), timepoint=0)
 
     # update spine does not make sense before we add spine?
     # _map.updateSpine(("spine_id", 0), {"z": 0})
@@ -18,30 +18,37 @@ def _tmpCudmoreTest():
     # print(_map._points)
 
     pa = _stack.getPointAnnotations()
-    
-    beforeDf = pa.getDataFrame()
-    print(f'   beforeDf:{len(beforeDf)}')
+    numSpines0 = pa.numAnnotations
+
+    segmentID = 1
 
     logger.info('=== addSpine()')
-    _newSpineID = pa.addSpine(segmentID=0, x=100, y=100, z=10)
+    _newSpineID = pa.addSpine(segmentID=segmentID, x=100, y=100, z=10)
 
-    afterDf = pa.getDataFrame()
-    print(f'   afterDf:{len(afterDf)}')
+    numSpines1 = pa.numAnnotations
+    assert numSpines1 == numSpines0 + 1
 
     logger.info('=== undo()')
-    pa.undo()
+    _stack.undo()
 
-    afterUndoDf = pa.getDataFrame()
-    print(f'   afterUndoDf:{len(afterUndoDf)}')
+    numSpines3 = pa.numAnnotations
+    assert numSpines3 == numSpines1 - 1
 
-    logger.info('=== moveSpine()')
+    logger.info('=== redo()')
+    _stack.redo()
+
+    numSpines4 = pa.numAnnotations
+    assert numSpines4 == numSpines3 + 1
+
+    logger.info('=== moveSpine() 100')
     pa.moveSpine(spineID=100, x=100, y=100, z=30)
 
     afterMoveDf = pa.getDataFrame()
-    print(f"   afterMoveDf:{afterMoveDf.loc[100, ['x', 'y', 'z']]}")
+    # print(f"   afterMoveDf:{afterMoveDf.loc[100, ['x', 'y', 'z']]}")
+    assert afterMoveDf.loc[100, ['x']].values == 100
 
     # manual connect (anchor) is failing
-    if 0:
+    if 1:
         spineID = 115
         x = 266
         y = 215
@@ -53,5 +60,6 @@ def _tmpCudmoreTest():
         print(afterManualConnectDf.columns)
 
 if __name__ == '__main__':
-    setLogLevel()
-    _tmpCudmoreTest()
+    pass
+    # setLogLevel()
+    # test_timeseriescore()

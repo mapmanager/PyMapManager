@@ -54,7 +54,7 @@ class AnnotationsCore:
         """Build single timepoint by calling getTimepoint(timepoint).
         """
         logger.warning(f'building SingleTimePointAnnotations {self.getClassName()}')
-        self._singleTimePoint = self._fullMap.getTimepoint(self._timepoint)
+        self._singleTimePoint : SingleTimePointAnnotations = self._fullMap.getTimepoint(self._timepoint)
 
     @property
     def singleTimepoint(self) -> SingleTimePointAnnotations:
@@ -368,6 +368,9 @@ class SpineAnnotationsCore(AnnotationsCore):
         Each is a df with (spineID, x, y).
         """
         
+        if not self.spineID_Exists(rowIdx):
+            return
+        
         if roiType == 'roiHead':
             df = self.singleTimepoint.points["roiHead"].get_coordinates()
             # df = self.getMapPoints().getPointsColumn(self.timepoint, 'roiHead')
@@ -405,6 +408,7 @@ class SpineAnnotationsCore(AnnotationsCore):
                                z=z)
         
         if newSpineID is None: # User made an incorrect spine Addition (Out of image)
+            logger.warning('did not add spine')
             return None # -> send None for StackWidget 2 to handle 
 
         newSpineID = int(newSpineID)
@@ -426,6 +430,9 @@ class SpineAnnotationsCore(AnnotationsCore):
         """
         # logger.info(f'DELETING ANNOTATION rowIdx:{rowIdx}')
 
+        if not self.spineID_Exists(rowIdx):
+            return False
+        
         # self.getMapPoints().deleteSpine(self.timepoint, rowIdx)
         self.singleTimepoint.deleteSpine(rowIdx)
 
@@ -445,12 +452,28 @@ class SpineAnnotationsCore(AnnotationsCore):
             col = item['col']
             value = item['value']
             
+            if not self.spineID_Exists(spineID):
+                continue
+
             self.setValue(col, spineID, value)
 
         self._buildDataFrame()
 
         self._setDirty(True) #abj
 
+    def spineID_Exists(self, spineID : int) -> bool:
+        if not isinstance(spineID, int):
+            logger.error(f'got bad spineID:{spineID}, expecting int')
+            return False
+        if spineID not in self.singleTimepoint.points.index:
+            logger.error(f'spineID:{spineID} does not exists')
+            # print(self.singleTimepoint.points.index)
+            return False
+
+        logger.info(f'spineID:{spineID}')
+        print(self.singleTimepoint.points.index)
+        return True
+    
     def moveSpine(self, spineID :int, x, y, z):
         """Move a spine to new (x,y,z).
         """
@@ -458,6 +481,11 @@ class SpineAnnotationsCore(AnnotationsCore):
             logger.error(f'got bad spineID:{spineID}, expecting int')
             return
                 
+        if not self.spineID_Exists(spineID):
+            return False
+                    
+        logger.info(f'spineID:{spineID}')
+        
         # _moved = self.getMapPoints().moveSpine(self.timepoint, spineID, x=x, y=y, z=z)
         _moved = self.singleTimepoint.moveSpine(spineID, x=x, y=y, z=z)
 
@@ -478,7 +506,10 @@ class SpineAnnotationsCore(AnnotationsCore):
         if not isinstance(spineID, int):
             logger.error(f'got bad spineID:{spineID}, expecting int')
             return
-        
+
+        if not self.spineID_Exists(spineID):
+            return False
+
         # _moved = self._fullMap.moveAnchor((spineID, self.sessionID), x=x, y=y, z=z)
         # _moved = self.getMapPoints().moveAnchor(self.timepoint, spineID, x=x, y=y, z=z)
         _moved = self.singleTimepoint.moveAnchor(spineID, x=x, y=y, z=z)
@@ -494,7 +525,10 @@ class SpineAnnotationsCore(AnnotationsCore):
         if not isinstance(spineID, int):
             logger.error(f'got bad spineID:{spineID}, expecting int')
             return
-        
+
+        if not self.spineID_Exists(spineID):
+            return False
+
         # Update brightest path
         # self.getMapPoints().autoConnectBrightestIndex(self.timepoint, spineID, segmentID, point, findBrightest)
         self.singleTimepoint.autoConnectBrightestIndex(spineID, segmentID, point, findBrightest)

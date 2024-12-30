@@ -57,7 +57,7 @@ def test_plugins_empty(qtbot, qapp):
 
     open_plugins(stackWidgetWindow, stackPluginDict, selection = False)
 
-@pytest.mark.skip(reason="not currently testing")
+# @pytest.mark.skip(reason="not currently testing")
 def test_plugins(qtbot, qapp):
     """Run all plugins through a number of different tests.
     """
@@ -142,14 +142,19 @@ def manipulate_spines(stackWidgetWindow):
     # add, delete, move, update spines
     # remember to do this outside of for loop
 
+    if stackWidgetWindow.getStackWidget() is None:
+        logger.warning(f'stackWidget is None for stackWidgetWindow:{stackWidgetWindow}')
+        return
+    
     # Move spine
-    items = [6]
-    x = 557
-    y = 222
-    z = 31
-    moveEvent = MoveSpineEvent(stackWidgetWindow, spineID=items, x=x, y=y, z=z)
-    # stackWidgetWindow.moveAnnotationEvent(moveEvent)
-    stackWidgetWindow.slot_pmmEvent(moveEvent)
+    # items = [6]
+    # spineID = 6
+    # x = 557
+    # y = 222
+    # z = 31
+    # moveEvent = MoveSpineEvent(stackWidgetWindow, spineID=spineID, x=x, y=y, z=z)
+    # # stackWidgetWindow.moveAnnotationEvent(moveEvent)
+    # stackWidgetWindow.slot_pmmEvent(moveEvent)
 
     # Add Spine
     x = 600
@@ -159,7 +164,7 @@ def manipulate_spines(stackWidgetWindow):
     stackWidgetWindow.slot_pmmEvent(addEvent)
 
     # Delete Spine
-    spineID = 6
+    spineID = 7
     deleteEvent = DeleteSpineEvent(stackWidgetWindow, spineID)
     stackWidgetWindow.slot_pmmEvent(deleteEvent)
 
