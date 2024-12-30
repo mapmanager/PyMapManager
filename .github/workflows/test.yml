@@ -28,7 +28,6 @@ jobs:
         cache-dependency-path: setup.py
     - name: Install dependencies
       run: |
-        # pip install .
         pip install '.[test]'
         # so we don't need to depend on pip install MapManagerCore
         git clone -b cudmore-dev https://github.com/mapmanager/MapManagerCore.git

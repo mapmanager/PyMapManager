@@ -184,7 +184,8 @@ def loadPlugins(pluginType : str, verbose = False) -> dict:
                 _widgetName = obj._widgetName  # myHumanName is a static str
             except (AttributeError) as e:
                 # not a pmmWidget !
-                logger.info(f'not a pmmWidget:{e}')
+                if verbose:
+                    logger.info(f'not a pmmWidget:{e}')
                 continue
             
             # don't add widgets with no specific name
@@ -817,7 +818,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
 
     
 def run():
-    """Run the PyMapMAnager app.
+    """Run the PyMapManager app.
     
     This is an entry point specified in setup.py and used by PyInstaller.
     """
