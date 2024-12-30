@@ -3,7 +3,6 @@ LICENSE
 pyproject.toml
 readme-dev.md
 readme.md
-tox.ini
 .github/workflows/publish_to_pypi.yml
 .github/workflows/test.yml
 docs/mkdocs.yml

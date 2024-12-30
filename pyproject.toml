@@ -46,6 +46,11 @@ docs = [
     'mkdocstrings-python', # resolve error as of April 30, 2023
 ]
 
+[tool.pytest.ini_options]
+pythonpath = [
+  "src"
+]
+
 [tool.ruff]
 ignore = [
     "E501",  # Supress line-too-long warnings: trust black's judgement on this one.
