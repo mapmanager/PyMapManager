@@ -38,10 +38,12 @@ jobs:
       continue-on-error: true  
     - name: Test and generate coverage report
       run: |
+        # I CAN NOT FOR THE LIFE OF ME GET THIS TO WORK
+        # SOMEBODY HELP !!!!!
         # pytest ./src/pymapmanager -s --cov=./src/pymapmanager --cov-report=xml src/pymapmanager
         # pytest ./src/pymapmanager -s --cov=./src/pymapmanager --cov-report=xml src/pymapmanager
-        coverage run -m pytest  -s src/pymapmanager/tests  
-
+        #coverage run -m pytest  -s src/pymapmanager/tests  
+        pytest ./src/pymapmanager/tests -s --cov=./src/pymapmanager/tests --cov-report=xml src/pymapmanager/tests
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v4.0.1
       with:
