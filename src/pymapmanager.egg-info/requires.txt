@@ -9,3 +9,16 @@ qtpy
 PyQt5
 pyqtgraph
 pyqtdarktheme
+
+[docs]
+mkdocs
+mkdocs-material
+mkdocs-jupyter
+mkdocstrings
+mkdocstrings-python
+
+[test]
+pytest
+pytest-cov
+pytest-qt
+flake8

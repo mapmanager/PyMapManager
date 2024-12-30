@@ -20,43 +20,43 @@ def _getEmptyMap():
 
     return tp
 
-def _hide_test_segment():
+# def _hide_test_segment():
 
-    # 1) load segments from and grab points
-    linesFile = getLinesFile()
-    df = pd.read_csv(linesFile)
+#     # 1) load segments from and grab points
+#     linesFile = getLinesFile()
+#     df = pd.read_csv(linesFile)
 
-    s = gpd.GeoSeries.from_wkt(df['segment'])
-    # print(type(s.loc[0]))  # shapely.geometry.linestring.LineString
-    for row in range(len(s)):
-        print(f'length of loaded segment {row} is: {s.loc[row].length}')
+#     s = gpd.GeoSeries.from_wkt(df['segment'])
+#     # print(type(s.loc[0]))  # shapely.geometry.linestring.LineString
+#     for row in range(len(s)):
+#         print(f'length of loaded segment {row} is: {s.loc[row].length}')
 
-    dfXyz = s.get_coordinates(include_z=True)
-    dfSegment = dfXyz[dfXyz.index==0]
+#     dfXyz = s.get_coordinates(include_z=True)
+#     dfSegment = dfXyz[dfXyz.index==0]
 
-    # 2) make an empty map
-    tp = _getEmptyMap()
+#     # 2) make an empty map
+#     tp = _getEmptyMap()
 
-    segmentID = tp.newSegment()
+#     segmentID = tp.newSegment()
 
-    n = len(dfSegment)
-    print('adding points n:', n)
-    for row in range(n):
-        x = int(dfSegment['x'].iloc[row])
-        y = int(dfSegment['y'].iloc[row])
-        z = int(dfSegment['z'].iloc[row])
+#     n = len(dfSegment)
+#     print('adding points n:', n)
+#     for row in range(n):
+#         x = int(dfSegment['x'].iloc[row])
+#         y = int(dfSegment['y'].iloc[row])
+#         z = int(dfSegment['z'].iloc[row])
         
-        _len0 = tp.appendSegmentPoint(segmentID, x, y, z)
+#         _len0 = tp.appendSegmentPoint(segmentID, x, y, z)
         
-    print('_len0:', _len0)
+#     print('_len0:', _len0)
 
-    tp.segments[:]
+#     tp.segments[:]
 
-    print('tp.segments[:]')
-    print(tp.segments[:])
+#     print('tp.segments[:]')
+#     print(tp.segments[:])
 
-    # when there is just one segment, we get a LineString, not a df of linestring?
-    print('rough tracing length:', tp.segments[:]['roughTracing'].length)
+#     # when there is just one segment, we get a LineString, not a df of linestring?
+#     print('rough tracing length:', tp.segments[:]['roughTracing'].length)
 
 def test_qt_undo():
     zarrPath = getSingleTimepointMap()

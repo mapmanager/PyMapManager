@@ -2,9 +2,9 @@
 """
 import matplotlib.pyplot as plt
 
-# from pymapmanager.stack import stack
+from pymapmanager.stack import stack
 
-def plotMax(stack: "stack",
+def plotMax(stack: stack,
             channel : int = 2,
             plotLines : bool = True,
             segmentID : list = [],

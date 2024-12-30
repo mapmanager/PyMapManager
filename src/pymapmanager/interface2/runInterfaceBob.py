@@ -56,35 +56,35 @@ def run():
 
     sys.exit(app.exec_())
 
-def loadUrl():
-    from pprint import pprint
-    import zarr
-    # path = 'https://github.com/mapmanager/MapManagerCore-Data/raw/main/data/single_timepoint.mmap/'
-    path = '/Users/cudmore/Desktop/multi_timepoint_seg_spine_connected.mmap'
-    metadataPath = path + 'images/0/metadata'
+# def loadUrl():
+#     from pprint import pprint
+#     import zarr
+#     # path = 'https://github.com/mapmanager/MapManagerCore-Data/raw/main/data/single_timepoint.mmap/'
+#     path = '/Users/cudmore/Desktop/multi_timepoint_seg_spine_connected.mmap'
+#     metadataPath = path + 'images/0/metadata'
     
-    store = zarr.DirectoryStore(path)
-    rootGroup = zarr.group(store=store)
+#     store = zarr.DirectoryStore(path)
+#     rootGroup = zarr.group(store=store)
 
-    print('rootGroup info:')
-    print(rootGroup.info)
+#     print('rootGroup info:')
+#     print(rootGroup.info)
 
-    print('rootGroup tree():')
-    print(rootGroup.tree())
+#     print('rootGroup tree():')
+#     print(rootGroup.tree())
 
-    # print(f'rootGroup keys:{rootGroup.keys()}')
-    imagesGroup = rootGroup['images']
-    for t, g2 in imagesGroup.groups():
-        print(t,g2)
+#     # print(f'rootGroup keys:{rootGroup.keys()}')
+#     imagesGroup = rootGroup['images']
+#     for t, g2 in imagesGroup.groups():
+#         print(t,g2)
 
-    return
+#     return
 
-    for k,v in group.attrs.items():
-        if isinstance(v, dict):
-            print(k)
-            pprint(v)
-        else:
-            print(f'{k}: {v} {type(v)}')
+#     for k,v in group.attrs.items():
+#         if isinstance(v, dict):
+#             print(k)
+#             pprint(v)
+#         else:
+#             print(f'{k}: {v} {type(v)}')
 
 if __name__ == '__main__':
     run()

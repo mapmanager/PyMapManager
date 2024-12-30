@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: pymapmanager
-Version: 0.0.7.dev318+g2c60d01.d20241229
+Version: 0.0.7.dev321+g7fb674d
 Requires-Python: >=3.11
 License-File: LICENSE
 Requires-Dist: mapmanagercore
@@ -14,3 +14,14 @@ Requires-Dist: qtpy
 Requires-Dist: PyQt5
 Requires-Dist: pyqtgraph
 Requires-Dist: pyqtdarktheme
+Provides-Extra: test
+Requires-Dist: pytest; extra == "test"
+Requires-Dist: pytest-cov; extra == "test"
+Requires-Dist: pytest-qt; extra == "test"
+Requires-Dist: flake8; extra == "test"
+Provides-Extra: docs
+Requires-Dist: mkdocs; extra == "docs"
+Requires-Dist: mkdocs-material; extra == "docs"
+Requires-Dist: mkdocs-jupyter; extra == "docs"
+Requires-Dist: mkdocstrings; extra == "docs"
+Requires-Dist: mkdocstrings-python; extra == "docs"

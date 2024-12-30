@@ -1,13 +1,11 @@
 .gitignore
 LICENSE
-config.cfg
 pyproject.toml
 readme-dev.md
 readme.md
 tox.ini
 .github/workflows/publish_to_pypi.yml
 .github/workflows/test.yml
-dev-notes/pymapmanager-todo-20241115.md
 docs/mkdocs.yml
 docs/_old_img/image-controls.png
 docs/_old_img/mmserver_leaflet.png
@@ -127,6 +125,7 @@ src/pymapmanager.egg-info/dependency_links.txt
 src/pymapmanager.egg-info/entry_points.txt
 src/pymapmanager.egg-info/requires.txt
 src/pymapmanager.egg-info/top_level.txt
+src/pymapmanager/_appPreferences/preferences.json
 src/pymapmanager/annotations/__init__.py
 src/pymapmanager/annotations/baseAnnotationsCore.py
 src/pymapmanager/interface2/__init__.py
@@ -146,6 +145,8 @@ src/pymapmanager/interface2/core/_data_model.py
 src/pymapmanager/interface2/core/dendrogram_widget.py
 src/pymapmanager/interface2/core/scatter_plot_widget.py
 src/pymapmanager/interface2/core/search_widget.py
+src/pymapmanager/interface2/icons/mapmanager-icon.icns
+src/pymapmanager/interface2/icons/mapmanager-icon.png
 src/pymapmanager/interface2/mapWidgets/__init__.py
 src/pymapmanager/interface2/mapWidgets/_mapIngest.py
 src/pymapmanager/interface2/mapWidgets/mapConnectPointsWidget.py
@@ -179,6 +180,12 @@ src/pymapmanager/mmImport/importSwc.py
 src/pymapmanager/mmImport/import_mm_igor.py
 src/pymapmanager/plotting/__init__.py
 src/pymapmanager/plotting/plottingUtils.py
+src/pymapmanager/pymapmanager.egg-info/PKG-INFO
+src/pymapmanager/pymapmanager.egg-info/SOURCES.txt
+src/pymapmanager/pymapmanager.egg-info/dependency_links.txt
+src/pymapmanager/pymapmanager.egg-info/entry_points.txt
+src/pymapmanager/pymapmanager.egg-info/requires.txt
+src/pymapmanager/pymapmanager.egg-info/top_level.txt
 src/pymapmanager/tests/__init__.py
 src/pymapmanager/tests/_ignore_test_multi_timepoint_map.py
 src/pymapmanager/tests/test_core_segments.py
@@ -187,6 +194,7 @@ src/pymapmanager/tests/test_stack.py
 src/pymapmanager/tests/test_timeseries_core.py
 src/pymapmanager/tests/interface/__init__.py
 src/pymapmanager/tests/interface/_broken_test_load_tif.py
+src/pymapmanager/tests/interface/readme.md
 src/pymapmanager/tests/interface/test_app.py
 src/pymapmanager/tests/interface/test_editEvent.py
 src/pymapmanager/tests/interface/test_stack_widgets.py

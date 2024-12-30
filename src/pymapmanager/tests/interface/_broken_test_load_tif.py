@@ -71,5 +71,5 @@ def _ignore_test_stack_from_tif():
     # aStack = stack(zarrMap=map)
 
 if __name__ == '__main__':
-    test_stack_from_tif()
-
+    # test_stack_from_tif()
+    pass
