@@ -99,9 +99,9 @@ class PyMapManagerMenus:
 
         # this actually does not show up in the help menu!
         # On macOS PyQt reroutes it to the main python/SanPy menu
-        name = "About PyMapManager"
+        name = "About MapManager"
         action = QtWidgets.QAction(name, self.getApp())
-        action.triggered.connect(self._onAboutMenuAction)
+        action.triggered.connect(self._app._onAboutMenuAction)
         self.helpMenu.addAction(action)
 
         # get help menu as action so other windows can insert their menus before it
@@ -199,6 +199,10 @@ class PyMapManagerMenus:
         action.triggered.connect(partial(self._onOpenFolderMenuAction))
         self.windowsMenu.addAction(action)
 
+        action = QtWidgets.QAction('Logger', self.getApp(), checkable=True)
+        action.triggered.connect(partial(self._onLogWindow))
+        self.windowsMenu.addAction(action)
+
         # Show all plugin widgets that are opened/ visible
         if 0:
             try:
@@ -240,6 +244,9 @@ class PyMapManagerMenus:
     def _onOpenFolderMenuAction(self):
         self.getApp().openFolderWindow()
 
+    def _onLogWindow(self):
+        self.getApp().openLogWindow()
+        
     def _onPluginMenuAction(self, pluginName : str, mapOrStack : str):
         """Run a plugin.
         

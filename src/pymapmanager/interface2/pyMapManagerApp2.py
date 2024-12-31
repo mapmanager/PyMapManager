@@ -12,7 +12,7 @@ import inspect
 
 from platformdirs import user_data_dir
 
-from qtpy import QtGui, QtWidgets  # QtCore
+from qtpy import QtGui, QtWidgets, QtCore
 
 import qdarktheme
 
@@ -812,6 +812,76 @@ class PyMapManagerApp(QtWidgets.QApplication):
         frontStackWindow.loadInNewChannel()
         # might need to somehow refresh stackwidget?
 
+    def openLogWindow(self):
+        """Show the python logger.
+        """
+        from pymapmanager.interface2.logWidget import PyMapManagerLog
+        self._logWindow = PyMapManagerLog()
+        return self._logWindow
+    
+    def _onAboutMenuAction(self):
+        """Show a dialog with help.
+        """
+        # print(self._getVersionInfo())
+
+        dlg = QtWidgets.QMainWindow()
+        dlg.setWindowTitle('About MapManager')
+
+        vLayout = QtWidgets.QVBoxLayout()
+
+        _versionInfo = self._getVersionInfo()
+        for k,v in _versionInfo.items():
+            aText = k + ' ' + str(v)
+            aLabel = QtWidgets.QLabel(aText)
+
+            if 'https' in v:
+                aLabel.setText(f'{k} <a href="{v}">{v}</a>')
+                aLabel.setTextFormat(QtCore.Qt.RichText)
+                aLabel.setTextInteractionFlags(QtCore.Qt.TextBrowserInteraction)
+                aLabel.setOpenExternalLinks(True)
+
+            if k == 'email':
+                # <a href = "mailto: abc@example.com">Send Email</a>
+                aLabel.setText(f'{k} <a href="mailto:{v}">{v}</a>')
+                aLabel.setTextFormat(QtCore.Qt.RichText)
+                aLabel.setTextInteractionFlags(QtCore.Qt.TextBrowserInteraction)
+                aLabel.setOpenExternalLinks(True)
+            
+            vLayout.addWidget(aLabel)
+
+        _centralWidget = QtWidgets.QWidget()
+        _centralWidget.setLayout(vLayout)
+        dlg.setCentralWidget(_centralWidget)
+        
+        # dlg.exec()
+  
+        return dlg
+    
+    def _getVersionInfo(self) -> dict:
+        import platform
+        import mapmanagercore
+
+        retDict = {}
+
+        #import platform
+        _platform = platform.machine()
+        # arm64
+        # x86_64
+
+        # from sanpy.version import __version__
+
+        # retDict['SanPy version'] = __version__
+        retDict['PyMapManager version'] = pymapmanager.__version__
+        retDict['MapManagerCore version'] = mapmanagercore.__version__
+        retDict['Python version'] = platform.python_version()
+        retDict['Python platform'] = _platform  # platform.platform()
+        retDict['PyQt version'] = QtCore.__version__  # when using import qtpy
+
+        retDict['GitHub'] = 'https://github.com/mapmanager/PyMapManager'
+        retDict['Documentation'] = 'https://mapmanager.net/PyMapManager/'
+        retDict['email'] = 'robert.cudmore@gmail.com'
+
+        return retDict
     
 def run():
     """Run the PyMapManager app.

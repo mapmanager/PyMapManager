@@ -34,7 +34,6 @@ docs/theme/css/style.css
 docs/theme/partials/footer.html
 notebooks/find-brightest-path.ipynb
 notebooks/readme.md
-pyinstaller/windows/windows.spec
 sandbox/debugPointSize.py
 sandbox/debugRoiCandidate.py
 sandbox/debugTracing.py
@@ -109,8 +108,6 @@ sandbox/tracing/lineSegment.py
 sandbox/tracing/lineSegments.py
 src/pymapmanager/__init__.py
 src/pymapmanager/_logger.py
-src/pymapmanager/_old_coreUtils.py
-src/pymapmanager/_old_version.py
 src/pymapmanager/_version.py
 src/pymapmanager/options.py
 src/pymapmanager/pmmUtils.py
@@ -129,6 +126,7 @@ src/pymapmanager/annotations/__init__.py
 src/pymapmanager/annotations/baseAnnotationsCore.py
 src/pymapmanager/interface2/__init__.py
 src/pymapmanager/interface2/appDisplayOptions.py
+src/pymapmanager/interface2/logWidget.py
 src/pymapmanager/interface2/mainMenus.py
 src/pymapmanager/interface2/mainWindow.py
 src/pymapmanager/interface2/openFirstWindow.py
@@ -186,16 +184,16 @@ src/pymapmanager/pymapmanager.egg-info/entry_points.txt
 src/pymapmanager/pymapmanager.egg-info/requires.txt
 src/pymapmanager/pymapmanager.egg-info/top_level.txt
 src/pymapmanager/tests/__init__.py
-src/pymapmanager/tests/_ignore_test_multi_timepoint_map.py
 src/pymapmanager/tests/test_core_segments.py
 src/pymapmanager/tests/test_core_spines.py
 src/pymapmanager/tests/test_stack.py
 src/pymapmanager/tests/test_timeseries_core.py
 src/pymapmanager/tests/interface/__init__.py
-src/pymapmanager/tests/interface/_broken_test_load_tif.py
 src/pymapmanager/tests/interface/readme.md
+src/pymapmanager/tests/interface/test_about.py
 src/pymapmanager/tests/interface/test_app.py
 src/pymapmanager/tests/interface/test_editEvent.py
+src/pymapmanager/tests/interface/test_load_tif.py
 src/pymapmanager/tests/interface/test_stack_widgets.py
 src/pymapmanager/tests/interface/_old/_test_annotationListWidget.py
 src/pymapmanager/tests/interface/_old/_test_searchWidget.py
