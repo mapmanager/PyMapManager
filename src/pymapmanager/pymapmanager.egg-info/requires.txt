@@ -1,0 +1,11 @@
+mapmanagercore
+numpy
+pandas
+shapely
+platformdirs
+matplotlib
+seaborn
+qtpy
+PyQt5
+pyqtgraph
+pyqtdarktheme

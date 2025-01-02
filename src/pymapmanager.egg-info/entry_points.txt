@@ -1,0 +1,2 @@
+[console_scripts]
+pymapmanager = pymapmanager.interface2.pyMapManagerApp2:run

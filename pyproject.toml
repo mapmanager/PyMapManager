@@ -1,9 +1,63 @@
 [build-system]
-requires = ["setuptools>=42.0.0", "wheel"]
+requires = ["setuptools>=45", "setuptools_scm>=6.2", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "pymapmanager"
+dynamic = ["version"]
+dependencies = [
+        "mapmanagercore",
+        "numpy",
+        "pandas",
+        # "scipy",
+        # "scikit-image",
+        # "tifffile",
+        # "geopandas",
+        "shapely",
+        "platformdirs",
+        'matplotlib',
+        'seaborn',
+        'qtpy',
+        'PyQt5',  # This will not work on macOS arm
+        'pyqtgraph',
+        'pyqtdarktheme',
+        # 'plotly'
+    ]
+requires-python = ">=3.11"
+
+[project.scripts]
+pymapmanager = "pymapmanager.interface2.pyMapManagerApp2:run"
+
+[tool.setuptools_scm]
+version_file = "src/pymapmanager/_version.py"
+
+[project.optional-dependencies]
+test = [
+    'pytest',
+    'pytest-cov',
+    'pytest-qt',
+    'flake8',
+]
+docs = [
+    'mkdocs',
+    'mkdocs-material',
+    'mkdocs-jupyter',
+    'mkdocstrings',
+    'mkdocstrings-python', # resolve error as of April 30, 2023
+]
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "src"
+]
+
+[tool.ruff]
+ignore = [
+    "E501",  # Supress line-too-long warnings: trust black's judgement on this one.
+]
+
 [tool.black]
-line-length = 79
+line_length = 79
 
 [tool.isort]
 profile = "black"
