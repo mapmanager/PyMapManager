@@ -195,7 +195,7 @@ class SetSegmentPivot(_EditSegment):
                 y : int,
                 z : int
                 ):
-        super().__init__(pmmEventType.settingSegmentPivot, mmWidget)
+        super().__init__(pmmEventType.setSegmentPivot, mmWidget)
         self.setPivotPoint(segmentID, x=x, y=y, z=z)
 
     def getName(self) -> str:

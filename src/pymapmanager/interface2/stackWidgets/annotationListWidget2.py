@@ -509,9 +509,6 @@ class lineListWidget(annotationListWidget):
 
     def settedSegmentPivot(self, event):
 
-        # uncheck Pivot box in tracing widget after setting segment pivot
-        self.tracingWidget.updateSetPivotCheckBox(False)
-
         # refresh linelistWidget
         self._setModel()
 

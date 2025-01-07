@@ -35,9 +35,6 @@ class pmmStates(Enum):
     # wait for click in image plot to extend tracing for a segment
     tracingSegment = auto()
 
-    # abb 20240803, wait for click in image plot and set segment pivot for a segment
-    settingSegmentPivot = auto()
-
 class pmmEventType(Enum):
     selectSpine = auto()  # abb 20240906
 
@@ -72,8 +69,7 @@ class pmmEventType(Enum):
     addSegmentPoint = auto()
     deleteSegmentPoint = auto()
 
-    # setPivotPoint = auto() # abj
-    settingSegmentPivot = auto() # abj
+    setSegmentPivot = auto() # abj
 
 class StackSelection:
     def __init__(self, stack : pymapmanager.stack = None):
@@ -114,8 +110,9 @@ class StackSelection:
     def setState(self, state : pmmStates):
         self._dict['state'] = state
     
+    # abb removed
     #abj
-    def getCurrentPointSlice(self):
+    def _old_getCurrentPointSlice(self):
         pointSelections = self.getPointSelection()
 
         if pointSelections is None:
@@ -828,7 +825,7 @@ class mmWidget2(QtWidgets.QMainWindow):
         elif event.type == pmmEventType.deleteSegmentPoint:
             acceptEvent = self.deletedSegmentPointEvent(event)
 
-        elif event.type == pmmEventType.settingSegmentPivot: # abj
+        elif event.type == pmmEventType.setSegmentPivot: # abj
             acceptEvent = self.settedSegmentPivot(event)
 
         # abj

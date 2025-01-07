@@ -168,7 +168,7 @@ class stackWidget2(mmWidget2):
             if self.getApp() is None:
                 logger.error('app is None')
             else:
-                self.getPyMapManagerApp().closeStackWindow(self)
+                self.getApp().closeStackWindow(self)
 
         self.close()
 
@@ -309,9 +309,6 @@ class stackWidget2(mmWidget2):
     def _buildMenus(self) -> QtWidgets.QMenuBar:
         mainMenu = self.menuBar()
 
-        # 20240903 was this
-        # from pymapmanager.interface2.mainMenus import PyMapManagerMenus
-        # self._mainMenu = PyMapManagerMenus(self.getPyMapManagerApp())
         self._mainMenu = pymapmanager.interface2.PyMapManagerMenus(self.getApp())
         self._mainMenu._buildMenus(mainMenu, self)
 
@@ -320,12 +317,6 @@ class stackWidget2(mmWidget2):
         # close
         self.closeShortcut = QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+W"), self)
         self.closeShortcut.activated.connect(self._on_user_close)
-
-        # # PyMapManagerMenus
-        # if self.getPyMapManagerApp() is None:
-        #     return
-        
-        # self.getPyMapManagerApp().getMainMenu()._buildMenus(mainMenu, self)
 
         # we will append to this
         # viewMenu = self._mainMenu.viewMenu
@@ -728,6 +719,7 @@ class stackWidget2(mmWidget2):
 
         logger.info(event)
 
+        # abb do we need loop? We only set one pivot at a time
         for item in event:
             segmentID = item['segmentID']
             x = item['x']
@@ -735,22 +727,17 @@ class stackWidget2(mmWidget2):
             z = item['z']
             # logger.info(f' setted pivot point to segmentID:{segmentID} with x:{x} y:{y} z:{z}')
             clickedPoint = Point(x,y,z)
-            _added = self.getStack().getLineAnnotations().setPivotDistance(segmentID, clickedPoint)
-            # _added = self.getStack().getLineAnnotations().old_setPivotPoint(segmentID, clickedPoint)
+            newPivotDistance = self.getStack().getLineAnnotations().setPivotDistance(segmentID, clickedPoint)
 
-        if _added is None:
-            self.slot_setStatus('No point added, click a bit closer to the last point')
-        else:
-            self.slot_setStatus('set Pivot point in segment tracing')
+            self.slot_setStatus(f'Set segment {segmentID} pivot distance to {newPivotDistance}')
         
-        self.getUndoRedo().addUndo(event)
-
-        self._afterEditSegment(event)
-
+        # we cannot undo set pivot
         # self.getUndoRedo().addUndo(event)
-        
-    #     return _added is not None
-    
+
+        # abb removed, this returns state to 'edit'
+        #   new implementation of set pivot is an event, not a state change
+        # self._afterEditSegment(event)
+            
     #
     # spines
     def addedEvent(self, event : AddSpineEvent) -> bool:
@@ -883,8 +870,6 @@ class stackWidget2(mmWidget2):
             self.slot_setStatus('Click the line to specify the new spine connection point, esc to cancel')
         elif _state == pmmStates.tracingSegment:
             self.slot_setStatus('Shift+click to create a new segment tracing points')
-        elif _state == pmmStates.settingSegmentPivot: # abj
-            self.slot_setStatus('Click to set segment Pivot')
 
         return True
     
@@ -1016,7 +1001,8 @@ class stackWidget2(mmWidget2):
         point = Point(x, y, z)
         # logger.info(f"point {point}")
 
-        z = _stackSelection.getCurrentPointSlice() # this might need to be checked, currently getting slice point selected
+        # abb removed
+        # z = _stackSelection.getCurrentPointSlice() # this might need to be checked, currently getting slice point selected
         _pointAnnotations = self.getStack().getPointAnnotations()
         _pointAnnotations.autoResetBrightestIndex(spineIndex, segmentID, point, True)
 

@@ -589,23 +589,23 @@ class LineAnnotationsCore(AnnotationsCore):
         return _added
     
     def setPivotDistance(self, segmentID : int, clickedPoint: shapely.Point):
-        """Set a pivot point to a segment.
+        """Set a segment pivot distance.
+
+        Given a point in the image, set the pivot istance for a segment.
         """
         logger.info(f'segmentID: {segmentID} clickedPoint: {clickedPoint}')
         
-        # _added = self.getMapSegments().appendSegmentPoint(self.timepoint, segmentID, x, y, z)
-        # _added = self.singleTimepoint.setPivotPoint(segmentID, clickedPoint)
-        _added = self.singleTimepoint.setPivotDistance(segmentID, clickedPoint)
-        logger.info(f'segmentID: {segmentID} pivotDistance: {_added}')
-        if _added is not None:
-            # self._buildDataFrame()
-            self._buildTimepoint()
+        pivotDistance = self.singleTimepoint.setPivotDistance(segmentID, clickedPoint)
+        logger.info(f'   -->> pivotDistance: {pivotDistance}')
 
-            self._buildDataFrame()
+        # self._buildDataFrame()
+        self._buildTimepoint()
 
-            self._setDirty(True) #abj
+        self._buildDataFrame()
 
-        return _added
+        self._setDirty(True) #abj
+
+        return pivotDistance
     
     @property
     def numSegments(self):
@@ -658,45 +658,29 @@ class LineAnnotationsCore(AnnotationsCore):
         """Get a summary dataframe, one segment per row.
         """
         # self._summaryDf = self.getMapSegments()._buildSegmentSummaryDf(timepoint=self.timepoint)
-        _columns = ['Segment', 'Points', 'Length', 'Radius', 'Pivot Distance','Point Distances']
-        
-        summaryDf = pd.DataFrame(columns=_columns)
-        
+
         segmentDf = self.singleTimepoint.segments[:]
 
+        _columns = ['Segment', 'Points', 'Length', 'Radius', 'Pivot Distance']
+        summaryDf = pd.DataFrame(columns=_columns)
+
         try:
-            _list = segmentDf.index.to_list()
-            summaryDf['Segment'] = _list
+            # _list = segmentDf.index.to_list()
+            summaryDf['Segment'] = segmentDf.index.to_list()
+            summaryDf.index = segmentDf.index
             summaryDf['Radius'] = segmentDf['radius']
             summaryDf['Pivot Distance'] = segmentDf['pivotDistance']
-            summaryDf['Point Distances'] = segmentDf['distance']
-
-            # summaryDf['Pivot'] = self._fullMap.segments['pivotPoint']
-            # summaryDf['pivotPointX'] = segmentDf['pivotPoint'].x
-            # summaryDf['pivotPointY'] = segmentDf['pivotPoint'].y
         
         except (AttributeError) as e:
             # when no segments
-            logger.error('NO SEGMENTS !!!!!!!!')
-            # summaryDf['Points'] = None
-            # summaryDf['Length'] = None
+            logger.warning('NO SEGMENTS !!!!!!!!')
+            logger.warning(e)
         else:
-            
-            # logger.info(f'{self.getClassName()} summaryDf is:')
-            # print(summaryDf)
-            
-            pointsList = []
-            lengthList = []
-            # pivotPointList = []
-            
-            # get len and points from each segment
-            for row_do_not_use, _data in summaryDf.iterrows():
 
-                # logger.info(f'  row:{row_do_not_use} _data: {type(_data)}')
-                # logger.info('_data')
-                # print(_data)
-                
-                segmentID = _data['Segment']
+            pointsList = []
+            lengthList = []            
+            for row_do_not_use, _data in summaryDf.iterrows():
+                segmentID = _data['Segment']  # shapely line str
                 
                 _numPoints = self.getNumPoints(segmentID)
                 _len = self.getLength(segmentID)
@@ -705,15 +689,13 @@ class LineAnnotationsCore(AnnotationsCore):
                 pointsList.append(_numPoints)
                 lengthList.append(_len)
 
-                # TODO
-                # pivotPointList.append('')
-                
             summaryDf['Points'] = pointsList
             summaryDf['Length'] = lengthList
-
-        summaryDf.index = summaryDf['Segment']
         
         self._summaryDf = summaryDf
+
+        # logger.info('summary df is now:')
+        # print(summaryDf)
 
         return summaryDf
     
@@ -808,37 +790,22 @@ class LineAnnotationsCore(AnnotationsCore):
             
         """
         logger.info('self._summaryDf:')
-        logger.info(f'{self._summaryDf}')
-
-        # find pivotDistance within point distance, that is what we plot
-        pivotDistances = self._summaryDf["Pivot Distance"]
-        """List[float], one item per segment id"""
+        print(self._summaryDf)
         
-        pointDistance = self._summaryDf["Point Distances"]
-
         returnPointX = []
         returnPointY = []
+        for rowLabel, row in self._summaryDf.iterrows():
+            segmentID = rowLabel  # row["Segment"]
+            pivotDistance = row["Pivot Distance"]
 
-        logger.error(f'abb turn back on')
-        # pivotIndexList = None # len of segmentIDs
-        if 0:
-            for segmentID, pList in enumerate(pointDistance):
-                # print("p ", p)
-                if pivotDistances[segmentID] in pList:
-                    pivotDistance = pivotDistances[segmentID]
-                    pointID = pList.index(pivotDistance)
-                    # print("pList", pList)
-                    # print("found pivot ", pivotDistances[segmentID], "at point index: ", pointID)
-                    # # logger.info(f"pivot x : {linePointX[pointID]} y: {linePointY[pointID]}")
-                    filteredDF = self._df.loc[self._df["segmentID"] == segmentID]
-                    filteredDF = filteredDF.reset_index() # reset index since mmc uses index based on each segment
-    
-                    linePointX = filteredDF["x"]
-                    linePointY = filteredDF["y"]
+            from shapely import LineString
+            segmentLine: LineString = self.singleTimepoint.segments[segmentID, "segment"]
 
-                    returnPointX.append(linePointX[pointID])
-                    returnPointY.append(linePointY[pointID])
-   
+            _point = shapely.line_interpolate_point(segmentLine, pivotDistance)
+
+            returnPointX.append(_point.x)
+            returnPointY.append(_point.y)
+
         return returnPointX, returnPointY
     
     def getLeftRadiusPlot(self, sliceNumber, zPlusMinus):

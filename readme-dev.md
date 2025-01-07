@@ -46,10 +46,41 @@
     - Add a global option to reduce the font size. I think the modern strategy is to grab the system befault font size and reduce it (rather than specifying an absolute point size). IF this is done in our base classes, these GUI improvements should propogate to all stack widgets (like Scatter Widget).
 
 - tracing widget
-    When user adds first point to tracing (shoft_click), the point does not show up in annotationPlotWidget. Adding the seconds point it does. Add code special case on first shift+click point in a segment.
+    When user adds first point to tracing (shift_click), the point does not show up in annotationPlotWidget. Adding the seconds point it does. Add code special case on first shift+click point in a segment.
 
 - improve class segment
     - when user turns in `set pivot' we intercept a z/y/x shift+click in the image.
     - We need to get two things from this
         1) distance to the line origin of given point using `line_locate_point`
         2) point interpolated at given distance on a line using `line_interpolate_point`
+
+## winter break (cudmore)
+
+ - Moved pymapmanager/ source code folder into a src/ foler.
+ - Moved tests/ folder into pymapmanager/ folder.
+ - Switch local pip install from setup.py into more modern `pyproject.toml`.
+ - Create a new GitHub repo to hold code for building PyMapManager apps with pyinstaller, see:
+    https://github.com/mapmanager/PyMapManager-App
+ - Got unit test working better. In particular reactivated Johnson code in `test_stack_widgets.py`. Thanks for writing that!
+
+ TODO:
+
+ - Work on Windows version to build an app using pyinstaller. The repo (above) has a copy of the windows build scripts from SanPy, start from there and have a look at the `mac/` build scripts for some hints. Basic workflow is to build a fresh/clean conda environment (with both MapManagerCore and PyMapMAnager local installs) and then tweak the pyinstaller `.spec` file with MapManager specific requirements. I want to get this done as a test run so we do not run into (as many) problems later.
+
+ - Check code that references `segmentID` as the core now makes segments from 1 (rather than 0). Some code is using `range(numSegments)` when it should actualy be using the actual segment label names. This should also account for missing segments like when, say, user deletes segment 3.
+
+ - Revamp code to add channels
+  - Within a timepoint, each color channel has to have the same shape. On import of second channel, check the shape. We will have additional logic once it is reasonably working.
+  - Saw you added "maxChannels" to analysisParams (in the core). I think it would be more logical to add "number of channels" to the mmap MetaData class. I think `Metadata` is a bit of a mess and needs to be re-written. for now you can just add a `number of channels` int to one of the three subclasses like MetadataPhysical size (for example).
+
+``` 
+class Metadata:
+    name: str = ''
+    channelNames: Dict[int, str] = field(default_factory=lambda:{})
+    voxel: VoxelMetadata = field(default_factory=lambda: VoxelMetadata())
+    physicalSize: MetadataPhysicalSize = field(default_factory=lambda: MetadataPhysicalSize())
+    metadataContrast : MetadataContrast = field(default_factory=lambda: MetadataContrast())
+```
+
+
+
