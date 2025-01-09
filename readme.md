@@ -90,6 +90,19 @@ The server includes web based browsing and plotting of Map Manager annotations.
 <IMG SRC="docs/img/mmserver_leaflet.png" width=900>
 <IMG SRC="docs/img/mmserver_leaflet2.png" width=900>
 
+## Contributing
+
+Tests can be run with
+
+```
+pytest src/pymapmanager/tests
+```
+
+And flake8
+
+```
+flake8 ./src --count --select=E9,F63,F7,F82 --show-source --statistics
+```
 
 [redis]: https://redis.io/
 [rest-api]: http://cudmore.github.io/PyMapManager/rest-api/

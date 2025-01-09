@@ -1415,6 +1415,8 @@ class linePlotWidget(annotationPlotWidget):
             selectedY = self._dfPlot.loc[selectedDFplot.index, 'y'].tolist()
             self._selectedLines.setData(selectedX, selectedY, connect=_connect)
 
+        # TODO add option to show/hide
+        # TODO add a z and mask if not in view (just like core points)
         pivotPointXs, pivotPointYs = self._annotations.getPivotPoint()
         self._pivotPoints.setData(pivotPointXs, pivotPointYs)
 
@@ -1465,7 +1467,8 @@ class linePlotWidget(annotationPlotWidget):
         self._refreshSlice()
 
     def _selectedDataFrame(self):
-        """ Filters dataframe, leaving only rows where segmentID is equal to that of the selected Segment
+        """ Filters dataframe,
+            leaving only rows where segmentID is equal to that of the selected Segment
         """
         
         dfPlot = self._dfPlot

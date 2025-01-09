@@ -124,44 +124,50 @@ class ImagePlotWidget(mmWidget2):
         stackSelection = self.getStackWidget().getStackSelection()
         logger.info(f'imagePlotWidget stackSelection {stackSelection}')
         hasPointSelection = stackSelection.hasPointSelection()
-        logger.info(f'imagePlotWidget hasPointSelection {hasPointSelection}')
-        if not hasPointSelection:
-            logger.warning('no selection -> no context menu')
-            return
+        
+        # abb always show (for set segment pivot)
+        # logger.info(f'imagePlotWidget hasPointSelection {hasPointSelection}')
+        # if not hasPointSelection:
+        #     logger.warning('no selection -> no context menu')
+        #     return
         
         firstPointSelection = stackSelection.firstPointSelection()
-        firstRoiType = stackSelection.getFirstPointRoiType()
+        # firstRoiType = stackSelection.getFirstPointRoiType()
 
-        point_roiType = ' ' + str(firstPointSelection)
-        isSpineSelection = firstRoiType == 'spineROI'
+        # point_roiType = ' ' + str(firstPointSelection)
+        # isSpineSelection = firstRoiType == 'spineROI'
+        point_roiType = 'Spine'
+
+        hasSegmentSelection = stackSelection.hasSegmentSelection()
+        firstSegmentSelection = stackSelection.firstSegmentSelection()
 
         _menu = QtWidgets.QMenu(self)
 
         # only allowed to move spine roi
         moveAction = _menu.addAction(f'Move {point_roiType}')
-        moveAction.setEnabled(isSpineSelection)
+        moveAction.setEnabled(hasPointSelection)
         
         # only allowed to manually connect spine roi
         manualConnectAction = _menu.addAction(f'Manually Connect {point_roiType}')
-        manualConnectAction.setEnabled(isSpineSelection)
+        manualConnectAction.setEnabled(hasPointSelection)
 
         # only allowed to auto connect spine roi
         autoConnectAction = _menu.addAction(f'Auto Connect {point_roiType}')
-        autoConnectAction.setEnabled(isSpineSelection)
+        autoConnectAction.setEnabled(hasPointSelection)
 
         _menu.addSeparator()
         
         # allowed to delete any point annotation
         deleteAction = _menu.addAction(f'Delete {point_roiType}')
-        deleteAction.setEnabled(isSpineSelection)
+        deleteAction.setEnabled(hasPointSelection)
 
         _pointAnnotations = self._myStack.getPointAnnotations()
-        _accept = _pointAnnotations.getValue('accept', firstPointSelection)
+        _accept = hasPointSelection and _pointAnnotations.getValue('accept', firstPointSelection)
 
         acceptAction = _menu.addAction(f'Accept {point_roiType} ')
         acceptAction.setCheckable(True)
         acceptAction.setChecked(_accept)
-        acceptAction.setEnabled(isSpineSelection)
+        acceptAction.setEnabled(hasPointSelection)
 
         # user type submenu
         currentUserType = _pointAnnotations.getValue('userType', firstPointSelection)
@@ -169,18 +175,24 @@ class ImagePlotWidget(mmWidget2):
         # if currentUserType == -1:
         #     currentUserType = 0
         userTypeMenu = _menu.addMenu('User Type')
+        userTypeMenu.setEnabled(hasPointSelection)
         numUserType = 10  # TODO: should be a global option
         userTypesList = [str(i) for i in range(numUserType)]
         for userType in userTypesList:
             action = userTypeMenu.addAction(userType)
+            action.setEnabled(hasPointSelection)
             action.setCheckable(True)
-            isChecked = str(userType) == str(currentUserType)
+            isChecked = hasPointSelection and (str(userType) == str(currentUserType))
             # logger.info(f"userType {userType} isChecked {isChecked}")
             action.setChecked(isChecked)
             # action.triggered.connect(partial(self._on_user_type_menu_action, action))
-
         _menu.addMenu(userTypeMenu)
 
+        # segment (previous actions are all spine)
+        setSegmentPivotAction = _menu.addAction(f'Set Segment {firstSegmentSelection} Pivot')
+        setSegmentPivotAction.setEnabled(hasSegmentSelection)
+        
+        # show the menu
         action = _menu.exec_(self.mapToGlobal(event.pos()))
         
         if action is None:
@@ -227,6 +239,19 @@ class ImagePlotWidget(mmWidget2):
             _newValue = action.isChecked()
             esp = EditSpinePropertyEvent(self, firstPointSelection, 'accept', _newValue)
             self.emitEvent(esp)
+
+        elif action == setSegmentPivotAction:
+            imagePos = self._myImage.mapFromScene(event.pos())
+            x = imagePos.x()  # float
+            y = imagePos.y()
+
+            x = int(round(x))  # int
+            y = int(round(y))
+            z = self._currentSlice
+            logger.info(f'-->> emit SetSegmentPivot segmentID:{firstSegmentSelection} x:{x} y:{y} z:{z}')
+            event = SetSegmentPivot(self, segmentID=firstSegmentSelection, x=x, y=y, z=z)
+            event.setSegmentSelection([firstSegmentSelection])
+            self.emitEvent(event)
 
         else:
             logger.info('No action?')
@@ -370,18 +395,6 @@ class ImagePlotWidget(mmWidget2):
                     logger.info(f'-->> emit AddSegmentPoint segmentID:{_segmentID} x:{x} y:{y} z:{z}')
                     addSegmentPoint = AddSegmentPoint(self, segmentID=_segmentID, x=x, y=y, z=z)
                     self.emitEvent(addSegmentPoint)
-
-        elif _state == pmmStates.settingSegmentPivot: # abj            
-            if not self.getStackWidget().getStackSelection().hasSegmentSelection():
-                logger.error('no segment selection???')
-                return
-            else:
-                _segmentID = self.getStackWidget().getStackSelection().getSegmentSelection()
-                _segmentID = _segmentID[0]
-                logger.info(f'-->> emit SetSegmentPivot segmentID:{_segmentID} x:{x} y:{y} z:{z}')
-                event = SetSegmentPivot(self, segmentID=_segmentID, x=x, y=y, z=z)
-                event.setSegmentSelection([_segmentID])
-                self.emitEvent(event)
 
         elif isShift:
             # make a new spine            

@@ -89,13 +89,6 @@ class TracingWidget(mmWidget2):
         hBoxLayout2.addWidget(self._radiusLabel, alignment=_alignLeft)
         hBoxLayout2.addWidget(self._radiusSpinBox, alignment=_alignLeft)
 
-        self._setPivotCheckBox = QtWidgets.QCheckBox('Set Pivot')
-        self._setPivotCheckBox.setToolTip('Enable Set Segment Pivot Point')
-        self._setPivotCheckBox.setEnabled(tracingSegment)
-        self._setPivotCheckBox.setChecked(False)
-        self._setPivotCheckBox.clicked.connect(self._on_set_pivot_checkbox)
-        hBoxLayout2.addWidget(self._setPivotCheckBox, alignment=_alignLeft)
-
         hBoxLayout2.addStretch()  # required for alignment=_alignLeft 
 
         return vControlLayout
@@ -136,9 +129,6 @@ class TracingWidget(mmWidget2):
         if self.currentSegmentID != self.prevSegmentID:
             self.signalRadiusChanged.emit(value)
 
-    def updateSetPivotCheckBox(self, value):
-        self._setPivotCheckBox.setChecked(value)
-
     def on_edit_segment_checkbox(self, state : int):
         """Respond to user toggling "edit segment" checkbox.
 
@@ -162,26 +152,6 @@ class TracingWidget(mmWidget2):
             event.setStateChange(pmmStates.edit)
 
         logger.info(f'  -->> emit {event.getStateChange()}')
-        self.emitEvent(event)
-
-    def _on_set_pivot_checkbox(self, checked):
-        """
-        Notes
-        =====
-        TODO: emit new event pmmEventType.settingSegmentPivot
-
-        When in settingSegmentPivot we wait for click near the segment (in image plot)
-            and then set the core 'segmentPivot'
-        """
-        checked = checked > 0
-        logger.info(checked)
-
-        event = pmmEvent(pmmEventType.stateChange, self)
-        if checked:
-            event.setStateChange(pmmStates.settingSegmentPivot)
-        else:
-            logger.info('cancel pmmStates.settingSegmentPivot')
-            event.setStateChange(pmmStates.edit)
         self.emitEvent(event)
 
     def on_segment_button_clicked(self, state, buttonName : str):
@@ -210,14 +180,8 @@ class TracingWidget(mmWidget2):
             logger.warning(f'did not understand buttonName:{buttonName}')
 
     def stateChangedEvent(self, event):
-        # if event.getStateChange() != pmmStates.settingSegmentPivot:
-        #     self.updateSetPivotCheckBox(False)
-        # if event.getStateChange() != pmmStates.tracingSegment:
-        #     self._editSegmentCheckbox.setChecked(False)
         if event.getStateChange() == pmmStates.edit:
-            self.updateSetPivotCheckBox(False)
             self._editSegmentCheckbox.setChecked(False)
-
 
     def setGui(self):
    
@@ -240,10 +204,6 @@ class TracingWidget(mmWidget2):
             _radius = self.getCurrentSelectedRadius(segmentID)
             # _radius = 3
             self._radiusSpinBox.setValue(_radius)
-
-        self._setPivotCheckBox.setEnabled(isEnabled)
-        if not isEnabled:
-            self._setPivotCheckBox.setChecked(False)
 
     def selectedEvent(self, event: pmmEvent):
         """Respond to a spine or segment selection
