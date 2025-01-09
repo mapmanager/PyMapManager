@@ -321,6 +321,18 @@ class stack:
         logger.info(f"totalChannels {totalChannels}")
         return len(totalChannels)
     
+    # def getChannelsNames(self):
+    #     listOfChannels = self._fullMap.getImagesCoreTotalChannels(self._timepoint)
+    #     logger.info(f"list of channels {listOfChannels}")
+    #     return listOfChannels
+    
+    def getChannelNames(self):
+        # TODO: current metaData is not storing channel names
+        metaData = self.getMetadata()
+        listOfChannels = metaData.channelNames
+        logger.info(f"list of channels {listOfChannels}")
+        return listOfChannels
+    
     def resetStackContrast(self):
         """ Recreates Stack Contrast with current Stack
 

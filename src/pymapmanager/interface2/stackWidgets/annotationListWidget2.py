@@ -245,7 +245,7 @@ class pointListWidget(annotationListWidget):
 
         # limit the displayed columns
         # colList = ['index', 'userType', 'z', 'roiType', 'segmentID', 'accept', 'note', 'spineSide', 'spineAngle']
-        colList = ['index', 'segmentID', 'z', 'spinePosition', 'userType', 'accept', 'note', 'spineSide', 'spineAngle']
+        colList = ['index', 'segmentID', 'z', 'spinePosition', 'userType', 'accept', 'note', 'spineSide', 'spineAngle', 'intBad']
         self._myTableView.showTheseColumns(colList)
 
         # limit the rows based on roiType

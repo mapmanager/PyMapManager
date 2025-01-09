@@ -14,6 +14,8 @@ import numpy as np
 from mapmanagercore import MapAnnotations, MultiImageLoader
 from mapmanagercore.analysis_params import AnalysisParams
 from mapmanagercore.schemas import Spine, Segment
+from mapmanagercore.lazy_geo_pd_images.loader.zarr import ZarrLoader
+from mapmanagercore.lazy_geo_pd_images.loader.imageio import MultiImageLoader
 
 from pymapmanager._logger import logger
 
@@ -48,7 +50,8 @@ class ImagesCore:
         return _min, _max, _globalMin, _globalMax
     
     def metadata(self, timepoint):
-        return self._fullMap.metadata(timepoint)
+        # return self._fullMap.metadata(timepoint)
+        return self._fullMap._images.metadata(timepoint) # abj
     
     def getTotalChannels(self, tp):
         return self._fullMap._images.channels(tp)
@@ -402,7 +405,33 @@ class TimeSeriesCore():
         # totalChannels = self._imagesCore.getTotalChannels()
         # logger.info(f"before total channel in timeseriescore: {totalChannels}")
 
-        self._fullMap.loadInNewChannel(path, time, channel)
+        logger.info(f" type of self._fullMap {type(self._fullMap)}")
+        # class 'mapmanagercore.annotations.mutation.AnnotationsBaseMut
+        # self._fullMap.loadInNewChannel(path, time, channel)
+
+        # create new imageloader with new image
+        # merge into previous image map
+
+        # For Tif (MultiImageLoader)
+        logger.info(f"self._fullMap._images {type(self._fullMap._images)}")
+
+        if isinstance(self._fullMap._images, ZarrLoader):
+            # For Zarr Loader
+            logger.info(f"path {path} channel check {channel}, time {time}")
+            newImageLoader = MultiImageLoader()
+            # newImageLoader.read(path, time=time, channel=channel)
+            newImageLoader.read(path, time=time, channel=channel, name=None)
+            self._fullMap.merge(newImageLoader)
+
+        elif isinstance(self._fullMap._images, MultiImageLoader):
+            self._fullMap._images.read(path, time=time, channel=channel)
+
+        # For Zarr Loader
+        # logger.info(f"path {path} channel check {channel}, time {time}")
+        # newImageLoader = MultiImageLoader()
+        # # newImageLoader.read(path, time=time, channel=channel)
+        # newImageLoader.read(path, time=time, channel=channel, name=None)
+        # self._fullMap.merge(newImageLoader)
 
         # totalChannels = self._imagesCore.getTotalChannels()
         # logger.info(f"after total channel in timeseriescore: {totalChannels}")
@@ -411,3 +440,30 @@ class TimeSeriesCore():
         """ Get total number of channels loaded within Images core
         """
         return self._imagesCore.getTotalChannels(tp)
+    
+    def swapChannels(self, tp, srcChannel, destChannel):
+        """
+        """
+
+        logger.info(f" type of self._fullMap {type(self._fullMap)}")
+
+        # For Tif (MultiImageLoader)
+        logger.info(f"self._fullMap._images {type(self._fullMap._images)}")
+
+
+        # self._imagesCore.getTotalChannels(tp)
+        # srcTimePoint: int, srcChannel: int, destTimePoint: int, destChannel: int)
+        self._fullMap._images.moveChannel(srcTimePoint = tp, srcChannel = srcChannel, 
+                                  destTimePoint = tp, destChannel = destChannel)
+        
+    def updateChannel(self, tp, channelIdx, newChannelName: str):
+        """"""
+
+        # dict uses one based indexing
+        updateDict = {"name" : newChannelName,
+                        "timePoint": tp + 1, #
+                        "channel": channelIdx + 1
+                        }
+        self._fullMap._images.updateChannel(timePoint = tp, channel = channelIdx, updates = updateDict)
+
+

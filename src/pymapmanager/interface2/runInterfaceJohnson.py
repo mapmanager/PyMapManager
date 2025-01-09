@@ -5,7 +5,9 @@ import sys
 
 # from qtpy import QtWidgets
 
-from pymapmanager.interface2 import PyMapManagerApp
+
+from pymapmanager.interface2.pyMapManagerApp2 import PyMapManagerApp
+# from pymapmanager.interface2 import PyMapManagerApp
 from pymapmanager.interface2.stackWidgets.base.mmWidget2 import pmmEvent, pmmEventType
 from stackWidgets import stackWidget2
 
@@ -27,7 +29,7 @@ def _old_AddRandomColumns(df):
 
 
 def run():
-    app = PyMapManagerApp()
+    app = PyMapManagerApp(sys.argv)
 
     # path = '../PyMapManager-Data/core-map/one-timepoint/oneTimepoint.mmap'
     # path = '../PyMapManager-Data/core-map/one-timepoint/oneTimepoint.mmap'
@@ -87,13 +89,41 @@ def run():
 
     sys.exit(app.exec_())
 
-def run2_tif():
-    app = PyMapManagerApp()
+def runMultiTimepointMap():
+    app = PyMapManagerApp(sys.argv)
+    import mapmanagercore.data
+    ## path = mapmanagercore.getSingleTimepointMap()
+    path = mapmanagercore.data.getMultiTimepointMap()
+
+    print("path", path)
+    sw2 = app.loadStackWidget(path)
+    sys.exit(app.exec_())
+
+def run_tif():
+    app = PyMapManagerApp(sys.argv)
     path = '/Users/johns/Documents/GitHub/PyMapManager-Data/one-timepoint/rr30a_s0_ch1.tif'
     # path = '/Users/johns/Documents/GitHub/PyMapManager-Data/one-timepoint/rr30a_s0_ch1.mmap'
     # # sw2 = app.loadTifFile(path)
     sw2 = app.loadStackWidget(path)
     sys.exit(app.exec_())
+
+
+def run_2_tifs():
+    app = PyMapManagerApp(sys.argv)
+    path = '/Users/johns/Documents/GitHub/PyMapManager-Data/one-timepoint/rr30a_s0_ch1.tif'
+    # path = '/Users/johns/Documents/GitHub/PyMapManager-Data/one-timepoint/rr30a_s0_ch1.mmap'
+    # # sw2 = app.loadTifFile(path)
+    sw2 = app.loadStackWidget(path)
+
+
+    path2 = '/Users/johns/Documents/GitHub/PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
+    sw2.loadInNewChannel(path2)
+
+    pluginID = sw2.runPlugin('Channel Editor', inDock=False)
+
+ 
+    sys.exit(app.exec_())
+
 
 def run3():
     app = PyMapManagerApp()
@@ -132,7 +162,7 @@ def runPoochFileDirectly():
     sys.exit(app.exec_())
 
 def runFirstWindow():
-    app = PyMapManagerApp()
+    app = PyMapManagerApp(sys.argv)
     # path = 'C:/Users/johns/Documents/TestMMCMaps/rr30a_s0u_newSpineAngle.mmap'
     sys.exit(app.exec_())
 
@@ -196,8 +226,36 @@ def testingProgrammaticRunClose():
 
     sys.exit(app.exec_())
 
+def runThenLoad():
+    app = PyMapManagerApp(sys.argv)
+    import mapmanagercore.data
+    path = mapmanagercore.data.getSingleTimepointMap()
+    sw2 = app.loadStackWidget(path)
+
+    path2 = '/Users/johns/Documents/GitHub/PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
+    sw2.loadInNewChannel(path2)
+    
+    # path3 = 'C:/Users/johns/Documents/GitHub/PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
+    # sw2.loadInNewChannel(path3)
+
+        
+    # path4 = 'C:/Users/johns/Documents/GitHub/PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
+    # sw2.loadInNewChannel(path4)
+
+
+    pluginID = sw2.runPlugin('Channel Editor', inDock=False)
+ 
+    sys.exit(app.exec_())
+
 if __name__ == '__main__':
-    run()
+    # run()
+
+    # TODO: fix merging for just tif, only works for zarr
+    # run_tif()
+    # run_2_tifs()
+
+    # runThenLoad()
+    runMultiTimepointMap()
     # run2()
     # run3()
     # run4()

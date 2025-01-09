@@ -74,6 +74,7 @@ class pmmEventType(Enum):
 
     # setPivotPoint = auto() # abj
     settingSegmentPivot = auto() # abj
+    importNewChannel = auto() # abj
 
 class StackSelection:
     def __init__(self, stack : pymapmanager.stack = None):
@@ -834,6 +835,9 @@ class mmWidget2(QtWidgets.QMainWindow):
         elif event.type == pmmEventType.settingSegmentPivot: # abj
             acceptEvent = self.settedSegmentPivot(event)
 
+        elif event.type == pmmEventType.importNewChannel: # abj
+            acceptEvent = self.importedNewChannelEvent(event)
+
         # abj
         # elif event.type == pmmEventType.acceptPoint:
         #     acceptEvent = self.acceptPoint(event)
@@ -1049,6 +1053,10 @@ class mmWidget2(QtWidgets.QMainWindow):
         """
 
     def settedSegmentPivot(self, event : pmmEvent):
+        """Derived classes need to perform action of selection event.
+        """
+
+    def importedNewChannelEvent(self, event : pmmEvent): # abj
         """Derived classes need to perform action of selection event.
         """
 

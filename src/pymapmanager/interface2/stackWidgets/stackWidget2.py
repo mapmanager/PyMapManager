@@ -1343,11 +1343,13 @@ class stackWidget2(mmWidget2):
         """
         return self._openPluginDict 
     
-    def loadInNewChannel(self):
+    def loadInNewChannel(self, path = None):
         """ self, path: Union[str, np.ndarray], time: int = 0, channel: int = 0):
         """
-
-        newTifPath = QtWidgets.QFileDialog.getOpenFileName(None, 'New Tif File')[0]
+        if path is None:
+            newTifPath = QtWidgets.QFileDialog.getOpenFileName(None, 'New Tif File')[0]
+        else:
+            newTifPath = path
 
         # check to ensure it is a tif file, Note: might need to expand to list of supported files
         ext = os.path.splitext(newTifPath)[1]
@@ -1364,7 +1366,7 @@ class stackWidget2(mmWidget2):
             # print("Width:", newImgWidth)
             # print("Height:", newImgHeight)
             newImgSlices = img.n_frames  # z dimension
-    
+
         # Get old tif path
         stackHeader = self.getStack().header
         x = stackHeader["xPixels"]
@@ -1376,8 +1378,10 @@ class stackWidget2(mmWidget2):
                                            f"Please upload an image with size x: {x}, y: {y}, z: {z} ")
             return
         
-    
-        self.getTimeSeriesCore().loadInNewChannel(newTifPath, time=0, channel=None)
+        time = self._stack.timepoint
+        channel = self._stack.getTimeSeriesTotalChannels() # len of total channels = new channel, since it is 0 based
+        logger.info(f"channel num {channel}")
+        self.getTimeSeriesCore().loadInNewChannel(newTifPath, time=time, channel=channel)
 
         # reset stackToolBar
         self._topToolbar._setStack(theStack=self._stack)
@@ -1385,3 +1389,34 @@ class stackWidget2(mmWidget2):
         # reset stack Contrast
         self._stack.resetStackContrast()
 
+        # update channel editor widget
+        _pmmEvent = pmmEvent(pmmEventType.importNewChannel, self)
+        self.emitEvent(_pmmEvent)
+
+    def swapChannels(self, srcChannel, destChannel):
+        """ Call mapmanagercore to swap channels
+        # Stack already knows time point so pass that it
+        """
+
+        timePoint = self._stack.timepoint
+        self.getTimeSeriesCore().swapChannels(timePoint, srcChannel, destChannel)
+
+        # Update image
+        _imagePlotWidget = self._widgetDict[self._imagePlotName]
+        _imagePlotWidget.refreshSlice()
+
+        # reset stackToolBar
+        self._topToolbar._setStack(theStack=self._stack)
+
+        # reset stack Contrast
+        self._stack.resetStackContrast()
+
+        # update channel editor widget
+        _pmmEvent = pmmEvent(pmmEventType.importNewChannel, self)
+        self.emitEvent(_pmmEvent)
+
+    def updateChannel(self, newChannelName, channelIdx):
+        """ Update channel name in backend
+        """
+        timePoint = self._stack.timepoint
+        self.getTimeSeriesCore().updateChannel(timePoint, channelIdx, newChannelName)

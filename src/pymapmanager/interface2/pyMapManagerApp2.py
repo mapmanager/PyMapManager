@@ -796,7 +796,10 @@ class PyMapManagerApp(QtWidgets.QApplication):
     
     def clearRecentFiles(self):
         self._config.clearRecentFiles()
-
+        
+        if self._openFirstWindow is None:
+            return
+        
         # refresh first window 
         self._openFirstWindow.refreshUI()
 
@@ -811,6 +814,18 @@ class PyMapManagerApp(QtWidgets.QApplication):
         # try calling map.loadInNewChannel(self, path: Union[str, np.ndarray], time: int = 0, channel: int = 0):
         frontStackWindow.loadInNewChannel()
         # might need to somehow refresh stackwidget?
+
+    def openLoader(self):
+        """ Create similar loader to webmapmanager
+        Where you can load new channels and edit channels as well as timepoints
+        
+        """
+
+        # TODO: acquire all stacks widgets 
+        # Acccess to each of their channels
+        self.apWidget = AnalysisParamWidget(stackWidget=None, pmmApp=self)
+        self.apWidget.show()
+
 
     def openLogWindow(self):
         """Show the python logger.

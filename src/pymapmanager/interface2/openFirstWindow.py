@@ -149,8 +149,8 @@ class OpenFirstWindow(MainWindow):
         elif name == 'Open Folder...':
             self._app.loadFolder()  # load a folder of mmap
 
-        elif name == 'Clear Files':
-            self._clearFileList()
+        # elif name == 'Clear Files':
+        #     self._clearFileList()
 
     def _clearFileList(self):
         self.getApp().getConfigDict().clearMapPathDict()
@@ -222,9 +222,9 @@ class OpenFirstWindow(MainWindow):
         aLabel = QtWidgets.QLabel('Recent Files')
         h1.addWidget(aLabel)
 
-        aButton = QtWidgets.QPushButton('Clear Files')
-        aButton.clicked.connect(partial(self._on_open_button_click, 'Clear Files'))
-        h1.addWidget(aButton)
+        # aButton = QtWidgets.QPushButton('Clear Files')
+        # aButton.clicked.connect(partial(self._on_open_button_click, 'Clear Files'))
+        # h1.addWidget(aButton)
 
         # headerStr='Recent Files (double-click to open)'
         headerStr = ''
