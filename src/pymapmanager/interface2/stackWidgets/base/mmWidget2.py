@@ -35,6 +35,8 @@ class pmmStates(Enum):
     # wait for click in image plot to extend tracing for a segment
     tracingSegment = auto()
 
+    movingBackgroundRoi = auto()
+
 class pmmEventType(Enum):
     selectSpine = auto()  # abb 20240906
 
@@ -72,6 +74,7 @@ class pmmEventType(Enum):
     # setPivotPoint = auto() # abj
     importNewChannel = auto() # abj
     setSegmentPivot = auto() # abj
+    moveBackgroundRoi = auto()
 
 class StackSelection:
     def __init__(self, stack : pymapmanager.stack = None):
@@ -835,6 +838,9 @@ class mmWidget2(QtWidgets.QMainWindow):
 
         elif event.type == pmmEventType.importNewChannel: # abj
             acceptEvent = self.importedNewChannelEvent(event)
+        
+        elif event.type == pmmEventType.moveBackgroundRoi:
+            acceptEvent = self.moveBackgroundRoiEvent(event)
 
         # abj
         # elif event.type == pmmEventType.acceptPoint:
@@ -1055,6 +1061,10 @@ class mmWidget2(QtWidgets.QMainWindow):
         """
 
     def importedNewChannelEvent(self, event : pmmEvent): # abj
+        """Derived classes need to perform action of selection event.
+        """
+
+    def moveBackgroundRoiEvent(self, event : pmmEvent): # abj
         """Derived classes need to perform action of selection event.
         """
 

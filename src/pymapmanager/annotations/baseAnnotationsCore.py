@@ -536,6 +536,33 @@ class SpineAnnotationsCore(AnnotationsCore):
         # refreshDataFrame
         self._buildDataFrame()
 
+    #abj
+    def moveBackgroundRoi(self, spineID, x, y, z):
+        """ Call mapmanagercore to moveBacgroundRoi
+        """
+
+        if not isinstance(spineID, int):
+            logger.error(f'got bad spineID:{spineID}, expecting int')
+            return
+
+        if not self.spineID_Exists(spineID):
+            return False
+
+        logger.info(f"moving backgroind roi in spineAnnotationsCore")
+        # default state is manual
+
+        spineX = self.getValue("x", spineID)
+        spineY = self.getValue("y", spineID)
+        offsetX = x - spineX
+        offsetY = y - spineY
+
+        self.singleTimepoint.moveBackgroundRoi(spineID, x=offsetX, y=offsetY, z=z)
+
+        # refreshDataFrame
+        self._buildDataFrame()
+
+        self._setDirty(True) #abj
+
 class LineAnnotationsCore(AnnotationsCore):
     
     def newSegment(self) -> int:

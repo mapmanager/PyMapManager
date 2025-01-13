@@ -874,6 +874,8 @@ class stackWidget2(mmWidget2):
             self.slot_setStatus('Click the line to specify the new spine connection point, esc to cancel')
         elif _state == pmmStates.tracingSegment:
             self.slot_setStatus('Shift+click to create a new segment tracing points')
+        elif _state == pmmStates.movingBackgroundRoi:
+            self.slot_setStatus('Click the new position of the background ROI, esc to cancel')
 
         return True
     
@@ -1011,8 +1013,34 @@ class stackWidget2(mmWidget2):
         _pointAnnotations.autoResetBrightestIndex(spineIndex, segmentID, point, True)
 
         #abj TODO: Check if spine intensity is being updated
-        # _pointAnnotations.updateSpineInt2(spineIndex, self.getStack())
         
+        self.getUndoRedo().addUndo(event)
+        self._afterEdit2(event)
+
+    # abj
+    def moveBackgroundRoiEvent(self, event):
+        """ Move background ROI of selected spine
+        """
+        logger.info(f"entering move background roi event")
+        _stackSelection = self.getStackSelection()
+        # _stackSelection = event.getStackSelection()
+        
+        if not _stackSelection.hasPointSelection():
+            errStr = 'Did not move background ROI, need spine selection'
+            logger.error(errStr)
+            self.slot_setStatus(errStr)
+            return
+
+        items = _stackSelection.getPointSelection()
+        spineIndex = items[0]
+
+        itemXyz = event.getSingleXyz()
+        logger.info(f"item {itemXyz}")
+        x,y,z = itemXyz
+
+        _pointAnnotations = self.getStack().getPointAnnotations()
+        _pointAnnotations.moveBackgroundRoi(spineIndex, x, y, z)
+
         self.getUndoRedo().addUndo(event)
         self._afterEdit2(event)
 

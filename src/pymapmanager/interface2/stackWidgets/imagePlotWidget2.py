@@ -12,8 +12,8 @@ from pymapmanager.interface2.stackWidgets.event.spineEvent import (
                 AddSpineEvent,
                 MoveSpineEvent,
                 ManualConnectSpineEvent,
-                AutoConnectSpineEvent #abj
-                )
+                AutoConnectSpineEvent, #abj
+                MoveBackgroundRoiEvent)
 
 from pymapmanager.interface2.stackWidgets.event.segmentEvent import (
     AddSegmentPoint, SetSegmentPivot
@@ -191,6 +191,10 @@ class ImagePlotWidget(mmWidget2):
         # segment (previous actions are all spine)
         setSegmentPivotAction = _menu.addAction(f'Set Segment {firstSegmentSelection} Pivot')
         setSegmentPivotAction.setEnabled(hasSegmentSelection)
+
+        # abj
+        moveBackgroundRoiAction = _menu.addAction(f'Move Spine Background ROI')
+        moveBackgroundRoiAction.setEnabled(hasPointSelection)
         
         # show the menu
         action = _menu.exec_(self.mapToGlobal(event.pos()))
@@ -251,6 +255,11 @@ class ImagePlotWidget(mmWidget2):
             logger.info(f'-->> emit SetSegmentPivot segmentID:{firstSegmentSelection} x:{x} y:{y} z:{z}')
             event = SetSegmentPivot(self, segmentID=firstSegmentSelection, x=x, y=y, z=z)
             event.setSegmentSelection([firstSegmentSelection])
+            self.emitEvent(event)
+
+        elif action == moveBackgroundRoiAction:
+            event = pmmEvent(pmmEventType.stateChange, self)
+            event.setStateChange(pmmStates.movingBackgroundRoi)
             self.emitEvent(event)
 
         else:
@@ -395,6 +404,15 @@ class ImagePlotWidget(mmWidget2):
                     logger.info(f'-->> emit AddSegmentPoint segmentID:{_segmentID} x:{x} y:{y} z:{z}')
                     addSegmentPoint = AddSegmentPoint(self, segmentID=_segmentID, x=x, y=y, z=z)
                     self.emitEvent(addSegmentPoint)
+
+        elif _state == pmmStates.movingBackgroundRoi:
+            _stackSelection = self.getStackWidget().getStackSelection()
+            if _stackSelection.hasPointSelection():
+                items = _stackSelection.getPointSelection()
+                
+                event = MoveBackgroundRoiEvent(self, spineID=items, x=x, y=y, z=z)
+                logger.info(f'-->> EMIT: {event}')
+                self.emitEvent(event, blockSlots=True)
 
         elif isShift:
             # make a new spine            

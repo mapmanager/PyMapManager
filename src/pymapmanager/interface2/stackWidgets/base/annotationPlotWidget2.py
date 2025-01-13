@@ -22,7 +22,8 @@ from pymapmanager.interface2.stackWidgets.event.spineEvent import (AddSpineEvent
                                                                    DeleteSpineEvent,
                                                                    MoveSpineEvent,
                                                                    UndoSpineEvent,
-                                                                   SelectSpine)
+                                                                   SelectSpine,
+                                                                   MoveBackgroundRoiEvent)
 
 from pymapmanager.interface2.stackWidgets.event.segmentEvent import (DeleteSegmentEvent)
 
@@ -592,7 +593,7 @@ class annotationPlotWidget(mmWidget2):
             # self._scatter.sigPointsClicked.connect(self._on_mouse_click)
             self._allowClick = True
 
-        elif _state in [pmmStates.movingPnt, pmmStates.manualConnectSpine]:
+        elif _state in [pmmStates.movingPnt, pmmStates.manualConnectSpine, pmmStates.movingBackgroundRoi]:
             # turn off
             # self.setEnabled(False)
             # logger.warning(f'disconnect _on_mouse_click')
@@ -870,6 +871,16 @@ class pointPlotWidget(annotationPlotWidget):
 
         
         self._refreshSlice()
+
+    # abj
+    def moveBackgroundRoiEvent(self, event : MoveBackgroundRoiEvent):
+        """Refresh roi on move Background Roi event.
+        """
+        logger.info(f"MoveBackgroundRoiEvent {event}")
+        spineList = event.getSpines()
+        logger.info(f"spineList {spineList}")
+
+        self._selectAnnotation(spineList[0]) # spineList is a [[]]
 
     def manualConnectSpineEvent(self, event : pmmEvent):
         """Update plots on manual connect spine event.

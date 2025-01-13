@@ -68,7 +68,7 @@ def run():
     # sw2.forceRefresh()
     # sw2.zoomToPointAnnotation(1, isAlt=True)
 
-    sw2.zoomToPointAnnotation(1, isAlt=True)
+    sw2.zoomToPointAnnotation(75, isAlt=True)
     # spineID = 1
     # deleteEvent = DeleteSpineEvent(sw2, spineID)
     # # deleteEvent = DeleteSpineEvent(sw2)
@@ -248,14 +248,14 @@ def runThenLoad():
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
-    # run()
+    run()
 
     # TODO: fix merging for just tif, only works for zarr
     # run_tif()
     # run_2_tifs()
 
     # runThenLoad()
-    runMultiTimepointMap()
+    # runMultiTimepointMap()
     # run2()
     # run3()
     # run4()

@@ -71,6 +71,15 @@ class _EditSpine(pmmEvent):
         """Get list of segment id in the event.
         """
         return [item['segmentID'] for item in self._list]
+    
+    # abj
+    def getSingleXyz(self) -> List[int]:
+        """Get x,y,z values for the first/ one spine edit event
+        """
+        if len(self._list) == 1:
+            item1 = self._list[0]
+            return item1['x'], item1['y'], item1['z']
+    
 
     def addEdit(self,
                 spineID : int = None,
@@ -425,4 +434,27 @@ class SelectSpine(_EditSpine):
         """
         item = SpineEdit(spineID=item['spineID'], sessionID=item['sessionID'])
         return item
-    
+
+class MoveBackgroundRoiEvent(_EditSpine):
+    def __init__(self,
+                mmWidget,
+                spineID : int,
+                x: float, # x,y,z are coordinates of point that is clicked in image
+                y: float,
+                z: float):
+        super().__init__(pmmEventType.moveBackgroundRoi, mmWidget)
+        self.addEdit(spineID = spineID, x = x, y = y, z = z)
+
+    def getName(self) -> str:
+        return 'MoveBackgroundROI for Spine'
+             
+    def _getItem(self, item : SpineEdit) -> SpineEdit:
+        """Get the meaningful keys for this edit type.
+        """
+        item = SpineEdit(
+            spineID=item['spineID'],
+            x=item['x'],
+            y=item['y'],
+            z=item['z']
+            )
+        return item
