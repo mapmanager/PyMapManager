@@ -1428,6 +1428,7 @@ class linePlotWidget(annotationPlotWidget):
 
         # TODO add option to show/hide
         # TODO add a z and mask if not in view (just like core points)
+        zPlusMinus = self._displayOptions["zPlusMinus"]
         pivotPointXs, pivotPointYs, pivotPointZs = self._annotations.getPivotPoint()
         self._pivotPoints.setData(pivotPointXs, pivotPointYs)
 
