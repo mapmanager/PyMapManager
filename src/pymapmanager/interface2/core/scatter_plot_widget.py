@@ -745,29 +745,37 @@ class ScatterPlotWidget_(QtWidgets.QWidget):
         return self.layout
 
     def setScatterPlot(self, xStat, yStat, xyStatIndex):
+        logger.info('self._df')
+        # print(self._df.columns)
+        # print(self._df)
+        # print(xyStatIndex)
+
         hueColumn = str(self.dict["hueColumn"])
-        myColorMap = []
+        # myColorMap = []  # abb how is this used?
         if hueColumn == "None" and self.dict["plotType"] == "Scatter":
-            for id in xyStatIndex:
-                if self.acceptCheckbox.isChecked() and not self._df["accept"].iloc[id]:
-                    myColorMap.append("white")
-                else:
-                    myColorMap.append(self.color[0])
+            # for id in xyStatIndex:
+            #     if self.acceptCheckbox.isChecked() and not self._df["accept"].iloc[id]:
+            #         myColorMap.append("white")
+            #     else:
+            #         myColorMap.append(self.color[0])
             
-            self.scatterPoints = self.axScatter.scatter(xStat, yStat, s = self._markerSize, c = myColorMap, 
+            # self.scatterPoints = self.axScatter.scatter(xStat, yStat, s = self._markerSize, c = myColorMap, 
+            #                                             picker=False)
+            self.scatterPoints = self.axScatter.scatter(xStat, yStat, s = self._markerSize, c = self.filteredDF['markerColor'], 
                                                         picker=False)
         else: # hue is selected
-            for id in xyStatIndex:
-                if self.acceptCheckbox.isChecked() and not self._df["accept"].iloc[id]:
-                    myColorMap.append("white")
-                else:
-                    if hueColumn != "None":
-                        logger.info(f'hueColumn: "{hueColumn}" id:{id}')
-                        hueId = self._df[hueColumn].iloc[id]
-                        myColorMap.append(self.color[hueId])
+            # for id in xyStatIndex:
+            #     if self.acceptCheckbox.isChecked() and not self._df["accept"].iloc[id]:
+            #         myColorMap.append("white")
+            #     else:
+            #         if hueColumn != "None":
+            #             logger.info(f'hueColumn: "{hueColumn}" id:{id}')
+            #             hueId = self._df[hueColumn].iloc[id]
+            #             myColorMap.append(self.color[hueId])
 
             if self.dict["plotType"] == "Scatter":
-                self.scatterPoints = self.axScatter.scatter(xStat, yStat, s = 12, c = myColorMap, 
+                # self.scatterPoints = self.axScatter.scatter(xStat, yStat, s = 12, c = myColorMap, 
+                self.scatterPoints = self.axScatter.scatter(xStat, yStat, s = 12, c = self.filteredDF['markerColor'], 
                                                             picker=False)
             elif self.dict["plotType"] == "Histogram":
                 if hueColumn == "None":

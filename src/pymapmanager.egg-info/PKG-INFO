@@ -1,6 +1,6 @@
-Metadata-Version: 2.1
+Metadata-Version: 2.2
 Name: pymapmanager
-Version: 0.0.7.dev335+gf256346.d20250104
+Version: 0.0.7.dev342+g28501c2
 Requires-Python: >=3.11
 License-File: LICENSE
 Requires-Dist: mapmanagercore

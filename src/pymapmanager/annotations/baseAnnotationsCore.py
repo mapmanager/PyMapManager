@@ -821,6 +821,7 @@ class LineAnnotationsCore(AnnotationsCore):
         
         returnPointX = []
         returnPointY = []
+        returnPointZ = []
         for rowLabel, row in self._summaryDf.iterrows():
             segmentID = rowLabel  # row["Segment"]
             pivotDistance = row["Pivot Distance"]
@@ -832,8 +833,9 @@ class LineAnnotationsCore(AnnotationsCore):
 
             returnPointX.append(_point.x)
             returnPointY.append(_point.y)
+            returnPointZ.append(_point.z)
 
-        return returnPointX, returnPointY
+        return returnPointX, returnPointY, returnPointZ
     
     def getLeftRadiusPlot(self, sliceNumber, zPlusMinus):
         # segmentLines = self._df 

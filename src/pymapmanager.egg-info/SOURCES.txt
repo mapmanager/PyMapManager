@@ -154,6 +154,7 @@ src/pymapmanager/interface2/mapWidgets/mmMapPlot_mpl.py
 src/pymapmanager/interface2/stackWidgets/__init__.py
 src/pymapmanager/interface2/stackWidgets/analysisParamWidget2.py
 src/pymapmanager/interface2/stackWidgets/annotationListWidget2.py
+src/pymapmanager/interface2/stackWidgets/channelEditor.py
 src/pymapmanager/interface2/stackWidgets/dendrogramWidget.py
 src/pymapmanager/interface2/stackWidgets/histogramWidget2.py
 src/pymapmanager/interface2/stackWidgets/imagePlotWidget2.py
