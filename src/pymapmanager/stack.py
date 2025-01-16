@@ -321,16 +321,16 @@ class stack:
         logger.info(f"totalChannels {totalChannels}")
         return len(totalChannels)
     
-    # def getChannelsNames(self):
-    #     listOfChannels = self._fullMap.getImagesCoreTotalChannels(self._timepoint)
-    #     logger.info(f"list of channels {listOfChannels}")
-    #     return listOfChannels
+    def getChannelList(self):
+        listOfChannels = self._fullMap.getImagesCoreTotalChannels(self._timepoint)
+        # logger.info(f"list of channels {listOfChannels}")
+        return listOfChannels
     
-    def getChannelNames(self):
+    def getChannelDict(self):
         # TODO: current metaData is not storing channel names
         metaData = self.getMetadata()
         listOfChannels = metaData.channelNames
-        logger.info(f"list of channels {listOfChannels}")
+        # logger.info(f"dict of channels {listOfChannels}")
         return listOfChannels
     
     def resetStackContrast(self):

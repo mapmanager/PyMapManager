@@ -1357,7 +1357,7 @@ class stackWidget2(mmWidget2):
         """
         return self._openPluginDict 
     
-    def loadInNewChannel(self, path = None):
+    def loadInNewChannel(self, path = None, channel = None):
         """ self, path: Union[str, np.ndarray], time: int = 0, channel: int = 0):
         """
         if path is None:
@@ -1393,7 +1393,10 @@ class stackWidget2(mmWidget2):
             return
         
         time = self._stack.timepoint
-        channel = self._stack.getTimeSeriesTotalChannels() # len of total channels = new channel, since it is 0 based
+
+        if channel is None:
+            channel = self._stack.getTimeSeriesTotalChannels() # len of total channels = new channel, since it is 0 based
+       
         logger.info(f"channel num {channel}")
         self.getTimeSeriesCore().loadInNewChannel(newTifPath, time=time, channel=channel)
 
@@ -1406,6 +1409,15 @@ class stackWidget2(mmWidget2):
         # update channel editor widget
         _pmmEvent = pmmEvent(pmmEventType.importNewChannel, self)
         self.emitEvent(_pmmEvent)
+
+        # numChannels = self.getTimeSeriesCore().getImagesCoreTotalChannels(timePoint)
+        numChannels = self._stack.numChannels
+        logger.info(f"numChannels {numChannels}")
+        if numChannels > 0:
+            logger.info("showing channels")
+            _imagePlotWidget = self._widgetDict[self._imagePlotName]
+            _imagePlotWidget.show()
+            
 
     def swapChannels(self, srcChannel, destChannel):
         """ Call mapmanagercore to swap channels
@@ -1434,3 +1446,35 @@ class stackWidget2(mmWidget2):
         """
         timePoint = self._stack.timepoint
         self.getTimeSeriesCore().updateChannel(timePoint, channelIdx, newChannelName)
+
+    def deleteChannel(self, channelIdx):
+        """ Delete channel name in backend
+        """
+
+        timePoint = self._stack.timepoint
+        self.getTimeSeriesCore().deleteChannel(timePoint, channelIdx)
+
+        # reset image for 1 channel delete
+        # numChannels = self.getTimeSeriesCore().getImagesCoreTotalChannels(timePoint)
+        numChannels = self._stack.numChannels
+        if numChannels <= 0:
+            _imagePlotWidget = self._widgetDict[self._imagePlotName]
+
+            _imagePlotWidget.hide()
+
+        currentChannel = self._topToolbar.getCurrentChannel()
+        logger.info(f"currentChannel {currentChannel}")
+
+        logger.info(f"channelIdx {channelIdx}")
+
+        # Check if current channel is selected. If it is default select to channel - 1
+        if self._topToolbar.getCurrentChannel() == channelIdx and channelIdx - 1 >= 0:
+            logger.info(f"selecting new channel")
+            # self._topToolbar.slot_setChannel(channelIdx - 1)
+            self.slot_setChannel(channelIdx - 1)
+
+        # reset stackToolBar
+        self._topToolbar._setStack(theStack=self._stack)
+
+        # reset stack Contrast
+        self._stack.resetStackContrast()

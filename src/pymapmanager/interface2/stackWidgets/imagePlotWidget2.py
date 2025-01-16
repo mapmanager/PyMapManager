@@ -745,6 +745,8 @@ class ImagePlotWidget(mmWidget2):
             # self.plotDict["Spines"].toggleLabels()
         elif plotName == "Image":
             visible = self.toggleImageView()
+        elif plotName == "Pivot Points":
+            visible = self._aLinePlot.togglePivotPoints()
 
         if visible:
             self.refreshSlice()

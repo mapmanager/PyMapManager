@@ -31,6 +31,8 @@ class StackToolBar(QtWidgets.QToolBar):
         # list of channel strings 1,2,3,...
         self._channelList = [str(x+1) for x in range(self._myStack.numChannels+1)]
 
+        self._currentChannel = None # abj
+
         # iconsFolderPath = ''  # TODO: get from canvas.util'
 
         self.setWindowTitle('Stack Toolbar')
@@ -69,10 +71,18 @@ class StackToolBar(QtWidgets.QToolBar):
             actionWidget.setDisabled(True)
             actionWidget.setVisible(False)
 
-        for channelIdx in range(self._myStack.numChannels):
+        # for channelIdx in range(self._myStack.numChannels):
+        #     # logger.info(f"channelIdx visible {channelIdx} ")
+        #     self._actionDict[channelIdx].setDisabled(False)
+        #     self._actionDict[channelIdx].setVisible(True)
+
+        # abj: switched to using actual indexes in backend
+        listOfChannelIdx = self._myStack.getChannelList()
+        logger.info(f"listOfChannelIdx {listOfChannelIdx}")
+        for idx in listOfChannelIdx:
             # logger.info(f"channelIdx visible {channelIdx} ")
-            self._actionDict[channelIdx].setDisabled(False)
-            self._actionDict[channelIdx].setVisible(True)
+            self._actionDict[idx].setDisabled(False)
+            self._actionDict[idx].setVisible(True)
         
         if self._myStack.numChannels > 1:
             self._actionDict['rgb'].setDisabled(False)
@@ -113,7 +123,7 @@ class StackToolBar(QtWidgets.QToolBar):
 
         # getting sloppy
         self.slot_setChannel(channelIdx)
-
+        
         self.signalChannelChange.emit(channelIdx)  # channel can be 'rgb'
 
     def _old_on_slidingz_checkbox(self, state):
@@ -170,6 +180,10 @@ class StackToolBar(QtWidgets.QToolBar):
         # activate one action in [1, 2, 3, rgb]
         self._actionDict[channelIdx].setChecked(True)
 
+        self.setCurrentChannel(channelIdx) # abj
+
+        # self.signalChannelChange.emit(channelIdx)  # channel can be 'rgb'
+
     def _buildUI(self):
         # see: https://stackoverflow.com/questions/45511056/pyqt-how-to-make-a-toolbar-button-appeared-as-pressed
         _defaultChannel = self._displayOptionsDict['windowState']['defaultChannel']
@@ -221,7 +235,9 @@ class StackToolBar(QtWidgets.QToolBar):
         self.slidingUpDownLabel = QtWidgets.QLabel('+/- Images')
         self.slidingUpDown = QtWidgets.QSpinBox()
         self.slidingUpDown.setMaximum(self._myStack.numSlices)
-        self.slidingUpDown.setValue(0)
+        # abj
+        zPlusMinus = self._displayOptionsDict['windowState']['zPlusMinus']
+        self.slidingUpDown.setValue(zPlusMinus)
         self.slidingUpDown.setEnabled(True)  # 20241119, we are always in sliding z
         self.slidingUpDown.valueChanged.connect(self._on_slidingz_value_changed)
         self.addWidget(self.slidingUpDownLabel)
@@ -232,7 +248,7 @@ class StackToolBar(QtWidgets.QToolBar):
         self.addWidget(plotMenuButton)
         plotMenu = QtWidgets.QMenu()
 
-        plotMenuList = ["Annotations", "Spines", "Center Line", "Radius Lines", "Labels", "Image"]
+        plotMenuList = ["Annotations", "Spines", "Labels", "Center Line", "Radius Lines", "Pivot Points", "Image"]
         self.actionMenuDict = {}
 
         for plotName in plotMenuList:
@@ -303,3 +319,13 @@ class StackToolBar(QtWidgets.QToolBar):
        
         plotName = action.text()
         self.signalPlotCheckBoxChanged.emit(plotName)
+
+    def setCurrentChannel(self, channelIdx):
+        """ set current channel selected
+        """
+        self._currentChannel = channelIdx
+
+    def getCurrentChannel(self):
+        """ Get current channel selected
+        """
+        return  self._currentChannel

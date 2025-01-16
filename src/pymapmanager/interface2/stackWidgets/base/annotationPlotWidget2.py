@@ -924,10 +924,16 @@ class pointPlotWidget(annotationPlotWidget):
                 spineID = spine['spineID']
                 self._pointLabels.updateLabel(spineID)
 
+        # abj - refresh rois
+        if _undoEvent.type == pmmEventType.moveBackgroundRoi:
+            for spine in _undoEvent: # should only be one spine
+                spineID = spine['spineID']
+                self._selectAnnotation(spineID)
+    
         self._bMakeSpineLines()
 
         self._refreshSlice()
-    
+
     def redoEvent(self, event : UndoSpineEvent):
         """
         """
@@ -1183,6 +1189,7 @@ class linePlotWidget(annotationPlotWidget):
         super().__init__(stackWidget, lineAnnotations, pgView, lineDisplayOptions)
 
         self.showRadiusLines = True
+        self.showPivotPoints = True 
         
         # define the roi types we will display, see: slot_setDisplayTypes()
         self._roiTypes = ["linePnt"]
@@ -1275,6 +1282,11 @@ class linePlotWidget(annotationPlotWidget):
         self._leftRadiusLines.setVisible(self.showRadiusLines)
         self._rightRadiusLines.setVisible(self.showRadiusLines)
         return self.showRadiusLines
+
+    def togglePivotPoints(self):
+        self.showPivotPoints = not self.showPivotPoints
+        self._pivotPoints.setVisible(self.showPivotPoints)
+        return self.showPivotPoints
 
     def _getScatterColor(self):
         """
@@ -1404,6 +1416,23 @@ class linePlotWidget(annotationPlotWidget):
             connect=_lineConnectRight,
         )
 
+    def refreshPivotPoints(self, sliceNumber: int):
+        """ refresh plots for pivot points based on slicenumber and zPlusMinus
+        """
+        zPlusMinus = self._displayOptions["zPlusMinus"]
+        pivotPointXs, pivotPointYs, pivotPointZs = self._annotations.getPivotPoint()
+
+        pivotPointZs = np.array(pivotPointZs)
+        pivotPointXs = np.array(pivotPointXs)
+        pivotPointYs = np.array(pivotPointYs)
+        mask = (pivotPointZs <= sliceNumber + zPlusMinus) & (pivotPointZs >= sliceNumber - zPlusMinus)
+
+        # Use the mask to filter the X and Y values
+        pivotPlotX = pivotPointXs[mask]
+        pivotPlotY = pivotPointYs[mask]
+
+        self._pivotPoints.setData(pivotPlotX, pivotPlotY)
+
     def slot_setSlice(self, sliceNumber: int):
         # logger.info("setting slice in line plot")
         # startSec = time.time()
@@ -1426,11 +1455,7 @@ class linePlotWidget(annotationPlotWidget):
             selectedY = self._dfPlot.loc[selectedDFplot.index, 'y'].tolist()
             self._selectedLines.setData(selectedX, selectedY, connect=_connect)
 
-        # TODO add option to show/hide
-        # TODO add a z and mask if not in view (just like core points)
-        zPlusMinus = self._displayOptions["zPlusMinus"]
-        pivotPointXs, pivotPointYs, pivotPointZs = self._annotations.getPivotPoint()
-        self._pivotPoints.setData(pivotPointXs, pivotPointYs)
+        self.refreshPivotPoints(sliceNumber)
 
     def selectedEvent(self, event: pmmEvent):
         """
