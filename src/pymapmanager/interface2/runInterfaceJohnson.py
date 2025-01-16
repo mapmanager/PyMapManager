@@ -119,8 +119,13 @@ def run_2_tifs():
     path2 = '/Users/johns/Documents/GitHub/PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
     sw2.loadInNewChannel(path2)
 
-    pluginID = sw2.runPlugin('Channel Editor', inDock=False)
+    # pluginID = sw2.runPlugin('Channel Editor', inDock=False)
 
+
+    path3 = '/Users/johns/Documents/GitHub/PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
+    sw2.loadInNewChannel(path3)
+
+    pluginID = sw2.runPlugin('Channel Editor', inDock=False)
  
     sys.exit(app.exec_())
 
@@ -248,13 +253,13 @@ def runThenLoad():
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
-    run()
+    # run()
 
     # TODO: fix merging for just tif, only works for zarr
     # run_tif()
     # run_2_tifs()
 
-    # runThenLoad()
+    runThenLoad()
     # runMultiTimepointMap()
     # run2()
     # run3()

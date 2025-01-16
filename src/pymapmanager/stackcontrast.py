@@ -18,7 +18,9 @@ class StackContrast():
 
     def _setDefaults(self):
         
-        for channelIdx in range(self._stack.numChannels):
+        # for channelIdx in range(self._stack.numChannels):
+        listOfChannelIdx = self._stack.getChannelList()
+        for channelIdx in listOfChannelIdx: # abj
             minAutoContrast, maxAutoContrast, globalMin, globalMax = self._stack.getAutoContrast(channelIdx=channelIdx)
 
             minAutoContrast_rgb = 0

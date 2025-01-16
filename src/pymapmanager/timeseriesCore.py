@@ -470,4 +470,10 @@ class TimeSeriesCore():
                         }
         self._fullMap._images.updateChannel(timePoint = tp, channel = channelIdx, updates = updateDict)
 
+    def deleteChannel(self, tp, channelIdx):
+        logger.info(f"deleting channel")
+        # self._fullMap._images.deleteChannel(time = tp, channel = channelIdx)
+        self._fullMap._images.deleteChannel(tp, channelIdx)
+
+
 

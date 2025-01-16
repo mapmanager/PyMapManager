@@ -46,7 +46,7 @@ class AppDisplayOptions():
 
         # 20241119, we are always in sliding-z, zPlusMinus==0 means -->> show one image plane
         theDict['windowState']['doSlidingZ'] = True
-        theDict['windowState']['zPlusMinus'] = 1
+        theDict['windowState']['zPlusMinus'] = 3
         
         # interface.pointPlotWidget
         theDict['pointDisplay'] = {}
@@ -54,7 +54,7 @@ class AppDisplayOptions():
         theDict['pointDisplay']['color'] = 'r'
         theDict['pointDisplay']['symbol'] = 'o'
         theDict['pointDisplay']['size'] = 8
-        theDict['pointDisplay']['zorder'] = 4  # higher number will visually be on top
+        theDict['pointDisplay']['zorder'] = 9  # higher number will visually be on top
         # user selection
         theDict['pointDisplay']['widthUserSelection'] = 2
         theDict['pointDisplay']['colorUserSelection'] = 'y'
