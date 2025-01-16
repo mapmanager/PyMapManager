@@ -12,7 +12,7 @@ def run():
     app = PyMapManagerApp(sys.argv)
 
     # open a single timepoint map with segments and spines
-    path = mapmanagercore.data.getSingleTimepointMap()
+    # path = mapmanagercore.data.getSingleTimepointMap()
 
     # a single timepoint tif file (import)
     # path = mapmanagercore.data.getTiffChannel_1()
@@ -33,7 +33,7 @@ def run():
     
     # a mmap with multiple timepoints, connects segments and spines
     # path = '/Users/cudmore/Desktop/multi_timepoint_map_seg_spine_connected.mmap'
-    # path = mapmanagercore.data.getMultiTimepointMap()
+    path = mapmanagercore.data.getMultiTimepointMap()
 
     # path = '/Users/cudmore/Desktop/yyy4.mmap'
     # path = '/Users/cudmore/Desktop/single_timepoint.mmap'

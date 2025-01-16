@@ -59,7 +59,6 @@ class mapWidget(MainWindow):
 
     _widgetName = 'Map Widget'
 
-    # def __init__(self, mmMap : pmm.mmMap):
     def __init__(self, timeseriescore : TimeSeriesCore):
         super().__init__(mapWidget=self, iAmMapWidget=True)
         
@@ -77,8 +76,10 @@ class mapWidget(MainWindow):
 
         self.setWindowTitle(os.path.split(self._map.path)[1])
     
-    # def getMapSelection(self) -> MapSelection:
-    #     return self._mapSelection
+    # over-ride from mmWIdget2, which returns stack
+    # using this to share some api like save  and save as
+    def getStack(self) -> TimeSeriesCore:
+        return self._map
     
     def zoomToPointAnnotation(self,
                               idx : int,
@@ -101,6 +102,10 @@ class mapWidget(MainWindow):
     
     def getPath(self):
         return self._map.path
+    
+    # over-ride mmWidget2
+    def getDirty(self):
+        return self._map.getDirty()
     
     def emitUndoEvent(self):
         """
@@ -186,6 +191,10 @@ class mapWidget(MainWindow):
         if spineID and _multipleTp:
             self.linkOpenPlots(link=True)
 
+    @property
+    def numSessions(self):
+        return self.getMap().numSessions
+    
     def getNumSessions(self):
         return self.getMap().numSessions
     

@@ -1,12 +1,12 @@
+import os
 import sys
 from typing import List, Union  # , Callable, Iterator, Optional
 
 from qtpy import QtGui, QtCore, QtWidgets
 
+from mapmanagercore import IMPORT_FILE_EXTENSIONS
 from pymapmanager.interface2.core.search_widget import myQTableView
-
 from pymapmanager.timeseriesCore import TimeSeriesCore
-
 from pymapmanager._logger import logger
 
 class mapTableWidget(QtWidgets.QWidget):
@@ -29,7 +29,44 @@ class mapTableWidget(QtWidgets.QWidget):
 
         self.slot_switchMap(timeSeriesCore)
 
-        # self._setModel()
+        self.setAcceptDrops(True)
+        
+    def dragEnterEvent(self, event):
+        """Accept drag/drop of tiff file and append to _timeSeriesCore.
+        """
+        if event.mimeData().hasUrls():
+            urlList = event.mimeData().urls()
+            url = urlList[0]
+            file_path = url.toLocalFile()
+            _path, _ext = os.path.splitext(file_path)
+            if _ext in IMPORT_FILE_EXTENSIONS:
+                event.acceptProposedAction()
+            else:
+                logger.warning(f'did not understand ext "{_ext}" path "{_path}"')
+
+    def dropEvent(self, event):
+        """When user drops a tiff file, append it to the timeseries.
+        """
+        urlList = event.mimeData().urls()
+        url = urlList[0]
+        file_path = url.toLocalFile()
+        # self.label.setText(f"Dropped file: {file_path}")
+        # self._timeSeriesCore.loadInNewChannel(file_path)  # todo specify append (default to tp 0)
+        # append the tiff file to the _timeSeriesCore
+        logger.info(f'file_path:{file_path}')
+        timePoint = self._timeSeriesCore.numSessions
+        channel = 0
+        name = 'xxx imported channel'
+        
+        logger.info('adding new timepoint from tif, timePoint:{timePoint}')
+        
+        from mapmanagercore.lazy_geo_pd_images.loader.imageio import MultiImageLoader
+        _loader = MultiImageLoader()
+        _loader.read(file_path, time=timePoint, channel=channel, name=name)
+        self._timeSeriesCore._fullMap.loader.merge(_loader)
+
+        # update gui
+        self._setModel()
 
     def slot_switchMap(self, timeSeriesCore : TimeSeriesCore):
         self._timeSeriesCore = timeSeriesCore

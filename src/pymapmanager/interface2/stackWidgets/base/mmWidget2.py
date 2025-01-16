@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 import copy
 from enum import Enum, auto
 from typing import List, Optional, Tuple, TypedDict, Self
+import os
 
 from qtpy import QtGui, QtCore, QtWidgets
 
@@ -563,12 +564,6 @@ class mmWidget2(QtWidgets.QMainWindow):
         self._stackWidget = stackWidget  # parent stack widget
         self._mapWidget = mapWidget  # parent map widget
 
-        # 20240905, TimeSeriesCore() holds one undo manager for all
-        # 20240904 moved from stackWidget2
-        # from pymapmanager.interface2.stackWidgets.event.undoRedo import UndoRedoEvent
-        # # self._undoRedo = UndoRedoEvent(self)
-        # self._undoRedo = UndoRedoEvent()
-
         # to show as a widget
         self._showSelf: bool = True
 
@@ -594,6 +589,115 @@ class mmWidget2(QtWidgets.QMainWindow):
                 # signal/slot between map widget
                 self._signalPmmEvent.connect(mapWidget.slot_pmmEvent)
                 mapWidget._signalPmmEvent.connect(self.slot_pmmEvent)
+
+    def save(self):
+        """ Stack Widget saves changes to its Zarr file
+        """
+
+        path = self.getStack().getPath()
+        ext = os.path.splitext(path)[1]
+        # logger.info(f"ext {ext}")
+        if ext == ".mmap":
+            self.getStack().save()
+            self.setDirtyFalse()
+        elif ext == ".tif": # users start with tif file, but must begin using .mmap after saving
+            self.saveAs()
+        else:
+            logger.info("Extension not understood, nothing is saved")
+
+    def saveAs(self):
+        """Save a single timepoint to a new file.
+
+        Prompts user for file name.
+        """
+        # ('C:/Users/johns/Documents/GitHub/MapManagerCore/data/test', 'All Files (*)')
+
+        # filter = "(*.mmap)"
+        _path = self.getPath()
+        # defaultPath, defaultFileName = os.path.split(_path)
+        filters = 'MapManager files (*.mmap, *.zip)'
+        
+        saveAsPath, _ = QtWidgets.QFileDialog.getSaveFileName(self,
+                                                              caption='Save mmap File',
+                                                              dir=_path,
+                                                              filter=filters,
+                                                            #   selectedFilter='*.mmap'
+                                                              )
+        
+        logger.info(f'saveAsPath: "{saveAsPath}"')
+
+        if not saveAsPath:
+            return False
+        
+        ext = os.path.splitext(saveAsPath)[1]
+        if ext not in ['.mmap', '.zip']:
+            logger.error(f'map must have extension ".mmap" or ".zip", got "{ext}" -->> did not save.')
+            QtWidgets.QMessageBox.critical(self,"Error: Incorrect Extension", "Please use .mmap as the file extension to save")
+            return False
+        else:
+            self.getStack().saveAs(saveAsPath)
+            self.setWindowTitle(self.getStack().getFileName())
+
+        return True
+    
+    def getPath(self) -> str:
+        return self.getStack().getPath()
+        
+    def getFileName(self) -> str:
+        return self.getStack().getPath()
+        
+    def getLastSaveTime(self):
+        return self.getStack().getLastSaveTime()
+
+    def setDirtyFalse(self):
+        """ Set dirty as False after a save
+        """
+        pa = self.getStack().getPointAnnotations()
+        la = self.getStack().getLineAnnotations()
+
+        pa._setDirty(False)
+        la._setDirty(False)
+
+    def setDirtyTrue(self):
+        """ Set dirty as False after a save
+        """
+
+        # TODO: add support with line annotations
+        # after updating stack.undo()
+        pa = self.getStack().getPointAnnotations()
+        # la = self.getStack().getLineAnnotations()
+
+        pa._setDirty(True)
+        # la._setDirty(False)
+
+    #abj
+    def getDirty(self):
+        """Check if spineannotations or lineannotations are dirty
+
+        Return:
+            True if dirty
+            False if not
+        """
+
+        # access stack
+        pa = self.getStack().getPointAnnotations()
+        la = self.getStack().getLineAnnotations()
+
+        isPaDirty = pa.getDirty()
+        isLaDirty = la.getDirty()
+
+        if isPaDirty or isLaDirty:
+            return True
+        else:
+            return False
+        
+    # abj
+    def getAnalysisParams(self):
+        """ Get analysis Params from MapManagerCore
+        """
+        # pass
+
+        return self.getStack().getAnalysisParameters()
 
     def getUndoRedo(self):
         if self._iAmStackWidget:

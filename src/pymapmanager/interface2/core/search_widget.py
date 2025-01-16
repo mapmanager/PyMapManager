@@ -169,6 +169,19 @@ class TableModel(QAbstractTableModel):
 
         Returns the data stored under the given role for the item referred to by the index. (in str form)
         """
+
+        # abb adding segment color
+        if role == Qt.BackgroundRole:
+            row = index.row()
+            col = index.column()
+            # Get the corresponding row within the actual dataframe
+            # They could be different values due to deleting
+            rowLabel = self._data.index.tolist()[row]
+            # logger.warning(f'row:{row} rowLabel:{rowLabel}')
+            if col==0 and rowLabel == 3:
+                _color = QtGui.QColor('#38ff2a')
+                return QtGui.QBrush(_color) 
+        
         # print("data", self.rowCount(None))
         # print("role: ", type(role))
         if role == Qt.DisplayRole:

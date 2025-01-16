@@ -3,7 +3,7 @@
 # see: https://stackoverflow.com/questions/39740632/python-type-hinting-without-cyclic-imports
 from __future__ import annotations
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from shapely import Point
 
@@ -14,11 +14,9 @@ if TYPE_CHECKING:
     from pymapmanager.interface2.pyMapManagerApp2 import PyMapManagerApp
     from pymapmanager.interface2.appDisplayOptions import AppDisplayOptions
 
-from typing import Optional  # List, Union, Tuple
-
-# import numpy as np
-
 from qtpy import QtGui, QtCore, QtWidgets
+
+from mapmanagercore import IMPORT_FILE_EXTENSIONS
 
 import pymapmanager
 from pymapmanager.interface2.stackWidgets.base.mmWidget2 import mmWidget2, pmmEventType, pmmStates, pmmEvent, StackSelection
@@ -87,7 +85,7 @@ class stackWidget2(mmWidget2):
         self._displayOptionsDict : pymapmanager.interface2.AppDisplayOptions = pymapmanager.interface2.AppDisplayOptions()
         # self._displayOptionsDict : AppDisplayOptions = AppDisplayOptions()
 
-        self.setWindowTitle(self._stack.getFileName())
+        self.setWindowTitle(self.getStack().getFileName())
 
         self._buildUI()
         self._buildMenus()
@@ -1187,98 +1185,6 @@ class stackWidget2(mmWidget2):
         _redoEvent = RedoSpineEvent(self, None)
         self.slot_pmmEvent(_redoEvent)
 
-    def getPath(self) -> str:
-        return self.getStack().getPath()
-        
-    def save(self):
-        """ Stack Widget saves changes to its Zarr file
-        """
-
-        path = self.getStack().getPath()
-        ext = os.path.splitext(path)[1]
-        # logger.info(f"ext {ext}")
-        if ext == ".mmap":
-            self.getStack().save()
-            self.setDirtyFalse()
-        elif ext == ".tif": # users start with tif file, but must begin using .mmap after saving
-            self.fileSaveAs()
-        else:
-            logger.info("Extension not understood, nothing is saved")
-
-    def fileSaveAs(self):
-        # ('C:/Users/johns/Documents/GitHub/MapManagerCore/data/test', 'All Files (*)')
-
-        # filter = "(*.mmap)"
-        saveAsPath = QtWidgets.QFileDialog.getSaveFileName(None, 'Save File')[0]
-        logger.info(f"name {saveAsPath}")
-
-        ext = os.path.splitext(saveAsPath)[1]
-        if ext != '.mmap':
-            logger.error(f'map must have extension ".mmap", got "{ext}" -->> did not save.')
-            QtWidgets.QMessageBox.critical(self, "Error: Incorrect Extension", "Please use .mmap as the file extension to save")
-            return
-        else:
-            self.getStack().saveAs(saveAsPath)
-            self.setWindowTitle(self._stack.getFileName())
-
-    def getLastSaveTime(self):
-        return self.getStack().getLastSaveTime()
-
-    def setDirtyFalse(self):
-        """ Set dirty as False after a save
-        """
-        pa = self.getStack().getPointAnnotations()
-        la = self.getStack().getLineAnnotations()
-
-        pa._setDirty(False)
-        la._setDirty(False)
-
-    def setDirtyTrue(self):
-        """ Set dirty as False after a save
-        """
-
-        # TODO: add support with line annotations
-        # after updating stack.undo()
-        pa = self.getStack().getPointAnnotations()
-        # la = self.getStack().getLineAnnotations()
-
-        pa._setDirty(True)
-        # la._setDirty(False)
-
-    #abj
-    def getDirty(self):
-        """Check if spineannotations or lineannotations are dirty
-
-        Return:
-            True if dirty
-            False if not
-        """
-
-        # access stack
-        pa = self.getStack().getPointAnnotations()
-        la = self.getStack().getLineAnnotations()
-
-        isPaDirty = pa.getDirty()
-        isLaDirty = la.getDirty()
-
-        if isPaDirty or isLaDirty:
-            return True
-        else:
-            return False
-        
-    # abj
-    def getAnalysisParams(self):
-        """ Get analysis Params from MapManagerCore
-        """
-        # pass
-
-        return self.getStack().getAnalysisParameters()
-
-    # def saveAnalysisParamsDict(self):
-    #     """ Save analysis Params changes to zarr directory using MapManagerCore
-    #     """
-    #     pass
-
     # abj
     def _old_updateDFwithNewParams(self):
         """ Rebult line and point dataframes after analysis params changes are applied
@@ -1366,9 +1272,9 @@ class stackWidget2(mmWidget2):
             newTifPath = path
 
         # check to ensure it is a tif file, Note: might need to expand to list of supported files
-        ext = os.path.splitext(newTifPath)[1]
-        if ext != '.tif':
-            logger.error(f'map must have extension ".tif", got "{ext}" -->> did not load.')
+        _path, _ext = os.path.splitext(newTifPath)
+        if _ext not in IMPORT_FILE_EXTENSIONS:
+            logger.error(f'import must have extension "{IMPORT_FILE_EXTENSIONS}", got "{_ext}" -->> did not load.')
             QtWidgets.QMessageBox.critical(self, "Error: Incorrect Extension", "Please use .tif as the file extension to save")
             return
 

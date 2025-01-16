@@ -50,8 +50,13 @@ def _importPlugins(pluginType : str, verbose = False):
     elif pluginType == 'mapWidgets':
         _modulePath = 'pymapmanager.interface2.mapWidgets'
         # _folderPath = 'mapWidgets'
-
+    else:
+        logger.error(f'did not understand pluginType:"{pluginType}" expecting one of (stackWidgets, mapWidgets)')
+        return
+    
     numAdded = 0
+
+    # logger.warning(f'verbose:{verbose}')
 
     # CRITICAL: abb this list is not complete in pyinstaller
     invalidate_caches()  # ???
@@ -149,7 +154,7 @@ def loadPlugins(pluginType : str, verbose = False) -> dict:
 
     pluginDict = {}
 
-    _importPlugins(pluginType, pluginType == 'stackWidgets')
+    _importPlugins(pluginType)
 
     if pluginType == 'stackWidgets':
         members = inspect.getmembers(pymapmanager.interface2.stackWidgets)
@@ -336,17 +341,23 @@ class OpenWidgetList:
         # self.pathDict["lastSaveTime"] = self._timeSeriesCore.getLastSaveTime()
 
         path = aWidget.getPath()
-        refreshTimeSeriesCore = TimeSeriesCore(path)
-        # lastSaveTime = aWidget.getLastSaveTime() # still showing old one, need to create new time series core to refresh?
-        lastSaveTime = refreshTimeSeriesCore.getLastSaveTime()
-        numTimepoints = refreshTimeSeriesCore.numSessions
+        
+        # abb why are we making TimeSeriesCore
+        logger.error('do not create TimeSeriesCore')
+        
+        lastSaveTime = aWidget.getLastSaveTime() # still showing old one, need to create new time series core to refresh?
+        numTimepoints = aWidget.numSessions
+
+        # refreshTimeSeriesCore = TimeSeriesCore(path)
+        # lastSaveTime = refreshTimeSeriesCore.getLastSaveTime()
+        # numTimepoints = refreshTimeSeriesCore.numSessions
         pathDict = {"Path": path,
                     "Last Save Time": str(lastSaveTime), # needs to be updated
                     "Timepoints": str(numTimepoints)}
         self._app.getConfigDict().addMapPathDict(pathDict)
         
     def save(self, aWidget):
-        # logger.info(f'TODO: save widget: {aWidget}')
+        # abb only stackwidget2 has save(), e.g. map widgets do not
         logger.info(f'save widget: {aWidget}')
         aWidget.save()
 
@@ -356,10 +367,11 @@ class OpenWidgetList:
         # self.pathDict["lastSaveTime"] = lastSaveTime
 
     def saveAs(self, aWidget):
-        # logger.info(f'TODO: save as widget: {aWidget}')
+        # abb only stackwidget2 has fileSaveAs(), e.g. map widgets do not
         logger.info(f'save as widget: {aWidget}')
-        aWidget.fileSaveAs()
-        self.updateMapPathDict(aWidget) # abj
+        _saved = aWidget.saveAs()
+        if _saved:
+            self.updateMapPathDict(aWidget) # abj
 
     def _checkWidgetExists(self, path):
         """ Check if a widget exists in the widget dict list
@@ -587,7 +599,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
         _frontWidget = self.getFrontWindow()
         self._openWidgetList.save(_frontWidget)
 
-    def saveAsFile(self):
+    def saveAs(self):
         """ Save as a new file
         """
         _frontWidget = self.getFrontWindow()
@@ -666,6 +678,28 @@ class PyMapManagerApp(QtWidgets.QApplication):
     def getOpenWidgetDict(self):
         return self._openWidgetList.getDict()
     
+    def loadSampleData(self, sampleName):
+        if sampleName == 'Tiff File Ch1':
+            import mapmanagercore.data
+            from mapmanagercore.data import getTiffChannel_1
+            tiffPath = getTiffChannel_1()
+            if os.path.isfile(tiffPath):
+                self.loadStackWidget(tiffPath)
+        elif sampleName == 'Tiff File Ch2':
+            import mapmanagercore.data
+            from mapmanagercore.data import getTiffChannel_2
+            tiffPath = getTiffChannel_2()
+            if os.path.isfile(tiffPath):
+                self.loadStackWidget(tiffPath)
+        elif sampleName == 'mmap with spines and segments':
+            import mapmanagercore.data
+            from mapmanagercore.data import getSingleTimepointMap
+            tiffPath = getSingleTimepointMap()
+            if os.path.isfile(tiffPath):
+                self.loadStackWidget(tiffPath)
+        else:
+            logger.warning(f'did not understand "{sampleName}"')
+            
     def loadStackWidget(self, path : str = None) -> Union[stackWidget2, mapWidget]:
         """Load a stack from a path and open a stackWidget2 or mapWidget
 
@@ -690,7 +724,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
 
             dialog = QtWidgets.QFileDialog(None)
             # dialog.setFileMode(QtWidgets.QFileDialog.Directory)
-            dialog.setNameFilter("zarr directory (*.mmap)")
+            dialog.setNameFilter("MapManager Files (*.mmap, *.zip)")
             # openFilePath = dialog.getExistingDirectory(None)
             # dialog.setOptions(options)
             openFilePath = dialog.getExistingDirectory()
@@ -701,11 +735,11 @@ class PyMapManagerApp(QtWidgets.QApplication):
             _ext = os.path.splitext(openFilePath)[1]
             window = self.activeWindow() 
             if openFilePath == "":
-                logger.warning("openFilePath is Empty")
+                # logger.warning("openFilePath is Empty")
                 # QtWidgets.QMessageBox.critical(window, "Error", "File Path is Empty")
                 return
-            elif _ext != '.mmap': # could make this into a for loop until user inputs .mmap
-                logger.warning(f"incorrect directory type, must be of extension: (.mmap)") 
+            elif _ext not in ['.mmap', '.zip']: # could make this into a for loop until user inputs .mmap
+                logger.warning(f"incorrect directory type, must be of extension: .mmap or .zip") 
                 QtWidgets.QMessageBox.critical(window, "Error", "Incorrect directory type, must be of extension: (.mmap)")
                 return
             
@@ -804,9 +838,11 @@ class PyMapManagerApp(QtWidgets.QApplication):
         self._openFirstWindow.refreshUI()
 
     def importNewTIF(self):
-        pass
 
         frontStackWindow = self.getFrontWindow()
+        if not isinstance(frontStackWindow, stackWidget2):
+            return
+        
         # bring up directory
 
         # get newTifPath

@@ -3,8 +3,9 @@ from functools import partial
 from qtpy import QtWidgets
 
 from pymapmanager._logger import logger, setLogLevel
-from pymapmanager.interface2.stackWidgets import stackWidget2
-from pymapmanager.interface2.mapWidgets import mapWidget
+# from pymapmanager.interface2.stackWidgets import stackWidget2
+from pymapmanager.interface2.stackWidgets.base.mmWidget2 import mmWidget2
+from pymapmanager.interface2.mapWidgets.mapWidget import mapWidget
 
 class PyMapManagerMenus:
     """Main app menus including loaded map and stack widgets.
@@ -304,7 +305,7 @@ class PyMapManagerMenus:
         
         # from pymapmanager.interface2.stackWidgets import stackWidget2
         frontWindow = self.getApp().getFrontWindow()
-        if isinstance(frontWindow, (stackWidget2, mapWidget)):
+        if isinstance(frontWindow, (mmWidget2, mapWidget)):
             nextUndo = frontWindow.getUndoRedo().nextUndoStr()
             nextRedo = frontWindow.getUndoRedo().nextRedoStr()
             enableUndo = frontWindow.getUndoRedo().numUndo() > 0
@@ -418,32 +419,33 @@ class PyMapManagerMenus:
         # self.fileMenu.addAction(loadFolderAction)
         # self.fileMenu.addSeparator()
 
-        # abj
-        enableUndo = False
-        enableRedo = False
-        isDirty = False
+        # enableUndo = False
+        # enableRedo = False
+        enableSave = False
 
         frontWindow = self.getApp().getFrontWindow()
 
-        if isinstance(frontWindow, stackWidget2):
-            enableUndo = frontWindow.getUndoRedo().numUndo() > 0
-            enableRedo = frontWindow.getUndoRedo().numRedo() > 0
-            isDirty = frontWindow.getDirty()
-            logger.info(f"isDirty: {isDirty}")
+        if isinstance(frontWindow, (mmWidget2, mapWidget)):
+            if frontWindow.getPath().endswith('.mmap.zip'):
+                enableSave = False
+            else:
+                # enableUndo = frontWindow.getUndoRedo().numUndo() > 0
+                # enableRedo = frontWindow.getUndoRedo().numRedo() > 0
+                enableSave = frontWindow.getDirty()
 
         # save
         saveFileAction = QtWidgets.QAction("Save", self.getApp())
         saveFileAction.setCheckable(False)  # setChecked is True by default?
         saveFileAction.setShortcut("Ctrl+S")
         # saveFileAction.setEnabled(enableUndo and isDirty)
-        saveFileAction.setEnabled(isDirty)
+        saveFileAction.setEnabled(enableSave)
         saveFileAction.triggered.connect(self.getApp().saveFile)
         self.fileMenu.addAction(saveFileAction)
         
         # save as
         saveAsFileAction = QtWidgets.QAction("Save As", self.getApp())
         saveAsFileAction.setCheckable(False)  # setChecked is True by default?
-        saveAsFileAction.triggered.connect(self.getApp().saveAsFile)
+        saveAsFileAction.triggered.connect(self.getApp().saveAs)
         self.fileMenu.addAction(saveAsFileAction)
         
         self.fileMenu.addSeparator()
@@ -463,15 +465,27 @@ class PyMapManagerMenus:
         self.settingsMenu.aboutToShow.connect(self._refreshSettingsMenu)
         self.fileMenu.addSeparator()
 
-        #abj
         analysisParametersAction = QtWidgets.QAction('App Analysis Parameters', self.getApp())
         analysisParametersAction.triggered.connect(self.getApp()._showAnalysisParameters)
         self.fileMenu.addAction(analysisParametersAction)
 
         self.fileMenu.addSeparator()
         importNewTIFAction = QtWidgets.QAction('Import new TIF (channel)', self.getApp())
+        importNewTIFAction.setEnabled(isinstance(frontWindow, mmWidget2))
         importNewTIFAction.triggered.connect(self.getApp().importNewTIF)
         self.fileMenu.addAction(importNewTIFAction)
+
+        # open some mapmanagercore sample data (download and store locally with pooch)
+        self.fileMenu.addSeparator()
+        self.sampleDataMenu = QtWidgets.QMenu("Sample Data ...")
+        importList = ['Tiff File Ch1', 'Tiff File Ch2', 'mmap with spines and segments']
+        for importType in importList:
+            loadSampleAction = QtWidgets.QAction(importType, self.getApp())
+            loadSampleAction.triggered.connect(
+                partial(self.getApp().loadSampleData, importType)
+            )
+            self.sampleDataMenu.addAction(loadSampleAction)
+        self.fileMenu.addMenu(self.sampleDataMenu)
 
     def _refreshOpenRecent(self):
         """Dynamically generate the open recent stack/map menu.

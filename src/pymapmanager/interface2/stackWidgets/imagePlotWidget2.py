@@ -1,7 +1,10 @@
+import os
 import numpy as np
-import pyqtgraph as pg
 
 from qtpy import QtGui, QtCore, QtWidgets
+import pyqtgraph as pg
+
+from mapmanagercore import IMPORT_FILE_EXTENSIONS
 
 import pymapmanager
 import pymapmanager.annotations
@@ -70,6 +73,8 @@ class ImagePlotWidget(mmWidget2):
         self._sliderBlocked = False
 
         self._buildUI()
+
+        self.setAcceptDrops(True)
 
         # self.setFocus()
 
@@ -983,6 +988,25 @@ class ImagePlotWidget(mmWidget2):
         colorChannel = event.getColorChannel()
         self._setChannel(colorChannel, doEmit=False)
         self.refreshSlice()
+
+    def dragEnterEvent(self, event):
+        # accept drag/drop of tiff file
+        if event.mimeData().hasUrls():
+            urlList = event.mimeData().urls()
+            url = urlList[0]
+            file_path = url.toLocalFile()
+            _, _ext = os.path.splitext(file_path)
+            if _ext in IMPORT_FILE_EXTENSIONS:
+                event.acceptProposedAction()
+
+    def dropEvent(self, event):
+        urlList = event.mimeData().urls()
+        url = urlList[0]
+        file_path = url.toLocalFile()
+        # self.label.setText(f"Dropped file: {file_path}")
+        if self.getStack() is not None:
+            self.getStackWidget().loadInNewChannel(file_path)
+            logger.info(f'file_path:{file_path}')
 
 class StackSlider(QtWidgets.QSlider):
     """Slider to set the stack image slice.

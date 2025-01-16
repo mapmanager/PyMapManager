@@ -11,11 +11,13 @@ from typing import Optional, Tuple, Union
 import pandas as pd
 import numpy as np
 
+from mapmanagercore import LOAD_SAVE_EXTENSIONS  # , IMPORT_FILE_EXTENSIONS
 from mapmanagercore import MapAnnotations, MultiImageLoader
 from mapmanagercore.analysis_params import AnalysisParams
 from mapmanagercore.schemas import Spine, Segment
 from mapmanagercore.lazy_geo_pd_images.loader.zarr import ZarrLoader
 from mapmanagercore.lazy_geo_pd_images.loader.imageio import MultiImageLoader
+from mapmanagercore.annotations.single_time_point import SingleTimePointAnnotations
 
 from pymapmanager._logger import logger
 
@@ -144,8 +146,8 @@ class TimeSeriesCore():
         
         # TODO just use endswith(), splitext does not handle '.ome.zarr'
         _ext = os.path.splitext(path)[1]
-        
-        if path.endswith('.mmap') or path.endswith('.mmap/'):
+        # if path.endswith('.mmap') or path.endswith('.mmap/') or path.endswith('.mmap.zip'):
+        if _ext in LOAD_SAVE_EXTENSIONS:
             self._load_zarr()
         elif path.endswith('.tif'):
             self._import_tiff()
@@ -165,19 +167,17 @@ class TimeSeriesCore():
         # every mutation sets to True
 
         # TODO only .mmap ext is not dirty (all other path ext were import)
-        if _ext == '.mmap':
+        if _ext in LOAD_SAVE_EXTENSIONS:
             self._isDirty = False
         else:
+            # assuming import
             self._isDirty = True
-
-        # if _ext == '.tif' or path.endswith('.ome.zarr'):
-        #     self._isDirty = True
-        # else:
-        #     self._isDirty = False
 
         self._undoRedoManager = UndoRedoManager()
 
-    from mapmanagercore.annotations.single_time_point import SingleTimePointAnnotations
+    def getFileName(self):
+        return self._path
+    
     def getTimepoint(self, timepoint : int) -> SingleTimePointAnnotations:
         return self._fullMap.getTimePoint(timepoint)
     
@@ -192,6 +192,9 @@ class TimeSeriesCore():
     
     @property
     def isDirty(self):
+        return self._isDirty
+    
+    def getDirty(self):
         return self._isDirty
     
     def setDirty(self, dirty=True):
@@ -369,15 +372,16 @@ class TimeSeriesCore():
         """
         
         ext = os.path.splitext(path)[1]
-        if ext != '.mmap':
-            logger.error(f'map must have extension ".mmap", got "{ext}" -->> did not save.')
+        if ext not in ['.mmap', '.zip']:
+            logger.error(f'map must have extension ".mmap" or ".zip", got "{ext}" -->> did not save.')
             return
         
         self._fullMap.save(path)
 
-        # abb 20241221
         self._path = path
 
+        return True
+    
     def undo(self):
         logger.info('-->> PERFORMING UNDO')
         self._fullMap.undo()

@@ -12,9 +12,6 @@ from pymapmanager._logger import logger
 
 class stack:
 
-    # the file types that we can load
-    loadTheseExtension = ['.mmap', '.tif']
-
     channelColors = ['g', 'r', 'b']
 
     def __init__(self,
