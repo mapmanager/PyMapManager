@@ -101,6 +101,10 @@ class stackWidget2(mmWidget2):
         return self._stack.getTimeSeriesCore()
     
     @property
+    def numSessions(self):
+        return self.getTimeSeriesCore().numSessions
+    
+    @property
     def currentSliceNumber(self):
         """Get the current color channel index.
         """
