@@ -29,9 +29,26 @@ class ChannelEditor(mmWidget2):
         dictOfChannelPaths = self.stackWidget.getStack().getChannelDict()
         listOfChannelIdx = self.stackWidget.getStack().getChannelList()
         
+
+        stackerHeader = self.stackWidget.getStack().header
+        zSlice = stackerHeader["numSlices"]
+        xVal = stackerHeader["xPixels"]
+        yVal = stackerHeader["yPixels"]
+        sizeWidget = QtWidgets.QLabel(f"Size: ({xVal}, {yVal}),  Slices: {zSlice}")
+
+
         # Labeled Columns
         self.gridLayout.addWidget(QtWidgets.QLabel("Channel"), 0, 0)
-        self.gridLayout.addWidget(QtWidgets.QLabel("Image Name"), 0, 1)
+
+        qHLayout1 = QtWidgets.QHBoxLayout()
+        qHLayout1.addWidget(QtWidgets.QLabel("Image Name"))
+        qHLayout1.addStretch(1)
+        qHLayout1.setSpacing(5)
+        qHLayout1.addWidget(sizeWidget)
+
+        self.gridLayout.addLayout(qHLayout1, 0, 1)
+        # self.gridLayout.addWidget(QtWidgets.QLabel("Image Name"), 0, 1)
+        # self.gridLayout.addWidget(xySizeWidget, 0, 1)
         
         # channelIdx in range(self.stackWidget.getStack().maxNumChannels)
         maxNumChannels = self.stackWidget.getStack().maxNumChannels
@@ -224,7 +241,6 @@ class DraggableWidget(QtWidgets.QWidget):
             """
 
         self.containerWidget.setStyleSheet(self.defaultStyle)
-
         finalLayout = QtWidgets.QHBoxLayout()
         finalLayout.addWidget(self._textWidget)
 

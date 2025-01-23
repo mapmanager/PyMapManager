@@ -704,7 +704,7 @@ class stackWidget2(mmWidget2):
         else:
             self.slot_setStatus('Added point to segment tracing')
         
-        # self.getUndoRedo().addUndo(event)
+        self.getUndoRedo().addUndo(event)
         
         return _added is not None
     
@@ -1285,24 +1285,32 @@ class stackWidget2(mmWidget2):
         #Check to ensure it is a valid image channel (same size)
         from PIL import Image
         
-        with Image.open(newTifPath) as img:
-            newImgWidth, newImgHeight = img.size
-            # print("Width:", newImgWidth)
-            # print("Height:", newImgHeight)
-            newImgSlices = img.n_frames  # z dimension
+        # with Image.open(newTifPath) as img:
+        #     newImgWidth, newImgHeight = img.size
+        #     # print("Width:", newImgWidth)
+        #     # print("Height:", newImgHeight)
+        #     newImgSlices = img.n_frames  # z dimension
 
-        # Get old tif path
+        # # Get old tif path
         stackHeader = self.getStack().header
         x = stackHeader["xPixels"]
         y = stackHeader["yPixels"]
         z = stackHeader["numSlices"]
-        if newImgHeight != y or newImgWidth != x or newImgSlices != z:
+        # if newImgHeight != y or newImgWidth != x or newImgSlices != z:
+        #     logger.error(f'Incorrect shape when loading in new image.')
+        #     QtWidgets.QMessageBox.critical(self, "Error: Incorrect Image Size", 
+        #                                    f"Please upload an image with size x: {x}, y: {y}, z: {z} ")
+        #     return
+
+        time = self._stack.timepoint
+
+        isImgValid = self.getTimeSeriesCore().validateNewChannel(newTifPath, time)
+
+        if not isImgValid:
             logger.error(f'Incorrect shape when loading in new image.')
             QtWidgets.QMessageBox.critical(self, "Error: Incorrect Image Size", 
                                            f"Please upload an image with size x: {x}, y: {y}, z: {z} ")
             return
-        
-        time = self._stack.timepoint
 
         if channel is None:
             channel = self._stack.getTimeSeriesTotalChannels() # len of total channels = new channel, since it is 0 based

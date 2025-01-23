@@ -475,5 +475,12 @@ class TimeSeriesCore():
         # self._fullMap._images.deleteChannel(time = tp, channel = channelIdx)
         self._fullMap._images.deleteChannel(tp, channelIdx)
 
+    def validateNewChannel(self, newTifPath, tp):
+        """ Call validateImageSize in mapmanagercore backend
+
+        Returns true or false
+        """
+
+        return self._fullMap._images.validateImageSize(newTifPath, tp)
 
 
