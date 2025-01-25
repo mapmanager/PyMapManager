@@ -35,7 +35,6 @@ class SegmentEdit(TypedDict):
                          value=value
                          )
     
-    # abb 20240716
 class _EditSegment(pmmEvent):
     def __init__(self, eventType : pmmEventType, mmWidget : mmWidget2):
         super().__init__(eventType, mmWidget)
@@ -118,6 +117,16 @@ class _EditSegment(pmmEvent):
         else:
             # derived classes define _getItem to return relevant keys
             return self._getItem(self._list[self._iterIdx])
+
+class SetSegmentColorEvent(_EditSegment):
+    def __init__(self,
+                 mmWidget : mmWidget2,
+                segmentID : int,
+                segmentColor : str,  # like #ff0000
+                ):
+        super().__init__(pmmEventType.setSegmentColor, mmWidget)
+        self.newSegmentColor = segmentColor
+        self.addEditSegment(segmentID=segmentID)
 
 class AddSegmentEvent(_EditSegment):
     def __init__(self,

@@ -42,6 +42,44 @@ class annotationListWidget(mmWidget2):
         self._buildGui(name=name)
         self._setModel()
     
+        # rewire context menu
+        self._myTableView.contextMenuEvent = self._contextMenuEvent
+
+    def _contextMenuEvent(self, event):
+        self.menu = QtWidgets.QMenu(self)
+        colorAction = QtWidgets.QAction('Set Color', self)
+        colorAction.triggered.connect(lambda: self._colorPickerSlot(event))
+        self.menu.addAction(colorAction)
+
+        # action = _menu.exec_(self.mapToGlobal(event.pos()))
+        self.menu.popup(QtGui.QCursor.pos())
+
+    def _colorPickerSlot(self, event):
+        """Show color dialog and set segment color.
+        """
+        selectedRowLabels = self._myTableView._getSelectedRowLabels()
+        # logger.warning(f'getSelectedRows:{selectedRowLabels}')
+        if len(selectedRowLabels) > 0:
+            selectedRowLabel = selectedRowLabels[0]
+            _hexColor = self._myTableView.model._data.loc[selectedRowLabel, 'Color']
+            # logger.info(f'_hexColor:{_hexColor}')
+
+            colorDialog = QtWidgets.QColorDialog(self)
+            _initColor = QtGui.QColor(_hexColor)
+            # logger.info(f'_initColor.name():{_initColor.name()}')
+            
+            # abb TODO this is not setting the color in the dialog?
+            colorDialog.setCurrentColor(_initColor)
+            
+            # logger.info('getting color')
+            newColor = colorDialog.getColor()  # QColor
+            if newColor.isValid():
+                logger.info(f'selected color:{newColor.name()}')  # name defaults to hex
+                # TODO emit color change event
+                from pymapmanager.interface2.stackWidgets.event.segmentEvent import SetSegmentColorEvent
+                setSegmentColorEvent = SetSegmentColorEvent(self, selectedRowLabel, newColor.name())
+                self.emitEvent(setSegmentColorEvent)
+
     def undoEvent(self, event):
         # TODO: make distinction between undo spine and segment edits
         # possibly make distinction between undo (add, delet, edit)
@@ -311,13 +349,13 @@ class pointListWidget(annotationListWidget):
     def _deleteSelected(self):
         """Delete currently selected annotations.
         """
-        items = self._myTableView.getSelectedRows()
-        logger.info(f'items:{items}')
+        # items = self._myTableView.getSelectedRows()
+        # logger.info(f'items:{items}')
         
         spineLabelList = self._getSelectedRowLabels()
         logger.info(f'  delete spine label list:{spineLabelList}')
 
-        if len(items) > 0:
+        if len(spineLabelList) > 0:
             deleteSpineEvent = DeleteSpineEvent(self, spineLabelList)
             self.emitEvent(deleteSpineEvent)
 
@@ -490,6 +528,10 @@ class lineListWidget(annotationListWidget):
         segmentID = event.getFirstSegmentSelection()
         # reselect current segment
         self._myTableView._selectRow([segmentID])
+
+    def setSegmentColorEvent(self, event):
+        logger.info('')
+        self._setModel()
 
     def updateSegmentRadius(self, newRadius):
         """ Update segment radius stored in backend

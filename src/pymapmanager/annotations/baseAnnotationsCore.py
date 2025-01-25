@@ -677,7 +677,7 @@ class LineAnnotationsCore(AnnotationsCore):
         return (x, y, z)
         
     def getSummaryDf(self) -> pd.DataFrame:
-        """DataFrame with per segment info (one segment per ro)
+        """DataFrame with per segment info (one segment per row)
         """
         return self._summaryDf
     
@@ -688,7 +688,7 @@ class LineAnnotationsCore(AnnotationsCore):
 
         segmentDf = self.singleTimepoint.segments[:]
 
-        _columns = ['Segment', 'Points', 'Length', 'Radius', 'Pivot Distance']
+        _columns = ['Segment', 'Points', 'Length', 'Radius', 'Pivot Distance', 'Color']
         summaryDf = pd.DataFrame(columns=_columns)
 
         try:
@@ -697,6 +697,7 @@ class LineAnnotationsCore(AnnotationsCore):
             summaryDf.index = segmentDf.index
             summaryDf['Radius'] = segmentDf['radius']
             summaryDf['Pivot Distance'] = segmentDf['pivotDistance']
+            summaryDf['Color'] = segmentDf['color']
         
         except (AttributeError) as e:
             # when no segments
@@ -792,13 +793,18 @@ class LineAnnotationsCore(AnnotationsCore):
         else:
             return len(self._singleTimePoint.segments[:])
 
-    def setValue(self, segmentID, value):
+    # abb this needs to be specifically for 'radius'
+    def setValue(self, colName, segmentID, value):
         """
         """
         from mapmanagercore.schemas.segment import Segment
 
         #  updateSegment(self, segmentId: Keys, value: Segment, replaceLog=False, skipLog=False):
-        _segment = Segment(radius=value)
+        if colName == 'radius':
+            _segment = Segment(radius=value)
+        elif colName == 'color':
+            _segment = Segment(color=value)
+
         self.singleTimepoint.updateSegment(segmentId = segmentID, value=_segment)
 
         self._buildTimepoint()
@@ -816,8 +822,8 @@ class LineAnnotationsCore(AnnotationsCore):
             returnPointX: List of Y values of pivot points
             
         """
-        logger.info('self._summaryDf:')
-        print(self._summaryDf)
+        # logger.info('self._summaryDf:')
+        # print(self._summaryDf)
         
         returnPointX = []
         returnPointY = []
@@ -837,32 +843,59 @@ class LineAnnotationsCore(AnnotationsCore):
 
         return returnPointX, returnPointY, returnPointZ
     
-    def getLeftRadiusPlot(self, sliceNumber, zPlusMinus):
-        # segmentLines = self._df 
-        # logger.info(f"self._fullMap segments columns {self._fullMap.segments}")
+    import geopandas as gp
+    def getRadiusPlot(self, leftRight : str, sliceNumber, zPlusMinus) -> gp.GeoSeries:
+        """
+        Parameters
+        ==========
+        leftRight : str
+            One of ('leftRadius', 'rightRadius')
+
+        Returns
+        =======
+        df with segmentID labels columns (x, y, z, rowIndex, color)
+        """
+        
         zSlice = sliceNumber
         if self.getNumSegments() == 0:
             return None
         
+        # all segments (we are clipping to sliceNumber)
+        # this has color
         segmentDf = self.singleTimepoint.segments[:]
         
-        # logger.info(f"segmentDf['leftRadius'] {segmentDf['leftRadius']}")
+        # logger.info('segmenDf is:')
+        # print(segmentDf.columns)
+
         _startSlice = zSlice - zPlusMinus
         _stopSlice = zSlice + zPlusMinus
-        xyLeft = clipLines(segmentDf['leftRadius'], zRange = (_startSlice, _stopSlice))
-        xyLeft = xyLeft.get_coordinates(include_z=True)
-        xyLeft['rowIndex'] = list(np.arange(len(xyLeft)))
+        
+        # one row per segment -> gp.GeoSeries
+        xyLeft = clipLines(segmentDf[leftRight], zRange = (_startSlice, _stopSlice))
+
+        # logger.info('xyLeft is')
+        # print(xyLeft)
+        
+        xyLeft = xyLeft.get_coordinates(include_z=True)  # z is empty
+        xyLeft['rowIndex'] = list(np.arange(len(xyLeft)))  # used to determine if points in plot are contiguous
+
+        summaryDf = self.getSummaryDf()  # gives us 'Color' per segment ID
+        xyLeft['color'] = summaryDf.loc[xyLeft.index, 'Color']
+
+        # logger.info('after xyLeft is:')
+        # print(xyLeft)
+
         return xyLeft
     
-    def getRightRadiusPlot(self, sliceNumber, zPlusMinus):
-        zSlice = sliceNumber
-        if self.getNumSegments() == 0:
-            return None
+    # def getRightRadiusPlot(self, sliceNumber, zPlusMinus):
+    #     zSlice = sliceNumber
+    #     if self.getNumSegments() == 0:
+    #         return None
         
-        segmentDf = self.singleTimepoint.segments[:]
-        _startSlice = zSlice - zPlusMinus
-        _stopSlice = zSlice + zPlusMinus
-        xyRight= clipLines(segmentDf['rightRadius'], zRange = (_startSlice, _stopSlice))
-        xyRight = xyRight.get_coordinates(include_z=True)
-        xyRight['rowIndex'] = list(np.arange(len(xyRight)))
-        return xyRight
+    #     segmentDf = self.singleTimepoint.segments[:]
+    #     _startSlice = zSlice - zPlusMinus
+    #     _stopSlice = zSlice + zPlusMinus
+    #     xyRight= clipLines(segmentDf['rightRadius'], zRange = (_startSlice, _stopSlice))
+    #     xyRight = xyRight.get_coordinates(include_z=True)
+    #     xyRight['rowIndex'] = list(np.arange(len(xyRight)))
+    #     return xyRight

@@ -339,6 +339,11 @@ class TimeSeriesCore():
                             lineSegments=pd.DataFrame(),
                             points=pd.DataFrame())
 
+        # abb trying to figure out tree
+        from pprint import pprint
+        logger.info('dataTree???')
+        pprint(loader.dataTree())
+
         # map.points[:]
         # map.segments[:]
 

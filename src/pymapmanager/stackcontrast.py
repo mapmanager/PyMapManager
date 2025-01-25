@@ -1,12 +1,12 @@
 import numpy as np
 
 from pymapmanager import stack
+from pymapmanager._logger import logger
 
 class StackContrast():
     def __init__(self, theStack : stack):
         self._stack : stack = theStack
         self._dict = {}
-
 
         self._setDefaults()
 
@@ -17,7 +17,12 @@ class StackContrast():
         self._dict[channelIdx][key] = value
 
     def _setDefaults(self):
-        
+        metadata = self._stack.getMetadata()
+        metadataContrast = metadata.metadataContrast
+        logger.info('xxx metadata')
+        from pprint import pprint
+        pprint(metadata)
+
         # for channelIdx in range(self._stack.numChannels):
         listOfChannelIdx = self._stack.getChannelList()
         for channelIdx in listOfChannelIdx: # abj

@@ -77,6 +77,8 @@ class pmmEventType(Enum):
     setSegmentPivot = auto() # abj
     moveBackgroundRoi = auto()
 
+    setSegmentColor = auto()
+
 class StackSelection:
     def __init__(self, stack : pymapmanager.stack = None):
         
@@ -946,6 +948,9 @@ class mmWidget2(QtWidgets.QMainWindow):
         elif event.type == pmmEventType.moveBackgroundRoi:
             acceptEvent = self.moveBackgroundRoiEvent(event)
 
+        elif event.type == pmmEventType.setSegmentColor:
+            acceptEvent = self.setSegmentColorEvent(event)
+
         # abj
         # elif event.type == pmmEventType.acceptPoint:
         #     acceptEvent = self.acceptPoint(event)
@@ -1231,6 +1236,9 @@ class mmWidget2(QtWidgets.QMainWindow):
         # logger.warning(f'{self.getClassName()} base class called')
         pass
 
+    def setSegmentColorEvent(self, event : pmmEvent):
+        pass
+    
     def _stateChange(self, state : pmmStates):
         """Emit a state change.
         """

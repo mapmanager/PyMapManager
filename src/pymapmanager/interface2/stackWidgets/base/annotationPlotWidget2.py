@@ -563,11 +563,12 @@ class annotationPlotWidget(mmWidget2):
         # self._currentPlotIndex = dfPlot['index'].tolist()
         self._currentPlotIndex = dfPlot.index.tolist()
         
-        _symbolBrush = self._getScatterColor()
+        _symbolBrush = self._getScatterColor()  # assuming matplotlib style color
         _connect = self._getScatterConnect(dfPlot)
         # _pen = self._getPen()
 
         if self.showScatter:
+            # logger.warning(f'{self.getClassName()} _symbolBrush:{_symbolBrush}')
             self._scatter.setData(x, y,
                                 symbolBrush=_symbolBrush,
                                 connect=_connect)
@@ -1200,11 +1201,14 @@ class linePlotWidget(annotationPlotWidget):
 
         # Displaying Radius Lines
 
-        color = self._displayOptions["color"]
+        color = self._displayOptions["color"]  # 'b'
         zorder = self._displayOptions["zorder"]
         penWidth = 6
         _pen = pg.mkPen(width=penWidth, color=color)
 
+        logger.info(f'using color:{color}')
+
+        # pyqtgraph.graphicsItems.PlotDataItem.PlotDataItem
         self._leftRadiusLines = self._view.plot(
             [],
             [],
@@ -1277,6 +1281,13 @@ class linePlotWidget(annotationPlotWidget):
             10
         )  # put it on top, may need to change '10'
 
+    from pymapmanager.interface2.stackWidgets.event.segmentEvent import SetSegmentColorEvent
+    def setSegmentColorEvent(self, event : SetSegmentColorEvent):
+        newSegmentColor = event.newSegmentColor  # only one
+        for item in event:
+            segmentID = item['segmentID']
+            logger.info(f'TODO set segmentID:"{segmentID}" to newSegmentColor:{newSegmentColor}')
+
     def toggleRadiusLines(self):
         self.showRadiusLines = not self.showRadiusLines
         self._leftRadiusLines.setVisible(self.showRadiusLines)
@@ -1294,27 +1305,47 @@ class linePlotWidget(annotationPlotWidget):
         -----
          - Adds 'color' column to self._plotDf
         """
-        # logger.info(f'"{self.getClassName()}"')
+        logger.warning(f'TODO "{self.getClassName()}" set segment color to summary df column "color"')
 
-        dfPlot = self._dfPlot
+        dfPlot = self._dfPlot  # plot df does not necc. include all segments
+
+        # print('plot df is')
+        # print(self._dfPlot)
+        # print('summary df is')
+        # print(self._annotations.getSummaryDf())
+
+        summaryDf = self._annotations.getSummaryDf()  # to get Color column
 
         if len(dfPlot) == 0:
+            logger.warning(f'{self.getClassName()} got an empty dataframe')
             return
-        
+
+        dfPlot['color'] = pg.mkColor('#0000ff')  # default to blue
+        for _idx, row in summaryDf.iterrows():
+            _segmentID = row['Segment']
+            _color = row['Color']  # hex
+            # if _segmentID in dfPlot.index:  # this is list of pooints in tracing
+            logger.info(f'   setting _segmentID:{_segmentID} to color:{_color}')
+            # dfPlot.loc[_segmentID]['color'] = pg.mkBrush(_color)
+            dfPlot.loc[(dfPlot['segmentID'] == _segmentID), 'color'] = _color
+
         # abb having trouble with pandas setting a slice on a copy
-        pd.options.mode.chained_assignment = None  # default='warn'
-        # dfPlot.loc[:, 'color'] = ['b'] * len(dfPlot)
-        # dfPlot.loc[:,'color'] = ['b'] * len(dfPlot)
-        dfPlot['color'] = 'b'
+        # pd.options.mode.chained_assignment = None  # default='warn'
+        # dfPlot['color'] = pg.mkColor('#0000ff')  # default to blue
 
-        _stackSelection = self.getStackWidget().getStackSelection()
-        _segmentSelection = _stackSelection.getSegmentSelection()
 
-        logger.info(f"_segmentSelection {_segmentSelection}")
+        # TODO set color of selection rather than having a seperate plot
+        # _stackSelection = self.getStackWidget().getStackSelection()
+        # _segmentSelection = _stackSelection.getSegmentSelection()
+
+        # logger.info(f"_segmentSelection {_segmentSelection}")
 
         # if _segmentSelection is not None and len(_segmentSelection) > 0:
         #     # _tmp = dfPlot.loc[ dfPlot.index.isin(_segmentSelection) ]      
         #     dfPlot.loc[_tmp.index, 'color'] = 'y'
+
+        print('AFTER plot df is')
+        print(self._dfPlot)
 
         return dfPlot['color'].tolist()
     
@@ -1367,7 +1398,6 @@ class linePlotWidget(annotationPlotWidget):
 
         return dfRet
     
-    # abb was missing??? called from imagePlotWidget ???
     def refreshRadiusLines(self, sliceNumber: int):
                 
         xLeft = []
@@ -1376,44 +1406,44 @@ class linePlotWidget(annotationPlotWidget):
         yRight = []
         _lineConnectLeft = None
         _lineConnectRight = None
+        leftColor = None
+        rightColor = None
 
         zPlusMinus = self._displayOptions["zPlusMinus"]
-        dfLeft = self._annotations.getLeftRadiusPlot(sliceNumber, zPlusMinus)
-        dfRight = self._annotations.getRightRadiusPlot(sliceNumber, zPlusMinus)
+        dfLeft = self._annotations.getRadiusPlot('leftRadius', sliceNumber, zPlusMinus)
+        dfRight = self._annotations.getRadiusPlot('rightRadius', sliceNumber, zPlusMinus)
 
         if self.showRadiusLines and dfLeft is not None and dfRight is not None:
-        # if self.showRadiusLines:
-            # logger.info("showing radius lines")
-            # xLeft = self._dfPlot['xLeft'].to_numpy()
-            # yLeft = self._dfPlot['yLeft'].to_numpy()
-            # xRight = self._dfPlot['xRight'].to_numpy()
-            # yRight = self._dfPlot['yRight'].to_numpy()
             zPlusMinus = self._displayOptions["zPlusMinus"]
             # dfLeft = self._annotations.getLeftRadiusPlot(sliceNumber, zPlusMinus)
             if dfLeft is not None:
                 xLeft = dfLeft["x"].to_numpy()
                 yLeft = dfLeft["y"].to_numpy()
                 _lineConnectLeft = self.old_getScatterConnect(dfLeft)
-            
+                leftColor = dfLeft['color']
+                leftColor = leftColor.map(lambda x : pg.mkPen(width=5, color=x))
+                # logger.info(f'leftColor is:{leftColor}')
+
             # dfRight = self._annotations.getRightRadiusPlot(sliceNumber, zPlusMinus)
             if dfRight is not None:
                 xRight = dfRight["x"].to_numpy()
                 yRight = dfRight["y"].to_numpy()
                 _lineConnectRight = self.old_getScatterConnect(dfRight)
+                rightColor = dfLeft['color']  # hex rgb
+                rightColor = rightColor.map(lambda x : pg.mkPen(width=5, color=x))
 
-                # logger.info(f'length dfleft {len(dfLeft)}')
-                # logger.info(f'length dfRight {len(dfRight)}')
-
-        # logger.info(f"xRight, yRight: {xRight}, {yRight}")
-        #
         self._leftRadiusLines.setData(
             xLeft, yLeft,
             connect=_lineConnectLeft,
+            pen=pg.mkPen(width=6, color='w')
+            # pen=leftColor.to_list()
         )
 
         self._rightRadiusLines.setData(
             xRight, yRight,
             connect=_lineConnectRight,
+            pen=pg.mkPen(width=6, color='w')
+            # pen=rightColor.to_list()
         )
 
     def refreshPivotPoints(self, sliceNumber: int):
