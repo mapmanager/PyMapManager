@@ -56,14 +56,15 @@ class pmmEventType(Enum):
     
     setRadius = auto() # abj
 
-    # acceptPoint = auto() # abj, used for setting isBad boolean
-    # changeUserType = auto()
-
     # added to refresh gui after modifying the core with undo and redo
     refreshSpineEvent = auto()
 
-    undoSpineEvent = auto()
-    redoSpineEvent = auto()
+    # undoSpineEvent = auto()
+    # redoSpineEvent = auto()
+
+    # abj 
+    undoEvent = auto() # for both spines and segments
+    redoEvent = auto()
 
     # segment event
     # abb 20240716
@@ -76,6 +77,37 @@ class pmmEventType(Enum):
     importNewChannel = auto() # abj
     setSegmentPivot = auto() # abj
     moveBackgroundRoi = auto()
+
+    @property
+    def category(self):
+        spineEvents = {
+            pmmEventType.selectSpine,
+            pmmEventType.selection,
+            pmmEventType.add,
+            pmmEventType.delete,
+            pmmEventType.edit,
+            pmmEventType.moveAnnotation,
+            pmmEventType.manualConnectSpine,
+            pmmEventType.autoConnectSpine,
+            pmmEventType.refreshSpineEvent,
+            pmmEventType.moveBackgroundRoi,
+        }
+
+        segmentEvents = {
+            pmmEventType.addSegment,
+            pmmEventType.deleteSegment,
+            pmmEventType.addSegmentPoint,
+            pmmEventType.deleteSegmentPoint,
+            pmmEventType.setSegmentPivot,
+            pmmEventType.setRadius,
+        }
+
+        if self in spineEvents:
+            return "Spine"
+        elif self in segmentEvents:
+            return "Segment"
+        else:
+            return "Unknown"
 
 class StackSelection:
     def __init__(self, stack : pymapmanager.stack = None):
@@ -402,6 +434,14 @@ class pmmEvent():
             return self._dict[key]
         except (KeyError) as e:
             logger.error(f'did not find key "{key}", available keys are {self._dict.keys()}')
+
+    @property
+    def category(self):
+        """ Get the category of the pmm event
+
+            Return: Spine or Segment Str 
+        """
+        return self.getValue("type").category
             
     def getSender(self) -> "mmWidget2":
         """Get the _name of the mmWidget sender (object that did emitEvent.
@@ -868,10 +908,18 @@ class mmWidget2(QtWidgets.QMainWindow):
         if _doDebug:
             logger.info(f"event.type: {event.type.name} pmmEventType.selection.name: {pmmEventType.selection.name}")
 
-        if event.type == pmmEventType.undoSpineEvent:
+        # if event.type == pmmEventType.undoSpineEvent:
+        #     acceptEvent = self.undoEvent(event)
+
+        # elif event.type == pmmEventType.redoSpineEvent:
+        #     acceptEvent = self.redoEvent(event)
+
+        if event.type == pmmEventType.undoEvent:
             acceptEvent = self.undoEvent(event)
 
-        elif event.type == pmmEventType.redoSpineEvent:
+        elif event.type == pmmEventType.redoEvent:
+            
+            logger.info(f"test redo")
             acceptEvent = self.redoEvent(event)
 
         # abb 20240906
@@ -887,6 +935,7 @@ class mmWidget2(QtWidgets.QMainWindow):
             acceptEvent = self.addedEvent(event)
 
         elif event.type == pmmEventType.delete:
+            logger.info(f"test delete")
             acceptEvent = self.deletedEvent(event)
         
         elif event.type == pmmEventType.edit:
@@ -915,8 +964,8 @@ class mmWidget2(QtWidgets.QMainWindow):
         elif event.type == pmmEventType.setColorChannel:
             acceptEvent = self.setColorChannelEvent(event)
 
-        elif event.type == pmmEventType.undoSpineEvent:
-            acceptEvent = self.undoEvent(event)
+        # elif event.type == pmmEventType.undoSpineEvent:
+        #     acceptEvent = self.undoEvent(event)
         # elif event.type == pmmEventType.redoSpineEvent:
         #     acceptEvent = self.redoEvent(event)
 
@@ -945,12 +994,6 @@ class mmWidget2(QtWidgets.QMainWindow):
         
         elif event.type == pmmEventType.moveBackgroundRoi:
             acceptEvent = self.moveBackgroundRoiEvent(event)
-
-        # abj
-        # elif event.type == pmmEventType.acceptPoint:
-        #     acceptEvent = self.acceptPoint(event)
-        # elif event.type == pmmEventType.changeUserType:
-        #     acceptEvent = self.changeUserType(event)
 
         else:
             logger.error(f'did not understand event type {event.type}')
@@ -1010,6 +1053,7 @@ class mmWidget2(QtWidgets.QMainWindow):
                 elif event.type == pmmEventType.delete:
                     # cancel spine selection
                     # logger.warning('RE-EMIT NO SELECTION AFTER DELETE !!!!!!!!!!!')
+                    logger.info(f"test delete 2")
                     
                     _spines = []
                     _selectionEvent = pmmEvent(pmmEventType.selection, self)
@@ -1034,9 +1078,16 @@ class mmWidget2(QtWidgets.QMainWindow):
                     # print(f'EMITING _selectionEvent:{_selectionEvent}')
                     self.slot_pmmEvent(_selectionEvent)
 
-                elif event.type == pmmEventType.undoSpineEvent:
+                # elif event.type == pmmEventType.undoSpineEvent:
+                
+                elif event.type == pmmEventType.undoEvent:
                     undoEvent = event.getUndoEvent()
+                    logger.info(f"abj check undoEvent: {undoEvent}")
+                    if undoEvent is None:
+                        return
+                    
                     if undoEvent.type == pmmEventType.add:
+                        logger.info(f"add point Undoooo!")
                         # cancel spine selection
                         _spines = []
                         _selectionEvent = pmmEvent(pmmEventType.selection, self)
@@ -1057,15 +1108,31 @@ class mmWidget2(QtWidgets.QMainWindow):
                         _spines = _spines[0]
                         self.zoomToPointAnnotation(_spines)  # reselect
 
-                elif event.type == pmmEventType.redoSpineEvent:
+                    # abj: segment events
+                    elif undoEvent.type in [
+                                            pmmEventType.addSegment,
+                                            pmmEventType.deleteSegment,
+                                            pmmEventType.addSegmentPoint,
+                                            pmmEventType.deleteSegmentPoint]:
+                        logger.info(f"segment Undo!")
+
+
+                # elif event.type == pmmEventType.redoSpineEvent:
+                elif event.type == pmmEventType.redoEvent:
                     redoEvent = event.getRedoEvent()
-                    if redoEvent.type == pmmEventType.delete:
+                    if redoEvent is None:
+                        return
+                    if redoEvent.type == pmmEventType.delete: #or redoEvent.type == pmmEventType.deleteSegment:
+                        logger.info(f"redoEvent deleteSpine {redoEvent}")
+                        logger.info(f"redo spine delete")
+                        logger.info(f"test delete 3")
                         # cancel spine selection
                         _spines = []
                         _selectionEvent = pmmEvent(pmmEventType.selection, self)
                         _selectionEvent.getStackSelection().setPointSelection(_spines)
                         
                         _origSegmentSelection = redoEvent.getSegments()
+                        logger.info(f"spine redo _origSegmentSelection {_origSegmentSelection}")
                         _selectionEvent.getStackSelection().setSegmentSelection(_origSegmentSelection)
                                             
                         self.slot_pmmEvent(_selectionEvent)
@@ -1074,10 +1141,30 @@ class mmWidget2(QtWidgets.QMainWindow):
                                             pmmEventType.moveAnnotation,
                                             pmmEventType.manualConnectSpine,
                                             pmmEventType.autoConnectSpine,
-                                            pmmEventType.refreshSpineEvent]:                        # select spine again
+                                            pmmEventType.refreshSpineEvent]: # select spine again
                         _spines = redoEvent.getSpines()
                         _spines = _spines[0]
                         self.zoomToPointAnnotation(_spines)  # reselect
+
+                    elif redoEvent.type == pmmEventType.deleteSegment:
+                        logger.info(f"redoEvent deleteSegment {redoEvent}")
+                        _origSegmentSelection = redoEvent.getSegments()
+                        logger.info(f"_origSegmentSelection {_origSegmentSelection}")
+                        _selectionEvent = pmmEvent(pmmEventType.selection, self)
+                        _selectionEvent.getStackSelection().setSegmentSelection(_origSegmentSelection)
+                        self.slot_pmmEvent(_selectionEvent)
+                    
+                    elif redoEvent.type in [pmmEventType.addSegment, # abj: segment events
+                                            # pmmEventType.deleteSegment,
+                                            pmmEventType.addSegmentPoint,
+                                            pmmEventType.deleteSegmentPoint]:
+                        # Reselect last segment
+                        # itemList = event.getSegments()
+                        # _selectionEvent = pmmEvent(pmmEventType.selection, self)
+                        # _selectionEvent.getStackSelection().setSegmentSelection(itemList)
+                        # self.slot_pmmEvent(_selectionEvent)
+                        pass
+                            
 
         elif self._iAmMapWidget:
             if _doDebug:

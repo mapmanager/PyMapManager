@@ -3,6 +3,8 @@
 # see: https://stackoverflow.com/questions/39740632/python-type-hinting-without-cyclic-imports
 from __future__ import annotations
 from typing import TYPE_CHECKING
+
+from pymapmanager.interface2.stackWidgets.event.annotationEvent import RedoEvent, UndoEvent
 if TYPE_CHECKING:
     from pymapmanager.interface2.stackWidgets import stackWidget2
     from pymapmanager.annotations.baseAnnotationsCore import AnnotationsCore, SpineAnnotationsCore, LineAnnotationsCore
@@ -21,7 +23,7 @@ from .mmWidget2 import mmWidget2, pmmEventType, pmmEvent, pmmStates
 from pymapmanager.interface2.stackWidgets.event.spineEvent import (AddSpineEvent,
                                                                    DeleteSpineEvent,
                                                                    MoveSpineEvent,
-                                                                   UndoSpineEvent,
+                                                                #    UndoSpineEvent,
                                                                    SelectSpine,
                                                                    MoveBackgroundRoiEvent)
 
@@ -59,6 +61,7 @@ class PointLabels:
 
          # set font outline based on "accept" column
         acceptColumn = self._df.getDataFrame()["accept"]
+
         # logger.info(f"acceptColumn {acceptColumn}")
         # logger.info(f"labelID {labelID} acceptVal {acceptColumn[labelID]}")
         _font=QtGui.QFont()
@@ -77,6 +80,7 @@ class PointLabels:
         x = self.df.getValue('x', labelID)
         y = self.df.getValue('y', labelID)
         spineAngles = self._df.getDataFrame()["spineAngle"]
+        # logger.info(f"spineAngles check: {spineAngles}")
         idSpineAngle = spineAngles[labelID]
         adjustConstant = 3
         adjustX = adjustConstant * math.cos(idSpineAngle * math.pi/180)
@@ -500,7 +504,7 @@ class annotationPlotWidget(mmWidget2):
             # x = dfPrint['x'].tolist()
             # y = dfPrint['y'].tolist()
 
-        logger.info(f'selecting annotation index:{dbIdx}')
+        # logger.info(f'selecting annotation index:{dbIdx}')
         # logger.info(f'xplot {xPlot} yPlot {yPlot}')
 
         self._scatterUserSelection.setData(xPlot, yPlot)
@@ -843,13 +847,16 @@ class pointPlotWidget(annotationPlotWidget):
     def _deleteSelection(self):
         _selection = self.getStackWidget().getStackSelection()
         
-        # logger.info(f'_selection:{_selection}')
+        logger.info(f'_selection:{_selection}')
         
         if _selection.hasPointSelection():
             items = _selection.getPointSelection()
             items = items[0]
 
             # logger.info(f'  items:{items}')
+
+            # abj
+            logger.info(f' abj deleting items:{items}')
 
             deleteSpineEvent = DeleteSpineEvent(self, items)
             self.emitEvent(deleteSpineEvent)
@@ -868,8 +875,6 @@ class pointPlotWidget(annotationPlotWidget):
 
         # remake all spine lines
         self._bMakeSpineLines()
-
-        
         self._refreshSlice()
 
     # abj
@@ -908,7 +913,7 @@ class pointPlotWidget(annotationPlotWidget):
 
         self._refreshSlice()
 
-    def undoEvent(self, event : UndoSpineEvent):
+    def undoEvent(self, event : UndoEvent):
         """
         """
 
@@ -916,6 +921,11 @@ class pointPlotWidget(annotationPlotWidget):
         logger.info(f'event:{event}')
         
         _undoEvent = event.getUndoEvent()
+
+        # logger.info(f'abj _undoEvent: {_undoEvent}')
+        
+        if _undoEvent.category != "Spine":
+            return
 
         if _undoEvent.type == pmmEventType.moveAnnotation:
             # TODO: on undo move, redraw label
@@ -934,19 +944,32 @@ class pointPlotWidget(annotationPlotWidget):
 
         self._refreshSlice()
 
-    def redoEvent(self, event : UndoSpineEvent):
+    def redoEvent(self, event : RedoEvent):
         """
         """
 
+        logger.info("abj redo event in pointPlotWidget")
         # logger.info(f'event:{event}')
         
         # TODO: on undo move, redraw label
-        for spine in event.getRedoEvent():
-            # update label
-            spineID = spine['spineID']
-            self._pointLabels.updateLabel(spineID)
+        _redoEvent = event.getRedoEvent()
+
+        if _redoEvent.category != "Spine":
+            return
+
+        # abj: fixes redo spine deletion bug
+        if _redoEvent.type !=  pmmEventType.delete:
+            for spine in event.getRedoEvent():
+                # update label
+                spineID = spine['spineID']
+                logger.info(f" troubleshoot spineID {spineID}")
+                self._pointLabels.updateLabel(spineID)
+
+        logger.info("abj redo event in pointPlotWidget 2")
 
         self._bMakeSpineLines()
+
+        logger.info("abj redo event in pointPlotWidget 3")
 
         self._refreshSlice()
 
@@ -1527,3 +1550,29 @@ class linePlotWidget(annotationPlotWidget):
             return None
         
         return highlightedDataframe
+    
+    def undoEvent(self, event : UndoEvent):
+        """
+        """
+
+        # abj: avoiding unnecessary updates, but can remove
+        if event.getUndoEvent().category != "Segment": 
+            return
+
+        logger.info(f'{self.getClassName()}')
+        logger.info(f'event:{event}')
+        # _undoEvent = event.getUndoEvent()
+        # logger.info(f'abj _undoEvent: {_undoEvent}')
+        self._refreshSlice()
+
+    def redoEvent(self, event : RedoEvent):
+        """
+        """
+
+        if event.getRedoEvent().category != "Segment": # abj
+            return
+    
+        logger.info(f'{self.getClassName()}')
+        logger.info(f'event:{event}')
+        self._refreshSlice()
+    

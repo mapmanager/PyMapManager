@@ -164,37 +164,37 @@ class _EditSpine(pmmEvent):
             # derived classes define _getItem to return relevant keys
             return self._getItem(self._list[self._iterIdx])
 
-class UndoSpineEvent(_EditSpine):
-    def __init__(self,
-                 mmWidget : mmWidget2,
-                 undoEvent : pmmEvent
-                 ):
+# class UndoSpineEvent(_EditSpine):
+#     def __init__(self,
+#                  mmWidget : mmWidget2,
+#                  undoEvent : pmmEvent
+#                  ):
                 
-        super().__init__(pmmEventType.undoSpineEvent, mmWidget)
+#         super().__init__(pmmEventType.undoEvent, mmWidget)
 
-        self._undoEvent = undoEvent
+#         self._undoEvent = undoEvent
     
-    def setUndoEvent(self, event : pmmEvent):
-        self._undoEvent = event
+#     def setUndoEvent(self, event : pmmEvent):
+#         self._undoEvent = event
         
-    def getUndoEvent(self) -> pmmEvent:
-        return self._undoEvent
+#     def getUndoEvent(self) -> pmmEvent:
+#         return self._undoEvent
     
-class RedoSpineEvent(_EditSpine):
-    def __init__(self,
-                 mmWidget : mmWidget2,
-                 redoEvent : pmmEvent
-                 ):
+# class RedoSpineEvent(_EditSpine):
+#     def __init__(self,
+#                  mmWidget : mmWidget2,
+#                  redoEvent : pmmEvent
+#                  ):
                 
-        super().__init__(pmmEventType.redoSpineEvent, mmWidget)
+#         super().__init__(pmmEventType.redoEvent, mmWidget)
 
-        self._redoEvent = redoEvent
+#         self._redoEvent = redoEvent
     
-    def setRedoEvent(self, event : pmmEvent):
-        self._redoEvent = event
+#     def setRedoEvent(self, event : pmmEvent):
+#         self._redoEvent = event
         
-    def getRedoEvent(self) -> pmmEvent:
-        return self._redoEvent
+#     def getRedoEvent(self) -> pmmEvent:
+#         return self._redoEvent
     
 class AddSpineEvent(_EditSpine):
     """Add spine event.

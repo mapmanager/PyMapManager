@@ -12,9 +12,9 @@ from pymapmanager.interface2.mapWidgets.mapTableWidget import mapTableWidget
 from pymapmanager.interface2.mainWindow import MainWindow
 
 from pymapmanager.interface2.stackWidgets.event.spineEvent import (AddSpineEvent, 
-                                                                   DeleteSpineEvent,  
-                                                                   UndoSpineEvent,
-                                                                   RedoSpineEvent)
+                                                                   DeleteSpineEvent,  )
+                                                                #    UndoSpineEvent,
+                                                                #    RedoSpineEvent)
 
 from pymapmanager._logger import logger
 

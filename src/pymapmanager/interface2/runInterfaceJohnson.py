@@ -9,12 +9,13 @@ import sys
 from pymapmanager.interface2.pyMapManagerApp2 import PyMapManagerApp
 # from pymapmanager.interface2 import PyMapManagerApp
 from pymapmanager.interface2.stackWidgets.base.mmWidget2 import pmmEvent, pmmEventType
+from pymapmanager.interface2.stackWidgets.event.annotationEvent import UndoEvent
 from stackWidgets import stackWidget2
 
 from pymapmanager.interface2.stackWidgets.event.spineEvent import (AddSpineEvent,
                                                                    DeleteSpineEvent,
                                                                    MoveSpineEvent,
-                                                                   UndoSpineEvent,
+                                                                #    UndoSpineEvent,
                                                                    SelectSpine)
 
 def _old_AddRandomColumns(df):
@@ -69,7 +70,9 @@ def run():
     # sw2.zoomToPointAnnotation(1, isAlt=True)
 
     sw2.zoomToPointAnnotation(75, isAlt=True)
-    # spineID = 1
+
+    
+    # spineID = 75
     # deleteEvent = DeleteSpineEvent(sw2, spineID)
     # # deleteEvent = DeleteSpineEvent(sw2)
     # # deleteEvent.addDeleteSpine(spineID)
@@ -77,6 +80,10 @@ def run():
     # # sw2.emitEvent(deleteEvent, blockSlots=False)
     # sw2.slot_pmmEvent(deleteEvent)
 
+    # undoEvent1 = deleteEvent
+    # # Undo delete spine
+    # undoDeleteEvent = UndoEvent(sw2, undoEvent1)
+    # sw2.slot_pmmEvent(undoDeleteEvent)
 
     # _pmmEvent = pmmEvent(pmmEventType.delete, sw2)
     # _pmmEvent.setValue("pointSelection", [1])
@@ -252,14 +259,55 @@ def runThenLoad():
  
     sys.exit(app.exec_())
 
+def testAddDeleteRedoSegments():
+    app = PyMapManagerApp(sys.argv)
+    import mapmanagercore.data
+    path = mapmanagercore.data.getSingleTimepointMap()
+    sw2 = app.loadStackWidget(path)
+
+    # path2 = '/Users/johns/Documents/GitHub/PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
+    # sw2.loadInNewChannel(path2)
+
+    # Check (Enable) Edit Segment
+    # on_edit_segment_checkbox._on_segment_edit_checkbox(state=1)
+    _lineListWidget = sw2._getNamedWidget("Segment List").widget()
+    print("_lineListWidget", _lineListWidget)
+    _lineListWidget.enableEditSegments()
+    
+    # Add new segment
+
+    # Add points
+
+    # Delete Segment (press delete key)
+
+    # undo delete
+
+    # redo delete
+
+    # pluginID = sw2.runPlugin('Channel Editor', inDock=False)
+ 
+    sys.exit(app.exec_())
+
+
+def testingGetValues():
+    app = PyMapManagerApp(sys.argv)
+    import mapmanagercore.data
+    path = mapmanagercore.data.getSingleTimepointMap()
+    sw2 = app.loadStackWidget(path)
+
+    spineID = 2
+    test = sw2.getStack().getPointAnnotations().getValues(colName = ['x', 'y', 'z'],rowIdx = spineID)
+    print("testGetValues: ", test)
+
 if __name__ == '__main__':
-    # run()
+    run()
+    # testingGetValues()
 
     # TODO: fix merging for just tif, only works for zarr
     # run_tif()
     # run_2_tifs()
 
-    runThenLoad()
+    # runThenLoad()
     # runMultiTimepointMap()
     # run2()
     # run3()
@@ -270,3 +318,5 @@ if __name__ == '__main__':
     # runPoochFileDirectly()
     # testingProgrammaticRunClose()
     # run2_tif()
+
+    # testAddDeleteRedoSegments()

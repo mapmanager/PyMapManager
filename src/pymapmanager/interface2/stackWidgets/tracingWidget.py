@@ -238,3 +238,7 @@ class TracingWidget(mmWidget2):
         if _selection.hasSegmentSelection():
             segmentID = _selection.getSegmentSelection()
             return segmentID
+
+    # abj
+    def setChecked(self, isChecked: bool = True):
+        self._editSegmentCheckbox.setChecked(isChecked)

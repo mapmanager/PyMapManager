@@ -320,7 +320,7 @@ class PyMapManagerMenus:
         # if front window is stack, then get the str !!!! for undo and redo
         undoAction = QtWidgets.QAction("Undo " + nextUndo, self.getApp())
         undoAction.setCheckable(False)  # setChecked is True by default?
-        undoAction.setShortcut("Ctrl+Z")
+        # undoAction.setShortcut("Ctrl+Z") # abj: moved keypressed event to stackWidget for consistent recognition
         undoAction.setEnabled(enableUndo)
         undoAction.triggered.connect(self.getApp()._undo_action)
         self.editMenu.addAction(undoAction)
@@ -330,9 +330,9 @@ class PyMapManagerMenus:
         # e.g. is stale
         redoAction = QtWidgets.QAction("Redo " + nextRedo, self.getApp())
         redoAction.setCheckable(False)  # setChecked is True by default?
-        redoAction.setShortcut("Shift+Ctrl+Z")
-        # redoAction.setEnabled(enableRedo)
-        redoAction.setEnabled(False)
+        # redoAction.setShortcut("Shift+Ctrl+Z")
+        redoAction.setEnabled(enableRedo)
+        # redoAction.setEnabled(False)
         redoAction.triggered.connect(self.getApp()._redo_action)
         self.editMenu.addAction(redoAction)
 
