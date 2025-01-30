@@ -78,6 +78,8 @@ class pmmEventType(Enum):
     setSegmentPivot = auto() # abj
     moveBackgroundRoi = auto()
 
+    setSegmentColor = auto()
+
     @property
     def category(self):
         spineEvents = {
@@ -995,6 +997,15 @@ class mmWidget2(QtWidgets.QMainWindow):
         elif event.type == pmmEventType.moveBackgroundRoi:
             acceptEvent = self.moveBackgroundRoiEvent(event)
 
+        elif event.type == pmmEventType.setSegmentColor:
+            acceptEvent = self.setSegmentColorEvent(event)
+
+        # abj
+        # elif event.type == pmmEventType.acceptPoint:
+        #     acceptEvent = self.acceptPoint(event)
+        # elif event.type == pmmEventType.changeUserType:
+        #     acceptEvent = self.changeUserType(event)
+
         else:
             logger.error(f'did not understand event type {event.type}')
 
@@ -1318,6 +1329,9 @@ class mmWidget2(QtWidgets.QMainWindow):
         # logger.warning(f'{self.getClassName()} base class called')
         pass
 
+    def setSegmentColorEvent(self, event : pmmEvent):
+        pass
+    
     def _stateChange(self, state : pmmStates):
         """Emit a state change.
         """

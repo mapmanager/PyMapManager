@@ -171,17 +171,26 @@ class TableModel(QAbstractTableModel):
         """
 
         # abb adding segment color
-        if role == Qt.BackgroundRole:
+        # if role == Qt.BackgroundRole:
+        if role == Qt.BackgroundColorRole:
             row = index.row()
             col = index.column()
-            # Get the corresponding row within the actual dataframe
-            # They could be different values due to deleting
-            rowLabel = self._data.index.tolist()[row]
-            # logger.warning(f'row:{row} rowLabel:{rowLabel}')
-            if col==0 and rowLabel == 3:
-                _color = QtGui.QColor('#38ff2a')
+            colName = self._data.columns[col]
+            if colName == 'Color':
+                # Get the corresponding row within the actual dataframe
+                # They could be different values due to deleting
+                rowLabel = self._data.index.tolist()[row]
+                # logger.warning(f'row:{row} rowLabel:{rowLabel} {type(rowLabel)}')
+                _colorHex = self._data.loc[rowLabel, 'Color']
+                # logger.info(f'row:{row} col:{col} colName:{colName} _colorHex:{_colorHex}')
+                _color = QtGui.QColor(_colorHex)
                 return QtGui.QBrush(_color) 
-        
+            else:
+                if(index.row() % 2 == 0):
+                    return QtGui.QBrush(QtGui.QColor(0,0,0))
+                else:
+                    return QtGui.QBrush(QtGui.QColor(40,40,40))
+
         # print("data", self.rowCount(None))
         # print("role: ", type(role))
         if role == Qt.DisplayRole:
@@ -331,7 +340,7 @@ class myQTableView(QtWidgets.QTableView):
         # Selecting only Rows - https://doc.qt.io/qt-6/qabstractitemview.html#SelectionBehavior-enum
         self.setSelectionBehavior(QTableView.SelectRows)
 
-        self.setAlternatingRowColors(True)
+        # self.setAlternatingRowColors(True)
 
         self.setSortingEnabled(True)
 
@@ -391,8 +400,8 @@ class myQTableView(QtWidgets.QTableView):
                 index = self.df.columns.get_loc(colName)
                 self.showColumn(index)
             except (KeyError) as e:
-                logger.error(f'did not find column name {colName}')
-                logger.error(e)
+                logger.error(f'did not find column name "{colName}"')
+                logger.error(f'available columns are: {self.df.columns}')
 
     def updateCurrentCol(self, newColName):
         """Called whenever signal is received to update column name
@@ -530,10 +539,23 @@ class myQTableView(QtWidgets.QTableView):
         # logger.info(f"selectedRows {selectedRows}")
         return selectedRows
 
-    # def keyPressEvent(self, event : QtGui.QKeyEvent):
-    #     super().keyPressEvent(event)
-    #     # abb on_selectionChanged is not using its params
-    #     # self.on_selectionChanged(None)
+    def _getSelectedRowLabels(self):
+        """Get selected row labels (points or segment) using row index of table
+        """
+        selectedRows = self.getSelectedRows()
+                
+        rowLabelList = []
+        for row in selectedRows:
+            try:
+                rowLabel = self.model._data.index[row]  # abb new
+                rowLabel = int(rowLabel)
+                rowLabelList.append(rowLabel)
+            except (KeyError) as e:
+                logger.error(f'myQTableView did not find row label: {row}')
+                logger.error('df is:')
+                print(self.model._data)
+
+        return rowLabelList
 
     def on_selectionChanged(self, item):
         """Respond to user selection.

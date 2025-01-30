@@ -197,7 +197,8 @@ def loadPlugins(pluginType : str, verbose = False) -> dict:
             if _widgetName == 'Stack Widget':
                 continue
 
-            logger.info(f'   adding {pluginType} moduleName:{moduleName} _widgetName:{_widgetName}')
+            if verbose:
+                logger.info(f'   adding {pluginType} moduleName:{moduleName} _widgetName:{_widgetName}')
             # _showInMenu = obj.showInMenu  # showInMenu is a static bool
             onePluginDict = {
                 "pluginClass": moduleName,

@@ -9,41 +9,39 @@ from pymapmanager.interface2.pyMapManagerApp2 import PyMapManagerApp
 from pymapmanager._logger import logger
 
 def run():
-    app = PyMapManagerApp(sys.argv)
-
-    # open a single timepoint map with segments and spines
-    # path = mapmanagercore.data.getSingleTimepointMap()
-
-    # a single timepoint tif file (import)
-    # path = mapmanagercore.data.getTiffChannel_1()
-
-    # .ome.zar (local)
-    # path = '/Users/cudmore/Sites/MapManagerCore-Data/data/single_timepoint_v3.ome.zarr'
-    # path = '/Users/cudmore/Sites/MapManagerCore-Data/data/single_timepoint.ome.zarr'
-
-    # .ome.zar (remote)
-    # path = 'https://github.com/mapmanager/MapManagerCore-Data/raw/main/data/single_timepoint.ome.zarr'
 
     # random ome zarr file (remote)
     # path = 'https://uk1s3.embassy.ebi.ac.uk/idr/zarr/v0.4/idr0062A/6001240.zarr'
     # random ome zarr file (local)
     # path = '/Users/cudmore/Dropbox/data/ome-zarr/6001240.ome.zarr'
 
+    # open a single timepoint map with segments and spines
+    # path = mapmanagercore.data.getSingleTimepointMap()
+
+    # a single timepoint tif file (import)
+    path = mapmanagercore.data.getTiffChannel_1()
+
     # path = mapmanagercore.data.getSingleTimepointMap()
     
     # a mmap with multiple timepoints, connects segments and spines
     # path = '/Users/cudmore/Desktop/multi_timepoint_map_seg_spine_connected.mmap'
-    path = mapmanagercore.data.getMultiTimepointMap()
+    # path = mapmanagercore.data.getMultiTimepointMap()
 
-    # path = '/Users/cudmore/Desktop/yyy4.mmap'
-    # path = '/Users/cudmore/Desktop/single_timepoint.mmap'
-
-    # path = 'https://github.com/mapmanager/MapManagerCore-Data/raw/main/data/single_timepoint.zip.mmap'
-
-    logger.info(path)
-
+    app = PyMapManagerApp(sys.argv)
     # mw will be map widget if path has multiple timepoints, otherwise mw is a stackwidget2
     mw = app.loadStackWidget(path)
+
+    # run a stack plugin
+    # mw.runPlugin('Stack Contrast')
+
+    # works
+    from pprint import pprint
+    # logger.info('getTimeSeriesCore')
+    # pprint(mw.getTimeSeriesCore().getMapImages().metadata(0).experimentMetadata.getValue('Species'))
+    # pprint(mw.getTimeSeriesCore().getMapImages().metadata(0).experimentMetadata.asDict())
+    
+    # print('segments:')
+    # pprint(mw.getTimeSeriesCore().getSegments()['color'])
 
     # zoom to point (single timepoint)
     # sw2.zoomToPointAnnotation(120, isAlt=True)

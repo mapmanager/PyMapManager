@@ -36,7 +36,8 @@ from pymapmanager.interface2.stackWidgets.event.spineEvent import (AddSpineEvent
 
 from pymapmanager.interface2.stackWidgets.event.segmentEvent import (AddSegmentEvent,
                                                                      DeleteSegmentEvent,
-                                                                     AddSegmentPoint)
+                                                                     AddSegmentPoint,
+                                                                     SetSegmentColorEvent)
 
 from pymapmanager.interface2.stackWidgets.event.annotationEvent import RedoEvent, UndoEvent
 from pymapmanager._logger import logger
@@ -1081,7 +1082,7 @@ class stackWidget2(mmWidget2):
 
         logger.info(f"newRadius {newRadius}")
         # self.getStack().getLineAnnotations().setValue("radius", segmentID, newRadius)
-        self.getStack().getLineAnnotations().setValue(segmentID, newRadius)
+        self.getStack().getLineAnnotations().setValue('radius', segmentID, newRadius)
 
         # self.getUndoRedo().addUndo(event)
         # self._afterEdit2(event)
@@ -1430,3 +1431,10 @@ class stackWidget2(mmWidget2):
 
         # reset stack Contrast
         self._stack.resetStackContrast()
+
+    def setSegmentColorEvent(self, event : SetSegmentColorEvent):
+        newSegmentColor = event.newSegmentColor  # only one
+        for item in event:
+            segmentID = item['segmentID']
+            logger.info(f'TODO set segmentID:"{segmentID}" to newSegmentColor:{newSegmentColor}')
+            self.getStack().getLineAnnotations().setValue('color', segmentID, newSegmentColor)
