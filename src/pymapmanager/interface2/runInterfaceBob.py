@@ -27,6 +27,8 @@ def run():
     # path = '/Users/cudmore/Desktop/multi_timepoint_map_seg_spine_connected.mmap'
     # path = mapmanagercore.data.getMultiTimepointMap()
 
+    path = '/Users/cudmore/Desktop/olsen_example.mmap'
+
     app = PyMapManagerApp(sys.argv)
     # mw will be map widget if path has multiple timepoints, otherwise mw is a stackwidget2
     mw = app.loadStackWidget(path)

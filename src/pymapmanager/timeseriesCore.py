@@ -149,7 +149,7 @@ class TimeSeriesCore():
         # if path.endswith('.mmap') or path.endswith('.mmap/') or path.endswith('.mmap.zip'):
         if _ext in LOAD_SAVE_EXTENSIONS:
             self._load_zarr()
-        elif path.endswith('.tif'):
+        elif path.endswith('.tif') or path.endswith('.nd2'):
             self._import_tiff()
         # elif path.endswith('.ome.zarr'):
         # elif path.endswith('.zarr') or path.endswith('.zarr/'):
@@ -331,21 +331,9 @@ class TimeSeriesCore():
         loader = MultiImageLoader()
         loader.read(path, channel=0)
         
-        # TEMPORARY, fake second channel, to debug single channel stack
-        # loader.read(path, channel=1)
-
-        # map = MapAnnotations(loader.build(),
         map = MapAnnotations(loader,
                             lineSegments=pd.DataFrame(),
                             points=pd.DataFrame())
-
-        # abb trying to figure out tree
-        from pprint import pprint
-        logger.info('dataTree???')
-        pprint(loader.dataTree())
-
-        # map.points[:]
-        # map.segments[:]
 
         self._fullMap : MapAnnotations = map
     

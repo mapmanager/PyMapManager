@@ -135,7 +135,7 @@ class AnnotationsCore:
         return df
     
     def getRow(self, rowIdx : int):
-        """Get columns and values for one row index.
+        """Get columns and values for one row label index.
         """
         df = self.getDataFrame() 
         row = df.loc[rowIdx]
@@ -463,15 +463,15 @@ class SpineAnnotationsCore(AnnotationsCore):
 
     def spineID_Exists(self, spineID : int) -> bool:
         if not isinstance(spineID, int):
-            logger.error(f'got bad spineID:{spineID}, expecting int')
+            logger.error(f'got bad spineID:{spineID} {type(spineID)}, expecting int')
             return False
         if spineID not in self.singleTimepoint.points.index:
             logger.error(f'spineID:{spineID} does not exists')
             # print(self.singleTimepoint.points.index)
             return False
 
-        logger.info(f'spineID:{spineID}')
-        print(self.singleTimepoint.points.index)
+        # logger.info(f'spineID:{spineID}')
+        # print(self.singleTimepoint.points.index)
         return True
     
     def moveSpine(self, spineID :int, x, y, z):

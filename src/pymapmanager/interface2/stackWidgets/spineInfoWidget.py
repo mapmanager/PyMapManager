@@ -36,7 +36,13 @@ class SpineInfoWidget(mmWidget2):
 
         # The columns values that are displayed
         # self.infoList = ["index", "segmentID", "note", 'accept', 'userType', 'spineLength']
-        self._displayList = ["index", "segmentID", 'spineLength', 'roiType']
+        self._displayList = ["index",
+                             "segmentID",
+                             'spineLength',
+                             'spineAngle',
+                             'spineSide',
+                             'roiType']
+        # this list can be edited by user
         self.infoList = self._displayList + ["note", 'accept', 'userType']
 
         # Maintain different widgets that display information
@@ -84,9 +90,9 @@ class SpineInfoWidget(mmWidget2):
             vLayout.addWidget(aLabel, row, col, rowSpan, colSpan)
             col += 1
             
-            # if itemName == 'index':
+            # if itemName in ['index', 'roiType', 'segmentID', 'spineLength']:
             #     aWidget = QtWidgets.QLabel()
-            if itemName in ['index', 'roiType', 'segmentID', 'spineLength']:
+            if itemName in self._displayList:
                 aWidget = QtWidgets.QLabel()
             elif itemName == 'note':
                 aWidget = QtWidgets.QLineEdit('')
@@ -192,13 +198,15 @@ class SpineInfoWidget(mmWidget2):
         self._enableAllWidgets(True)
 
         # just the first row selection
-        rowIdx = rowIdx[0]
+        firstRowIndex = rowIdx[0]
+        self._pointRowSelection = firstRowIndex
 
-        self._pointRowSelection = rowIdx
+        logger.info(f'firstRowIndex:{firstRowIndex}')
 
         # keys are all possible columns, we only show columns in infoList
         # values are, well, the values
-        rowDict = self.pa.getRow(rowIdx)
+        rowDict = self.pa.getRow(firstRowIndex)
+        logger.info(f'rowDict:{rowDict}')
 
         for index, itemName in enumerate(self.infoList):
             if itemName not in self.widgetDict.keys():
@@ -208,6 +216,7 @@ class SpineInfoWidget(mmWidget2):
 
             if itemName not in rowDict.keys():
                 # our itemName we want to display is not in the backend
+                logger.warning(f'item name "{itemName}" is not in backend keys')
                 continue
 
             backendValue = rowDict[itemName]
@@ -217,9 +226,16 @@ class SpineInfoWidget(mmWidget2):
             # self.blockSignals(True)
             self.blockSlotsOn()
 
+            # abb do not hard code items, use the self._displayList
             # ["index", "segmentID", "note", 'accept', 'userType']
-            if itemName in ['index', 'segmentID', 'note', 'spineLength']:
+            # if itemName in ['index', 'segmentID', 'note', 'spineLength']:
+            #     itemWidget.setText(str(backendValue))
+            if itemName in self._displayList:
+                # labels
                 itemWidget.setText(str(backendValue))
+            elif itemName == 'note':
+                logger.warning(f'setting note {firstRowIndex} to "{backendValue}"')
+                itemWidget.setText(backendValue)  # QLineEdit
             elif itemName == 'accept':
                 # logger.info(f'backendValue: {backendValue} {type(backendValue)}')
                 itemWidget.setChecked(bool(backendValue))
