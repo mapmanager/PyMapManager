@@ -19,9 +19,9 @@ class StackContrast():
     def _setDefaults(self):
         metadata = self._stack.getMetadata()
         metadataContrast = metadata.metadataContrast
-        logger.info('xxx metadata')
-        from pprint import pprint
-        pprint(metadata)
+        # logger.info('xxx metadata')
+        # from pprint import pprint
+        # pprint(metadata)
 
         # for channelIdx in range(self._stack.numChannels):
         listOfChannelIdx = self._stack.getChannelList()

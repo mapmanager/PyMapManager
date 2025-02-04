@@ -743,10 +743,10 @@ class mmWidget2(QtWidgets.QMainWindow):
 
     def getUndoRedo(self):
         if self._iAmStackWidget:
-            logger.info(f'   getting from stack widget')
+            # logger.info(f'   getting from stack widget')
             _undoRedo = self.getStack().getTimeSeriesCore().getUndoRedo()
         elif self._iAmMapWidget:
-            logger.info(f'   getting from map widget')
+            # logger.info(f'   getting from map widget')
             _undoRedo = self.getTimeSeriesCore().getUndoRedo()
         else:
             logger.error('neither a map or stack widget???')
