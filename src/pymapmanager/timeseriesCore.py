@@ -487,5 +487,17 @@ class TimeSeriesCore():
         """
 
         return self._fullMap._images.validateImageSize(newTifPath, tp)
+    
+    def moveChannel(self, tp, srcChannel, destChannel):
+        """ call moveChannel in mapmanagercore backend
 
+        Returns true or false
+        """
+        check = self._fullMap._images.moveChannel(srcTimePoint = tp, srcChannel = srcChannel, 
+                                  destTimePoint = tp, destChannel = destChannel)
+
+        logger.info(f"check move channel: {check}")
+
+        return check
+    
 

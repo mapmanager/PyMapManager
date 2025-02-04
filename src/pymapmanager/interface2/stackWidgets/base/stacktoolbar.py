@@ -5,6 +5,7 @@ from qtpy import QtGui, QtCore, QtWidgets
 # from pymapmanager.stack import stack
 
 from pymapmanager._logger import logger
+from pymapmanager.interface2.stackWidgets.base.mmWidget2 import pmmEvent
 
 class StackToolBar(QtWidgets.QToolBar):
     """ToolBar at the top of a stackWidget.
@@ -71,18 +72,18 @@ class StackToolBar(QtWidgets.QToolBar):
             actionWidget.setDisabled(True)
             actionWidget.setVisible(False)
 
-        # for channelIdx in range(self._myStack.numChannels):
-        #     # logger.info(f"channelIdx visible {channelIdx} ")
-        #     self._actionDict[channelIdx].setDisabled(False)
-        #     self._actionDict[channelIdx].setVisible(True)
+        for channelIdx in range(self._myStack.numChannels):
+            # logger.info(f"channelIdx visible {channelIdx} ")
+            self._actionDict[channelIdx].setDisabled(False)
+            self._actionDict[channelIdx].setVisible(True)
 
         # abj: switched to using actual indexes in backend
-        listOfChannelIdx = self._myStack.getChannelList()
-        logger.info(f"listOfChannelIdx {listOfChannelIdx}")
-        for idx in listOfChannelIdx:
-            # logger.info(f"channelIdx visible {channelIdx} ")
-            self._actionDict[idx].setDisabled(False)
-            self._actionDict[idx].setVisible(True)
+        # listOfChannelIdx = self._myStack.getChannelList()
+        # logger.info(f"listOfChannelIdx {listOfChannelIdx}")
+        # for idx in listOfChannelIdx:
+        #     # logger.info(f"channelIdx visible {channelIdx} ")
+        #     self._actionDict[idx].setDisabled(False)
+        #     self._actionDict[idx].setVisible(True)
         
         if self._myStack.numChannels > 1:
             self._actionDict['rgb'].setDisabled(False)
@@ -171,7 +172,7 @@ class StackToolBar(QtWidgets.QToolBar):
         These are a disjoint list, only one can be active. Others automatically disable.
         """
         logger.info(f'channelIdx:{channelIdx} {type(channelIdx)}')
-        
+        logger.info(f'stack top tool bar index:{channelIdx}')
         # turn off sliding z
         # slidingEnabled = channelIdx != 'rgb'
         # self.slidingCheckbox.setEnabled(slidingEnabled)
@@ -329,3 +330,10 @@ class StackToolBar(QtWidgets.QToolBar):
         """ Get current channel selected
         """
         return  self._currentChannel
+
+    # def setColorChannelEvent(self, event : pmmEvent):
+    #     """ Respond to events that emit color channel update
+    #     """
+    #     colorChannel = event.getColorChannel()
+    #     logger.info(f"colorChannel in stacktoolbar {colorChannel}")
+    #     self.slot_setChannel(colorChannel)

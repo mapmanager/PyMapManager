@@ -1420,11 +1420,16 @@ class stackWidget2(mmWidget2):
 
         logger.info(f"channelIdx {channelIdx}")
 
-        # Check if current channel is selected. If it is default select to channel - 1
+        # Check if current channel is selected. If it is then default select to channel - 1
         if self._topToolbar.getCurrentChannel() == channelIdx and channelIdx - 1 >= 0:
             logger.info(f"selecting new channel")
-            # self._topToolbar.slot_setChannel(channelIdx - 1)
-            self.slot_setChannel(channelIdx - 1)
+            # need to update toptoolbar manually since it is not a pmmWidget
+            self._topToolbar.slot_setChannel(channelIdx - 1)
+            
+            # emit change to all widgets
+            _pmmEvent = pmmEvent(pmmEventType.setColorChannel, self)
+            _pmmEvent.setColorChannel(channelIdx - 1)
+            self.emitEvent(_pmmEvent)
 
         # reset stackToolBar
         self._topToolbar._setStack(theStack=self._stack)
@@ -1438,3 +1443,20 @@ class stackWidget2(mmWidget2):
             segmentID = item['segmentID']
             logger.info(f'TODO set segmentID:"{segmentID}" to newSegmentColor:{newSegmentColor}')
             self.getStack().getLineAnnotations().setValue('color', segmentID, newSegmentColor)
+
+    # abj
+    def moveChannel(self, srcChannel, destChannel):
+        """ call getTimeSeriesCore to move channel (change channel indexing in backend)
+        """
+
+        timePoint = self._stack.timepoint
+        self.getTimeSeriesCore().moveChannel(tp = timePoint, 
+                                             srcChannel = srcChannel, destChannel = destChannel)
+        
+        # reset stackToolBar
+        self._topToolbar._setStack(theStack=self._stack)
+
+        # reset stack Contrast
+        self._stack.resetStackContrast()
+
+        
