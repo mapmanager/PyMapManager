@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Literal, Optional
 
 import numpy as np
 
@@ -282,18 +282,34 @@ class stack:
     #     """
     #     return self._fullMap.getChannelTotal()
     
-    def undo(self):
+    def undo(self, annotationType: Literal["Spine", "Segment"]):
         _ret = self._fullMap.undo()
 
         # self.getPointAnnotations()._buildTimepoint()  # rebuild single timepoint
-        self.getPointAnnotations()._buildDataFrame()
+        if annotationType == "Spine":
+            self.getPointAnnotations()._buildDataFrame()
 
-    def redo(self):
+        elif annotationType == "Segment":
+            # abj
+            self.getLineAnnotations()._buildDataFrame()
+
+    def redo(self, annotationType: Literal["Spine", "Segment"]):
+        logger.info(f"length of spines before {self.getPointAnnotations().__len__()}")
         _ret = self._fullMap.redo()
 
+        # Not redoing add properly
         # CRITICAL FOR REDO !!!!!
         self.getPointAnnotations()._buildTimepoint()  # rebuild single timepoint
-        self.getPointAnnotations()._buildDataFrame()
+        # self.getPointAnnotations()._buildDataFrame()
+
+        if annotationType == "Spine":
+            self.getPointAnnotations()._buildDataFrame()
+
+            logger.info(f"length of spines after {self.getPointAnnotations().__len__()}")
+
+        elif annotationType == "Segment":
+            # abj
+            self.getLineAnnotations()._buildDataFrame()
         
     #abj
     def save(self):

@@ -45,6 +45,13 @@ class _EditSegment(pmmEvent):
     def getSegments(self) -> List[int]:
         """Get list of segment id in the event.
         """
+        for item in self._list:
+            logger.info(f"temp segments 2 {item['segmentID']}")
+
+        # temp = [item['segmentID'] for item in self._list]
+        # logger.info(f"temp segments {temp}")
+
+        # TODO: fix bug where list gets double encapsulated on redo delete segment
         return [item['segmentID'] for item in self._list]
 
     def addEditSegment(self,

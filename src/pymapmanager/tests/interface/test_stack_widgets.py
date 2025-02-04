@@ -8,10 +8,11 @@ from pymapmanager.interface2.pyMapManagerApp2 import PyMapManagerApp
 from pymapmanager.interface2.stackWidgets import stackWidget2
 
 from pymapmanager._logger import logger
+from pymapmanager.interface2.stackWidgets.event.annotationEvent import RedoEvent, UndoEvent
 from pymapmanager.interface2.stackWidgets.event.spineEvent import (AddSpineEvent,
                                                                    DeleteSpineEvent,
                                                                    MoveSpineEvent,
-                                                                   UndoSpineEvent,
+                                                                #    UndoSpineEvent,
                                                                    SelectSpine)
 from pymapmanager.interface2.stackWidgets.base.mmWidget2 import pmmEvent, pmmEventType
 
@@ -84,39 +85,35 @@ def test_plugins(qtbot, qapp):
     close_plugins(stackWidgetWindow, stackPluginDict)
 
 def open_plugins(stackWidgetWindow, stackPluginDict, selection : False):
-
+    """ Open all available plugins
+    """
     if selection:
-        # make selection with zoom to point annotations
-        # stackWidgetWindow.zoomToPointAnnotation(5)
         make_selection(stackWidgetWindow)
-
-    # TODO: test these plugins
-    # if pluginName in ['Point List', 'Line List', 'Histogram', 'Search Widget', 'Selection Widget']:
-    #     stackWidgetWindow.runPlugin(pluginName)
 
     # Loop through all plugins and open them
     for pluginName, _dict in stackPluginDict.items():
         if pluginName in ['Stack Widget', 'line plot', 'point plot', 'not assigned']:
-        # if pluginName in ['line plot', 'point plot', 'not assigned']:
-            # stack widget is special
+            # stack widget is special so ignore
             continue
         else:
             logger.info(f'running plugin: {pluginName}')
             stackWidgetWindow.runPlugin(pluginName)
 
 def close_plugins(stackWidgetWindow, stackPluginDict):
+    """ Close all available plugins
+    """
     # Loop through all plugins and close them
     for pluginName, _dict in stackPluginDict.items():
         if pluginName in ['Stack Widget', 'line plot', 'point plot', 'not assigned']:
             continue
         else:
             # close plugin/ stackWidget
-            # stackWidgetWindow.close()
-            # stackWidgetWindow.closePlugin(pluginName)
             firstPluginWindow = (pluginName, 1)
             stackWidgetWindow.closePlugin(firstPluginWindow)
 
 def make_and_cancel_selection(stackWidgetWindow):
+    """ Make a selection and then cancel for testing purposes
+    """
     # Make a selection
     spineIDs = [6]
     eventType = pmmEventType.selection
@@ -130,33 +127,35 @@ def make_and_cancel_selection(stackWidgetWindow):
     stackWidgetWindow._cancelSelection()
 
 def make_selection(stackWidgetWindow):
+    """ Make a spine selection for testing purposes
+    """
     spineIDs = [5]
     eventType = pmmEventType.selection
     event = pmmEvent(eventType, stackWidgetWindow)
     event.getStackSelection().setPointSelection(spineIDs)
-    # event.setAlt(isAlt)
     logger.info(f'emit -->> event: {event}')
     stackWidgetWindow.selectedEvent(event)    
 
 def manipulate_spines(stackWidgetWindow):
-    # add, delete, move, update spines
+    """ basic test of add, delete, move, redo, undo for updating spines
+    """
     # remember to do this outside of for loop
 
     if stackWidgetWindow.getStackWidget() is None:
         logger.warning(f'stackWidget is None for stackWidgetWindow:{stackWidgetWindow}')
         return
     
-    # Move spine
-    # items = [6]
-    # spineID = 6
-    # x = 557
-    # y = 222
-    # z = 31
-    # moveEvent = MoveSpineEvent(stackWidgetWindow, spineID=spineID, x=x, y=y, z=z)
-    # # stackWidgetWindow.moveAnnotationEvent(moveEvent)
-    # stackWidgetWindow.slot_pmmEvent(moveEvent)
+    # # Move spine
+    items = [6]
+    spineID = 6
+    x = 557
+    y = 222
+    z = 31
+    moveEvent = MoveSpineEvent(stackWidgetWindow, spineID=spineID, x=x, y=y, z=z)
+    # stackWidgetWindow.moveAnnotationEvent(moveEvent)
+    stackWidgetWindow.slot_pmmEvent(moveEvent)
 
-    # Add Spine
+    # # Add Spine
     x = 600
     y = 230
     z = 30
@@ -164,31 +163,17 @@ def manipulate_spines(stackWidgetWindow):
     stackWidgetWindow.slot_pmmEvent(addEvent)
 
     # Delete Spine
-    spineID = 7
+    spineID = 2
     deleteEvent = DeleteSpineEvent(stackWidgetWindow, spineID)
     stackWidgetWindow.slot_pmmEvent(deleteEvent)
 
-    # TODO: Undo and Redo
-    # Note: Robert said that redo is not working correctly
-
-    undoEvent1 = deleteEvent
     # Undo delete spine
-    undoDeleteEvent = UndoSpineEvent(stackWidgetWindow, undoEvent1)
+    undoDeleteEvent = UndoEvent(stackWidgetWindow, None)
     stackWidgetWindow.slot_pmmEvent(undoDeleteEvent)
 
-# TODO:
-# Load in with tif ch 1
-# Open all widgets 
+    # Redo
+    redoDeleteEvent = RedoEvent(stackWidgetWindow, None)
+    stackWidgetWindow.slot_pmmEvent(redoDeleteEvent)
 
-
-
-# manu
-# test command
-# pytest -s --pdb tests\interface\test_stack_widgets.py
-
-# Have two separate dicts
-# stackpluginwidget will keep track of its own plugins opened
-# stackwidget will have its own 
-# make two separate methods that runplugin calls for each case
 if __name__ == '__main__':
     pass

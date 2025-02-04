@@ -83,11 +83,14 @@ class annotationListWidget(mmWidget2):
     def undoEvent(self, event):
         # TODO: make distinction between undo spine and segment edits
         # possibly make distinction between undo (add, delet, edit)
+
+        # 1/22/25: abj: use event.category returns Spine or Segment to distinguish
         self._setModel()
 
     def redoEvent(self, event):
         # TODO: make distinction between undo spine and segment edits
         # possibly make distinction between undo (add, delet, edit)
+        logger.info("abj redo event in annotationListWidget")
         self._setModel()
 
     def deletedEvent(self, event):
@@ -386,7 +389,7 @@ class lineListWidget(annotationListWidget):
         # logger.warning(f'{event.getStackSelection()}')
         
         segmentSelection = event.getStackSelection().getSegmentSelection()        
-        logger.warning(f'selecting segmentSelection:{segmentSelection}')
+        # logger.warning(f'selecting segmentSelection:{segmentSelection}')
         self._myTableView._selectRow(segmentSelection)
 
         # abj
@@ -481,6 +484,12 @@ class lineListWidget(annotationListWidget):
     def addedSegmentPointEvent(self, event):
         self._setModel()
 
+        # abj: reselect current segment
+        segmentID = event.getSegments()
+        logger.info(f"reselect segmentID in Linelistwidget {segmentID}")
+        self._myTableView.mySelectRows(segmentID)
+
+
     def deletedSegmentPointEvent(self, event):
         self._setModel()
 
@@ -492,6 +501,8 @@ class lineListWidget(annotationListWidget):
 
         segmentList = self._getSelectedRowLabels()
         logger.info(f'  delete segmentList:{segmentList}')
+
+        # Note: Currently more than one segment can be selected and deleted
 
         if len(segmentList) > 0:
             deleteSegmentEvent = DeleteSegmentEvent(self, segmentList)
@@ -557,4 +568,16 @@ class lineListWidget(annotationListWidget):
         segmentID = event.getFirstSegmentSelection()
         # reselect current segment
         self._myTableView._selectRow([segmentID])
+
+    def enableEditSegments(self):
+        """ Functional API call to enable edit segments within tracing widget
+        """
+
+        # Enable check box in tracing widget
+        self.tracingWidget.setChecked(True)
+
+    def addSegment(self):
+        """ Programmatic call to add a new segment through tracing Widget
+        """
+        self.tracingWidget.on_segment_button_clicked(state = None, buttonName= '+')
         

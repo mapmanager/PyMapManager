@@ -774,6 +774,9 @@ class LineAnnotationsCore(AnnotationsCore):
 
             #abj
             dfRet["radius"] =  segmentDf['radius']
+
+            dfRet["pivotPoint"] = segmentDf["pivotPoint"]
+
         
         dfRet['t'] = self.timepoint
 
@@ -823,23 +826,20 @@ class LineAnnotationsCore(AnnotationsCore):
             
         """
         # logger.info('self._summaryDf:')
-        # print(self._summaryDf)
-        
+        segmentDf = self.singleTimepoint.segments[:]
+        pivotDF = segmentDf["pivotPoint"]
         returnPointX = []
         returnPointY = []
         returnPointZ = []
-        for rowLabel, row in self._summaryDf.iterrows():
-            segmentID = rowLabel  # row["Segment"]
-            pivotDistance = row["Pivot Distance"]
+        for row in pivotDF:
 
-            from shapely import LineString
-            segmentLine: LineString = self.singleTimepoint.segments[segmentID, "segment"]
+            _point = row
+            logger.info(f"_point {_point}")
 
-            _point = shapely.line_interpolate_point(segmentLine, pivotDistance)
-
-            returnPointX.append(_point.x)
-            returnPointY.append(_point.y)
-            returnPointZ.append(_point.z)
+            if not _point.is_empty:
+                returnPointX.append(_point.x)
+                returnPointY.append(_point.y)
+                returnPointZ.append(_point.z)
 
         return returnPointX, returnPointY, returnPointZ
     

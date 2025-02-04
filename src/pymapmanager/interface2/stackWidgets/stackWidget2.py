@@ -30,8 +30,8 @@ from pymapmanager.timeseriesCore import TimeSeriesCore
 
 from pymapmanager.interface2.stackWidgets.event.spineEvent import (AddSpineEvent, 
                                                                    DeleteSpineEvent,  
-                                                                   UndoSpineEvent,
-                                                                   RedoSpineEvent,
+                                                                #    UndoSpineEvent,
+                                                                #    RedoSpineEvent,
                                                                    EditSpinePropertyEvent)
 
 from pymapmanager.interface2.stackWidgets.event.segmentEvent import (AddSegmentEvent,
@@ -39,6 +39,7 @@ from pymapmanager.interface2.stackWidgets.event.segmentEvent import (AddSegmentE
                                                                      AddSegmentPoint,
                                                                      SetSegmentColorEvent)
 
+from pymapmanager.interface2.stackWidgets.event.annotationEvent import RedoEvent, UndoEvent
 from pymapmanager._logger import logger
 
 class stackWidget2(mmWidget2):
@@ -272,6 +273,16 @@ class stackWidget2(mmWidget2):
 
     def keyPressEvent(self, event : QtGui.QKeyEvent):
         logger.info(f'{self.getClassName()} {event.text()}')
+
+        # abj: moved undo/ redo shortcuts to stackwidget level
+        if event.modifiers() == QtCore.Qt.ControlModifier and event.key() == QtCore.Qt.Key_Z:
+            logger.info(f"stack widget is pressing z")
+            self.emitUndoEvent()
+
+        if (event.modifiers() == (QtCore.Qt.ControlModifier | QtCore.Qt.ShiftModifier)) and \
+            event.key() == QtCore.Qt.Key_Z:
+            print("Ctrl+Shift+Z pressed")
+            self.emitRedoEvent()
 
         if event.key() == QtCore.Qt.Key_Escape:
             self._cancelSelection()
@@ -669,7 +680,7 @@ class stackWidget2(mmWidget2):
         print('   AFTER addAddSegment')
         print(event)
 
-        # self.getUndoRedo().addUndo(event)
+        self.getUndoRedo().addUndo(event)
 
         return True
 
@@ -681,7 +692,7 @@ class stackWidget2(mmWidget2):
         for segmentID in event.getSegments():
             _deleted = self.getStack().getLineAnnotations().deleteSegment(segmentID)
         
-        # self.getUndoRedo().addUndo(event)
+        self.getUndoRedo().addUndo(event)
         
         return _deleted
     
@@ -705,7 +716,9 @@ class stackWidget2(mmWidget2):
         else:
             self.slot_setStatus('Added point to segment tracing')
         
-        # self.getUndoRedo().addUndo(event)
+        temp = event.getValue("type")
+        logger.info(f" added segment {temp}")
+        self.getUndoRedo().addUndo(event)
         
         return _added is not None
     
@@ -809,9 +822,16 @@ class stackWidget2(mmWidget2):
             # logger.info(f'_rowIdx:{_rowIdx} item:{item}')
             
             deleteSpineID = item['spineID']
-            
+            logger.info(f'deleteSpineID {deleteSpineID}')
+            spineIDExists = self.getStack().getPointAnnotations().spineID_Exists(deleteSpineID)
+
+            # abj: Check if spine exists before deletion
+            if not spineIDExists: 
+                return False
+
             segmentID = [self.getStack().getPointAnnotations().getValue("segmentID", deleteSpineID)]
-            segmentID = segmentID[0]            
+            logger.info(f"segmentID {segmentID}")
+            segmentID = segmentID[0]           
             segmentID = int(segmentID)
 
             _deleted = self.getStack().getPointAnnotations().deleteAnnotation(deleteSpineID)
@@ -1141,33 +1161,42 @@ class stackWidget2(mmWidget2):
         """
         self.move(left,top)
         self.resize(width, height)
-     
-    def undoEvent(self, event : UndoSpineEvent):
+
+    def undoEvent(self, event : UndoEvent):
 
         logger.warning('=== ===   STACK WIDGET PERFORMING Undo   === ===')
 
-        self.getStack().undo()
-        
         undoEvent = self.getUndoRedo().doUndo()
+        # annotationType = undoEvent.category
+        try: # abj
+            annotationType = undoEvent.category
+            logger.info(f"annotationType {annotationType}")
+        
+        except AttributeError:
+            logger.info(f"AttributeError: NoneType annotation")
+            return
+        
+        self.getStack().undo(annotationType)
+        
+        # undoEvent = self.getUndoRedo().doUndo()
         
         event.setUndoEvent(undoEvent)
 
-        # logger.info(f'event:{event}')
-        # logger.info(f'undoEvent:{undoEvent}')
+        logger.info(f'event:{event}')
+        logger.info(f'abj check undoEvent: {undoEvent}')
 
         self.setDirtyTrue() # abj
         
         return undoEvent is not None
     
-    def redoEvent(self, event : RedoSpineEvent):
+    def redoEvent(self, event : RedoEvent):
 
         logger.warning('=== ===   STACK WIDGET PERFORMING Redo   === ===')
 
-        self.getStack().redo()
-
-        # TODO: redo is currently only resetting point annotations 
-        # add support for line annotations
         redoEvent = self.getUndoRedo().doRedo()
+        annotationType = redoEvent.category
+        logger.info(f'redoEvent:{redoEvent}')
+        self.getStack().redo(annotationType)
         
         event.setRedoEvent(redoEvent)
 
@@ -1181,14 +1210,19 @@ class stackWidget2(mmWidget2):
     def emitUndoEvent(self):
         """
         """
-        _undoEvent = UndoSpineEvent(self, None)
-        self.slot_pmmEvent(_undoEvent)
+        # _undoEvent = UndoSpineEvent(self, None)
+        # abj: One undo event for both spines and segments
+        _undoEvent = UndoEvent(self, None)
+        if self.getUndoRedo().numUndo() > 0:
+            self.slot_pmmEvent(_undoEvent)
 
     def emitRedoEvent(self):
         """
         """
-        _redoEvent = RedoSpineEvent(self, None)
-        self.slot_pmmEvent(_redoEvent)
+        # _redoEvent = RedoSpineEvent(self, None)
+        _redoEvent = RedoEvent(self, None)
+        if self.getUndoRedo().numRedo() > 0:
+            self.slot_pmmEvent(_redoEvent)
 
     # abj
     def _old_updateDFwithNewParams(self):
@@ -1286,24 +1320,32 @@ class stackWidget2(mmWidget2):
         #Check to ensure it is a valid image channel (same size)
         from PIL import Image
         
-        with Image.open(newTifPath) as img:
-            newImgWidth, newImgHeight = img.size
-            # print("Width:", newImgWidth)
-            # print("Height:", newImgHeight)
-            newImgSlices = img.n_frames  # z dimension
+        # with Image.open(newTifPath) as img:
+        #     newImgWidth, newImgHeight = img.size
+        #     # print("Width:", newImgWidth)
+        #     # print("Height:", newImgHeight)
+        #     newImgSlices = img.n_frames  # z dimension
 
-        # Get old tif path
+        # # Get old tif path
         stackHeader = self.getStack().header
         x = stackHeader["xPixels"]
         y = stackHeader["yPixels"]
         z = stackHeader["numSlices"]
-        if newImgHeight != y or newImgWidth != x or newImgSlices != z:
+        # if newImgHeight != y or newImgWidth != x or newImgSlices != z:
+        #     logger.error(f'Incorrect shape when loading in new image.')
+        #     QtWidgets.QMessageBox.critical(self, "Error: Incorrect Image Size", 
+        #                                    f"Please upload an image with size x: {x}, y: {y}, z: {z} ")
+        #     return
+
+        time = self._stack.timepoint
+
+        isImgValid = self.getTimeSeriesCore().validateNewChannel(newTifPath, time)
+
+        if not isImgValid:
             logger.error(f'Incorrect shape when loading in new image.')
             QtWidgets.QMessageBox.critical(self, "Error: Incorrect Image Size", 
                                            f"Please upload an image with size x: {x}, y: {y}, z: {z} ")
             return
-        
-        time = self._stack.timepoint
 
         if channel is None:
             channel = self._stack.getTimeSeriesTotalChannels() # len of total channels = new channel, since it is 0 based
@@ -1378,11 +1420,16 @@ class stackWidget2(mmWidget2):
 
         logger.info(f"channelIdx {channelIdx}")
 
-        # Check if current channel is selected. If it is default select to channel - 1
+        # Check if current channel is selected. If it is then default select to channel - 1
         if self._topToolbar.getCurrentChannel() == channelIdx and channelIdx - 1 >= 0:
             logger.info(f"selecting new channel")
-            # self._topToolbar.slot_setChannel(channelIdx - 1)
-            self.slot_setChannel(channelIdx - 1)
+            # need to update toptoolbar manually since it is not a pmmWidget
+            self._topToolbar.slot_setChannel(channelIdx - 1)
+            
+            # emit change to all widgets
+            _pmmEvent = pmmEvent(pmmEventType.setColorChannel, self)
+            _pmmEvent.setColorChannel(channelIdx - 1)
+            self.emitEvent(_pmmEvent)
 
         # reset stackToolBar
         self._topToolbar._setStack(theStack=self._stack)
@@ -1396,3 +1443,20 @@ class stackWidget2(mmWidget2):
             segmentID = item['segmentID']
             logger.info(f'TODO set segmentID:"{segmentID}" to newSegmentColor:{newSegmentColor}')
             self.getStack().getLineAnnotations().setValue('color', segmentID, newSegmentColor)
+
+    # abj
+    def moveChannel(self, srcChannel, destChannel):
+        """ call getTimeSeriesCore to move channel (change channel indexing in backend)
+        """
+
+        timePoint = self._stack.timepoint
+        self.getTimeSeriesCore().moveChannel(tp = timePoint, 
+                                             srcChannel = srcChannel, destChannel = destChannel)
+        
+        # reset stackToolBar
+        self._topToolbar._setStack(theStack=self._stack)
+
+        # reset stack Contrast
+        self._stack.resetStackContrast()
+
+        
