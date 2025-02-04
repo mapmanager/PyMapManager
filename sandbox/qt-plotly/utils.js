@@ -12,6 +12,7 @@ window.onload = function() {
         var mapDiv = 'map' + suffix;
         var map = API.map(mapDiv, {
             center: [51.505, -0.09],
+            // center: [38.575764, -121.478851],
             zoom: 4,
             dragging: true,
             scrollWheelZoom: true,
@@ -30,12 +31,14 @@ window.onload = function() {
             "name": "Grand Canyon USGS",
             "format": "png",
             "bounds": [15.976953506469728, 45.813157465613884],
+            // "bounds": [38.575764, -121.478851],
             "minzoom": 10,
             "version": "1.0.0",
             "maxzoom": 16,
             "center": [15.976953506469728,
                 45.813157465613884, 16
             ],
+            // "center": [38.575764, -121.478851],
             "type": "overlay",
             "description": "",
             "basename": "grandcanyon",

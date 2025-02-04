@@ -13,11 +13,12 @@ from typing import List
 from qtpy import QtCore, QtWidgets, QtGui
 
 import pymapmanager
-from pymapmanager.interface2.mainWindow import MainWindow
+# from pymapmanager.interface2.mainWindow import MainWindow
 
 from pymapmanager._logger import logger
 
-class OpenFirstWindow(MainWindow):
+# class OpenFirstWindow(MainWindow):
+class OpenFirstWindow(QtWidgets.QMainWindow):
     """A file/folder loading window.
     
     Open this at app start and close once a file/folder is loaded
@@ -28,6 +29,9 @@ class OpenFirstWindow(MainWindow):
         super().__init__(parent)
 
         self._app : PyMapManagerApp = pyMapManagerApp
+
+        self.statusBar = QtWidgets.QStatusBar()
+        self.setStatusBar(self.statusBar)
 
         # self.recentStackList = self.getApp().getConfigDict().getRecentStacks()
         # self.recentMapList = self.getApp().getConfigDict().getRecentMaps()
@@ -53,8 +57,15 @@ class OpenFirstWindow(MainWindow):
 
         self.setWindowTitle('MapManager Open Files and Folders')
 
-    # def getApp(self):
-    #     return self._app
+    def setStatus(self, txt : str):
+        self.statusBar.showMessage(txt)
+
+    def getApp(self) -> "pymapmanager.interface2.PyMapManagerApp":
+        """Get running application.
+        """
+        # from PyQt5.QtWidgets import QApplication 
+        # return QApplication.instance()
+        return self._app
     
     # def _makeRecentTable(self, pathList : List[str], headerStr = ''):
     def _makeRecentTable(self, pathDictList : List[dict], headerStr = '') -> QtWidgets.QTableWidget:

@@ -27,17 +27,27 @@ def run():
     # path = '/Users/cudmore/Desktop/multi_timepoint_map_seg_spine_connected.mmap'
     # path = mapmanagercore.data.getMultiTimepointMap()
 
-    path = '/Users/cudmore/Desktop/olsen_example.mmap'
+    # path = '/Users/cudmore/Desktop/olsen_example.mmap'
+    path = '/Users/cudmore/Desktop/example_nd2.mmap'
+    path = '/Users/cudmore/Desktop/example_nd2.mmap.zip'
+    path = '/Users/cudmore/Sites/MapManagerCore-Data/data/Animal_145_Slice_1_Right.mmap.zip'
+    path = '/Users/cudmore/Desktop/Animal_145_Slice_1_Right.mmap.zip'
+
+    from mapmanagercore.data import getNd2Channel_1, getSingleTimepointMap_nd2
+    path = getNd2Channel_1()
+    path = getSingleTimepointMap_nd2()
 
     app = PyMapManagerApp(sys.argv)
     # mw will be map widget if path has multiple timepoints, otherwise mw is a stackwidget2
+    
+    logger.info(f'loading stack widget from path:{path}')
     mw = app.loadStackWidget(path)
 
     # run a stack plugin
     # mw.runPlugin('Stack Contrast')
 
     # works
-    from pprint import pprint
+    # from pprint import pprint
     # logger.info('getTimeSeriesCore')
     # pprint(mw.getTimeSeriesCore().getMapImages().metadata(0).experimentMetadata.getValue('Species'))
     # pprint(mw.getTimeSeriesCore().getMapImages().metadata(0).experimentMetadata.asDict())

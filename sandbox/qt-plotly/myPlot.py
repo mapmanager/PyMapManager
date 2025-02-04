@@ -7,6 +7,12 @@ from ipywidgets import Output, VBox
 
 from IPython.display import display
 
+"""
+Requires
+    pip install PyQtWebEngine
+    pip install ipywidgets
+"""
+
 def plot():
     # fig = go.Figure(data=[go.Scattergl(x=[1, 2, 3], y=[4, 5, 6])])
     x=[1, 2, 3]
@@ -20,7 +26,7 @@ def plot():
 
 out = Output()
 
-class Backend(QtCore.QObject):
+class myBackend(QtCore.QObject):
     pointChanged = QtCore.Signal(float, float)
 
     # @QtCore.Signal(float,float)
@@ -34,7 +40,7 @@ class Widget(QtWidgets.QMainWindow):
 
         # self.button = QtWidgets.QPushButton('Plot', self)
         # self.browser = QtWebEngineWidgets.QWebEngineView(self)
-        self.browser = QtWebEngineWidgets.QWebEngineView()
+        self.browser: QtWebEngineWidgets.QWebEngineView = QtWebEngineWidgets.QWebEngineView()
 
         # self.vlayout = QtWidgets.QVBoxLayout(self)
         # self.vlayout.addWidget(self.button, alignment=QtCore.Qt.AlignHCenter)
@@ -55,10 +61,12 @@ class Widget(QtWidgets.QMainWindow):
     def plot2(self):
         # map_view = QtWebEngineWidgets.QWebEngineView()
 
-        backend = Backend(self)
+        backend = myBackend(self)
         backend.pointChanged.connect(self.onPointChanged)
+
         channel = QtWebChannel.QWebChannel(self)
         channel.registerObject('backend', backend)
+
         self.browser.page().setWebChannel(channel)
 
         # file = QtCore.QDir.current().absoluteFilePath("index.html")
@@ -66,9 +74,10 @@ class Widget(QtWidgets.QMainWindow):
 
         x=[1, 2, 3]
         y=[4, 5, 6]
-        self.fig = go.FigureWidget([go.Scatter(x=x, y=y, mode='markers')])
+        self.fig : go.FigureWidget = go.FigureWidget([go.Scatter(x=x, y=y, mode='markers')])
 
-        scatter = self.fig.data[0]
+        # The data property is a tuple of the figure's trace objects
+        scatter = self.fig.data[0]  # FigureWidget
         scatter.on_click(self.update_point)
 
         self.browser.setHtml(self.fig.to_html(include_plotlyjs='cdn'))
@@ -81,6 +90,7 @@ class Widget(QtWidgets.QMainWindow):
 
     @out.capture(clear_output=True)
     def update_point(self, trace, points, selector):
+        sys.exit(1)
         print('!!!!')
  
     def show_graph(self):

@@ -144,16 +144,16 @@ class TimeSeriesCore():
 
         self._isDirty : bool = False
         
+        # when user drags/drops a mmap zarr DirectoryStore folder
+        if path.endswith('/'):
+            path = path[:-1]
+
         # TODO just use endswith(), splitext does not handle '.ome.zarr'
         _ext = os.path.splitext(path)[1]
-        # if path.endswith('.mmap') or path.endswith('.mmap/') or path.endswith('.mmap.zip'):
         if _ext in LOAD_SAVE_EXTENSIONS:
             self._load_zarr()
         elif path.endswith('.tif') or path.endswith('.nd2'):
             self._import_tiff()
-        # elif path.endswith('.ome.zarr'):
-        # elif path.endswith('.zarr') or path.endswith('.zarr/'):
-        #     self._import_ome_zarr()
         else:
             # TODO properly handle this
             logger.error(f'did not load file extension: "{_ext}"')

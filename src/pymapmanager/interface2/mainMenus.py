@@ -425,6 +425,8 @@ class PyMapManagerMenus:
 
         frontWindow = self.getApp().getFrontWindow()
 
+        logger.warning(f'frontWindow is:{frontWindow}')
+
         if isinstance(frontWindow, (mmWidget2, mapWidget)):
             if frontWindow.getPath().endswith('.mmap.zip'):
                 enableSave = False
