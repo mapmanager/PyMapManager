@@ -29,13 +29,14 @@ def test_timeseriescore():
     assert numSpines1 == numSpines0 + 1
 
     logger.info('=== undo()')
-    _stack.undo()
+    annotationType = "Spine"
+    _stack.undo(annotationType)
 
     numSpines3 = pa.numAnnotations
     assert numSpines3 == numSpines1 - 1
 
     logger.info('=== redo()')
-    _stack.redo()
+    _stack.redo(annotationType)
 
     numSpines4 = pa.numAnnotations
     assert numSpines4 == numSpines3 + 1

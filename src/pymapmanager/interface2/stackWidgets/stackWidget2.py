@@ -1182,7 +1182,7 @@ class stackWidget2(mmWidget2):
         
         event.setUndoEvent(undoEvent)
 
-        logger.info(f'event:{event}')
+        # logger.info(f'event:{event}')
         logger.info(f'abj check undoEvent: {undoEvent}')
 
         self.setDirtyTrue() # abj
@@ -1195,13 +1195,12 @@ class stackWidget2(mmWidget2):
 
         redoEvent = self.getUndoRedo().doRedo()
         annotationType = redoEvent.category
-        logger.info(f'redoEvent:{redoEvent}')
         self.getStack().redo(annotationType)
         
         event.setRedoEvent(redoEvent)
 
         # logger.info(f'event:{event}')
-        # logger.info(f'redoEvent:{redoEvent}')
+        logger.info(f'redoEvent: {redoEvent} type: {redoEvent.type}')
 
         self.setDirtyTrue() # abj
 

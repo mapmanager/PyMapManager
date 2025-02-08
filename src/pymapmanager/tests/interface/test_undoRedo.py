@@ -18,19 +18,14 @@ def qapp_cls():
 def stackWidgetObject(qtbot, qapp):
 	# path = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
     path = mapmanagercore.data.getSingleTimepointMap()
-
     sw = qapp.loadStackWidget(path)
-
     return sw
-
-# def test_deleteSpine(stackWidgetObject, qapp):
-#     spineID = 2
-#     dse = DeleteSpineEvent(stackWidgetObject, spineID=spineID)
 
 def pytest_configure():
     pytest.addedSpineID = None
 
 def test_Undos(stackWidgetObject, qapp):
+    logger.info(f'----------- Start of test_Undos -----------')
     logger.info(f'{stackWidgetObject}')
     
     assert stackWidgetObject is not None
@@ -40,8 +35,6 @@ def test_Undos(stackWidgetObject, qapp):
     # zoom to point for visual testing
     # stackWidgetObject.zoomToPointAnnotation(75, isAlt=True)
     
-    # thinking about it from the stackWidget emitting
-
     # Store old spine coordinates before moving
     spineID = 6
 
@@ -71,6 +64,7 @@ def test_Undos(stackWidgetObject, qapp):
 
     # Undo Move spine
     # _undoEvent = UndoEvent(stackWidgetObject, None)
+    logger.info(f'----------- Undo Move Spine -----------')
     stackWidgetObject.emitUndoEvent()
 
     # Verify old position of spine after undoing move
@@ -82,6 +76,8 @@ def test_Undos(stackWidgetObject, qapp):
     assert verifyOldY == oldY
     assert verifyOldZ == oldZ
 
+
+    logger.info(f'----------- Add Spine -----------')
     # Add Spine
     x = 600
     y = 230
@@ -101,6 +97,7 @@ def test_Undos(stackWidgetObject, qapp):
     # Undo Add spine
         # _undoEvent = UndoEvent(stackWidgetObject, None)
         # stackWidgetObject.slot_pmmEvent(_undoEvent)
+    logger.info(f'----------- Undo Add Spine -----------')
     stackWidgetObject.emitUndoEvent()
 
     # Verify Undo Add Spine
@@ -111,6 +108,7 @@ def test_Undos(stackWidgetObject, qapp):
     spineID = 2
     
     # Delete Spine 2
+    logger.info(f'----------- Delete Spine 2-----------')
     deleteEvent = DeleteSpineEvent(stackWidgetObject, spineID=spineID)
     stackWidgetObject.slot_pmmEvent(deleteEvent)
 
@@ -118,6 +116,7 @@ def test_Undos(stackWidgetObject, qapp):
     spineExists = stackWidgetObject.getStack().getPointAnnotations().spineID_Exists(spineID)
     assert spineExists is False
 
+    logger.info(f'----------- Undo Delete Spine -----------')
     # Undo delete spine
     stackWidgetObject.emitUndoEvent()
 
@@ -146,8 +145,8 @@ def test_Redos(stackWidgetObject, qapp):
     spineExists = stackWidgetObject.getStack().getPointAnnotations().spineID_Exists(spineID)
     assert spineExists is False
 
-    paLength = stackWidgetObject.getStack().getPointAnnotations().__len__()
-    logger.info(f"After redo delete {paLength}")
+    # paLength = stackWidgetObject.getStack().getPointAnnotations().__len__()
+    # logger.info(f"After redo delete {paLength}")
 
     # Redo Add Spine
     # TODO: fix backend issue with redo add bug

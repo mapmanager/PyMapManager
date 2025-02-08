@@ -1098,7 +1098,6 @@ class mmWidget2(QtWidgets.QMainWindow):
                         return
                     
                     if undoEvent.type == pmmEventType.add:
-                        logger.info(f"add point Undoooo!")
                         # cancel spine selection
                         _spines = []
                         _selectionEvent = pmmEvent(pmmEventType.selection, self)

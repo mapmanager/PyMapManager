@@ -834,7 +834,7 @@ class LineAnnotationsCore(AnnotationsCore):
         for row in pivotDF:
 
             _point = row
-            logger.info(f"_point {_point}")
+            # logger.info(f"_point {_point}")
 
             if not _point.is_empty:
                 returnPointX.append(_point.x)

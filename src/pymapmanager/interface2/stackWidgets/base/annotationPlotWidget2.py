@@ -1367,8 +1367,8 @@ class linePlotWidget(annotationPlotWidget):
         #     # _tmp = dfPlot.loc[ dfPlot.index.isin(_segmentSelection) ]      
         #     dfPlot.loc[_tmp.index, 'color'] = 'y'
 
-        print('AFTER plot df is')
-        print(self._dfPlot)
+        # print('AFTER plot df is')
+        # print(self._dfPlot)
 
         return dfPlot['color'].tolist()
     

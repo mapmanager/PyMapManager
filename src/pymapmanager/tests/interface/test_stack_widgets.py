@@ -140,12 +140,13 @@ def manipulate_spines(stackWidgetWindow):
     """ basic test of add, delete, move, redo, undo for updating spines
     """
     # remember to do this outside of for loop
+    logger.info(f'----------- Start of manipulate_spines -----------')
 
     if stackWidgetWindow.getStackWidget() is None:
         logger.warning(f'stackWidget is None for stackWidgetWindow:{stackWidgetWindow}')
         return
     
-    # # Move spine
+    # Move spine
     items = [6]
     spineID = 6
     x = 557
@@ -155,7 +156,7 @@ def manipulate_spines(stackWidgetWindow):
     # stackWidgetWindow.moveAnnotationEvent(moveEvent)
     stackWidgetWindow.slot_pmmEvent(moveEvent)
 
-    # # Add Spine
+    # Add Spine
     x = 600
     y = 230
     z = 30
@@ -163,17 +164,18 @@ def manipulate_spines(stackWidgetWindow):
     stackWidgetWindow.slot_pmmEvent(addEvent)
 
     # Delete Spine
-    spineID = 2
+    spineID = 11
     deleteEvent = DeleteSpineEvent(stackWidgetWindow, spineID)
     stackWidgetWindow.slot_pmmEvent(deleteEvent)
 
-    # Undo delete spine
-    undoDeleteEvent = UndoEvent(stackWidgetWindow, None)
-    stackWidgetWindow.slot_pmmEvent(undoDeleteEvent)
+    # # Undo delete spine
+    # undoDeleteEvent = UndoEvent(stackWidgetWindow, None)
+    # stackWidgetWindow.slot_pmmEvent(undoDeleteEvent)
 
-    # Redo
-    redoDeleteEvent = RedoEvent(stackWidgetWindow, None)
-    stackWidgetWindow.slot_pmmEvent(redoDeleteEvent)
+    # # Redo
+    # redoDeleteEvent = RedoEvent(stackWidgetWindow, None)
+    # stackWidgetWindow.slot_pmmEvent(redoDeleteEvent)
 
+    logger.info(f'----------- End of manipulate_spines -----------')
 if __name__ == '__main__':
     pass
