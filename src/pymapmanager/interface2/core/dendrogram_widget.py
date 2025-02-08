@@ -1056,6 +1056,7 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
 
         self.static_canvas.draw()
 
+
     def dendrogramReplot(self, newSegmentID):
         """ Recalculate all values needed to plot the dendrogram
 
@@ -1098,6 +1099,9 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
         spineY = []
         savedSpineIndex = []
 
+        _numSpines = len(spineIndex)
+        spineX = [None] * _numSpines
+
         for i, index in enumerate(spineIndex):
             if self.spineLengthCheckbox.isChecked():
                 # logger.info("Spine length checked")
@@ -1109,12 +1113,19 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
             direction = spineSide[index] # need to index to get first and only value in series
             savedSpineIndex.append(index)
             # Determine direction
+            # from mapmanagercore.schemas.spine import SpineSide
+            # if(direction == SpineSide.Left.value):
             if(direction == "Left"):
                 xVal = -1 * xVal  
-                spineX.append(xVal)
+                # spineX.append(xVal)
                 # spineX.append(-1 * xVal)
             elif(direction == "Right"):
-                spineX.append(xVal)
+                pass
+                # spineX.append(xVal)
+            elif (direction == 'Undefined'):
+                # spineX.append(np.nan)
+                xVal = np.nan
+            spineX[i] = xVal
 
             # Calculate Y
             if self.spineAngleCheckbox.isChecked():

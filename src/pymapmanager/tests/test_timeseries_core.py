@@ -122,7 +122,7 @@ def test_single_timepoint():
     print('=== after stp moveSpine() stp points[:] is now:')
     print(stp.points[:])
 
-def test_ome_zarr():
+def _hide_test_ome_zarr():
     path = '/Users/cudmore/Sites/MapManagerCore-Data/data/single_timepoint.ome.zarr'
     logger.info(f'loading TimeSeriesCore from {path}')
     tsc = TimeSeriesCore(path)
