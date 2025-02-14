@@ -72,18 +72,18 @@ class StackToolBar(QtWidgets.QToolBar):
             actionWidget.setDisabled(True)
             actionWidget.setVisible(False)
 
-        for channelIdx in range(self._myStack.numChannels):
-            # logger.info(f"channelIdx visible {channelIdx} ")
-            self._actionDict[channelIdx].setDisabled(False)
-            self._actionDict[channelIdx].setVisible(True)
+        # for channelIdx in range(self._myStack.numChannels):
+        #     logger.info(f"channelIdx visible {channelIdx} ")
+        #     self._actionDict[channelIdx].setDisabled(False)
+        #     self._actionDict[channelIdx].setVisible(True)
 
         # abj: switched to using actual indexes in backend
-        # listOfChannelIdx = self._myStack.getChannelList()
-        # logger.info(f"listOfChannelIdx {listOfChannelIdx}")
-        # for idx in listOfChannelIdx:
-        #     # logger.info(f"channelIdx visible {channelIdx} ")
-        #     self._actionDict[idx].setDisabled(False)
-        #     self._actionDict[idx].setVisible(True)
+        listOfChannelIdx = self._myStack.getChannelList()
+        logger.info(f"listOfChannelIdx {listOfChannelIdx}")
+        for idx in listOfChannelIdx:
+            # logger.info(f"channelIdx visible {channelIdx} ")
+            self._actionDict[idx].setDisabled(False)
+            self._actionDict[idx].setVisible(True)
         
         if self._myStack.numChannels > 1:
             self._actionDict['rgb'].setDisabled(False)
@@ -205,6 +205,7 @@ class StackToolBar(QtWidgets.QToolBar):
             theAction.setCheckable(True)
             if toolNameStr == str(_defaultChannel):
                 theAction.setChecked(True)
+                self.setCurrentChannel(_defaultChannel) # abj
             # do not set shortcut, handled by main stack widget
             #theAction.setShortcut('1')# or 'Ctrl+r' or '&r' for alt+r
             theAction.setToolTip(f'View Channel {toolNameStr}')
@@ -329,7 +330,7 @@ class StackToolBar(QtWidgets.QToolBar):
     def getCurrentChannel(self):
         """ Get current channel selected
         """
-        return  self._currentChannel
+        return self._currentChannel
 
     # def setColorChannelEvent(self, event : pmmEvent):
     #     """ Respond to events that emit color channel update

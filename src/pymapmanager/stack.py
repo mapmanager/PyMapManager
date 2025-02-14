@@ -352,3 +352,38 @@ class stack:
         Currently called whenever a new channel is imported
         """
         self._stackContrast = StackContrast(theStack=self)
+
+    def getDendrogramReplot(self, newSegmentID, spineAngleChecked, spineLengthChecked , spineLengthConstant):
+        """ get dataframes to plot dendrogram widget from backend
+
+        returns: 
+            plotDF - df for points
+            spineLineDF - df for spine lines to points
+            segmentLength = float representing length of segment
+        """
+
+        return self._fullMap.getDendrogramReplot(newSegmentID, spineAngleChecked, spineLengthChecked, spineLengthConstant)
+     
+    def getEmptyChannels(self) -> list:
+        """
+            Using set operations, obtain the list of empty channels from 
+            total number of channels - channels that are already imported
+            This list is sorted so next available channel can be accessed easily
+
+        """        
+        currentSet  = set(self.getChannelList())
+        fullSet = set(list(range(0,self.maxNumChannels)))
+        emptyChannels = fullSet.difference(currentSet)
+        # leftOverSet = map(str, leftOverSet)
+        return list(emptyChannels).sort()
+    
+    def getLeftOverChannels(self, deletedChannel) -> list:
+        """
+            Using set operations, obtain the list of left over channels from 
+            Imported Channels - deletedChannel
+            This list is sorted so next available channel can be accessed easily
+        """    
+        currentSet  = set(self.getChannelList())
+        leftOverSet = currentSet.difference({deletedChannel})
+        item = sorted(list(leftOverSet))
+        return item

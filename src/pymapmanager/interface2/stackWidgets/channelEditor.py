@@ -1,6 +1,8 @@
 
 from functools import partial
 from qtpy import QtGui, QtWidgets, QtCore
+from PIL import Image
+
 from pymapmanager._logger import logger
 
 # from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel
@@ -28,16 +30,18 @@ class ChannelEditor(mmWidget2):
     def _buildGUI(self):
 
         self.gridLayout = QtWidgets.QGridLayout()
-        numberOfChannels = self.stackWidget.getStack().numChannels
+        numberOfLoadedChannels = self.stackWidget.getStack().numChannels
+        logger.info(f"numberOfLoadedChannels {numberOfLoadedChannels}")
         dictOfChannelPaths = self.stackWidget.getStack().getChannelDict()
         listOfChannelIdx = self.stackWidget.getStack().getChannelList()
         self._listOfChannelIdx = listOfChannelIdx
+        self._listOfChannelIdx.sort()
         
         stackerHeader = self.stackWidget.getStack().header
-        zSlice = stackerHeader["numSlices"]
-        xVal = stackerHeader["xPixels"]
-        yVal = stackerHeader["yPixels"]
-        sizeWidget = QtWidgets.QLabel(f"Size: ({xVal}, {yVal}),  Slices: {zSlice}")
+        self.zSlice = stackerHeader["numSlices"]
+        self.xVal = stackerHeader["xPixels"]
+        self.yVal = stackerHeader["yPixels"]
+        sizeWidget = QtWidgets.QLabel(f"Size: ({self.xVal}, {self.yVal }),  Slices: {self.zSlice}")
 
         # Labeled Columns
         self.gridLayout.addWidget(QtWidgets.QLabel("Channel"), 0, 0)
@@ -54,6 +58,7 @@ class ChannelEditor(mmWidget2):
         
         # channelIdx in range(self.stackWidget.getStack().maxNumChannels)
         maxNumChannels = self.stackWidget.getStack().maxNumChannels
+        self.maxNumChannels = maxNumChannels
 
         # Display channel list based on what is shown rather than the actual index in the backend
         for channelIdx in range(maxNumChannels): # max number of channels designated by user
@@ -69,22 +74,18 @@ class ChannelEditor(mmWidget2):
                 # Offset by 1,  channel idx being 0 based
                 actualIndex = channelIdx # index within backend
                 channelRowNum = str(channelIdx + 1)  
-                # Offset by 1, accounting for initial column name 
-                # self.gridLayout.addWidget(QtWidgets.QLabel(channelRowNum), channelIdx + 1, 0)
-                # self.gridLayout.addWidget(DraggableWidget(channelPath, channelIdx + 1, 1, self, name = "widget " + 
-                #                     str(channelRowNum), stackWidget = self.stackWidget,
-                #                     channelIdx = channelIdx), channelIdx + 1, 1)
+                # logger.info(f"channelRowNum {channelRowNum}")
 
-                # Diplaying channel as seen in the row rather than actual index in backend
-                self.gridLayout.addWidget(QtWidgets.QLabel(str(self.totalChannelsShown)), self.totalChannelsShown, 0)
+                self.gridLayout.addWidget(QtWidgets.QLabel(channelRowNum), self.totalChannelsShown, 0)
 
-                self.gridLayout.addWidget(DraggableWidget(channelPath, self.totalChannelsShown, 1, self, name = "widget " + 
+                self.gridLayout.addWidget(DraggableWidget(channelPath, channelIdx + 1, 1, self, name = "widget " + 
                                                 str(channelRowNum), stackWidget = self.stackWidget,
                                                 channelIdx = actualIndex), self.totalChannelsShown, 1)
                 
                                                 # ), channelIdx + 1, 1)
 
-                if channelIdx > 0: # For now have a restriction on deleting first channel
+
+                if numberOfLoadedChannels > 1: # For now have a restriction on deleting first channel
                     deleteButton = QtWidgets.QPushButton('')
                     # self.gridLayout.addWidget(deleteButton, channelIdx + 1, 2)
                     self.gridLayout.addWidget(deleteButton, self.totalChannelsShown, 2)
@@ -112,29 +113,49 @@ class ChannelEditor(mmWidget2):
 
         return self.finalLayout 
 
+    def showConfirmationDialog(self, fileDimensions):
+        """ Show Custom Dialog whenever a user import a channel
+        
+        This dialog allows the user to choose the channel number that they want the image to be loaded into as well
+        as confirm the import
+        """
+        showDialog = CustomDialog(self.maxNumChannels, self._listOfChannelIdx, fileDimensions)
+        
+        if showDialog.exec_() == QtWidgets.QDialog.Accepted:
+            self.selectedChannelIdx = showDialog.selectedChannel
+            logger.info(f"self.selectedChannelIdx {self.selectedChannelIdx}")
+            return True, self.selectedChannelIdx
+        else:
+            print("Canceled!")
+            return False, None
+
     def importChannel(self, channelIdx, tifFile = None):
         """Open a file dialog and update the label with the file path."""
-        self._stackWidget.loadInNewChannel(path = tifFile, channel = channelIdx)
+
+        if tifFile is None:
+            tifFile = QtWidgets.QFileDialog.getOpenFileName(None, 'New Tif File')[0]
+
+        logger.info(f"tifFile {type(tifFile)}")
+        if tifFile == "": # user didnt choose a file
+            logger.info(f"cancelling import")
+            return
+        
+        with Image.open(tifFile) as img:
+            newImgWidth, newImgHeight = img.size
+            newImgSlices = img.n_frames  # z dimension
+
+        confirmed, selectedChannelIdx = \
+            self.showConfirmationDialog(fileDimensions=(newImgWidth,newImgHeight,newImgSlices))
+        if not confirmed:
+            return
+        
+        self._stackWidget.loadInNewChannel(path = tifFile, channel = selectedChannelIdx)
         self.refreshGUI()
 
     def on_button_click(self, channelIdx):
         print("Button clicked!, ", channelIdx)
-
-        self.stackWidget.deleteChannel(channelIdx)
-
-        # check to see if there are any channels after this channel 
-        # channelIdx is the actual channel in the backend (0 based)
-        # TotalChannelsShown is 1 based
-        # subtract 1 to make it 0 based
-        if channelIdx < self.totalChannelsShown - 1:
-            # decrement actual channel indexes of channels after
-            # this way all the indexes correspond within the GUI (e.g. color channel indexing)
-            for actualIndex in self._listOfChannelIdx:
-                # logger.info(f"actual Idx {actualIndex}")
-                if channelIdx <  actualIndex:
-                    # logger.info(f"moving actual index {actualIndex} to {actualIndex - 1}")
-                    self._stackWidget.moveChannel(actualIndex, actualIndex - 1)
-                    
+        # prevChannel = self._listOfChannelIdx[0]
+        self.stackWidget.deleteChannel(channelIdx)    
         self.refreshGUI()
 
     def refreshGUI(self):
@@ -144,6 +165,63 @@ class ChannelEditor(mmWidget2):
 
     def importedNewChannelEvent(self, event):
         self.refreshGUI()
+
+class CustomDialog(QtWidgets.QDialog):
+    def __init__(self, maxNumChannels, channelIdxList, fileDimensions):
+        """
+        Args:
+            maxNumChannels = Max channels shown for each stack
+            channelIdxList = list of channels that are already loader in
+            fileDimensions = tuple (x,y,z) representing the dimensions of the image loaded in
+        
+        """
+        super().__init__()
+
+        self.setWindowTitle("Please confirm new channel")
+        self.setGeometry(100, 100, 300, 200)
+
+        layout = QtWidgets.QVBoxLayout()
+
+        # Label for the dialog
+        label = QtWidgets.QLabel('Choose Channel Number:')
+        layout.addWidget(label)
+
+        # ComboBox
+        self.combo = QtWidgets.QComboBox()
+        # self.combo.addItems(["Option 1", "Option 2", "Option 3"])
+        # loop through all possible channels. set(list of len(max) - currently loaded channels)
+        # currentSet = logger.info(f"channelIdxList {channelIdxList}")
+        currentSet  = set(channelIdxList)
+        fullSet = set(list(range(0,maxNumChannels)))
+        leftOverSet = fullSet.difference(currentSet)
+        leftOverSet = {x + 1 for x in leftOverSet}
+        leftOverSet = map(str, leftOverSet)
+
+        logger.info(f"leftOverSet {leftOverSet}")
+        self.combo.addItems(list(leftOverSet))
+        layout.addWidget(self.combo)
+
+        x,y,z = fileDimensions
+        label = QtWidgets.QLabel(f"You will be loading image of Size: ({x}, {y}), Slices: {z}")
+        layout.addWidget(label)
+
+        # Buttons to confirm or cancel
+        self.button_confirm = QtWidgets.QPushButton('Confirm')
+        self.button_confirm.clicked.connect(self.on_confirm)
+        layout.addWidget(self.button_confirm)
+
+        self.button_cancel = QtWidgets.QPushButton('Cancel')
+        self.button_cancel.clicked.connect(self.reject)
+        layout.addWidget(self.button_cancel)
+
+        self.setLayout(layout)
+
+    def on_confirm(self):
+        selected_option = self.combo.currentText()
+        # need to convert for 1 based indexing back to 0:
+        self.selectedChannel = int(selected_option) - 1
+        print(f"Selected option: {selected_option}")
+        self.accept()  # Close the dialog and accept the input
 
 class ImportChannelWidget(QtWidgets.QWidget):
     def __init__(self, channelIdx, parent = None):
@@ -192,102 +270,10 @@ class ImportChannelWidget(QtWidgets.QWidget):
     def dropEvent(self, event):
         files = [u.toLocalFile() for u in event.mimeData().urls()]
         for tifFile in files:
-            # print(f)
             logger.info(f"loading file {tifFile}")
-
-            # abb
-            # self._app.loadStackWidget(tifFile)
 
             # abj
             self.importChannel(self.channelIdx, tifFile)
-
-# class old_ImportChannelWidget(QtWidgets.QWidget):
-#     def __init__(self, channelIdx, parent = None):
-#         super().__init__()
-#         # channelRowNum = row
-#         self.channelIdx = channelIdx
-#         self.parent = parent
-#         finallayout = self._buildLayout()
-#         self.setLayout(finallayout)
-    
-#     def _buildLayout(self):
-#         hLayout = QtWidgets.QHBoxLayout()
-
-#         missingChannelLabel = QtWidgets.QLabel('Missing Channel', self)
-#         openFileButton = QtWidgets.QPushButton('Open File')
-#         pixmapi = getattr(QtWidgets.QStyle, "SP_FileDialogToParent")
-#         icon = self.style().standardIcon(pixmapi)
-#         openFileButton.setIcon(icon)
-#         openFileButton.clicked.connect(partial(self.importChannel, self.channelIdx))  # Connect the button click to the importFile method
-        
-#         openFileButton.setStyleSheet("""
-#             QPushButton {
-#                 background-color: darkgrey;  /* Background color */
-#                 color: black;                 /* Text color */
-#                 border: 1px maroon;      /* Border color */
-#                 padding: 30px;                /* Padding inside the button */
-#                 border-radius: 5px;    
-#             }
-#             QPushButton:hover {
-#                 background-color: grey;  /* Background color when mouse hovers */
-#             }
-#         """)
-
-#         openFileButton.setMinimumHeight(30)
-#         openFileButton.setMaximumWidth(120)
-
-#         missingChannelLabel.setStyleSheet("""
-#             QLabel {
-#                 background-color: maroon;  /* Background color */
-#                 color: white;                 /* Text color */
-#                 border: 2px maroon;      /* Border color */
-#                 border-radius: 5px;    
-#                 padding: 30px;                /* Padding inside the Label */
-#             }
-#         """)
-
-#         hLayout.addWidget(missingChannelLabel)
-#         hLayout.addWidget(openFileButton)
-
-#         hLayout.setSpacing(0)
-
-#         return hLayout
-
-#     def importChannel(self, channelIdx):
-#         """ Call stackwidget to open file directory and load in new channel"""
-
-#         self.parent.importChannel(channelIdx = channelIdx)
-#         # self.parent.refreshGUI()
-
-# class ContainerWidget(QtWidgets.QWidget):
-#     def __init__(self, child, color, padding):
-#         super().__init__()
-#         """
-#             child - either a widget or layout of widgets to be placed in a decorated container
-#             color - color that the container holding the child will be
-#         """
-#         containerWidget = QtWidgets.QWidget(self)
-#         style = f"""
-#                 QWidget {{
-#                     background-color: {color};  /* Background color */
-#                     border-radius: 5px;            /* Rounded corners */
-#                     padding: {padding};                  /* Padding around the widget */
-#                 }}
-#             """
-
-#         containerWidget.setStyleSheet(style)
-
-#         finalLayout = QtWidgets.QHBoxLayout()
-#         if isinstance(child, QtWidgets.QWidget):
-#             finalLayout.addWidget(child)
-#         elif isinstance(child, QtWidgets.QLayout):
-#             logger.info(f"layout!!!!")
-#             finalLayout.addLayout(child)
-
-#         containerWidget.setLayout(finalLayout)
-#         self.setLayout(QtWidgets.QHBoxLayout())
-#         self.layout().addWidget(containerWidget)
-#         self.setFixedSize(500, 80)
 
 class DraggableWidget(QtWidgets.QWidget):
     def __init__(self, text, row, column, parent=None, name = None, 
@@ -299,6 +285,15 @@ class DraggableWidget(QtWidgets.QWidget):
         to swap positions
 
         Note: name was for testing purposes only
+
+        Args:
+            text - Name of file
+            row - row within grid layout
+            column - column within gridlayout
+            parent = Channel editor
+            name = name used for verification/ testing only
+            stackWidget = pmm stackWidget
+            channelIdx = Actual idx of the widget, that backend uses to move/ delete
         
         """
         super().__init__(parent=parent)
@@ -330,9 +325,6 @@ class DraggableWidget(QtWidgets.QWidget):
         mainLayout = QtWidgets.QHBoxLayout(self)
         mainLayout.addWidget(self.containerWidget)
         self.setLayout(mainLayout)
-
-        # self.setLayout(QtWidgets.QHBoxLayout())
-        # self.layout().addWidget(self.containerWidget)
 
         # self.setFixedSize(500, 80)
         self.setSizePolicy(self.sizePolicy().Expanding, self.sizePolicy().Expanding)
@@ -402,6 +394,7 @@ class DraggableWidget(QtWidgets.QWidget):
         """Handle the drop event by swapping positions."""
 
         if self.mousePos is None: 
+            self.containerWidget.setStyleSheet(self.defaultStyle)
             return
         
         if self._drag_position:
@@ -428,8 +421,8 @@ class DraggableWidget(QtWidgets.QWidget):
                         logger.info(f"return back")
                         self.parent.getGridLayout().removeWidget(self)
                         self.parent.getGridLayout().addWidget(self, self.getRow(), self.getColumn())
-            
-            self.containerWidget.setStyleSheet(self.defaultStyle)
+
+            # self.containerWidget.setStyleSheet(self.defaultStyle)
             self.setCursor(QtCore.Qt.ArrowCursor)
             self._drag_position = None
             event.accept()

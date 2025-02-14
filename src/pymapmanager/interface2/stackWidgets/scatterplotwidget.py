@@ -107,18 +107,21 @@ class ScatterPlotWidget(mmWidget2):
                 deleteEvent.addDeleteSpine(row)
             self.emitEvent(deleteEvent)
 
-    def on_scatter_plot_selection(self, itemList : List[int], isAlt : bool = False):
+    def on_scatter_plot_selection(self, aDict: dict):
         """Respond to user selection in scatter plot.
         
         This is called when user selects points within scatter plot window.
 
         Args:
-            rowList: List of rows that were selected
-            isAlt: True if keyboard Alt is down
+            aDict = {itemList : List[int], isAlt : bool = False}
+                rowList: List of rows that were selected
+                isAlt: True if keyboard Alt is down
         """
 
-        logger.info(f'{self.getClassName()} itemList:{itemList} isAlt:{isAlt}')
+        # logger.info(f'{self.getClassName()} itemList:{itemList} isAlt:{isAlt}')
 
+        itemList = aDict["itemList"]
+        isAlt = aDict["isAlt"]
         if itemList is None:
             itemList = []
         

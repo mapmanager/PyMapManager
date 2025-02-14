@@ -183,6 +183,7 @@ class Highlighter(object):
 
         self.mouseDownEvent = None
         self.keyIsDown = None
+        self._isAlt = False
         self.setCanvasConnections()
 
     def setCanvasConnections(self):
@@ -347,13 +348,10 @@ class Highlighter(object):
 
     def _keyReleaseEvent(self, event):
         logger.info(f'key release event')
-
         if self.keyIsDown  == 'alt':
             self._isAlt = False
         
         self.keyIsDown = None
-
-
 
     def _setData(self, xStat, yStat):
         """" Set the data that is highlighted in yellow 
@@ -425,7 +423,9 @@ class Highlighter(object):
         """
         self.mouseDownEvent = None
         indexList = self.xyStatIndex[self.maskPoints].tolist()
-        self._parentPlot.selectPointsFromHighlighter(indexList)
+        logger.info(f"self._isAlt {self._isAlt}")
+
+        self._parentPlot.selectPointsFromHighlighter(indexList, self._isAlt)
         return
 
 class myStatListWidget(QtWidgets.QWidget):
@@ -531,7 +531,10 @@ class ScatterPlotWidget_(QtWidgets.QWidget):
         df : pd.DataFrame
             Pandas dataframe to plot scatter, one scatter point per row.
         filterColumn : str
-            TODO: not sure what this was for?
+            - column to filter dataframe with before plotting
+            - this is currently used to filter by roiType to only show spineROI
+            - originally it was expanded into a combo that allows user to choose between all roiType
+            - but currently we only plot spineROI for the roiType
         acceptColumn : str
             Column in df to treat as accept (values should be (True, False) or (1, 0)
         hueColumnList : list[str]
@@ -567,11 +570,6 @@ class ScatterPlotWidget_(QtWidgets.QWidget):
         self.acceptColumn = acceptColumn
         self.hueIDList = None
 
-        # add to dictionary
-        # self.color = plt.get_cmap("cool")
-        # self.color = sns.color_palette("Paired", 12).as_hex()
-        # print('self.color:', self.color)
-        # self.color = ['#a6cee3', '#1f78b4', '#b2df8a', '#33a02c', '#fb9a99', '#e31a1c', '#fdbf6f', '#ff7f00', '#cab2d6', '#6a3d9a', '#ffff99', '#b15928']
         self.color = ['#f77189', '#dc8932', '#ae9d31', '#77ab31', '#33b07a', '#36ada4', '#38a9c5', '#6e9bf4', '#cc7af4', '#f565cc']
         if darkTheme:
             plt.style.use("dark_background")
@@ -665,6 +663,7 @@ class ScatterPlotWidget_(QtWidgets.QWidget):
         """
         # self.filterStrList = filterStrList
         self.filterStrList = self._df[filterColumn].unique().tolist()
+        # logger.info(f"self.filterStrList {self.filterStrList}")
         self.filterStrList.append("All") # Need to be able to show all values
 
         # Currently setting last value as current filter type
@@ -745,10 +744,7 @@ class ScatterPlotWidget_(QtWidgets.QWidget):
         return self.layout
 
     def setScatterPlot(self, xStat, yStat, xyStatIndex):
-        logger.info('self._df')
-        # print(self._df.columns)
-        # print(self._df)
-        # print(xyStatIndex)
+        # logger.info('self._df')
 
         hueColumn = str(self.dict["hueColumn"])
         # myColorMap = []  # abb how is this used?
@@ -1273,12 +1269,12 @@ class ScatterPlotWidget_(QtWidgets.QWidget):
         return self.storedRowIdx
     
     # IMPORTANT SIGNAL-SLOT CONNECTION (inside -> outside wrapper)
-    def selectPointsFromHighlighter(self, selectedPointsList):
+    def selectPointsFromHighlighter(self, selectedPointsList, isAlt):
         """
             selectedPointsList: list of points selected within highlighter
         """
-        
-        self.signalAnnotationSelected.emit(selectedPointsList)
+        emitDict = {"itemList": selectedPointsList, "isAlt":isAlt}
+        self.signalAnnotationSelected.emit(emitDict)
 
     def _on_change_Accept(self):
         # self.acceptValue = not self.acceptValue
@@ -1385,4 +1381,14 @@ class ScatterPlotWidget_(QtWidgets.QWidget):
 
     def getHighlighter(self):
         return self.myHighlighter
+    
+    # def _on_key_release(self, event):
+    #     if event.key == 'alt':
+    #         self._isAlt = False
+
+    # def _on_key_press(self, event):
+        
+    #     logger.info(f'event.key: "{event.key}"')
+    #     if event.key == 'alt':
+    #         self._isAlt = True
 

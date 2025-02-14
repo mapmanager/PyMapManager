@@ -71,6 +71,7 @@ def run():
 
     sw2.zoomToPointAnnotation(75, isAlt=True)
 
+    sw2.runPlugin('Scatter Plot', inDock=False)
     
     # spineID = 75
     # deleteEvent = DeleteSpineEvent(sw2, spineID)
@@ -253,7 +254,6 @@ def runThenLoad():
         
     # path4 = 'C:/Users/johns/Documents/GitHub/PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
     # sw2.loadInNewChannel(path4)
-
 
     pluginID = sw2.runPlugin('Channel Editor', inDock=False)
  

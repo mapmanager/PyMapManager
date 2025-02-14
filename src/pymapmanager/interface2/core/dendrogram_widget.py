@@ -20,6 +20,8 @@ import numpy as np
 import seaborn as sns
 from random import randint
 from PyQt5.QtCore import Qt, QAbstractTableModel
+import mapmanagercore
+from mapmanagercore.schemas.spine import SpineSide
 # from pymapmanager.interface.pmmWidget import PmmWidget
 
 class comparisonTypes(enum.Enum):
@@ -425,7 +427,6 @@ class Highlighter(object):
         """
         self.mouseDownEvent = None
         indexList = self.xyStatIndex[self.maskPoints].tolist()
-
         self._parentPlot.selectPointsFromHighlighter(indexList, self._isAlt)
         return
 
@@ -527,7 +528,10 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
         df : pd.DataFrame
             Pandas dataframe to plot scatter, one scatter point per row.
         filterColumn : str
-            TODO: not sure what this was for?
+            column to filter dataframe with before plotting
+            - Currently to filter segments (segmentID)
+            - this is related to the combo box which alters filterStr. filterStr filters out the dataframe
+            for matching rows within the filterColumn
         acceptColumn : str
             Column in df to treat as accept (values should be (True, False) or (1, 0)
         hueColumnList : list[str]
@@ -693,11 +697,9 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
 
         elif filterStr is not None:
             indexList = self._df.index[self._df[filterColumn] == int(filterStr)].tolist()
-            # df = self._df[self._df[filterColumn].str.contains(filterStr)]
             if filterColumn == "segmentID":
                 df = self._df.loc[self._df[filterColumn] == int(filterStr)] # ensure that it is int for df value
                 # logger.info(f"filtered self._df {self._df}")
-     
         else: # Account for when no filter string is ever set
             indexList = self._df.index.tolist()
             # No filtering done
@@ -724,19 +726,20 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
         return self.layout
 
     def setSegmentPlot(self):
-        # self.segmentLength 
-        # self.segment.plot([0,0],[0,self.segmentLength])
-        # logger.info(f"segmentLength {self.segmentLength}")
+        """ Set the segment plot to show within Dendrogram Widget
+        """
         self.segment = self.axScatter.plot([0,0],[0,self.segmentLength], zorder = 1)
 
     def setSpineLinePlot(self):
-        # self.segmentLength 
-        # self.segment.plot([0,0],[0,self.segmentLength])
+        """ Set the plot for spine line connections
+        """
         x = self.spineLineDF["spineLineX"]
         y = self.spineLineDF["spineLineY"]
         self.spineLines = self.axScatter.plot(x,y)
 
     def setScatterPlot(self, xStat, yStat, xyStatIndex):
+        """ Set the scatter plot of Spines
+        """
         hueColumn = str(self.dict["hueColumn"])
 
         # plotType = self.dict["plotType"]
@@ -896,7 +899,6 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
             self.filteredDF, indexList = self.getfilteredDFWithIndexList(filterStr=None, filterColumn=None)
             # self.filteredDF, indexList = self.getfilteredDFWithIndexList(filterStr=0, filterColumn="segmentID")
 
-
         # abj: 8/28
         segmentID = filterStr
         self.dendrogramReplot(newSegmentID=segmentID)
@@ -910,12 +912,6 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
         self.setSegmentPlot()
         self.setScatterPlot(xDFStat, yDFStat, indexList)
   
-        # self.axScatter.set_xlabel(columnNameX)
-        # self.axScatter.set_ylabel(columnNameY)
-
-        # Added to test histogram
-        # self.scatter_hist(xDFStat, yDFStat, self.axHistX, self.axHistY)
-
         # self.scatterPoints.set_data(xStat, yStat)
         self.axScatter.invert_yaxis()
         self.static_canvas.draw()
@@ -1011,7 +1007,8 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
         hueColumn = self.dict["hueColumn"]
         
         if filterStr != "" and filterColumn != "":
-            # Filter by the inputted column and default str. In the case of pmm: filterStr=spineROI, filterColumn=roiType
+            # Filter by the inputted column and default str. 
+            # In the case of dendrogram: filterStr= unique segmentID such as 0,1, etc..., filterColumn=segmentID
             self.filteredDF, xyStatIndex = self.getfilteredDFWithIndexList(filterStr=filterStr, filterColumn=filterColumn)   
         else:  
             self.filteredDF, xyStatIndex = self.getfilteredDFWithIndexList(filterStr=None, filterColumn=None)
@@ -1073,115 +1070,12 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
             self.plotDF = pd.DataFrame({"spineX": _empty, "spineY": _empty, "spineIndex": _empty})
             self.spineLineDF = pd.DataFrame({"spineLineX": _empty, "spineLineY": _empty})
             return
-        
-        newSegmentID = int(newSegmentID)
-        self._paDF = self._df
-        # logger.info(f"newSegmentID {newSegmentID}")
-
-        filteredPointDF = self._paDF[self._paDF["segmentID"] == newSegmentID]
-        # logger.info(f"filteredPointDF0 {filteredPointDF}")
-        spinePositions = filteredPointDF["spinePosition"]
-        spineLength = filteredPointDF["spineLength"]
-            
-        # logger.info(f"spineLength {spineLength}")
-        spineAngle = filteredPointDF["spineAngle"]
-        spineSide = filteredPointDF["spineSide"]
-        spineIndex = filteredPointDF["index"]
-
-        anchorX = []
-        anchorY = []
-        for val in spinePositions:
-            # print(i)
-            anchorX.append(0)
-            anchorY.append(val)
-
-        spineX = []
-        spineY = []
-        savedSpineIndex = []
-
-        _numSpines = len(spineIndex)
-        spineX = [None] * _numSpines
-
-        for i, index in enumerate(spineIndex):
-            if self.spineLengthCheckbox.isChecked():
-                # logger.info("Spine length checked")
-                xVal = spineLength[index]
-            else:
-                xVal = self.spineLengthConstant
-
-            # print("i", spineSide[i][0])
-            direction = spineSide[index] # need to index to get first and only value in series
-            savedSpineIndex.append(index)
-            # Determine direction
-            # from mapmanagercore.schemas.spine import SpineSide
-            # if(direction == SpineSide.Left.value):
-            if(direction == "Left"):
-                xVal = -1 * xVal  
-                # spineX.append(xVal)
-                # spineX.append(-1 * xVal)
-            elif(direction == "Right"):
-                pass
-                # spineX.append(xVal)
-            elif (direction == 'Undefined'):
-                # spineX.append(np.nan)
-                xVal = np.nan
-            spineX[i] = xVal
-
-            # Calculate Y
-            if self.spineAngleCheckbox.isChecked():
-                angle = spineAngle[index]
-                # angledY = xVal * math.tan(angle)
-                # logger.info(f"index {index} angledY {angledY} temp {temp}")
-
-                # account for undefined tangent angles
-                undefinedList = [270, 90, 180, 0, 360]
-                if math.ceil(angle) in undefinedList or math.floor(angle) in undefinedList:
-                    angledY = anchorY[i] # make it perpendicular to line
-                else:
-                    # default
-                    # angledY = xVal * math.tan((angle * math.pi/180))
-
-                    # Logic: adjust y val by abs value of angle. + or - depending on angle
-                    # this allows us to accurately plot angle
-                    anchorYVal = anchorY[i]
-                    angledY = xVal * math.tan((angle)* math.pi/180)
-                    diff = abs(anchorYVal) - abs(angledY)
-
-                    if 0 <= angle and angle <= 90: # GOOD
-                        # label.setPos(QtCore.QPointF(x + adjustX, y + adjustY))
-                        angledY = anchorYVal + abs(diff)
-                    elif 90 <= angle and angle <= 180: 
-                        # label.setPos(QtCore.QPointF(x - adjustX, y + adjustY))
-                        angledY = anchorYVal - abs(diff)
-                    elif 180 <= angle and angle <= 270:
-                        # label.setPos(QtCore.QPointF(x - adjustX, y - adjustY))
-                        angledY = anchorYVal - abs(diff)
-                    elif 270 <= angle and angle <= 360: #BAD
-                        # label.setPos(QtCore.QPointF(x + adjustX, y - adjustY))
-                        angledY = anchorYVal + abs(diff)
-
-                # logger.info(f"index {index} angle {angle} xVal {xVal} angledY {angledY}")
-                spineY.append(angledY)
-            else:
-                spineY.append(anchorY[i])
-
-        spineLineX = []
-        spineLineY = []
-        for i, val in enumerate(anchorX):  
-            # print("here")
-            spineLineX.append(anchorX[i]) 
-            spineLineX.append(spineX[i]) 
-            spineLineX.append(np.nan) 
-            spineLineY.append(anchorY[i]) 
-            spineLineY.append(spineY[i]) 
-            spineLineY.append(np.nan) 
-
-        filteredLineDF = self._summaryLaDF[self._summaryLaDF.index == newSegmentID]
-        self.segmentLength = filteredLineDF["Length"].iloc[0]
-        # logger.info(f"segmentLength {segmentLength}")
-
-        self.plotDF = pd.DataFrame({"spineX": spineX, "spineY": spineY, "spineIndex": savedSpineIndex})
-        self.spineLineDF = pd.DataFrame({"spineLineX": spineLineX, "spineLineY": spineLineY})
+        spineAngleChecked = self.spineAngleCheckbox.isChecked()
+        spineLengthChecked = self.spineLengthCheckbox.isChecked()
+        self.plotDF, self.spineLineDF, self.segmentLength  = \
+            self.parent()._stackWidget.getDendrogramReplot(newSegmentID, spineAngleChecked, 
+                                                           spineLengthChecked ,self.spineLengthConstant)
+        return
 
     def _switchScatter(self):
         """Switch between single scatter plot and scatter + marginal histograms"""
@@ -1241,29 +1135,20 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
         Args:
             rowIndexes: indexes of rows that need to be selected within highlighter plot
         """
-
         # If nothing is selected empty highlighter plot
         if rowIndexes == None:
             self.myHighlighter._setData([], [])
         else: 
-
- 
-            # Acquire only selected rowIndexes from the lists
-            # logger.info(f"self.plotDF{self.plotDF}")
-            # tempDF = self.plotDF[self.plotDF["spineIndex"] == rowIndexes]
-            # tempDF = self.plotDF.loc[self.plotDF['spineIndex'] == rowIndexes]
             tempDF = self.plotDF.loc[self.plotDF['spineIndex'].isin(rowIndexes)]
             # logger.info(f"tempDF {tempDF}")
             xDFStat = tempDF["spineX"]
             yDFStat = tempDF["spineY"]
-            # xDFStat = [xFilteredVals[i] for i in rowIndexes]
-            # yDFStat = [yFilteredVals[i] for i in rowIndexes]
             self.myHighlighter._setData(xDFStat, yDFStat)
 
             # Store selected rows for later use
             self.storedRowIdx = rowIndexes
-            logger.info(f"self.storedRowIdx {self.storedRowIdx}")
-            logger.info("select Highlighter Points called")
+            # logger.info(f"self.storedRowIdx {self.storedRowIdx}")
+            # logger.info("select Highlighter Points called")
 
     def getHighlightedIndexes(self):
         return self.storedRowIdx
