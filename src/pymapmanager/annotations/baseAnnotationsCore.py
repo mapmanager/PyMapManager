@@ -5,6 +5,8 @@ from typing import List, Union, Optional
 import numpy as np
 import pandas as pd
 import shapely
+import geopandas as gp
+from shapely.wkt import loads
 
 import mapmanagercore
 from mapmanagercore.annotations.single_time_point import SingleTimePointAnnotations
@@ -719,6 +721,7 @@ class LineAnnotationsCore(AnnotationsCore):
 
             summaryDf['Points'] = pointsList
             summaryDf['Length'] = lengthList
+            logger.info(f"summaryDf['Length'] {summaryDf['Length'] }")
         
         self._summaryDf = summaryDf
 
@@ -843,7 +846,34 @@ class LineAnnotationsCore(AnnotationsCore):
 
         return returnPointX, returnPointY, returnPointZ
     
-    import geopandas as gp
+    def explodeLineStrings(self, linestringSeries):
+        """
+        Splits LINESTRING Z geometries into individual points while maintaining segmentID.
+        
+        Args:
+            df (pd.DataFrame): DataFrame with 'segmentID' and 'geometry' (LINESTRING Z).
+        
+        Returns:
+            pd.DataFrame: Exploded DataFrame with individual coordinates and a rowIndex column.
+        """
+        # List to store rows for the DataFrame
+        rows = []
+
+        # Loop through each LINESTRING in the GeoSeries
+        for segmentID, geom in linestringSeries.items():
+            # Extract points from each LINESTRING geometry
+            for point in geom.coords:
+                # Append the segmentID and point to the rows list
+                rows.append({'segmentID': segmentID, 'x': point[0], 'y': point[1], 'z': point[2]})
+
+        # Create DataFrame from the rows list
+        df = pd.DataFrame(rows)
+
+        # Convert the points column into a more usable form (if necessary)
+        # df['point'] = df['point'].apply(lambda x: pd.Series({'x': x[0], 'y': x[1], 'z': x[2] if len(x) > 2 else None}))
+        # logger.info(f"exploded linestrings: {df}")
+        return df
+
     def getRadiusPlot(self, leftRight : str, sliceNumber, zPlusMinus) -> gp.GeoSeries:
         """
         Parameters
@@ -861,41 +891,28 @@ class LineAnnotationsCore(AnnotationsCore):
             return None
         
         # all segments (we are clipping to sliceNumber)
-        # this has color
         segmentDf = self.singleTimepoint.segments[:]
-        
-        # logger.info('segmenDf is:')
-        # print(segmentDf.columns)
 
         _startSlice = zSlice - zPlusMinus
         _stopSlice = zSlice + zPlusMinus
-        
+        # logger.info(f"getRadiusPlot segmentDf[leftRight] {segmentDf[leftRight]} type: {type(segmentDf[leftRight])}")
         # one row per segment -> gp.GeoSeries
-        xyLeft = clipLines(segmentDf[leftRight], zRange = (_startSlice, _stopSlice))
-
-        # logger.info('xyLeft is')
-        # print(xyLeft)
+        # xyLeft = clipLines(segmentDf[leftRight], zRange = (_startSlice, _stopSlice))
         
-        xyLeft = xyLeft.get_coordinates(include_z=True)  # z is empty
-        xyLeft['rowIndex'] = list(np.arange(len(xyLeft)))  # used to determine if points in plot are contiguous
+        xyRadius = self.explodeLineStrings(segmentDf[leftRight])
+        xyRadius['rowIndex'] = xyRadius.index
+        xyRadius = xyRadius[(xyRadius['z'] >= _startSlice) & (xyRadius['z'] <= _stopSlice)]
+        
+        # xyLeft = xyLeft.get_coordinates(include_z=True)  # z is empty
+
+        # this is inaccurate. Need to set rowindex beforehand
+        # xyLeft['rowIndex'] = list(np.arange(len(xyLeft)))  # used to determine if points in plot are contiguous
 
         summaryDf = self.getSummaryDf()  # gives us 'Color' per segment ID
-        xyLeft['color'] = summaryDf.loc[xyLeft.index, 'Color']
+        # logger.info(f"summaryDf {summaryDf}")
+        # xyLeft['color'] = summaryDf.loc[xyLeft['segmentID'], 'Color']
+        xyRadius['color'] = xyRadius['segmentID'].map(summaryDf['Color'])
+        logger.info(f"xyRadius {xyRadius}")
 
-        # logger.info('after xyLeft is:')
-        # print(xyLeft)
-
-        return xyLeft
+        return xyRadius
     
-    # def getRightRadiusPlot(self, sliceNumber, zPlusMinus):
-    #     zSlice = sliceNumber
-    #     if self.getNumSegments() == 0:
-    #         return None
-        
-    #     segmentDf = self.singleTimepoint.segments[:]
-    #     _startSlice = zSlice - zPlusMinus
-    #     _stopSlice = zSlice + zPlusMinus
-    #     xyRight= clipLines(segmentDf['rightRadius'], zRange = (_startSlice, _stopSlice))
-    #     xyRight = xyRight.get_coordinates(include_z=True)
-    #     xyRight['rowIndex'] = list(np.arange(len(xyRight)))
-    #     return xyRight

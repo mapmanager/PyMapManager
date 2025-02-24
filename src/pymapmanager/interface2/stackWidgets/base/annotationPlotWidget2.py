@@ -1379,6 +1379,7 @@ class linePlotWidget(annotationPlotWidget):
                 0 : do not connect to next
         """
 
+        # logger.info(f"checking df {df}")
         if len(df) == 0:
             return None
         
@@ -1394,7 +1395,6 @@ class linePlotWidget(annotationPlotWidget):
 
         dfRet = np.append(dfRet, 0)  # append 0 value
         # dfRet = np.insert(0, dfRet)  # append 0 value
-
         # logger.info(f"dfRet final {dfRet}")
 
         return dfRet
@@ -1442,7 +1442,7 @@ class linePlotWidget(annotationPlotWidget):
             if dfLeft is not None:
                 xLeft = dfLeft["x"].to_numpy()
                 yLeft = dfLeft["y"].to_numpy()
-                _lineConnectLeft = self.old_getScatterConnect(dfLeft)
+                _lineConnectLeft = self._getScatterConnect(dfLeft)
                 leftColor = dfLeft['color']
                 leftColor = leftColor.map(lambda x : pg.mkPen(width=5, color=x))
                 # logger.info(f'leftColor is:{leftColor}')
@@ -1451,7 +1451,7 @@ class linePlotWidget(annotationPlotWidget):
             if dfRight is not None:
                 xRight = dfRight["x"].to_numpy()
                 yRight = dfRight["y"].to_numpy()
-                _lineConnectRight = self.old_getScatterConnect(dfRight)
+                _lineConnectRight = self._getScatterConnect(dfRight)
                 rightColor = dfLeft['color']  # hex rgb
                 rightColor = rightColor.map(lambda x : pg.mkPen(width=5, color=x))
 

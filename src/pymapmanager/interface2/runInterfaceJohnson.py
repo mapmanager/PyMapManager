@@ -37,6 +37,8 @@ def run():
     # path ='\\Users\\johns\\Documents\\GitHub\\MapManagerCore\\sandbox\\data\\rr30a_s0.mmap'
     # path = 'C:\\Users\\johns\\Documents\\GitHub\\MapManagerCore\\data\\rr30a_s0u.mmap'
     path = '\\Users\\johns\\Documents\\GitHub\\MapManagerCore\\data\\rr30a_s0u.mmap'
+
+    path = 'C:\\Users\\johns\\Documents\\GitHub\\MapManagerCore-Data\\data\\single_timepoint.mmap'
     # path = '/Users/johns/Documents/GitHub/MapManagerCore/data/rr30a_s0u.mmap'
 
 
@@ -49,7 +51,7 @@ def run():
     # pooch path
     import mapmanagercore.data
     ## path = mapmanagercore.getSingleTimepointMap()
-    path = mapmanagercore.data.getSingleTimepointMap()
+    # path = mapmanagercore.data.getSingleTimepointMap()
 
     print("path", path)
     sw2 = app.loadStackWidget(path)
@@ -69,9 +71,9 @@ def run():
     # sw2.forceRefresh()
     # sw2.zoomToPointAnnotation(1, isAlt=True)
 
-    sw2.zoomToPointAnnotation(75, isAlt=True)
+    sw2.zoomToPointAnnotation(5, isAlt=True)
 
-    sw2.runPlugin('Scatter Plot', inDock=False)
+    # sw2.runPlugin('Scatter Plot', inDock=False)
     
     # spineID = 75
     # deleteEvent = DeleteSpineEvent(sw2, spineID)
