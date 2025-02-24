@@ -912,7 +912,6 @@ class LineAnnotationsCore(AnnotationsCore):
         # logger.info(f"summaryDf {summaryDf}")
         # xyLeft['color'] = summaryDf.loc[xyLeft['segmentID'], 'Color']
         xyRadius['color'] = xyRadius['segmentID'].map(summaryDf['Color'])
-        logger.info(f"xyRadius {xyRadius}")
 
         return xyRadius
     

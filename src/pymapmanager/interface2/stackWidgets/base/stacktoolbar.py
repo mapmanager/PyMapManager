@@ -285,7 +285,6 @@ class StackToolBar(QtWidgets.QToolBar):
         labelChecked = labelAction.isChecked()
 
         if not spineChecked and not labelChecked:
-            #
             logger.info("entering edge case")
             # keep them both off 
             pass
@@ -300,12 +299,39 @@ class StackToolBar(QtWidgets.QToolBar):
                 labelAction.setChecked(True)
                 self.signalPlotCheckBoxChanged.emit("UnRefreshed Labels")
     
+    def checkAnnotations(self, check: bool = False):
+        """ Uncheck and disable all annotations in the top tool bar
+        """
+        spinesAction = self.actionMenuDict["Spines"]
+        # spineChecked = spinesAction.isChecked()
+        spinesAction.setChecked(check)
+
+        labelAction = self.actionMenuDict["Labels"]
+        labelAction.setChecked(check)
+
+        radiusLinesAction = self.actionMenuDict["Radius Lines"]
+        radiusLinesAction.setChecked(check)
+
+        centerLineAction = self.actionMenuDict["Center Line"]
+        centerLineAction.setChecked(check)
+
     def plotMenuChange(self, action):
+        """ Emit a plot name after a given action (check box) is clicked
+
+        Args:
+            actions: holds the text() of plot that will be emitted to other widgets. This plot will be used to
+            update those widgets accordingly
+        """
 
         logger.info(f"plotMenuChange {action.text()}")
 
         if action.text() == "Annotations":
             # Disable Spines, Center Line, Radius Lines, Labels
+            # check off their boxes
+            annotationsAction = self.actionMenuDict["Annotations"]
+            annotationCheck = annotationsAction.isChecked()
+            logger.info(f"annotations check {annotationCheck}")
+            self.checkAnnotations(annotationCheck)
             self.labelBoxUpdate()
         
         if action.text() == "Radius Lines":
