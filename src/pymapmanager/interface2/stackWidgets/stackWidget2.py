@@ -1302,57 +1302,66 @@ class stackWidget2(mmWidget2):
         """
         return self._openPluginDict 
     
-    def loadInNewChannel(self, path = None, channel = None):
-        """ self, path: Union[str, np.ndarray], time: int = 0, channel: int = 0):
+    def loadInNewChannel(self, path:Optional[str] = None, channel = None):
+        """Given a file path append channels from file (can be more than one channel).
+        
+        self, path: Union[str, np.ndarray], time: int = 0, channel: int = 0):
         """
         if path is None:
-            newTifPath = QtWidgets.QFileDialog.getOpenFileName(None, 'New Tif File')[0]
+            importPath = QtWidgets.QFileDialog.getOpenFileName(None, 'New Tif File')[0]
         else:
-            newTifPath = path
+            importPath = path
 
-        # check to ensure it is a tif file, Note: might need to expand to list of supported files
-        _path, _ext = os.path.splitext(newTifPath)
-        if _ext not in IMPORT_FILE_EXTENSIONS:
-            logger.error(f'import must have extension "{IMPORT_FILE_EXTENSIONS}", got "{_ext}" -->> did not load.')
-            QtWidgets.QMessageBox.critical(self, "Error: Incorrect Extension", "Please use .tif as the file extension to save")
-            return
+        time = self.getStack().timepoint
 
-        #Check to ensure it is a valid image channel (same size)
-        from PIL import Image
+        useImageImporter = True
+        if useImageImporter:
+            self.getTimeSeriesCore().importChannels(importPath, time=time)
+
+        else:
+            # check to ensure it is a tif file, Note: might need to expand to list of supported files
+            _path, _ext = os.path.splitext(importPath)
+            if _ext not in IMPORT_FILE_EXTENSIONS:
+                logger.error(f'import must have extension "{IMPORT_FILE_EXTENSIONS}", got "{_ext}" -->> did not load.')
+                QtWidgets.QMessageBox.critical(self, "Error: Incorrect Extension", "Please use .tif as the file extension to save")
+                return
+
+            #Check to ensure it is a valid image channel (same size)
+            # from PIL import Image
+            
+            # with Image.open(newTifPath) as img:
+            #     newImgWidth, newImgHeight = img.size
+            #     # print("Width:", newImgWidth)
+            #     # print("Height:", newImgHeight)
+            #     newImgSlices = img.n_frames  # z dimension
+
+            # # Get old tif path
+            stackHeader = self.getStack().header
+            x = stackHeader["xPixels"]
+            y = stackHeader["yPixels"]
+            z = stackHeader["numSlices"]
+            # if newImgHeight != y or newImgWidth != x or newImgSlices != z:
+            #     logger.error(f'Incorrect shape when loading in new image.')
+            #     QtWidgets.QMessageBox.critical(self, "Error: Incorrect Image Size", 
+            #                                    f"Please upload an image with size x: {x}, y: {y}, z: {z} ")
+            #     return
+
+            isImgValid = self.getTimeSeriesCore().validateNewChannel(importPath, time)
+
+            if not isImgValid:
+                logger.error(f'Incorrect shape when loading in new image.')
+                QtWidgets.QMessageBox.critical(self, "Error: Incorrect Image Size", 
+                                            f"Please upload an image with size x: {x}, y: {y}, z: {z} ")
+                return
+
+            if channel is None:
+                channel = self._stack.getTimeSeriesTotalChannels() # len of total channels = new channel, since it is 0 based
         
-        # with Image.open(newTifPath) as img:
-        #     newImgWidth, newImgHeight = img.size
-        #     # print("Width:", newImgWidth)
-        #     # print("Height:", newImgHeight)
-        #     newImgSlices = img.n_frames  # z dimension
+            logger.info(f"channel num {channel}")
+            self.getTimeSeriesCore().loadInNewChannel(importPath, time=time, channel=channel)
 
-        # # Get old tif path
-        stackHeader = self.getStack().header
-        x = stackHeader["xPixels"]
-        y = stackHeader["yPixels"]
-        z = stackHeader["numSlices"]
-        # if newImgHeight != y or newImgWidth != x or newImgSlices != z:
-        #     logger.error(f'Incorrect shape when loading in new image.')
-        #     QtWidgets.QMessageBox.critical(self, "Error: Incorrect Image Size", 
-        #                                    f"Please upload an image with size x: {x}, y: {y}, z: {z} ")
-        #     return
-
-        time = self._stack.timepoint
-
-        isImgValid = self.getTimeSeriesCore().validateNewChannel(newTifPath, time)
-
-        if not isImgValid:
-            logger.error(f'Incorrect shape when loading in new image.')
-            QtWidgets.QMessageBox.critical(self, "Error: Incorrect Image Size", 
-                                           f"Please upload an image with size x: {x}, y: {y}, z: {z} ")
-            return
-
-        if channel is None:
-            channel = self._stack.getTimeSeriesTotalChannels() # len of total channels = new channel, since it is 0 based
-       
-        logger.info(f"channel num {channel}")
-        self.getTimeSeriesCore().loadInNewChannel(newTifPath, time=time, channel=channel)
-
+        # abb TODO make a signalChannelUpdate for add/remove/edit (channel name)
+        
         # reset stackToolBar
         self._topToolbar._setStack(theStack=self._stack)
 

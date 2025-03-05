@@ -336,13 +336,6 @@ class TimeSeriesCore():
                             points=pd.DataFrame())
 
         self._fullMap : MapAnnotations = map
-    
-    def _import_ome_zarr(self):
-        from mapmanagercore.image_importers.image_importer_ome_zarr import ImageImporter_Ome_Zarr
-        path = self.path
-        flz = ImageImporter_Ome_Zarr(path)
-        map = flz.getMapAnnotations()
-        self._fullMap : MapAnnotations = map
 
     def save(self):
         """ Stack saves changes to its .mmap Zarr file that is stored
@@ -389,6 +382,17 @@ class TimeSeriesCore():
 
         # self.getPointAnnotations()._buildTimepoint()  # rebuild single timepoint
         # self.getPointAnnotations()._buildDataFrame()
+
+    # abb imageImport can we just always have a zarr loader or a MultiImageLoader (not both)
+    def importChannels(self, importPath:str, time:int):
+        # if isinstance(self._fullMap._images, ZarrLoader):
+        #     logger.error('abb NOT IMPLEMENTED for ZarrLoader')
+        #     # self._fullMap._images.read(path, time=time, channel=channel)
+        # elif isinstance(self._fullMap._images, MultiImageLoader):
+        #     self._fullMap.loader.appendChannels(importPath, time)
+        
+        logger.warning('abb imageImport')
+        self._fullMap.loader.appendChannels(importPath, time)
 
     def loadInNewChannel(self, path: Union[str, np.ndarray], time: int = 0, channel: int = 0):
         """ Call loadInNewChannel in backend MapManagerCore
@@ -454,7 +458,8 @@ class TimeSeriesCore():
                                   destTimePoint = tp, destChannel = destChannel)
         
     def updateChannel(self, tp, channelIdx, newChannelName: str):
-        """"""
+        """
+        """
 
         # dict uses one based indexing
         updateDict = {"name" : newChannelName,

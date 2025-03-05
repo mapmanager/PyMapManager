@@ -33,9 +33,13 @@ def run():
     path = '/Users/cudmore/Sites/MapManagerCore-Data/data/Animal_145_Slice_1_Right.mmap.zip'
     path = '/Users/cudmore/Desktop/Animal_145_Slice_1_Right.mmap.zip'
 
-    from mapmanagercore.data import getNd2Channel_1, getSingleTimepointMap_nd2
+    from mapmanagercore.data import getNd2Channel_1, getSingleTimepointMap_nd2, getTiffChannel_1
     path = getNd2Channel_1()
-    path = getSingleTimepointMap_nd2()
+    # path = getSingleTimepointMap_nd2()
+
+    path = '/Users/cudmore/Desktop/Animal_145_Slice_1_Right.mmap.zip'
+
+    # path = getTiffChannel_1()
 
     app = PyMapManagerApp(sys.argv)
     # mw will be map widget if path has multiple timepoints, otherwise mw is a stackwidget2
