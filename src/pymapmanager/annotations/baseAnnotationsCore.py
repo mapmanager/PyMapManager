@@ -699,6 +699,10 @@ class LineAnnotationsCore(AnnotationsCore):
             summaryDf['Pivot Distance'] = segmentDf['pivotDistance']
             summaryDf['Color'] = segmentDf['color']
         
+        except (KeyError) as e:
+            logger.error(e)
+            logger.error(f'available keys are: {segmentDf.keys()}')
+            
         except (AttributeError) as e:
             # when no segments
             logger.warning('NO SEGMENTS !!!!!!!!')

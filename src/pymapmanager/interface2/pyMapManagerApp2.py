@@ -262,6 +262,8 @@ class OpenWidgetList:
         
             numTimepoints = _timeSeriesCore.numSessions
 
+            logger.info(f'numtimepoints:{numTimepoints}')
+            
             if numTimepoints == 1:
                 # single timepoint map
                 _aWidget = stackWidget2(timeseriescore=_timeSeriesCore, timepoint=0)
