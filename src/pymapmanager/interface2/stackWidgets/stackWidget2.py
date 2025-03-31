@@ -1411,6 +1411,9 @@ class stackWidget2(mmWidget2):
 
     def deleteChannel(self, channelIdx):
         """ Delete channel in backend
+
+        Args:
+            channelIdx: Channel number that is being deleted
         """
 
         timePoint = self._stack.timepoint
@@ -1465,6 +1468,10 @@ class stackWidget2(mmWidget2):
     # abj
     def moveChannel(self, srcChannel, destChannel):
         """ call getTimeSeriesCore to move channel (change channel indexing in backend)
+
+        Args:
+            srcChannel: initial channel number
+            destChannel: new channel number that srcChannel is moved to
         """
 
         timePoint = self._stack.timepoint
@@ -1480,10 +1487,24 @@ class stackWidget2(mmWidget2):
     def getDendrogramReplot(self, newSegmentID, spineAngleChecked, spineLengthChecked, spineLengthConstant):
         """ get necessary values to replot dendrogram widget
 
-        Return:
-            plotDF: df
-            spineLineDF: df
-            segmentLength:
+        returns: 
+            plotDF - df for points
+            spineLineDF - df for spine lines to points
+            segmentLength = float representing length of segment
 
         """
         return self._stack.getDendrogramReplot(newSegmentID, spineAngleChecked, spineLengthChecked , spineLengthConstant)
+
+    def getPointDataFrame(self):
+        """
+        Return: 
+            Spine Annotations Dataframe of type Pandas DF
+        """
+        return self._stack.getPointAnnotations().getDataFrame()
+    
+    def getLineDataFrame(self):
+        """
+        Return: 
+            Line Annotations Dataframe of type Pandas DF
+        """
+        return self._stack.getLineAnnotations().getDataFrame()

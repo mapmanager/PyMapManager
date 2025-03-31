@@ -489,6 +489,19 @@ class PyMapManagerMenus:
             self.sampleDataMenu.addAction(loadSampleAction)
         self.fileMenu.addMenu(self.sampleDataMenu)
 
+        # abj: copy spine dataframe to clip board or export spine dataframe to csv
+        self.fileMenu.addSeparator()
+        self.spineTableMenu = QtWidgets.QMenu("Spine Table ...")
+        copySpineTableAction = QtWidgets.QAction('Copy to ClipBoard', self.getApp())
+        # copySpineTable.setEnabled(isinstance(frontWindow, mmWidget2))
+        copySpineTableAction.triggered.connect(self.getApp().copySpineTable)
+        self.spineTableMenu.addAction(copySpineTableAction)
+
+        exportSpineTableAction = QtWidgets.QAction('Export to CSV', self.getApp())
+        exportSpineTableAction.triggered.connect(self.getApp().exportSpineTable)
+        self.spineTableMenu.addAction(exportSpineTableAction)
+        self.fileMenu.addMenu(self.spineTableMenu)
+
     def _refreshOpenRecent(self):
         """Dynamically generate the open recent stack/map menu.
         

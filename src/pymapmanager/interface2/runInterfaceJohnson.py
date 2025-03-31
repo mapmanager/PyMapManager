@@ -36,7 +36,7 @@ def run():
     # path = '../PyMapManager-Data/core-map/one-timepoint/oneTimepoint.mmap'
     # path ='\\Users\\johns\\Documents\\GitHub\\MapManagerCore\\sandbox\\data\\rr30a_s0.mmap'
     # path = 'C:\\Users\\johns\\Documents\\GitHub\\MapManagerCore\\data\\rr30a_s0u.mmap'
-    path = '\\Users\\johns\\Documents\\GitHub\\MapManagerCore\\data\\rr30a_s0u.mmap'
+    # path = '\\Users\\johns\\Documents\\GitHub\\MapManagerCore\\data\\rr30a_s0u.mmap'
 
     path = 'C:\\Users\\johns\\Documents\\GitHub\\MapManagerCore-Data\\data\\single_timepoint.mmap'
     # path = '/Users/johns/Documents/GitHub/MapManagerCore/data/rr30a_s0u.mmap'

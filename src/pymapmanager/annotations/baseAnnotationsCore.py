@@ -323,7 +323,6 @@ class SpineAnnotationsCore(AnnotationsCore):
                 allSpinesDf.loc[_userTypeRowLabels.index, 'mplMarker'] = _userTypeMarkers[userType]
 
         self._df = allSpinesDf
-
         self._buildSummaryDf()
 
         return self._df
@@ -901,6 +900,9 @@ class LineAnnotationsCore(AnnotationsCore):
         
         xyRadius = self.explodeLineStrings(segmentDf[leftRight])
         xyRadius['rowIndex'] = xyRadius.index
+
+        if 'z' not in xyRadius:
+            return None
         xyRadius = xyRadius[(xyRadius['z'] >= _startSlice) & (xyRadius['z'] <= _stopSlice)]
         
         # xyLeft = xyLeft.get_coordinates(include_z=True)  # z is empty

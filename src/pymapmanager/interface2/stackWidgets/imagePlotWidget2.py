@@ -176,7 +176,8 @@ class ImagePlotWidget(mmWidget2):
         acceptAction.setEnabled(hasPointSelection)
 
         # user type submenu
-        currentUserType = _pointAnnotations.getValue('userType', firstPointSelection)
+        if hasPointSelection:
+            currentUserType = _pointAnnotations.getValue('userType', firstPointSelection)
         # logger.info(f"currentUserType {currentUserType}")
         # if currentUserType == -1:
         #     currentUserType = 0
