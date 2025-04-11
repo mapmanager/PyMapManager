@@ -48,7 +48,7 @@ class stackWidget2(mmWidget2):
     def __init__(self,
                     timeseriescore : TimeSeriesCore,
                     mapWidget : "pymapmanager.interface2.mapWidget.mapWidget" = None,
-                    timepoint : int = 0,
+                    timepoint : int = 1,
     ):
         """Main stack widget that is parent to all other mmWidget2 widgets.
         
@@ -628,7 +628,13 @@ class stackWidget2(mmWidget2):
             logger.info(f'   === processing _pointSelection:{_pointSelection}')
 
             if len(_pointSelection) == 1:
+                # check if event spine id exists
                 _onePoint = _pointSelection[0]
+                if not self.getStack().getPointAnnotations().spineID_Exists(_onePoint):
+                    # happens (during tests)
+                    logger.error(f'point annotations do not contain {_onePoint}')
+                    return False
+                
                 segmentIndex = self.getStack().getPointAnnotations().getValue("segmentID", _onePoint)
                 segmentIndex= [int(segmentIndex)]
                 _stackSelection.setSegmentSelection(segmentIndex)
@@ -636,12 +642,12 @@ class stackWidget2(mmWidget2):
             else:
                 logger.warning(f'not setting segment selection for multi point selection {_pointSelection}')
 
-            if _debug:
-                logger.info('AFTER PROCESSING')
-                logger.info('   _eventSelection:')
-                print(_eventSelection)
-                logger.info('  _stackSelection:')
-                print(_stackSelection)
+            # if _debug:
+            #     logger.info('AFTER PROCESSING')
+            #     logger.info('   _eventSelection:')
+            #     print(_eventSelection)
+            #     logger.info('  _stackSelection:')
+            #     print(_stackSelection)
             
         else:
             # no point selection
@@ -962,6 +968,7 @@ class stackWidget2(mmWidget2):
 
         logger.info('=== ===   STACK WIDGET PERFORMING Move   === ===')
 
+        # abb we can only move one spine -> don't loop
         for item in event:
             logger.info(f'item:{item}')
 
@@ -973,6 +980,8 @@ class stackWidget2(mmWidget2):
             
             logger.info(f'   spineID:{spineID} x:{x} y:{y} z:{z}')
             _pointAnnotation = self.getStack().getPointAnnotations()
+            if not _pointAnnotation.spineID_Exists(spineID):
+                return False
             _pointAnnotation.moveSpine(spineID=spineID, x=x, y=y, z=z)
 
         # PUT THIS BACK IN
@@ -980,6 +989,9 @@ class stackWidget2(mmWidget2):
 
         self._afterEdit2(event)
         
+        # abb baltimore april
+        # return True
+    
     def manualConnectSpineEvent(self, event : pmmEvent):
         """Update back end with a manually specified brightestIndex.
         """
@@ -1174,7 +1186,7 @@ class stackWidget2(mmWidget2):
         
         except AttributeError:
             logger.info(f"AttributeError: NoneType annotation")
-            return
+            return False
         
         self.getStack().undo(annotationType)
         
@@ -1194,6 +1206,8 @@ class stackWidget2(mmWidget2):
         logger.warning('=== ===   STACK WIDGET PERFORMING Redo   === ===')
 
         redoEvent = self.getUndoRedo().doRedo()
+        if redoEvent is None:
+            return
         annotationType = redoEvent.category
         logger.info(f'redoEvent:{redoEvent}')
         self.getStack().redo(annotationType)
@@ -1355,8 +1369,9 @@ class stackWidget2(mmWidget2):
                 return
 
             if channel is None:
-                channel = self._stack.getTimeSeriesTotalChannels() # len of total channels = new channel, since it is 0 based
-        
+                # channel = self._stack.getTimeSeriesTotalChannels() # len of total channels = new channel, since it is 0 based
+                channel = self._stack.numChannels
+
             logger.info(f"channel num {channel}")
             self.getTimeSeriesCore().loadInNewChannel(importPath, time=time, channel=channel)
 

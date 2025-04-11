@@ -1,13 +1,15 @@
-from typing import Literal, Optional
+from typing import Literal, Optional, List
 
 import numpy as np
 
-from mapmanagercore.lazy_geo_pd_images import Metadata
+# from mapmanagercore.lazy_geo_pd_images import Metadata
 
 import pymapmanager
 from pymapmanager.stackcontrast import StackContrast
 from pymapmanager.annotations.baseAnnotationsCore import SpineAnnotationsCore, LineAnnotationsCore
 # from pymapmanager.timeseriesCore import TimeSeriesCore
+from mapmanagercore.metadata.metadata3 import TimepointMetadata
+
 from pymapmanager._logger import logger
 
 class stack:
@@ -17,7 +19,8 @@ class stack:
     def __init__(self,
                 timeseriescore : pymapmanager.TimeSeriesCore,
                 loadImageData : bool = True,
-                timepoint : int = 0,
+                # timepoint : int = 0,
+                timepoint:int = 0,
                 defaultChannelIdx = 0):
         """Load a stack from a .mmap zarr file or an in memory TimeSeriesCore.
 
@@ -64,10 +67,10 @@ class stack:
     def getTimeSeriesCore(self) -> pymapmanager.TimeSeriesCore:
         return self._fullMap
 
-    def getMetadata(self) -> Metadata:
+    def getMetadata(self) -> TimepointMetadata:  #Metadata:
         """Get metadata from the core map.
         """
-        return self._fullMap.getMapImages().metadata(self.timepoint)
+        return self._fullMap.getTimepointMetadata(self.timepoint)
     
     def __str__(self):
         x = self.header['xPixels']
@@ -141,7 +144,8 @@ class stack:
         # return self.header['numChannels']
 
         # abj
-        return self.getTimeSeriesTotalChannels()
+        # return self.getTimeSeriesTotalChannels()
+        return len(self.getChannelList())
     
     def getFileName(self) -> str:
         return self._fullMap.filename
@@ -162,7 +166,7 @@ class stack:
     def getLineAnnotations(self) -> LineAnnotationsCore:
         return self._lines
 
-    def getAutoContrast(self, channelIdx):
+    def _old_getAutoContrast(self, channelIdx):
         """Get auto contrast for an entire stack
         
         Expensive as this loads the entire stack
@@ -174,7 +178,7 @@ class stack:
 
     def getImageSlice(self,
                       imageSlice : int,
-                      channelIdx : int = 1
+                      channelIdx : int = 0
                       ) -> Optional[np.ndarray]:
         """Get a single image slice from a channel.
 
@@ -190,8 +194,8 @@ class stack:
         
         # channelIdx = channel - 1
         
-        if not isinstance(imageSlice, int):
-            imageSlice = int(imageSlice)
+        # if not isinstance(imageSlice, int):
+        #     imageSlice = int(imageSlice)
 
         # logger.info(f'fetching channelIdx:{channelIdx}')
         
@@ -334,16 +338,15 @@ class stack:
         logger.info(f"totalChannels {totalChannels}")
         return len(totalChannels)
     
-    def getChannelList(self):
-        listOfChannels = self._fullMap.getImagesCoreTotalChannels(self._timepoint)
-        # logger.info(f"list of channels {listOfChannels}")
-        return listOfChannels
+    def getChannelList(self) -> List[int]:
+        """Get list of channel keys.
+        """
+        timepointMetadata = self._fullMap.getTimepointMetadata(self._timepoint)
+        return timepointMetadata.channelKeys
     
-    def getChannelDict(self):
-        # TODO: current metaData is not storing channel names
+    def _old_getChannelDict(self):
         metaData = self.getMetadata()
         listOfChannels = metaData.channelNames
-        # logger.info(f"dict of channels {listOfChannels}")
         return listOfChannels
     
     def resetStackContrast(self):

@@ -121,8 +121,9 @@ class mapTableWidget(QtWidgets.QWidget):
         # aLabel = QtWidgets.QLabel('Link')
         # hLayout.addWidget(aLabel)
 
-        linkCheckbox = QtWidgets.QCheckBox('Link')
-        hLayout.addWidget(linkCheckbox)
+        # abb turn off for single timepoint
+        # linkCheckbox = QtWidgets.QCheckBox('Link')
+        # hLayout.addWidget(linkCheckbox)
 
         closeAllButton = QtWidgets.QPushButton('Close All')
         hLayout.addWidget(closeAllButton)

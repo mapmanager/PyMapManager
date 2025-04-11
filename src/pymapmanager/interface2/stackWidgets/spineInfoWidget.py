@@ -195,13 +195,16 @@ class SpineInfoWidget(mmWidget2):
             self._enableAllWidgets(False)
             return
 
-        self._enableAllWidgets(True)
-
         # just the first row selection
         firstRowIndex = rowIdx[0]
+        if not self.pa.spineID_Exists(firstRowIndex):
+            return
+        
+        self._enableAllWidgets(True)
+
         self._pointRowSelection = firstRowIndex
 
-        logger.info(f'firstRowIndex:{firstRowIndex}')
+        # logger.info(f'firstRowIndex:{firstRowIndex}')
 
         # keys are all possible columns, we only show columns in infoList
         # values are, well, the values

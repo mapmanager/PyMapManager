@@ -922,8 +922,13 @@ class pointPlotWidget(annotationPlotWidget):
         logger.info(f'event:{event}')
         
         _undoEvent = event.getUndoEvent()
-
+        if _undoEvent is None:
+            return
+        
         # logger.info(f'abj _undoEvent: {_undoEvent}')
+        
+        if _undoEvent is None:
+            return False
         
         if _undoEvent.category != "Spine":
             return
@@ -955,6 +960,9 @@ class pointPlotWidget(annotationPlotWidget):
         # TODO: on undo move, redraw label
         _redoEvent = event.getRedoEvent()
 
+        if _redoEvent is None:
+            return False
+        
         if _redoEvent.category != "Spine":
             return
 
@@ -1586,6 +1594,9 @@ class linePlotWidget(annotationPlotWidget):
         """
 
         # abj: avoiding unnecessary updates, but can remove
+        if event.getUndoEvent() is None:
+            return
+        
         if event.getUndoEvent().category != "Segment": 
             return
 
@@ -1598,7 +1609,9 @@ class linePlotWidget(annotationPlotWidget):
     def redoEvent(self, event : RedoEvent):
         """
         """
-
+        if event.getRedoEvent() is None:
+            return False
+        
         if event.getRedoEvent().category != "Segment": # abj
             return
     

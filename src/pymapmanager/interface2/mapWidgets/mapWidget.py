@@ -393,16 +393,18 @@ class mapWidget(MainWindow):
         # logger.warning('abb add dendrogram widget back in')
         # dendrogramWidget = pmm.interface2.mapWidgets.dendrogramWidget(self)
         
-        # to hide form circular imports
-        from pymapmanager.interface2.mapWidgets.mapDendrogramWidget import MapDendrogramWidget
-        dendrogramWidget = MapDendrogramWidget(self)
-        dendrogramWidget.signalOpenRun.connect(self.openStackRun)
-        
-        # as a dock
-        # dendrogramWidgetName = dendrogramWidget._widgetName
-        # dendrogramDock = self._addDockWidget(dendrogramWidget, 'right', '')
-        # self._widgetDict[dendrogramWidgetName] = dendrogramDock  # the dock, not the widget ???
-        hBoxLayout_main.addWidget(dendrogramWidget)
+        # to hide from circular imports
+        # logger.info('turned off dendrogram widget to focus on single timepoints')
+        if 0:
+            from pymapmanager.interface2.mapWidgets.mapDendrogramWidget import MapDendrogramWidget
+            dendrogramWidget = MapDendrogramWidget(self)
+            dendrogramWidget.signalOpenRun.connect(self.openStackRun)
+            
+            # as a dock
+            # dendrogramWidgetName = dendrogramWidget._widgetName
+            # dendrogramDock = self._addDockWidget(dendrogramWidget, 'right', '')
+            # self._widgetDict[dendrogramWidgetName] = dendrogramDock  # the dock, not the widget ???
+            hBoxLayout_main.addWidget(dendrogramWidget)
 
     def contextMenu(self):
         logger.info('')

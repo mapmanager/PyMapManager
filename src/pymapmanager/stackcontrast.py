@@ -11,28 +11,41 @@ class StackContrast():
         self._setDefaults()
 
     def getValue(self, channelIdx, key):
+        # channelIdx += 1
         return self._dict[channelIdx][key]
     
     def setValue(self, channelIdx, key, value):
         self._dict[channelIdx][key] = value
 
     def _setDefaults(self):
-        metadata = self._stack.getMetadata()
-        metadataContrast = metadata.metadataContrast
         # logger.info('xxx metadata')
-        # from pprint import pprint
+        from pprint import pprint
         # pprint(metadata)
 
+        timepointMetadata = self._stack.getMetadata()
+
         # for channelIdx in range(self._stack.numChannels):
-        listOfChannelIdx = self._stack.getChannelList()
-        for channelIdx in listOfChannelIdx: # abj
-            minAutoContrast, maxAutoContrast, globalMin, globalMax = self._stack.getAutoContrast(channelIdx=channelIdx)
+        for channelIdx in self._stack.getChannelList(): # abj
+            channelMetadata = timepointMetadata.getChannelMetadata(channelIdx)
+            # print('channelMetadata is:')
+            # pprint(channelMetadata)
+
+            # minAutoContrast, maxAutoContrast, globalMin, globalMax = self._stack.getAutoContrast(channelIdx=channelIdx)
+            minAutoContrast = channelMetadata.minContrast
+            maxAutoContrast = channelMetadata.maxContrast
+            globalMin = channelMetadata.minInt
+            globalMax = channelMetadata.maxInt
 
             minAutoContrast_rgb = 0
             maxAutoContrast_rgb = 200
             
+            # channelIdx in core is now a str (not int)
+            # we need to abstract this away from PyMapMAnager
+            # it should not care which it is
+            channelInt = int(channelIdx)
+            
             self._dict[channelIdx] = {
-                'colorLUT': self._stack.channelColors[channelIdx],
+                'colorLUT': self._stack.channelColors[channelInt],
                 'globalMin': globalMin,  
                 'globalMax': globalMax,
                 'minAutoContrast': minAutoContrast,  # set by user

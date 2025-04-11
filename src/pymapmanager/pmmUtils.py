@@ -53,12 +53,12 @@ def addUserPath(jsonDump):
     userPmmFolder = _getUserPmmFolder()
 
     if userPmmFolder not in sys.path:
-        logger.info(f"Adding to sys.path: {userPmmFolder}")
+        # logger.info(f"Adding to sys.path: {userPmmFolder}")
         sys.path.append(userPmmFolder)
 
-    logger.info("sys.path is now:")
-    for path in sys.path:
-        logger.info(f"    {path}")
+    # logger.info("sys.path is now:")
+    # for path in sys.path:
+    #     logger.info(f"    {path}")
 
     return madeUserFolder
 

@@ -65,7 +65,9 @@ def test_plugins(qtbot, qapp):
     
     print('qapp:', qapp)
     
-    mmapPath = mapmanagercore.data.getSingleTimepointMap()
+    logger.warning('push new maps to core and reactivate')
+    # mmapPath = mapmanagercore.data.getSingleTimepointMap()
+    mmapPath = '/Users/cudmore/Desktop/sample_mmaps/zarLoader_1.mmap'
 
     logger.info(f'opening stack widget path {mmapPath}')
     stackWidgetWindow = qapp.loadStackWidget(mmapPath)
@@ -146,7 +148,7 @@ def manipulate_spines(stackWidgetWindow):
         return
     
     # # Move spine
-    items = [6]
+    # items = [6]
     spineID = 6
     x = 557
     y = 222

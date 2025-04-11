@@ -60,6 +60,9 @@ class AnalysisParamWidget(mmWidget2):
         # self.changedDict = {}
         self._buildGUI()
 
+    def on_bool_combo_box(self, paramName, value):
+        logger.warning(f'TODO: paramName:{paramName} value:{value}')
+        
     def on_spin_box(self, paramName, value):
         """
         When QDoubldeSpinBox accepts None, value is -1e9

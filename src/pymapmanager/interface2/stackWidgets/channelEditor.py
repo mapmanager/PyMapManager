@@ -29,9 +29,9 @@ class ChannelEditor(mmWidget2):
 
         self.gridLayout = QtWidgets.QGridLayout()
         numberOfChannels = self.stackWidget.getStack().numChannels
-        dictOfChannelPaths = self.stackWidget.getStack().getChannelDict()
-        listOfChannelIdx = self.stackWidget.getStack().getChannelList()
-        self._listOfChannelIdx = listOfChannelIdx
+        # dictOfChannelPaths = self.stackWidget.getStack().getChannelDict()
+        # listOfChannelIdx = self.stackWidget.getStack().getChannelList()
+        # self._listOfChannelIdx = listOfChannelIdx
         
         stackerHeader = self.stackWidget.getStack().header
         zSlice = stackerHeader["numSlices"]
@@ -56,9 +56,11 @@ class ChannelEditor(mmWidget2):
         maxNumChannels = self.stackWidget.getStack().maxNumChannels
 
         # Display channel list based on what is shown rather than the actual index in the backend
-        for channelIdx in range(maxNumChannels): # max number of channels designated by user
+        # for channelIdx in range(maxNumChannels): # max number of channels designated by user
+        for channelIdx in self.stackWidget.getStack().getChannelList():
             # For channels that are already loaded/ imported
-            if channelIdx in listOfChannelIdx:
+            # if channelIdx in listOfChannelIdx:
+            if 1:
                 # logger.info(f"channel index in loop {channelIdx}")
                 self.totalChannelsShown += 1
                 try:
@@ -68,7 +70,8 @@ class ChannelEditor(mmWidget2):
 
                 # Offset by 1,  channel idx being 0 based
                 actualIndex = channelIdx # index within backend
-                channelRowNum = str(channelIdx + 1)  
+                # channelRowNum = str(channelIdx + 1)  
+                channelRowNum = channelIdx  
                 # Offset by 1, accounting for initial column name 
                 # self.gridLayout.addWidget(QtWidgets.QLabel(channelRowNum), channelIdx + 1, 0)
                 # self.gridLayout.addWidget(DraggableWidget(channelPath, channelIdx + 1, 1, self, name = "widget " + 
@@ -84,7 +87,8 @@ class ChannelEditor(mmWidget2):
                 
                                                 # ), channelIdx + 1, 1)
 
-                if channelIdx > 0: # For now have a restriction on deleting first channel
+                # if channelIdx > 0: # For now have a restriction on deleting first channel
+                if 1:
                     deleteButton = QtWidgets.QPushButton('')
                     # self.gridLayout.addWidget(deleteButton, channelIdx + 1, 2)
                     self.gridLayout.addWidget(deleteButton, self.totalChannelsShown, 2)
@@ -97,10 +101,10 @@ class ChannelEditor(mmWidget2):
                 
                 # lastChannelIdx = channelIdx
     
-        if self.totalChannelsShown != maxNumChannels:
-
-            self.gridLayout.addWidget(ImportChannelWidget(channelIdx = actualIndex + 1, parent= self), 
-                                                        self.totalChannelsShown + 1, 1)
+        # abb removed
+        # if self.totalChannelsShown != maxNumChannels:
+        #     self.gridLayout.addWidget(ImportChannelWidget(channelIdx = actualIndex + 1, parent= self), 
+        #                                                 self.totalChannelsShown + 1, 1)
             # else:
             #     channelRowNum = channelIdx + 1
             #     self.gridLayout.addWidget(QtWidgets.QLabel(str(channelRowNum)), channelRowNum, 0)
@@ -129,6 +133,7 @@ class ChannelEditor(mmWidget2):
         if channelIdx < self.totalChannelsShown - 1:
             # decrement actual channel indexes of channels after
             # this way all the indexes correspond within the GUI (e.g. color channel indexing)
+            # abb todo: get channel keys from map timepoint
             for actualIndex in self._listOfChannelIdx:
                 # logger.info(f"actual Idx {actualIndex}")
                 if channelIdx <  actualIndex:

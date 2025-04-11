@@ -28,7 +28,8 @@ def getUserTypeMarkers_mpl():
 class AnnotationsCore:
     def __init__(self,
                  timeSeriesCore : TimeSeriesCore,  # multi timepoint
-                 timepoint : int = 0,
+                #  timepoint : int = 0,
+                 timepoint,
                  ):
         """
         Parameters

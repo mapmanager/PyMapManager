@@ -1250,7 +1250,8 @@ class ScatterPlotWidget_(QtWidgets.QWidget):
             rowIndexes: indexes of rows that need to be selected within highlighter plot
         """
         if rowIndexes is None or rowIndexes == []:
-            self.myHighlighter._setData([], [])
+            if self.myHighlighter is not None:
+                self.myHighlighter._setData([], [])
         else: 
             columnNameX = self.xPlotWidget.getCurrentStat()
             columnNameY = self.yPlotWidget.getCurrentStat()

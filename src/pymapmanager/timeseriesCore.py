@@ -18,6 +18,7 @@ from mapmanagercore.schemas import Spine, Segment
 from mapmanagercore.lazy_geo_pd_images.loader.zarr import ZarrLoader
 from mapmanagercore.lazy_geo_pd_images.loader.imageio import MultiImageLoader
 from mapmanagercore.annotations.single_time_point import SingleTimePointAnnotations
+from mapmanagercore.metadata.metadata3 import TimepointMetadata
 
 from pymapmanager._logger import logger
 
@@ -35,10 +36,14 @@ class ImagesCore:
             # TypeError: 'tuple' object does not support item assignment
             zRange = (zRange[0], zRange[0]+1)
 
+        logger.warning(f'timepoint:{timepoint} {type(timepoint)}')
+        logger.warning(f'channelIdx:{channelIdx} {type(channelIdx)}')
+        logger.warning(f'zRange:{zRange} {type(zRange)}')
+
         return self._fullMap._images.fetchSlices(timepoint, channelIdx, zRange)
         # return self._fullMap._images.fetchSlices(timepoint, channelIdx, (zRange, zRange+1))
 
-    def getAutoContrast(self, timepoint, channel) -> Tuple[int, int, int, int]:
+    def _old_getAutoContrast(self, timepoint, channel) -> Tuple[int, int, int, int]:
         """
         Parameters
         ----------
@@ -51,9 +56,12 @@ class ImagesCore:
         _min, _max, _globalMin, _globalMax = self._fullMap.getAutoContrast_qt(timepoint, channel=channel)
         return _min, _max, _globalMin, _globalMax
     
-    def metadata(self, timepoint):
+    def metadata(self, timepoint) -> TimepointMetadata:
+        """Get metadata for a timepoint.
+        """
         # return self._fullMap.metadata(timepoint)
-        return self._fullMap._images.metadata(timepoint) # abj
+        #return self._fullMap._images.metadata(timepoint) # abj
+        return self._fullMap._images.metadata.getTimepoint(timepoint) # abb
     
     def getTotalChannels(self, tp):
         return self._fullMap._images.channels(tp)
@@ -175,6 +183,9 @@ class TimeSeriesCore():
 
         self._undoRedoManager = UndoRedoManager()
 
+    def getTimepointMetadata(self, tp:int):
+        return self._imagesCore.metadata(tp)
+    
     def getFileName(self):
         return self._path
     
@@ -322,14 +333,12 @@ class TimeSeriesCore():
         
         Result is a single timepoint with no segments and no spines.
         
-        Notes
-        -----
-        This only loads one channel
         """
         path = self.path
 
-        loader = MultiImageLoader()
-        loader.read(path, channel=0)
+        from mapmanagercore.lazy_geo_pd_images.loader.mm_map_loader import mmMapLoader
+        loader = mmMapLoader()
+        loader.importTimepoint(path)
         
         map = MapAnnotations(loader,
                             lineSegments=pd.DataFrame(),

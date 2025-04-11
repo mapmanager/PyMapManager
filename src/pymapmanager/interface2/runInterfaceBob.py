@@ -1,6 +1,7 @@
 """Open a stack widget.
 """
 
+import os
 import sys
 
 import mapmanagercore.data
@@ -43,6 +44,22 @@ def run():
     # path = getTiffChannel_1()
 
     path = '/Users/cudmore/Desktop/single_timepoint_20250108.mmap'
+
+    path = '/Users/cudmore/Desktop/zarrLoader_3.mmap'
+
+    path = '/Users/cudmore/Desktop/single_timepoint_20250322.mmap'
+    
+    path = '/Users/cudmore/Desktop/sample_mmaps/zarLoader2.mmap'
+    path = '/Users/cudmore/Desktop/sample_mmaps/zarLoader_1.mmap'
+    # path = '/Users/cudmore/Desktop/sample_mmaps/zarLoader_3.mmap'
+    
+    if not os.path.isdir(path):
+        logger.error('did not find folder path')
+        logger.error(path)
+        return
+    
+    # corrupt ???
+    # path = '/Users/cudmore/Desktop/single_timepoint_20250322.mmap.zip'
     
     app = PyMapManagerApp(sys.argv)
     # mw will be map widget if path has multiple timepoints, otherwise mw is a stackwidget2

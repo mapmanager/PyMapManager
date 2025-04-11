@@ -5,7 +5,7 @@ from qtpy import QtGui, QtCore, QtWidgets
 # from pymapmanager.stack import stack
 
 from pymapmanager._logger import logger
-from pymapmanager.interface2.stackWidgets.base.mmWidget2 import pmmEvent
+# from pymapmanager.interface2.stackWidgets.base.mmWidget2 import pmmEvent
 
 class StackToolBar(QtWidgets.QToolBar):
     """ToolBar at the top of a stackWidget.
@@ -30,7 +30,8 @@ class StackToolBar(QtWidgets.QToolBar):
         self._displayOptionsDict = displayOptionsDict
 
         # list of channel strings 1,2,3,...
-        self._channelList = [str(x+1) for x in range(self._myStack.numChannels+1)]
+        # self._channelList = [str(x+1) for x in range(self._myStack.numChannels+1)]
+        self._channelList = self._myStack.getChannelList()
 
         self._currentChannel = None # abj
 
@@ -72,7 +73,8 @@ class StackToolBar(QtWidgets.QToolBar):
             actionWidget.setDisabled(True)
             actionWidget.setVisible(False)
 
-        for channelIdx in range(self._myStack.numChannels):
+        # for channelIdx in range(self._myStack.numChannels):
+        for channelIdx in self._myStack.getChannelList():
             # logger.info(f"channelIdx visible {channelIdx} ")
             self._actionDict[channelIdx].setDisabled(False)
             self._actionDict[channelIdx].setVisible(True)
@@ -95,37 +97,10 @@ class StackToolBar(QtWidgets.QToolBar):
         """
         this REQUIRES a list of actions, self.tooList
         """
-        logger.info(f'checked:{checked} toolNameStr:{toolNameStr} {type(toolNameStr)}')
+
+        self.slot_setChannel(toolNameStr)
         
-        if toolNameStr in ['1', '2', '3']:
-            channelIdx = int(toolNameStr) - 1
-        else:
-            channelIdx = toolNameStr  # rgb
-    
-        logger.info(f'   -->> channelIdx:{channelIdx}')
-
-        # action = self._actionList[index]
-        # # actionName = action.statusTip()
-        # actionName = action.text()  # like '1', '2', '3', 'rgb'
-        # isChecked = action.isChecked()
-        
-        # logger.info(f'actionName:"{actionName}" isChecked:{isChecked} index:{index}')
-
-        # if actionName in self._channelList:
-        #     # channel 1,2,3
-        #     channelNumber = int(actionName)
-        #     channelIdx = channelNumber - 1
-        # else:
-        #     # rgb
-        #     channelIdx = actionName
-
-        # logger.info(f"actionName {actionName}")
-        # logger.info(f"channel emit {channel}")
-
-        # getting sloppy
-        self.slot_setChannel(channelIdx)
-        
-        self.signalChannelChange.emit(channelIdx)  # channel can be 'rgb'
+        self.signalChannelChange.emit(toolNameStr)  # channel can be 'rgb'
 
     def _old_on_slidingz_checkbox(self, state):
         checked = state == 2
@@ -194,13 +169,13 @@ class StackToolBar(QtWidgets.QToolBar):
         # make ['1', '2', '3', 'rgb'] disjoint selections
         self.channelActionGroup = QtWidgets.QActionGroup(self)
 
-        for channelIdx in range(self._myStack.maxNumChannels):
-            # logger.info(f"channel idx {channelIdx}")
+        for channelIdx in self._myStack.getChannelList():
             iconPath = ''  # use toolName to get from canvas.util
             theIcon = QtGui.QIcon(iconPath)
 
-            toolNameStr = str(channelIdx + 1)
-            
+            # toolNameStr = str(int(channelIdx) + 1)
+            toolNameStr = channelIdx
+
             theAction = QtWidgets.QAction(theIcon, toolNameStr)
             theAction.setCheckable(True)
             if toolNameStr == str(_defaultChannel):

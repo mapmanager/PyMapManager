@@ -65,10 +65,12 @@ class ImagePlotWidget(mmWidget2):
         
         self._currentSlice = 0
         
-        _channelNumber = self._displayOptionsDict['windowState']['defaultChannel']  # 1 based
+        # _channelNumber = self._displayOptionsDict['windowState']['defaultChannel']  # 1 based
+        _channelNumber = '0'
 
-        self._displayThisChannelIdx = _channelNumber - 1
-        
+        # self._displayThisChannelIdx = _channelNumber - 1
+        self._displayThisChannelIdx = _channelNumber
+
         self._sliceImage = None
         self._sliderBlocked = False
 
@@ -291,18 +293,6 @@ class ImagePlotWidget(mmWidget2):
             self._setChannel(1)
             self.refreshSlice()
 
-        # normally mmWidget2 base class handles these
-        # here we need to forward request to our child point plot
-        # elif event.key() == QtCore.Qt.Key_Escape:
-        #    self._aPointPlot._selectAnnotation([])
-            
-        # elif event.key() in [QtCore.Qt.Key_Delete, QtCore.Qt.Key_Backspace]:
-        #     self._aPointPlot._deleteSelection()
-
-        # elif event.key() in [QtCore.Qt.Key_Delete, QtCore.Qt.Key_Backspace]:
-        #     # if we have a point selection. delete it from backend
-        #     self._aPointPlot._deleteAnnotation()
-
         elif event.key() in [QtCore.Qt.Key_Up]:
             # up one slice
             newSlice = self._currentSlice - 1
@@ -325,7 +315,7 @@ class ImagePlotWidget(mmWidget2):
         #    self._myStack.printHeader()
 
         elif event.key() == QtCore.Qt.Key_N:
-            logger.info('open note setting dialog for selected annotation (todo: what is the selected annotation!!!')
+            logger.warning('TODO: open note setting dialog for selected annotation (todo: what is the selected annotation!!!')
 
         elif event.key() in [QtCore.Qt.Key_Delete, QtCore.Qt.Key_Backspace]:
             logger.info("deleting within imageplot widget")
@@ -335,9 +325,8 @@ class ImagePlotWidget(mmWidget2):
             #TODO: Delete line/ segment points?
 
         else:
-            # if not handled by *this, this will continue propogation
+            # if not handled, this will continue propogation
             event.setAccepted(False)
-            #logger.warning(f'key not understood {event.text()}')
 
     def _onMouseClick_scene(self, event):
         """Take an action on mouse click.
@@ -570,7 +559,8 @@ class ImagePlotWidget(mmWidget2):
         # rgb
         if self._channelIsRGB():
             tmpLevelList = []  # list of [min,max]
-            for channelIdx in range(self._myStack.numChannels):
+            # for channelIdx in range(self._myStack.numChannels):
+            for channelIdx in self._myStack.getChannelList():
                 oneMinContrast = self._myStack.contrast.getValue(channelIdx, 'minAutoContrast-rgb')
                 oneMaxContrast = self._myStack.contrast.getValue(channelIdx, 'maxAutoContrast-rgb')
 

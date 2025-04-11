@@ -262,7 +262,7 @@ class OpenWidgetList:
         
             numTimepoints = _timeSeriesCore.numSessions
 
-            logger.info(f'numtimepoints:{numTimepoints}')
+            logger.info(f'_timeSeriesCore.numSessions is:{numTimepoints}')
             
             if numTimepoints == 1:
                 # single timepoint map

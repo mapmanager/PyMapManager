@@ -259,9 +259,11 @@ class StackSelection:
     #
     def setSegmentSelection(self, items : List[int]):
         if items is None:
-            pass
+            items = []
         elif not isinstance(items, list):
             items = [items]
+
+        logger.error(f'yyy items:{items}')
 
         for _idx, item in enumerate(items):
             items[_idx] = int(item)

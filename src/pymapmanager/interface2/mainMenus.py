@@ -120,7 +120,7 @@ class PyMapManagerMenus:
     def _refreshPluginsMenu(self):
         """Build a plugin menu with all available stack and map plugins.
         """
-        logger.info('re-create plugin menu with available stack and map plugins')
+        # logger.info('re-create plugin menu with available stack and map plugins')
 
         # start with an empy menu
         self.pluginsMenu.clear()
@@ -141,7 +141,7 @@ class PyMapManagerMenus:
         _activateStackPlugins = windowType in ['stack', 'stackWithMap']
         """If our front window is a stack widget."""
         for pluginName in stackPluginDict.keys():
-            logger.info(f'pluginName:{pluginName}')
+            # logger.info(f'pluginName:{pluginName}')
             action = QtWidgets.QAction(pluginName, self.getApp(), checkable=True)
             action.setEnabled(_activateStackPlugins)
             action.triggered.connect(partial(self._onPluginMenuAction, pluginName, 'stack'))

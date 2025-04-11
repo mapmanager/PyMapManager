@@ -170,7 +170,8 @@ class HistogramWidget(mmWidget2):
 
         # a _histogram for each channel
         self.histWidgetList = []
-        for channelIdx in range(self._myStack.numChannels):
+        # for channelIdx in range(self._myStack.numChannels):
+        for channelIdx in self._myStack.getChannelList():
             oneHistWidget = _histogram(self, self._myStack, channelIdx, sliceNumber=self._sliceNumber)
             oneHistWidget.signalContrastChange.connect(self.slot_contrastChanged)
             self.histWidgetList.append(oneHistWidget)
