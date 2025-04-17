@@ -1,27 +1,25 @@
-from typing import Literal, Optional, List
+from typing import Literal, Optional, List, Tuple
 
 import numpy as np
 
 # from mapmanagercore.lazy_geo_pd_images import Metadata
 
 import pymapmanager
-from pymapmanager.stackcontrast import StackContrast
 from pymapmanager.annotations.baseAnnotationsCore import SpineAnnotationsCore, LineAnnotationsCore
-# from pymapmanager.timeseriesCore import TimeSeriesCore
-from mapmanagercore.metadata.metadata3 import TimepointMetadata
+from mapmanagercore.metadata import TimepointMetadata, ChannelMetadata
 
 from pymapmanager._logger import logger
 
 class stack:
 
-    channelColors = ['g', 'r', 'b']
+    channelColors = ['no zero index', 'g', 'r', 'b']
 
     def __init__(self,
                 timeseriescore : pymapmanager.TimeSeriesCore,
                 loadImageData : bool = True,
                 # timepoint : int = 0,
-                timepoint:int = 0,
-                defaultChannelIdx = 0):
+                timepoint:int = 1,
+                defaultChannelIdx = 1):
         """Load a stack from a .mmap zarr file or an in memory TimeSeriesCore.
 
         Parameters
@@ -38,31 +36,8 @@ class stack:
         self._annotations = SpineAnnotationsCore(self._fullMap, timepoint=self.timepoint)  #, defaultColums=defaultColums)
         self._lines = LineAnnotationsCore(self._fullMap, timepoint=self.timepoint)  #, defaultColums=defaultColums)
 
-        self._maxNumChannels = 3
-
-        self._buildHeader()
-
-        # if loadImageData:
-        #     logger.warning(f'EXPENSIVE: loading all image data for {self.numChannels} channels')
-        #     for _channel in range(self.numChannels):
-        #         _channel += 1
-        #         logger.warning(f'   _channel:{_channel} TODO: turn loadImages() back on ... ')
-        #         # self.loadImages(channel=_channel)
-
         # get the first image slice from defaultChannelIdx
         self.getImageSlice(0, defaultChannelIdx)
-
-        self._stackContrast = StackContrast(self)
-
-        # logger.info(f'loaded stack timepoint: {self}')
-              
-    @property
-    def maxNumChannels(self) -> int:
-        return self._maxNumChannels
-    
-    @property
-    def contrast(self) -> StackContrast:
-        return self._stackContrast
     
     def getTimeSeriesCore(self) -> pymapmanager.TimeSeriesCore:
         return self._fullMap
@@ -72,80 +47,36 @@ class stack:
         """
         return self._fullMap.getTimepointMetadata(self.timepoint)
     
+    def getChannelMetadata(self, channel:int) -> ChannelMetadata:
+        """Get channel metadata for one channel (use for contrast).
+        """
+        return self.getMetadata().getChannelMetadata(channel)
+    
     def __str__(self):
-        x = self.header['xPixels']
-        y = self.header['yPixels']
-        dtype = self.header['dtype']
-        
+        _shape = self.getMetadata().shape
+        _dtype = self.getChannelMetadata(1).dtype
+
         numAnnotations = self.getPointAnnotations().numAnnotations
         numSegments = self.getLineAnnotations().numSegments
 
         str = f'PyMapManager.stack: {self.getFileName()}\n'
-        str += f'  channels:{self.numChannels} slices:{self.numSlices} x:{x} y:{y} dtype:{dtype}'
-        str += f' annotations:{numAnnotations} segments:{numSegments}'
+        str += f'  channels:{self.numChannels} slices:{self.numSlices} shape:{_shape} dtype:{_dtype}'
+        str += f'  annotations:{numAnnotations} segments:{numSegments}'
         return str
     
-    def _buildHeader(self):
-        """
-        {
-        "size": { "t": 1, "c": 2, "z": 70, "x": 1024, "y": 1024 },
-        "voxel": { "x": 0.12, "y": 0.12, "z": 1 },
-        "dtype": "Uint16",
-        "physicalSize": { "x": 122.88, "y": 122.88, "unit": "µm" }
-        }
-        """
-
-        bitDepth = 8
-
-        # TODO: cludge, remove
-        # _shape = self._fullMap.getMapImages().getShape(self.timepoint)
-        _shape = self._annotations.singleTimepoint.shape  # shape of image in single timepoint
-
-        logger.info(f'_shape:{_shape}')
-        logger.info(f'numChannels:{self._annotations.singleTimepoint.numChannels}')
-
-        # abb s-dev merge
-        #_numChannels = self.sessionMap.numChannels
-        # _numChannels = _shape[0]
-        _numChannels = self._annotations.singleTimepoint.numChannels
-        z = _shape[0]
-        x = _shape[1]
-        y = _shape[2]
-
-        self._header = {
-            'dtype' : "Uint16",  # image0._image.dtype,
-            'bitDepth' : bitDepth,
-            'numChannels' : _numChannels,
-            'numSlices' : z,
-            'xPixels' : x,
-            'yPixels' : y,
-        }
-        
-        # TODO: cludge, setting analysis channel to 0 for 1 channel, and to 1 for 2 channel
-        analysisChannelIdx = _numChannels - 1  # 0 based
-        self.getAnalysisParameters().setValue('channel', analysisChannelIdx)
-
-
-    def printHeader(self):
-        for k, v in self.header.items():
-            print(k,v)
-
-    @property
-    def header(self):
-        return self._header
+    def getChannelColor(self, channel:int) -> str:
+        return self.getChannelMetadata(channel).color
+    
+    def getChannelContrast(self, channel:int) -> Tuple[int,int]:
+        return self.getChannelMetadata(channel).getUserContrast()
     
     @property
     def numSlices(self):
-        return self.header['numSlices']
-
+        return self.getMetadata().numSlices
+    
     @property
     def numChannels(self):
-        # TODO (cudmore): implement this in the backend
-        # return self.header['numChannels']
-
-        # abj
-        # return self.getTimeSeriesTotalChannels()
-        return len(self.getChannelList())
+        return len(self.getChannelKeys())
     
     def getFileName(self) -> str:
         return self._fullMap.filename
@@ -157,8 +88,9 @@ class stack:
     def timepoint(self) -> int:
         return self._timepoint
     
-    def getAnalysisParameters(self):
-        return self._fullMap.getAnalysisParams()
+    # def getAnalysisParameters(self):
+    #     # TODO: get analysis params for timepoint !!!.
+    #     return self._fullMap.getAnalysisParams()
 
     def getPointAnnotations(self) -> SpineAnnotationsCore:
         return self._annotations
@@ -166,19 +98,9 @@ class stack:
     def getLineAnnotations(self) -> LineAnnotationsCore:
         return self._lines
 
-    def _old_getAutoContrast(self, channelIdx):
-        """Get auto contrast for an entire stack
-        
-        Expensive as this loads the entire stack
-
-        Note: called once on creation of StackContrast()
-        """
-        _min, _max, _globalMin, _globalMax = self._fullMap.getMapImages().getAutoContrast(self.timepoint, channel=channelIdx)
-        return _min, _max, _globalMin, _globalMax
-
     def getImageSlice(self,
                       imageSlice : int,
-                      channelIdx : int = 0
+                      channelIdx : int = 1
                       ) -> Optional[np.ndarray]:
         """Get a single image slice from a channel.
 
@@ -190,22 +112,9 @@ class stack:
             np.ndarray of image data, None if image is not loaded.
         """
 
-        # logger.info(f'imageSlice:{imageSlice} channel:{channel}')
-        
-        # channelIdx = channel - 1
-        
-        # if not isinstance(imageSlice, int):
-        #     imageSlice = int(imageSlice)
-
-        # logger.info(f'fetching channelIdx:{channelIdx}')
-        
         _imgData = self._fullMap.getMapImages().getPixels(timepoint=self.timepoint,
                                                           channelIdx=channelIdx,
                                                           zRange=imageSlice)
-
-        # getPixels() -> returns
-        # mapmanagercore.lazy_geo_pd_images.image_slices.ImageSlice
-        # _imgData = _imgData._image
     
         self._currentImageSlice = _imgData
 
@@ -232,9 +141,6 @@ class stack:
             #logger.warning('not an integer, converting')
             imageSlice = int(imageSlice)
 
-        # channelIdx = channel - 1
-        # channelIdx = channel # abj
-
         firstSlice = imageSlice - upSlices
         if firstSlice < 0:
             firstSlice = 0
@@ -243,15 +149,12 @@ class stack:
         if lastSlice > self.numSlices - 1:
             lastSlice = self.numSlices
 
-
         zRange = (firstSlice, lastSlice)
         slices = self._fullMap.getMapImages().getPixels(
             timepoint=self.timepoint,
             channelIdx=channelIdx,
             zRange=zRange)
 
-        # logger.info(f'{slices.shape}')
-        # return slices._image
         return slices
 
     def getPixel(self, channel : int, imageSlice : int, y, x) -> int:
@@ -280,31 +183,23 @@ class stack:
             return np.nan
         return _intensity
     
-    # abj
-    # def getChannelTotal(self):
-    #     """ Return total amount of channels in map
-    #     """
-    #     return self._fullMap.getChannelTotal()
-    
     def undo(self, annotationType: Literal["Spine", "Segment"]):
         _ret = self._fullMap.undo()
 
-        # self.getPointAnnotations()._buildTimepoint()  # rebuild single timepoint
         if annotationType == "Spine":
             self.getPointAnnotations()._buildDataFrame()
 
         elif annotationType == "Segment":
-            # abj
             self.getLineAnnotations()._buildDataFrame()
 
     def redo(self, annotationType: Literal["Spine", "Segment"]):
         logger.info(f"length of spines before {self.getPointAnnotations().__len__()}")
+        
         _ret = self._fullMap.redo()
 
         # Not redoing add properly
         # CRITICAL FOR REDO !!!!!
         self.getPointAnnotations()._buildTimepoint()  # rebuild single timepoint
-        # self.getPointAnnotations()._buildDataFrame()
 
         if annotationType == "Spine":
             self.getPointAnnotations()._buildDataFrame()
@@ -330,28 +225,12 @@ class stack:
     def getLastSaveTime(self):
         return self._fullMap.getLastSaveTime()
 
-    def getTimeSeriesTotalChannels(self) -> int:
-        """ Accesses images core in timeseries and returns total number of channels that have been imported
-        
-        """
-        totalChannels = self._fullMap.getImagesCoreTotalChannels(self._timepoint)
-        logger.info(f"totalChannels {totalChannels}")
-        return len(totalChannels)
-    
-    def getChannelList(self) -> List[int]:
+    def getChannelKeys(self) -> List[int]:
         """Get list of channel keys.
         """
-        timepointMetadata = self._fullMap.getTimepointMetadata(self._timepoint)
-        return timepointMetadata.channelKeys
+        return self.getMetadata().channelKeys
     
-    def _old_getChannelDict(self):
-        metaData = self.getMetadata()
-        listOfChannels = metaData.channelNames
-        return listOfChannels
+    @property
+    def shape(self):
+        return self.getMetadata().shape
     
-    def resetStackContrast(self):
-        """ Recreates Stack Contrast with current Stack
-
-        Currently called whenever a new channel is imported
-        """
-        self._stackContrast = StackContrast(theStack=self)

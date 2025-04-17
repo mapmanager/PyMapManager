@@ -21,7 +21,7 @@ import pymapmanager
 # required so pyinstaller includes all plugins in bundle
 from pymapmanager.interface2.stackWidgets import *
 
-from mapmanagercore.analysis_params import AnalysisParams
+from mapmanagercore.metadata import AnalysisParams
 
 from pymapmanager.interface2.openFirstWindow import OpenFirstWindow
 from pymapmanager.interface2.openFolderWindow import OpenFolderWindow
@@ -32,6 +32,7 @@ from pymapmanager.interface2.mapWidgets.mapWidget import mapWidget
 from pymapmanager.interface2.stackWidgets.stackWidget2 import stackWidget2
 from pymapmanager.interface2.openFirstWindow import OpenFirstWindow
 # from pymapmanager.interface2.mainMenus import PyMapManagerMenus
+from pymapmanager.pmmUtils import addUserPath
 
 from pymapmanager._logger import logger, setLogLevel
 
@@ -266,7 +267,7 @@ class OpenWidgetList:
             
             if numTimepoints == 1:
                 # single timepoint map
-                _aWidget = stackWidget2(timeseriescore=_timeSeriesCore, timepoint=0)
+                _aWidget = stackWidget2(timeseriescore=_timeSeriesCore, timepoint=1)
 
                 geometryRect = self._app.getConfigDict().getStackWindowGeometry()
                 _aWidget.setGeometry(geometryRect[0], geometryRect[1], geometryRect[2], geometryRect[3])
@@ -393,12 +394,9 @@ class PyMapManagerApp(QtWidgets.QApplication):
         logger.info(f'Starting PyMapManagerApp() logLevel:{logLevel} argv:{argv}')
         setLogLevel('DEBUG')
 
-        self._analysisParams : AnalysisParams= AnalysisParams()
+        self._analysisParams : AnalysisParams = AnalysisParams()
         
         firstTimeRunning = self._initUserDocuments()
-
-        if firstTimeRunning:
-            logger.info("  We created <user>/Documents/Pymapmanager-User-Files and need to restart")
 
         self._config = pymapmanager.interface2.Preferences(self)
         """Preferences() util class to save/load app preferences including recent paths."""
@@ -410,7 +408,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
         self.setTheme()
         # set theme to loaded config dict
 
-        appIconPath = self.getAppIconPath()
+        appIconPath = self._getAppIconPath()
         self.setWindowIcon(QtGui.QIcon(appIconPath))
 
         # self.setQuitOnLastWindowClosed(False)
@@ -448,7 +446,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
         # logger.info('building PyMapManagerMenus()')
         # self._mainMenu = PyMapManagerMenus(self)
 
-        self.shownPathsList = []  # abj
+        # self.shownPathsList = []  # abj
         self.enableFolderWindow = False
 
         self._openFirstWindow = None
@@ -458,11 +456,18 @@ class PyMapManagerApp(QtWidgets.QApplication):
         """
         """
         # platformdirs 
-        jsonDump = self._analysisParams.getJson()
+        #jsonDump = self._analysisParams.getJson()
+        # abb 202504 AnalysisParam is now DataClass
+        jsonDump = self._analysisParams.to_json()
 
         # Create user's pmm directory in user/documents if necessary and save json to it
-        from pymapmanager.pmmUtils import addUserPath
-        return addUserPath(jsonDump)
+        _firstTimeRunning = addUserPath(jsonDump)
+
+        if _firstTimeRunning:
+            logger.info("  First time running, created <user>/Documents/Pymapmanager-User-Files")
+            logger.info('  might need to restart')
+
+        return _firstTimeRunning
     
     def getAnalysisParams(self):
         """ get analysis params from json file within user documents
@@ -555,7 +560,6 @@ class PyMapManagerApp(QtWidgets.QApplication):
     
     def closeMapWindow(self, mapWidget):
         """Remove theWindow from self._stackWidgetDict.
-        
         """
         self._openWidgetList.closeWidget(mapWidget)
         return
@@ -577,7 +581,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
             self._openFirstWindow.close()
             self._openFirstWindow = None
 
-    def getAppIconPath(Self):
+    def _getAppIconPath(Self):
         from pymapmanager.pmmUtils import getBundledDir
         return os.path.join(getBundledDir(), 'interface2', 'icons', 'mapmanager-icon.png')
     
@@ -754,7 +758,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
         _aWidget = self._openWidgetList.openWidgetFromPath(path)
         return _aWidget
 
-    def get_folders_with_mmap(self, rootDir):
+    def get_folders_with_mmap(self, rootDir) -> List[str]:
         """Gets all folders in a directory that contain .mmap files."""
 
         mmapFolders = []

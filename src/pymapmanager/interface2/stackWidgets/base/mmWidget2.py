@@ -263,7 +263,7 @@ class StackSelection:
         elif not isinstance(items, list):
             items = [items]
 
-        logger.error(f'yyy items:{items}')
+        logger.error(f'This is getting called twice? items:{items}')
 
         for _idx, item in enumerate(items):
             items[_idx] = int(item)

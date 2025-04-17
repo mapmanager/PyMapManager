@@ -31,7 +31,7 @@ class StackToolBar(QtWidgets.QToolBar):
 
         # list of channel strings 1,2,3,...
         # self._channelList = [str(x+1) for x in range(self._myStack.numChannels+1)]
-        self._channelList = self._myStack.getChannelList()
+        self._channelList = self._myStack.getChannelKeys()
 
         self._currentChannel = None # abj
 
@@ -74,13 +74,13 @@ class StackToolBar(QtWidgets.QToolBar):
             actionWidget.setVisible(False)
 
         # for channelIdx in range(self._myStack.numChannels):
-        for channelIdx in self._myStack.getChannelList():
+        for channelIdx in self._myStack.getChannelKeys():
             # logger.info(f"channelIdx visible {channelIdx} ")
             self._actionDict[channelIdx].setDisabled(False)
             self._actionDict[channelIdx].setVisible(True)
 
         # abj: switched to using actual indexes in backend
-        # listOfChannelIdx = self._myStack.getChannelList()
+        # listOfChannelIdx = self._myStack.getChannelKeys()
         # logger.info(f"listOfChannelIdx {listOfChannelIdx}")
         # for idx in listOfChannelIdx:
         #     # logger.info(f"channelIdx visible {channelIdx} ")
@@ -97,6 +97,14 @@ class StackToolBar(QtWidgets.QToolBar):
         """
         this REQUIRES a list of actions, self.tooList
         """
+        logger.info(f'toolNameStr:{toolNameStr} {type(toolNameStr)}')
+
+        # toolNameInt = int(toolNameStr)
+        
+        if toolNameStr == 'rgb':
+            pass
+        else:
+            toolNameStr = int(toolNameStr)
 
         self.slot_setChannel(toolNameStr)
         
@@ -141,17 +149,25 @@ class StackToolBar(QtWidgets.QToolBar):
         }
         self.signalSlidingZChanged.emit(d)
 
-    def slot_setChannel(self, channelIdx):
+    def slot_setChannel(self, channelIdx: int):
         """Turn on button for slected channel.
         
         These are a disjoint list, only one can be active. Others automatically disable.
         """
         logger.info(f'channelIdx:{channelIdx} {type(channelIdx)}')
-        logger.info(f'stack top tool bar index:{channelIdx}')
+
         # turn off sliding z
         # slidingEnabled = channelIdx != 'rgb'
         # self.slidingCheckbox.setEnabled(slidingEnabled)
         # self.slidingUpDown.setEnabled(slidingEnabled)
+
+        # TODO: use stack metadata channels to determine type
+        if channelIdx == 'rgb':
+            pass
+        else:
+            channelIdx = int(channelIdx)
+
+        # logger.info(f'  is now {channelIdx} {type(channelIdx)}')
 
         # activate one action in [1, 2, 3, rgb]
         self._actionDict[channelIdx].setChecked(True)
@@ -169,12 +185,12 @@ class StackToolBar(QtWidgets.QToolBar):
         # make ['1', '2', '3', 'rgb'] disjoint selections
         self.channelActionGroup = QtWidgets.QActionGroup(self)
 
-        for channelIdx in self._myStack.getChannelList():
+        for channelIdx in self._myStack.getChannelKeys():
             iconPath = ''  # use toolName to get from canvas.util
             theIcon = QtGui.QIcon(iconPath)
 
             # toolNameStr = str(int(channelIdx) + 1)
-            toolNameStr = channelIdx
+            toolNameStr = str(channelIdx)
 
             theAction = QtWidgets.QAction(theIcon, toolNameStr)
             theAction.setCheckable(True)

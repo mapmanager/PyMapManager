@@ -42,7 +42,8 @@ def getBundledDir():
 # mapmanagercore directory
 # TODO: use this when app is first made
 def addUserPath(jsonDump):
-    """Make <user>/Documents/Pymapmanager-User-Files folder and add it to the Python sys.path
+    """Make <user>/Documents/Pymapmanager-User-Files folder
+    and add it to the Python sys.path
 
     Returns:
         True: If we made the folder (first time SanPy is running)
@@ -69,7 +70,6 @@ def _makePmmFolders(analysisParamJson):
 
     Args:
         Json File to hold analysis parameters
-        
     """
     # userDocumentsFolder = _getUserDocumentsFolder()
 
@@ -92,11 +92,13 @@ def _makePmmFolders(analysisParamJson):
         #     json.dump(analysisParamJson, file, indent = 4) 
 
     # Save json file to create pmm folder
-    # _dstPath = pathlib.Path(pmmFolder)
+    # /Users/cudmore/Documents/Pymapmanager-User-Files/userAnalysisParameters.json
     _dstPath = os.path.join(pmmFolder, "userAnalysisParameters.json")
     if not os.path.isfile(_dstPath):
         with open(_dstPath, 'w') as file:
             json.dump(analysisParamJson, file, indent = 4) 
+    else:
+        logger.info(f'analysis parameters file exists:{_dstPath}')
 
     return madeUserFolder
 

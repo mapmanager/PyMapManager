@@ -521,36 +521,19 @@ class annotationPlotWidget(mmWidget2):
             sliceNumber:
         """
         
-        logger.info(f'{self.getClassName()} sliceNumber:{sliceNumber}')
-
         self._currentSlice = sliceNumber
-
-        # theseSegments = None  # None for all segments
-        # roiTypes = self._roiTypes
 
         # TODO: (6/19/24) Change this to be connected to top tool bar zSlider
         zPlusMinus = self._displayOptions["zPlusMinus"]
 
-        # abb removed 042024
-        # self._segmentIDList = self._annotations.getSegmentID(roiTypes, sliceNumber, zPlusMinus = zPlusMinus)
         segmentIDList = None  # none for all segments
 
-        # dfPlot is a row reduced version of backend df (all columns preserved)
-        # logger.info(f'{self.getClassName()} from base calling dfPlot = self._annotations.getSegmentPlot()')
-        # print('   segmentIDList:', segmentIDList)
-        # print('   sliceNumber:', sliceNumber)
-        # print('   zPlusMinus:', zPlusMinus)
-             
         dfPlot = self._annotations.getSegmentPlot(
             # segmentIDList, roiTypes, sliceNumber, zPlusMinus=zPlusMinus
             sliceNumber,
             zPlusMinus,
             segmentIDList,
         )
-
-        # logger.info(f'{self.getClassName()} dfPlot is:')
-        # print(dfPlot)
-        
         self._dfPlot = dfPlot
 
         try:
@@ -652,22 +635,12 @@ class pointPlotWidget(annotationPlotWidget):
 
         self._displayOptionsLines = stackWidget.getDisplayOptions()['spineLineDisplay']
 
-        # define the roi types we will display, see: slot_setDisplayTypes()
-        # when user is editing a segment, just plot controlPnt
-        # self._roiTypes = ['spineROI', 'controlPnt']
         self._roiTypes = ["spineROI"]
 
-        # self.labels = []
         self.showLabel = True
 
-        #self.lineAnnotations = lineAnnotations
         self.pointAnnotations = pointAnnotations
-
-        # abb 042024 removed
-        # self.img = self.getStack().getMaxProject(channel=self._channel)
-
         self._buildUI()
-        # self._view.signalUpdateSlice.connect(self.slot_setSlice)
 
     def _emitMovingPnt(self):
         """Emit state change to movingPnt."""
@@ -1080,39 +1053,22 @@ class pointPlotWidget(annotationPlotWidget):
         self._selectAnnotation(itemList, isAlt)
 
     def slot_setSlice(self, sliceNumber: int):
-        # startSec = time.time()
-
-        # logger.info(f'{self.getClassName()} sliceNumber:{sliceNumber}')
-
         super().slot_setSlice(sliceNumber=sliceNumber)
 
         # this will have missing values after delete
         _rows = self._dfPlot["index"].to_list()
 
-        #
         # show and hide labels based on sliceNumber
-
         if self.showLabel:
             self._pointLabels.hidShowLabels(_rows)
 
-        # mask and unmask spine lines based on sliceNumber
-        # _spineLineIndex = []
-        # for _idx, row in enumerate(_rows):
-        #     realRow = row * 2
-        #     # realRow = _idx * 2
-        #     _spineLineIndex.append(realRow)
-        #     _spineLineIndex.append(realRow + 1)
-
         try:
             # x/y spine lines come directly from the core
-            # _xData = self._xSpineLines[_spineLineIndex]
-            # _yData = self._ySpineLines[_spineLineIndex]
-
             _xData = self._spineLineDf.loc[_rows]['x'].to_list()
             _yData = self._spineLineDf.loc[_rows]['y'].to_list()
 
         except KeyError as e:
-            logger.error('!!! my KeyError: _spineLineDf did not contain a _rows')
+            logger.error('!!! KeyError: _spineLineDf did not contain a _rows')
             logger.error(e)
             print('self._spineLineDf')
             print(self._spineLineDf)
@@ -1120,7 +1076,7 @@ class pointPlotWidget(annotationPlotWidget):
             print(_rows)
 
         except IndexError as e:
-            logger.error(f"!!! my IndexError {e}")
+            logger.error(f"!!! IndexError {e}")
             # logger.error(f'self._xSpineLines:{len(self._xSpineLines)}')
             # # print(self._xSpineLines)
             # logger.error(f'self._ySpineLines:{len(self._ySpineLines)}')
@@ -1138,17 +1094,11 @@ class pointPlotWidget(annotationPlotWidget):
         else:
             self._spineConnections.setData(_xData, _yData)
 
-        stopSec = time.time()
-        # logger.info(f'{self.getClassName()} took {round(stopSec-startSec,4)} seconds')
-
     def _updateItem(self, rowIdx: int):
         """Update one item (both labels and spine line).
-        """
-        
+        """        
         self._pointLabels.updateLabel(rowIdx)
-
         self._bMakeSpineLines()
-        
         return
 
     def _addAnnotation(self, addedRow : int):
@@ -1163,7 +1113,6 @@ class pointPlotWidget(annotationPlotWidget):
     def _bMakeSpineLines(self):
         """Make a spine line for each spine in df.
         """        
-        
         self._spineLineDf = self._annotations.getSpineLines()
 
     def _getScatterColor(self) -> List[str]:
@@ -1194,17 +1143,12 @@ class pointPlotWidget(annotationPlotWidget):
             self._pointLabels.hideAllLabels(_rows)
         return self.showLabel
     
-    def areLabelsShown(self):
-        return self.showLabel
-
     def toggleSpineLines(self):
         visible = not self._spineConnections.isVisible()
         self._spineConnections.setVisible(visible)
         return visible
 
 class linePlotWidget(annotationPlotWidget):
-    # _widgetName = "line plot"
-
     def __init__(
         self,
         stackWidget: stackWidget2,
@@ -1230,14 +1174,12 @@ class linePlotWidget(annotationPlotWidget):
     def _buildUI(self):
         super()._buildUI()
 
-        # Displaying Radius Lines
-
         color = self._displayOptions["color"]  # 'b'
         zorder = self._displayOptions["zorder"]
         penWidth = 6
         _pen = pg.mkPen(width=penWidth, color=color)
 
-        logger.info(f'using color:{color}')
+        logger.info(f'lines are using color:{color}')
 
         # pyqtgraph.graphicsItems.PlotDataItem.PlotDataItem
         self._leftRadiusLines = self._view.plot(
@@ -1356,8 +1298,10 @@ class linePlotWidget(annotationPlotWidget):
             _segmentID = row['Segment']
             _color = row['Color']  # hex
             # if _segmentID in dfPlot.index:  # this is list of pooints in tracing
-            logger.info(f'   setting _segmentID:{_segmentID} to color:{_color}')
+            # logger.info(f'   setting _segmentID:{_segmentID} to color:{_color}')
             # dfPlot.loc[_segmentID]['color'] = pg.mkBrush(_color)
+            # logger.error('suhayb changed color to [r, g, b, a]')
+            # _color = 'blue'
             dfPlot.loc[(dfPlot['segmentID'] == _segmentID), 'color'] = _color
 
         # abb having trouble with pandas setting a slice on a copy
@@ -1375,8 +1319,8 @@ class linePlotWidget(annotationPlotWidget):
         #     # _tmp = dfPlot.loc[ dfPlot.index.isin(_segmentSelection) ]      
         #     dfPlot.loc[_tmp.index, 'color'] = 'y'
 
-        print('AFTER plot df is')
-        print(self._dfPlot)
+        # logger.info('AFTER plot df is')
+        # print(self._dfPlot)
 
         return dfPlot['color'].tolist()
     
@@ -1391,19 +1335,14 @@ class linePlotWidget(annotationPlotWidget):
             return None
         
         dfRet = np.diff(df.index.to_numpy())  # 1 when contiguous
-        # logger.info(f"dfRet {dfRet}")
         dfRet[ dfRet != 1] = 0
 
         segmentIdDiff = np.diff(df['segmentID'])  # 0 when contiguous rows
-        # logger.info(f"segmentIdDiff {segmentIdDiff}")
         
         # either not contiguous or we jump to the next segmentID
         dfRet[ (dfRet != 1) | (segmentIdDiff != 0)] = 0
 
         dfRet = np.append(dfRet, 0)  # append 0 value
-        # dfRet = np.insert(0, dfRet)  # append 0 value
-
-        # logger.info(f"dfRet final {dfRet}")
 
         return dfRet
     
@@ -1451,8 +1390,9 @@ class linePlotWidget(annotationPlotWidget):
                 xLeft = dfLeft["x"].to_numpy()
                 yLeft = dfLeft["y"].to_numpy()
                 _lineConnectLeft = self.old_getScatterConnect(dfLeft)
-                leftColor = dfLeft['color']
-                leftColor = leftColor.map(lambda x : pg.mkPen(width=5, color=x))
+                # leftColor = dfLeft['color']
+                # logger.error(f"dfLeft['color']:{dfLeft['color']}")
+                # leftColor = leftColor.map(lambda x : pg.mkPen(width=5, color=x))
                 # logger.info(f'leftColor is:{leftColor}')
 
             # dfRight = self._annotations.getRightRadiusPlot(sliceNumber, zPlusMinus)
@@ -1460,20 +1400,22 @@ class linePlotWidget(annotationPlotWidget):
                 xRight = dfRight["x"].to_numpy()
                 yRight = dfRight["y"].to_numpy()
                 _lineConnectRight = self.old_getScatterConnect(dfRight)
-                rightColor = dfLeft['color']  # hex rgb
-                rightColor = rightColor.map(lambda x : pg.mkPen(width=5, color=x))
+                # rightColor = dfLeft['color']  # hex rgb
+                # rightColor = rightColor.map(lambda x : pg.mkPen(width=5, color=x))
 
+        # TODO: just get one color from segment id
+        # 
         self._leftRadiusLines.setData(
             xLeft, yLeft,
             connect=_lineConnectLeft,
-            pen=pg.mkPen(width=6, color='w')
+            pen=pg.mkPen(width=6, color='r')
             # pen=leftColor.to_list()
         )
 
         self._rightRadiusLines.setData(
             xRight, yRight,
             connect=_lineConnectRight,
-            pen=pg.mkPen(width=6, color='w')
+            pen=pg.mkPen(width=6, color='#FF0000')
             # pen=rightColor.to_list()
         )
 
@@ -1495,19 +1437,12 @@ class linePlotWidget(annotationPlotWidget):
         self._pivotPoints.setData(pivotPlotX, pivotPlotY)
 
     def slot_setSlice(self, sliceNumber: int):
-        # logger.info("setting slice in line plot")
-        # startSec = time.time()
-
         super().slot_setSlice(sliceNumber)  # draws centerline
 
         self.refreshRadiusLines(sliceNumber)
-
-        # logger.warning('turned off left/right segment plot.')
-        # _lineConnect = self._getScatterConnect(self._dfPlot)
         
         # _symbolBrush = self._getScatterColor()
         selectedDFplot = self._selectedDataFrame()
-        # logger.info(f"selectedDFplot {selectedDFplot}")
         if selectedDFplot is not None:
             _connect = self._getScatterConnect(selectedDFplot)
 
@@ -1537,26 +1472,12 @@ class linePlotWidget(annotationPlotWidget):
             logger.info(f'   "{self.getClassName()}" NO SEGMENT SELECTION')
             self._selectedLines.setData([], [])
         
-        # if _stackSelection.hasSegmentSelection():
-        #     _selectedSegments = _stackSelection.getSegmentSelection()
-            
-        #     logger.info(f'"{self.getClassName()}" _selectedSegments:{_selectedSegments}')
-            
-        #     # super().selectedEvent(event)
-
-        # else:
-        #     logger.info(f'   "{self.getClassName()}" NO SEGMENT SELECTION')
-
     def stateChangedEvent(self, event):
         if event.getStateChange() == pmmStates.manualConnectSpine:
             self._allowClick = True
 
     def deletedSegmentEvent(self, event : DeleteSegmentEvent):
-        logger.info(f'event:{event}')
         self._refreshSlice()
-
-        logger.info('  after delete df is:')
-        print(self._dfPlot)
 
     def addedSegmentPointEvent(self, event):
         self._refreshSlice()
@@ -1580,8 +1501,6 @@ class linePlotWidget(annotationPlotWidget):
         _stackSelection = self.getStackWidget().getStackSelection()
         _segmentSelection = _stackSelection.getSegmentSelection()
 
-        # logger.info(f"_segmentSelection {_segmentSelection}")
-
         if _segmentSelection is not None and len(_segmentSelection) > 0:    
             highlightedDataframe = dfPlot.loc[dfPlot["segmentID"].isin(_segmentSelection)]
         else:
@@ -1600,8 +1519,8 @@ class linePlotWidget(annotationPlotWidget):
         if event.getUndoEvent().category != "Segment": 
             return
 
-        logger.info(f'{self.getClassName()}')
-        logger.info(f'event:{event}')
+        # logger.info(f'{self.getClassName()}')
+        # logger.info(f'event:{event}')
         # _undoEvent = event.getUndoEvent()
         # logger.info(f'abj _undoEvent: {_undoEvent}')
         self._refreshSlice()
@@ -1615,7 +1534,7 @@ class linePlotWidget(annotationPlotWidget):
         if event.getRedoEvent().category != "Segment": # abj
             return
     
-        logger.info(f'{self.getClassName()}')
-        logger.info(f'event:{event}')
+        # logger.info(f'{self.getClassName()}')
+        # logger.info(f'event:{event}')
         self._refreshSlice()
     

@@ -1108,7 +1108,7 @@ class stackWidget2(mmWidget2):
 
     def slot_setChannel(self, colorChannel : int):
         """Received from child top toolbar widget.
-        """
+        """        
         _pmmEvent = pmmEvent(pmmEventType.setColorChannel, self)
         _pmmEvent.setColorChannel(colorChannel)
         self.emitEvent(_pmmEvent)
@@ -1316,6 +1316,7 @@ class stackWidget2(mmWidget2):
         """
         return self._openPluginDict 
     
+    # abb this is always append, ignore channel
     def loadInNewChannel(self, path:Optional[str] = None, channel = None):
         """Given a file path append channels from file (can be more than one channel).
         
@@ -1330,9 +1331,11 @@ class stackWidget2(mmWidget2):
 
         useImageImporter = True
         if useImageImporter:
+            # new version 202504
             self.getTimeSeriesCore().importChannels(importPath, time=time)
 
         else:
+            # old version
             # check to ensure it is a tif file, Note: might need to expand to list of supported files
             _path, _ext = os.path.splitext(importPath)
             if _ext not in IMPORT_FILE_EXTENSIONS:
@@ -1381,7 +1384,7 @@ class stackWidget2(mmWidget2):
         self._topToolbar._setStack(theStack=self._stack)
 
         # reset stack Contrast
-        self._stack.resetStackContrast()
+        # self._stack.resetStackContrast()
 
         # update channel editor widget
         _pmmEvent = pmmEvent(pmmEventType.importNewChannel, self)
@@ -1412,7 +1415,7 @@ class stackWidget2(mmWidget2):
         self._topToolbar._setStack(theStack=self._stack)
 
         # reset stack Contrast
-        self._stack.resetStackContrast()
+        # self._stack.resetStackContrast()
 
         # update channel editor widget
         _pmmEvent = pmmEvent(pmmEventType.importNewChannel, self)
@@ -1459,14 +1462,7 @@ class stackWidget2(mmWidget2):
         self._topToolbar._setStack(theStack=self._stack)
 
         # reset stack Contrast
-        self._stack.resetStackContrast()
-
-    def setSegmentColorEvent(self, event : SetSegmentColorEvent):
-        newSegmentColor = event.newSegmentColor  # only one
-        for item in event:
-            segmentID = item['segmentID']
-            logger.info(f'TODO set segmentID:"{segmentID}" to newSegmentColor:{newSegmentColor}')
-            self.getStack().getLineAnnotations().setValue('color', segmentID, newSegmentColor)
+        # self._stack.resetStackContrast()
 
     # abj
     def moveChannel(self, srcChannel, destChannel):
@@ -1481,6 +1477,14 @@ class stackWidget2(mmWidget2):
         self._topToolbar._setStack(theStack=self._stack)
 
         # reset stack Contrast
-        self._stack.resetStackContrast()
+        # self._stack.resetStackContrast()
+
+    def setSegmentColorEvent(self, event : SetSegmentColorEvent):
+        newSegmentColor = event.newSegmentColor  # only one
+        for item in event:
+            segmentID = item['segmentID']
+            logger.info(f'TODO set segmentID:"{segmentID}" to newSegmentColor:{newSegmentColor}')
+            self.getStack().getLineAnnotations().setValue('color', segmentID, newSegmentColor)
+
 
         

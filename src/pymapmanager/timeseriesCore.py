@@ -13,12 +13,12 @@ import numpy as np
 
 from mapmanagercore import LOAD_SAVE_EXTENSIONS  # , IMPORT_FILE_EXTENSIONS
 from mapmanagercore import MapAnnotations, MultiImageLoader
-from mapmanagercore.analysis_params import AnalysisParams
+from mapmanagercore.metadata import AnalysisParams
 from mapmanagercore.schemas import Spine, Segment
 from mapmanagercore.lazy_geo_pd_images.loader.zarr import ZarrLoader
-from mapmanagercore.lazy_geo_pd_images.loader.imageio import MultiImageLoader
+# from mapmanagercore.lazy_geo_pd_images.loader.imageio import MultiImageLoader
 from mapmanagercore.annotations.single_time_point import SingleTimePointAnnotations
-from mapmanagercore.metadata.metadata3 import TimepointMetadata
+from mapmanagercore.metadata import TimepointMetadata
 
 from pymapmanager._logger import logger
 
@@ -36,26 +36,13 @@ class ImagesCore:
             # TypeError: 'tuple' object does not support item assignment
             zRange = (zRange[0], zRange[0]+1)
 
-        logger.warning(f'timepoint:{timepoint} {type(timepoint)}')
-        logger.warning(f'channelIdx:{channelIdx} {type(channelIdx)}')
-        logger.warning(f'zRange:{zRange} {type(zRange)}')
+        # logger.warning(f'timepoint:{timepoint} {type(timepoint)}')
+        # logger.warning(f'channelIdx:{channelIdx} {type(channelIdx)}')
+        # logger.warning(f'zRange:{zRange} {type(zRange)}')
 
         return self._fullMap._images.fetchSlices(timepoint, channelIdx, zRange)
         # return self._fullMap._images.fetchSlices(timepoint, channelIdx, (zRange, zRange+1))
 
-    def _old_getAutoContrast(self, timepoint, channel) -> Tuple[int, int, int, int]:
-        """
-        Parameters
-        ----------
-        timepoint : int
-        channel : int
-            Zero based channel index.
-        """
-        # channelIdx = channel - 1
-        # channelIdx = channel # abj
-        _min, _max, _globalMin, _globalMax = self._fullMap.getAutoContrast_qt(timepoint, channel=channel)
-        return _min, _max, _globalMin, _globalMax
-    
     def metadata(self, timepoint) -> TimepointMetadata:
         """Get metadata for a timepoint.
         """
@@ -392,7 +379,8 @@ class TimeSeriesCore():
         # self.getPointAnnotations()._buildTimepoint()  # rebuild single timepoint
         # self.getPointAnnotations()._buildDataFrame()
 
-    # abb imageImport can we just always have a zarr loader or a MultiImageLoader (not both)
+    # abb imageImport can we just always have a
+    # zarr loader or a MultiImageLoader (not both)
     def importChannels(self, importPath:str, time:int):
         # if isinstance(self._fullMap._images, ZarrLoader):
         #     logger.error('abb NOT IMPLEMENTED for ZarrLoader')
@@ -401,9 +389,9 @@ class TimeSeriesCore():
         #     self._fullMap.loader.appendChannels(importPath, time)
         
         logger.warning('abb imageImport')
-        self._fullMap.loader.appendChannels(importPath, time)
+        self._fullMap.loader.importChannel(importPath, time)
 
-    def loadInNewChannel(self, path: Union[str, np.ndarray], time: int = 0, channel: int = 0):
+    def loadInNewChannel(self, path: Union[str, np.ndarray], time: int = 0, channel: int = 1):
         """ Call loadInNewChannel in backend MapManagerCore
 
         args:

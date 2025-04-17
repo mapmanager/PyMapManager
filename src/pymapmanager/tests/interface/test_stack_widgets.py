@@ -67,7 +67,8 @@ def test_plugins(qtbot, qapp):
     
     logger.warning('push new maps to core and reactivate')
     # mmapPath = mapmanagercore.data.getSingleTimepointMap()
-    mmapPath = '/Users/cudmore/Desktop/sample_mmaps/zarLoader_1.mmap'
+    # mmapPath = '/Users/cudmore/Desktop/sample_mmaps/zarLoader_1.mmap'
+    mmapPath = '/Users/cudmore/Desktop/single_timepoint_20250415.mmap'
 
     logger.info(f'opening stack widget path {mmapPath}')
     stackWidgetWindow = qapp.loadStackWidget(mmapPath)

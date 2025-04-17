@@ -65,8 +65,10 @@ class ImagePlotWidget(mmWidget2):
         
         self._currentSlice = 0
         
+        # TODO: if we have a stack, get the first channel key
+        #   it could be 0, '0', 1, '1'
         # _channelNumber = self._displayOptionsDict['windowState']['defaultChannel']  # 1 based
-        _channelNumber = '0'
+        _channelNumber = 1
 
         # self._displayThisChannelIdx = _channelNumber - 1
         self._displayThisChannelIdx = _channelNumber
@@ -88,7 +90,6 @@ class ImagePlotWidget(mmWidget2):
         Args:
             event: PyQt5.QtGui.QWheelEvent
         """        
-        #logger.info('')
         modifiers = QtWidgets.QApplication.keyboardModifiers()
         if modifiers == QtCore.Qt.ControlModifier:
             # zoom in/out with mouse
@@ -126,23 +127,10 @@ class ImagePlotWidget(mmWidget2):
         - If no selection then disable 'Delete'
         """
         
-        # logger.info('')
-
         stackSelection = self.getStackWidget().getStackSelection()
-        logger.info(f'imagePlotWidget stackSelection {stackSelection}')
         hasPointSelection = stackSelection.hasPointSelection()
         
-        # abb always show (for set segment pivot)
-        # logger.info(f'imagePlotWidget hasPointSelection {hasPointSelection}')
-        # if not hasPointSelection:
-        #     logger.warning('no selection -> no context menu')
-        #     return
-        
         firstPointSelection = stackSelection.firstPointSelection()
-        # firstRoiType = stackSelection.getFirstPointRoiType()
-
-        # point_roiType = ' ' + str(firstPointSelection)
-        # isSpineSelection = firstRoiType == 'spineROI'
         point_roiType = 'Spine'
 
         hasSegmentSelection = stackSelection.hasSegmentSelection()
@@ -177,23 +165,21 @@ class ImagePlotWidget(mmWidget2):
         acceptAction.setEnabled(hasPointSelection)
 
         # user type submenu
-        currentUserType = _pointAnnotations.getValue('userType', firstPointSelection)
-        # logger.info(f"currentUserType {currentUserType}")
-        # if currentUserType == -1:
-        #     currentUserType = 0
         userTypeMenu = _menu.addMenu('User Type')
         userTypeMenu.setEnabled(hasPointSelection)
+        _menu.addMenu(userTypeMenu)
+
         numUserType = 10  # TODO: should be a global option
         userTypesList = [str(i) for i in range(numUserType)]
-        for userType in userTypesList:
-            action = userTypeMenu.addAction(userType)
-            action.setEnabled(hasPointSelection)
-            action.setCheckable(True)
-            isChecked = hasPointSelection and (str(userType) == str(currentUserType))
-            # logger.info(f"userType {userType} isChecked {isChecked}")
-            action.setChecked(isChecked)
-            # action.triggered.connect(partial(self._on_user_type_menu_action, action))
-        _menu.addMenu(userTypeMenu)
+        if hasPointSelection:
+            currentUserType = _pointAnnotations.getValue('userType', firstPointSelection)
+            for userType in userTypesList:
+                action = userTypeMenu.addAction(userType)
+                action.setEnabled(hasPointSelection)
+                action.setCheckable(True)
+                isChecked = hasPointSelection and (str(userType) == str(currentUserType))
+                action.setChecked(isChecked)
+                # action.triggered.connect(partial(self._on_user_type_menu_action, action))
 
         # segment (previous actions are all spine)
         setSegmentPivotAction = _menu.addAction(f'Set Segment {firstSegmentSelection} Pivot')
@@ -215,34 +201,18 @@ class ImagePlotWidget(mmWidget2):
             self.emitEvent(event)
 
         elif action == manualConnectAction:
-            logger.warning('TODO: manualConnect')
-
-            # Detect on mouse click but ensure that it is part of the line
-            # self._mouseConnectState = True 
             event = pmmEvent(pmmEventType.stateChange, self)
             event.setStateChange(pmmStates.manualConnectSpine)
             self.emitEvent(event)
 
         elif action == autoConnectAction:
-            logger.warning('Auto Connecting Spine')
-
-            # pass in ID
-            # possible x,y,z to simplify stackwidget function
             acs = AutoConnectSpineEvent(self, firstPointSelection)
             self.emitEvent(acs)
 
         elif action == deleteAction:
-            logger.warning('deleting the selected annotation')
-            # self._deleteAnnotation()
             self._aPointPlot._deleteSelection() # aPointPlot emits delete signal
 
-            # text = action.text()
-            # isChecked = action.isChecked()
-            # logger.info(f'{text} {isChecked}')
-
         elif action.text() in userTypesList:
-            logger.warning(f'usertype selected {action.text()}')
-            # _newValue = action.isChecked()
             esp = EditSpinePropertyEvent(self, firstPointSelection, 'userType', action.text())
             self.emitEvent(esp)
 
@@ -286,11 +256,11 @@ class ImagePlotWidget(mmWidget2):
 
         elif event.key() == QtCore.Qt.Key_1:
             logger.warning(f'move this code out of imagePlotWidget??? key:"{event.key()}"')
-            self._setChannel(0)
+            self._setChannel(1)
             self.refreshSlice()
         elif event.key() == QtCore.Qt.Key_2:
             logger.warning(f'move this code out of imagePlotWidget??? key:"{event.key()}"')
-            self._setChannel(1)
+            self._setChannel(2)
             self.refreshSlice()
 
         elif event.key() in [QtCore.Qt.Key_Up]:
@@ -311,9 +281,6 @@ class ImagePlotWidget(mmWidget2):
             # self._setSlice(newSlice)
             self._emitSetSlice(newSlice)
 
-        #elif event.key() == QtCore.Qt.Key_I:
-        #    self._myStack.printHeader()
-
         elif event.key() == QtCore.Qt.Key_N:
             logger.warning('TODO: open note setting dialog for selected annotation (todo: what is the selected annotation!!!')
 
@@ -321,8 +288,6 @@ class ImagePlotWidget(mmWidget2):
             logger.info("deleting within imageplot widget")
             # emit delete signal for points
             self._aPointPlot._deleteSelection()
-
-            #TODO: Delete line/ segment points?
 
         else:
             # if not handled, this will continue propogation
@@ -348,7 +313,7 @@ class ImagePlotWidget(mmWidget2):
 
         if not isinstance(event.currentItem, pg.graphicsItems.ViewBox.ViewBox):
             # reject all clicks on scatter plot items
-            logger.info(f'rejecting click on {event.currentItem}')
+            # logger.info(f'rejecting click on {event.currentItem}')
             return
         
         # get from app
@@ -458,7 +423,7 @@ class ImagePlotWidget(mmWidget2):
             y:
             zoomFieldOfView: Width/height of zoom
         """
-        logger.warning(f'we need to pass a display option for zoomFieldOfView: {zoomFieldOfView}')
+        logger.warning(f'TODO: we need to pass a display option for zoomFieldOfView: {zoomFieldOfView}')
         
         halfZoom = zoomFieldOfView / 2
         
@@ -481,35 +446,23 @@ class ImagePlotWidget(mmWidget2):
 
     def setSliceEvent(self, event):
         sliceNumber = event.getSliceNumber()
-        # logger.info(f'sliceNumber:{sliceNumber}')
         self._setSlice(sliceNumber, doEmit=False)
 
-    #abj 
     def setRadiusEvent(self, event):
         """ only called by line Plot to update segments' radius lines
         """
-        logger.info("updating radius line")
-        # sliceNumber = event.getSliceNumber()
         sliceNumber = self._currentSlice
-        # self._aLinePlot.refreshRadiusLines(sliceNumber)
         self._aLinePlot.slot_setSlice(sliceNumber)
 
     def slot_setSlice(self, sliceNumber, doEmit=True):
-        logger.warning(f'sliceNumber:{sliceNumber} doEmit:{doEmit}')
         if self.slotsBlocked():
             return
         self._setSlice(sliceNumber, doEmit=doEmit)
 
     def slot_contrastChanged(self):
-        #logger.info(f'contrastDict:')
-        #pprint(contrastDict)
-
-        # channel = contrastDict['channel']
-        # self._contrastDict[channel] = contrastDict
         self._setContrast()
 
     def slot_setChannel(self, channel):
-        logger.info(f'channel:{channel} {type(channel)}')
         self._setChannel(channel, doEmit=False)
 
     def _setChannel(self, channelIdx, doEmit=True):
@@ -518,6 +471,10 @@ class ImagePlotWidget(mmWidget2):
         """
         logger.info(f'channelIdx:{channelIdx} {type(channelIdx)}')
         
+        if channelIdx == 'rgb':
+            pass
+        else:
+            channelIdx = int(channelIdx)
         self._displayThisChannelIdx = channelIdx
                     
         self.refreshSlice()
@@ -541,7 +498,8 @@ class ImagePlotWidget(mmWidget2):
         """
         # rgb uses its own (r,g,b) LUT
         if not self._channelIsRGB():
-            colorStr = self._myStack.contrast.getValue(self._displayThisChannelIdx, 'colorLUT')  # like 'r', 
+            logger.warning("TODO: add color str like ('red', 'green' 'blue')")
+            colorStr = self._myStack.getChannelColor(self._displayThisChannelIdx)  # like 'r', 
 
             if colorStr == 'r':
                 cm = pg.colormap.get('Reds_r', source='matplotlib')
@@ -550,29 +508,27 @@ class ImagePlotWidget(mmWidget2):
             elif colorStr == 'b':
                 cm = pg.colormap.get('Blues_r', source='matplotlib')
             else:
-                logger.warning(f'did not understand color {colorStr} -->> defaulting to Greys_r')
-                cm = pg.colormap.get('Greys_r', source='matplotlib')
+                logger.warning(f'did not understand color {colorStr} -->> defaulting to Greens_r')
+                # cm = pg.colormap.get('Greys_r', source='matplotlib')
+                cm = pg.colormap.get('Greens_r', source='matplotlib')
 
             self._myImage.setColorMap(cm)
 
     def _setContrast(self):
-        # rgb
         if self._channelIsRGB():
             tmpLevelList = []  # list of [min,max]
-            # for channelIdx in range(self._myStack.numChannels):
-            for channelIdx in self._myStack.getChannelList():
-                oneMinContrast = self._myStack.contrast.getValue(channelIdx, 'minAutoContrast-rgb')
-                oneMaxContrast = self._myStack.contrast.getValue(channelIdx, 'maxAutoContrast-rgb')
+            for channelIdx in self._myStack.getChannelKeys():
+                # oneMinContrast = self._myStack.contrast.getValue(channelIdx, 'minAutoContrast-rgb')
+                # oneMaxContrast = self._myStack.contrast.getValue(channelIdx, 'maxAutoContrast-rgb')
+                oneMinContrast = 0
+                oneMaxContrast = 200
 
                 # convert to [0..255]
-                #bitDepth = self._myStack.header['bitDepth']
-                #maxInt = 2**bitDepth
                 maxInt = 2**8  # rgb has bit depth of 8 per color channel
                 oneMinContrast = int(oneMinContrast / maxInt * 255)
                 oneMaxContrast = int(oneMaxContrast / maxInt * 255)
 
                 oneLevel = [oneMinContrast, oneMaxContrast]
-                # logger.info(f"oneLevel {oneLevel}")
                 tmpLevelList.append(oneLevel)
             
             levelList = [None] * 3
@@ -586,15 +542,15 @@ class ImagePlotWidget(mmWidget2):
 
         else:
             # one channel
-            minContrast = self._myStack.contrast.getValue(self._displayThisChannelIdx, 'minAutoContrast')
-            maxContrast = self._myStack.contrast.getValue(self._displayThisChannelIdx, 'maxAutoContrast')
-            
+            minUserContrast, maxUserContrast = \
+                self._myStack.getChannelMetadata(self._displayThisChannelIdx).getUserContrast()
             #logger.info(f'channel {self._displayThisChannel} minContrast:{minContrast} maxContrast:{maxContrast}')
             
             levelList = []
-            levelList.append([minContrast, maxContrast])
+            levelList.append([minUserContrast, maxUserContrast])
             levelList = levelList[0]
 
+            logger.info(f'setLevels channel:{self._displayThisChannelIdx} to levelList:{levelList}')
             #
             self._myImage.setLevels(levelList, update=True)
 
@@ -617,7 +573,7 @@ class ImagePlotWidget(mmWidget2):
         TODO: get rid of doEmit, use _blockSlots
         """
         
-        logger.info(f'xxx EXPENSIVE ONLY CALL ONCE sliceNumber:{sliceNumber} doEmit:{doEmit}')
+        logger.warning(f'xxx EXPENSIVE ONLY CALL ONCE sliceNumber:{sliceNumber} doEmit:{doEmit}')
 
         if isinstance(sliceNumber, float):
             sliceNumber = int(sliceNumber)
@@ -631,15 +587,16 @@ class ImagePlotWidget(mmWidget2):
 
         if self._channelIsRGB():
             logger.warning('TODO: remove hard coded two channel assumption for rgb')
+            logger.warning('    use core loader channel metadata to get actual channel keys.')
             
             # ch1_image = self._myStack.getImageSlice(imageSlice=sliceNumber, channelIdx=0)
             # ch2_image = self._myStack.getImageSlice(imageSlice=sliceNumber, channelIdx=1)
             ch0_image = self._myStack.getMaxProjectSlice(sliceNumber,
-                                    channelIdx=0,
+                                    channelIdx=1,
                                     upSlices=upDownSlices, downSlices=upDownSlices,
                                     func=np.max)
             ch1_image = self._myStack.getMaxProjectSlice(sliceNumber,
-                                    channelIdx=1,
+                                    channelIdx=2,
                                     upSlices=upDownSlices, downSlices=upDownSlices,
                                     func=np.max)
             
@@ -666,9 +623,6 @@ class ImagePlotWidget(mmWidget2):
                                     self._displayThisChannelIdx,
                                     upDownSlices, upDownSlices,
                                     func=np.max)
-        # else:
-        #     # one channel
-        #     sliceImage = self._myStack.getImageSlice(imageSlice=sliceNumber, channelIdx=self._displayThisChannelIdx)
 
         autoLevels = True
         levels = None
@@ -746,23 +700,6 @@ class ImagePlotWidget(mmWidget2):
         if visible:
             self.refreshSlice()
 
-    # OLD
-    # def slot_updateLineRadius(self, radius):
-    #     """ Called whenever radius is updated
-    #     """
-    #     la = self._myStack.getLineAnnotations()
-    #     segmentID = None
-    #     la.calculateAndStoreRadiusLines(segmentID = segmentID, radius = radius)
-    #     self.refreshSlice()
-
-    def _old_monkeyPatchMouseMove(self, event, emit=True):
-        # PyQt5.QtGui.QMouseEvent
-        logger.info(event)
-        self._plotWidget._orig_mouseMoveEvent(event)
-        
-        if emit:
-            self.signalMouseEvent.emit(event)
-
     def _buildUI(self):
         hBoxLayout = QtWidgets.QHBoxLayout()  # each pmmWidget need a layout added to a central widget
         self._makeCentralWidget(hBoxLayout)
@@ -821,36 +758,7 @@ class ImagePlotWidget(mmWidget2):
         # works but confusing coordinates
         self._plotWidget.scene().sigMouseClicked.connect(self._onMouseClick_scene)
 
-
-        # add a plotwidgets that does both points and lines
-        # pointAnnotations = self._myStack.getPointAnnotations()
-        # lineAnnotations = self._myStack.getLineAnnotations()
-        # _displayOptions = self._displayOptionsDict['pointDisplay']
-        # _displayOptionsLine = self._displayOptionsDict['spineLineDisplay']
-        # self._allPointPlot = annotationPlotWidget(self.getStackWidget(),
-        #                                     pointAnnotations,
-        #                                     self._plotWidget,
-        #                                     _displayOptions,
-        #                                     # _displayOptionsLine,
-        #                                     # lineAnnotations,
-        #                                     )
-        # # self._aPointPlot.signalAnnotationClicked2.connect(self.slot_selectAnnotation2)
-        # # self.signalAnnotationSelection2.connect(self._aPointPlot.slot_selectAnnotation2)
-        # self.signalUpdateSlice.connect(self._allPointPlot.slot_setSlice)
-
-
-
         # add point plot of pointAnnotations
-        pointAnnotations = self._myStack.getPointAnnotations()
-        lineAnnotations = self._myStack.getLineAnnotations()
-        # _displayOptions = self._displayOptionsDict['pointDisplay']
-        # _displayOptionsLine = self._displayOptionsDict['spineLineDisplay']
-
-        #
-        # self.plotDict = {}
-        # self.plotDict["points"] = pointPlotWidget(self.getStackWidget(),
-        #                                     self._plotWidget)
-
         self._aPointPlot = pointPlotWidget(self.getStackWidget(),
                                             #pointAnnotations,
                                             self._plotWidget,
@@ -897,18 +805,10 @@ class ImagePlotWidget(mmWidget2):
 
         hBoxLayout.addWidget(self._stackSlider)
 
-        # self.setLayout(hBoxLayout)
-        # self.setCentralWidget(centralWidget)
-
-    # abb 20240906
     def selectedSpine(self, event : SelectSpine):
         logger.info('TODO: check if each spine is in our timepoint')
-        # for spine in event:
-        #     logger.info(spine)
-        #     self._selectAnnotation(spine['spineID'], event.isAlt)
+
         spineIDList = event.getSpines()
-        logger.info(f'spineIDList:{spineIDList} event.isAlt:{event.isAlt}')
-        # self._selectAnnotation(spineIDList, event.isAlt)
 
         if len(spineIDList) > 0:
             oneItem = spineIDList[0]
@@ -940,13 +840,7 @@ class ImagePlotWidget(mmWidget2):
             # children will select, this is just to zoom and set slice (on alt)
             return
         
-        # logger.info(f'hasPointSelection:{event.getStackSelection().hasPointSelection()}')
-        # logger.info(f'firstPointSelection:{event.getStackSelection().firstPointSelection()}')
-        # print(event)
-
         if event.getStackSelection().hasPointSelection():  # False on (None, [])
-            # if not event.isAlt():
-            #     return
             
             oneItem = event.getStackSelection().firstPointSelection()
             
@@ -965,7 +859,6 @@ class ImagePlotWidget(mmWidget2):
             oneSegmentID = event.getStackSelection().firstSegmentSelection()
             _lineAnnotations = self.getStackWidget().getStack().getLineAnnotations()
             _numPnts = _lineAnnotations.getNumPoints(oneSegmentID)
-            # logger.warning(f'oneSegmentID:{oneSegmentID} _numPnts:{_numPnts}')
             if _numPnts > 2:
                 x, y, z = _lineAnnotations.getMedianZ(oneSegmentID)
 
@@ -976,7 +869,6 @@ class ImagePlotWidget(mmWidget2):
                 self._emitSetSlice(z)
 
     def setColorChannelEvent(self, event : pmmEvent):
-        # logger.info(event)
         colorChannel = event.getColorChannel()
         self._setChannel(colorChannel, doEmit=False)
         self.refreshSlice()
@@ -1024,21 +916,7 @@ class StackSlider(QtWidgets.QSlider):
         if numSlices < 2:
             self.setDisabled(True)
 
-        #
-        # slider signal
-        # valueChanged()    Emitted when the slider's value has changed.
-        #   The tracking() determines whether this signal is emitted during user interaction.
-        # sliderPressed()    Emitted when the user starts to drag the slider.
-        # sliderMoved()    Emitted when the user drags the slider.
-        # sliderReleased()    Emitted when the user releases the slider.
-
-        # self.sliderReleased.connect(self._updateSlice)
-        
-        # was this
-        # self.sliderMoved.connect(self._updateSlice)
         self.valueChanged.connect(self._updateSlice) # abb 20200829
-        
-        #self.valueChanged.connect(self.sliceSliderValueChanged)
 
     def _updateSlice(self, sliceNumber, doEmit=True):
         self.setValue(sliceNumber)
@@ -1047,6 +925,5 @@ class StackSlider(QtWidgets.QSlider):
             self.signalUpdateSlice.emit(sliceNumber)
 
     def slot_setSlice(self, sliceNumber):
-        logger.info(sliceNumber)
         self._updateSlice(sliceNumber, doEmit=False)
         self.update()  # required by QSlider

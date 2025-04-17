@@ -5,6 +5,7 @@ from typing import List, Union, Optional
 import numpy as np
 import pandas as pd
 import shapely
+import geopandas as gp
 
 import mapmanagercore
 from mapmanagercore.annotations.single_time_point import SingleTimePointAnnotations
@@ -839,7 +840,7 @@ class LineAnnotationsCore(AnnotationsCore):
         for row in pivotDF:
 
             _point = row
-            logger.info(f"_point {_point}")
+            # logger.info(f"_point {_point}")
 
             if not _point.is_empty:
                 returnPointX.append(_point.x)
@@ -848,7 +849,6 @@ class LineAnnotationsCore(AnnotationsCore):
 
         return returnPointX, returnPointY, returnPointZ
     
-    import geopandas as gp
     def getRadiusPlot(self, leftRight : str, sliceNumber, zPlusMinus) -> gp.GeoSeries:
         """
         Parameters

@@ -38,7 +38,7 @@ class OpenFirstWindow(QtWidgets.QMainWindow):
 
         self.recentMapDictList = self.getApp().getConfigDict().getRecentMapDicts()
 
-        appIconPath = self.getApp().getAppIconPath()    
+        appIconPath = self.getApp()._getAppIconPath()    
         if os.path.isfile(appIconPath):
             # logger.info(f'  app.setWindowIcon with: "{appIconPath}"')
             # self._appIconPixmap = QtGui.QPixmap(appIconPath)

@@ -42,17 +42,9 @@ def run():
     # path = '/Users/cudmore/Desktop/Animal_145_Slice_1_Right.mmap.zip'
 
     # path = getTiffChannel_1()
-
-    path = '/Users/cudmore/Desktop/single_timepoint_20250108.mmap'
-
-    path = '/Users/cudmore/Desktop/zarrLoader_3.mmap'
-
-    path = '/Users/cudmore/Desktop/single_timepoint_20250322.mmap'
     
-    path = '/Users/cudmore/Desktop/sample_mmaps/zarLoader2.mmap'
-    path = '/Users/cudmore/Desktop/sample_mmaps/zarLoader_1.mmap'
-    # path = '/Users/cudmore/Desktop/sample_mmaps/zarLoader_3.mmap'
-    
+    path = '/Users/cudmore/Desktop/single_timepoint_20250415.mmap'
+
     if not os.path.isdir(path):
         logger.error('did not find folder path')
         logger.error(path)

@@ -5,7 +5,7 @@ from pymapmanager._logger import logger
 
 # from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel
 from pymapmanager.interface2.stackWidgets.base.mmWidget2  import mmWidget2, pmmEventType, pmmEvent
-from pymapmanager.interface2.stackWidgets.event.spineEvent import DeleteSpineEvent, EditSpinePropertyEvent
+# from pymapmanager.interface2.stackWidgets.event.spineEvent import DeleteSpineEvent, EditSpinePropertyEvent
 import pyqtgraph as pg
 from PyQt5.QtCore import Qt, QPoint
 
@@ -28,15 +28,15 @@ class ChannelEditor(mmWidget2):
     def _buildGUI(self):
 
         self.gridLayout = QtWidgets.QGridLayout()
-        numberOfChannels = self.stackWidget.getStack().numChannels
+        # numberOfChannels = self.stackWidget.getStack().numChannels
         # dictOfChannelPaths = self.stackWidget.getStack().getChannelDict()
-        # listOfChannelIdx = self.stackWidget.getStack().getChannelList()
+        # listOfChannelIdx = self.stackWidget.getStack().getChannelKeys()
         # self._listOfChannelIdx = listOfChannelIdx
         
-        stackerHeader = self.stackWidget.getStack().header
-        zSlice = stackerHeader["numSlices"]
-        xVal = stackerHeader["xPixels"]
-        yVal = stackerHeader["yPixels"]
+        _shape = self.stackWidget.getStack().shape
+        zSlice = _shape[0]
+        xVal = _shape[2]
+        yVal = _shape[1]
         sizeWidget = QtWidgets.QLabel(f"Size: ({xVal}, {yVal}),  Slices: {zSlice}")
 
         # Labeled Columns
@@ -52,40 +52,39 @@ class ChannelEditor(mmWidget2):
         # self.gridLayout.addWidget(QtWidgets.QLabel("Image Name"), 0, 1)
         # self.gridLayout.addWidget(xySizeWidget, 0, 1)
         
-        # channelIdx in range(self.stackWidget.getStack().maxNumChannels)
-        maxNumChannels = self.stackWidget.getStack().maxNumChannels
-
         # Display channel list based on what is shown rather than the actual index in the backend
         # for channelIdx in range(maxNumChannels): # max number of channels designated by user
-        for channelIdx in self.stackWidget.getStack().getChannelList():
+        for channelKey in self.stackWidget.getStack().getChannelKeys():
             # For channels that are already loaded/ imported
             # if channelIdx in listOfChannelIdx:
             if 1:
-                # logger.info(f"channel index in loop {channelIdx}")
+                # logger.info(f"channel index in loop {channelKey}")
                 self.totalChannelsShown += 1
                 try:
-                    channelPath = dictOfChannelPaths[channelIdx]
+                    channelPath = dictOfChannelPaths[channelKey]
                 except:
+                    logger.error(f'xxx abb missing `dictOfChannelPaths`')
                     channelPath = " "
 
+                # abb actualIndex and channelRowNum are redundant -> removed
                 # Offset by 1,  channel idx being 0 based
-                actualIndex = channelIdx # index within backend
-                # channelRowNum = str(channelIdx + 1)  
-                channelRowNum = channelIdx  
+                # actualIndex = channelKey # index within backend  # abb removed
+                # channelRowNum = str(channelKey + 1)  
+                # channelRowNum = channelKey  # abb removed
                 # Offset by 1, accounting for initial column name 
-                # self.gridLayout.addWidget(QtWidgets.QLabel(channelRowNum), channelIdx + 1, 0)
-                # self.gridLayout.addWidget(DraggableWidget(channelPath, channelIdx + 1, 1, self, name = "widget " + 
+                # self.gridLayout.addWidget(QtWidgets.QLabel(channelRowNum), channelKey + 1, 0)
+                # self.gridLayout.addWidget(DraggableWidget(channelPath, channelKey + 1, 1, self, name = "widget " + 
                 #                     str(channelRowNum), stackWidget = self.stackWidget,
-                #                     channelIdx = channelIdx), channelIdx + 1, 1)
+                #                     channelKey = channelKey), channelKey + 1, 1)
 
                 # Diplaying channel as seen in the row rather than actual index in backend
                 self.gridLayout.addWidget(QtWidgets.QLabel(str(self.totalChannelsShown)), self.totalChannelsShown, 0)
 
                 self.gridLayout.addWidget(DraggableWidget(channelPath, self.totalChannelsShown, 1, self, name = "widget " + 
-                                                str(channelRowNum), stackWidget = self.stackWidget,
-                                                channelIdx = actualIndex), self.totalChannelsShown, 1)
+                                                str(channelKey), stackWidget = self.stackWidget,
+                                                channelIdx = channelKey), self.totalChannelsShown, 1)
                 
-                                                # ), channelIdx + 1, 1)
+                                                # ), channelKey + 1, 1)
 
                 # if channelIdx > 0: # For now have a restriction on deleting first channel
                 if 1:
@@ -97,14 +96,15 @@ class ChannelEditor(mmWidget2):
                     pixmapi = getattr(QtWidgets.QStyle, "SP_TrashIcon")
                     icon = self.style().standardIcon(pixmapi)
                     deleteButton.setIcon(icon)
-                    deleteButton.clicked.connect(partial(self.on_button_click, actualIndex))
+                    deleteButton.clicked.connect(partial(self.on_button_click, channelKey))
                 
                 # lastChannelIdx = channelIdx
     
         # abb removed
         # if self.totalChannelsShown != maxNumChannels:
-        #     self.gridLayout.addWidget(ImportChannelWidget(channelIdx = actualIndex + 1, parent= self), 
-        #                                                 self.totalChannelsShown + 1, 1)
+        if 1:
+            self.gridLayout.addWidget(ImportChannelWidget(channelIdx = channelKey + 1, parent= self), 
+                                                        self.totalChannelsShown + 1, 1)
             # else:
             #     channelRowNum = channelIdx + 1
             #     self.gridLayout.addWidget(QtWidgets.QLabel(str(channelRowNum)), channelRowNum, 0)
@@ -151,7 +151,9 @@ class ChannelEditor(mmWidget2):
         self.refreshGUI()
 
 class ImportChannelWidget(QtWidgets.QWidget):
-    def __init__(self, channelIdx, parent = None):
+    def __init__(self,
+                 channelIdx,
+                 parent: ChannelEditor = None):
         super().__init__()
         # channelRowNum = row
         self.setAcceptDrops(True)
