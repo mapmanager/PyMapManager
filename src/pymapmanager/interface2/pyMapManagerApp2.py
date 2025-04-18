@@ -23,8 +23,8 @@ import pymapmanager
 # required so pyinstaller includes all plugins in bundle
 from pymapmanager.interface2.stackWidgets import *
 
-from mapmanagercore.analysis_params import AnalysisParams
-from mapmanagercore.metadata3 import VoxelMetadata
+# from mapmanagercore.analysis_params import AnalysisParams
+from mapmanagercore.metadata import VoxelMetadata, AnalysisParams
 
 from pymapmanager.interface2.openFirstWindow import OpenFirstWindow
 from pymapmanager.interface2.openFolderWindow import OpenFolderWindow

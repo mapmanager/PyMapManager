@@ -234,3 +234,6 @@ class stack:
     def shape(self):
         return self.getMetadata().shape
     
+    def getDendrogramReplot(self, newSegmentID, spineAngleChecked, spineLengthChecked , spineLengthConstant):
+        return self._fullMap.getDendrogramReplot(newSegmentID, spineAngleChecked, spineLengthChecked, spineLengthConstant)
+    
