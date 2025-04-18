@@ -1,8 +1,8 @@
 import sys
 
 from pymapmanager.timeseriesCore import TimeSeriesCore
-from pymapmanager.interface2 import PyMapManagerApp
-from pymapmanager.interface2.mapWidgets import mapWidget
+from pymapmanager.interface import PyMapManagerApp
+from pymapmanager.interface.mapWidgets import mapWidget
 
 def _hide_test_map_widget():
 

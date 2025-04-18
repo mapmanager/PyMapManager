@@ -21,3 +21,7 @@
 # from .mpSpineInt import intAnalysisWorker
 
 # from .pmmLayers import PmmLayers
+
+from ._baseAnnotationsCore import AnnotationsCore
+from .spineAnnotationsCore import SpineAnnotationsCore
+from .lineAnnotationsCore import LineAnnotationsCore

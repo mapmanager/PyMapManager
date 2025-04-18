@@ -4,9 +4,9 @@ from PyQt5 import QtCore
 from pytestqt.qtbot import QtBot # NOTE: needed to install pytestqt
 
 import pymapmanager as pymapmanager
-import pymapmanager.interface2
+# import pymapmanager.interface
 from pymapmanager._logger import logger
-import pymapmanager.interface2.stackWidgets
+import pymapmanager.interface.stackWidgets
 
 def makeDF():
     df = pd.DataFrame()
@@ -18,7 +18,7 @@ def makeDF():
 @pytest.fixture
 def searchWidget(qtbot):
     df = makeDF()
-    sc = pymapmanager.interface2.stackWidgets.SearchWidget(df = df)
+    sc = pymapmanager.interface.stackWidgets.SearchWidget(df = df)
     qtbot.addWidget(sc)
     return sc
 

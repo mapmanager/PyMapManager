@@ -3,9 +3,9 @@ import pytest
 import mapmanagercore.data
 
 import pymapmanager
-from pymapmanager.interface2.pyMapManagerApp2 import PyMapManagerApp
-from pymapmanager.interface2.stackWidgets import stackWidget2
-from pymapmanager.interface2.stackWidgets.annotationListWidget2 import pointListWidget
+from pymapmanager.interface.pyMapManagerApp import PyMapManagerApp
+from pymapmanager.interface.stackWidgets import stackWidget
+from pymapmanager.interface.stackWidgets.annotationListWidget2 import pointListWidget
 
 from pymapmanager._logger import logger
 
@@ -20,7 +20,7 @@ def pointListWidgetObject(qtbot):
     path = mapmanagercore.data.getSingleTimepointMap()
     
     logger.info(f'creating stack widget: {path}')
-    sw = stackWidget2(path=path)
+    sw = stackWidget(path=path)
     # sw.showScatterPlot()
     # sw.showAnalysisParams()
 

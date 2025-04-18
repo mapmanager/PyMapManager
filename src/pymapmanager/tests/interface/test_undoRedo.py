@@ -3,10 +3,10 @@ import pytest
 
 import mapmanagercore.data
 
-from pymapmanager.interface2 import PyMapManagerApp
-from pymapmanager.interface2.stackWidgets import stackWidget2
-from pymapmanager.interface2.stackWidgets.event.spineEvent import AddSpineEvent, EditSpinePropertyEvent, DeleteSpineEvent, MoveSpineEvent
-from pymapmanager.interface2.stackWidgets.event.annotationEvent import UndoEvent, RedoEvent 
+from pymapmanager.interface import PyMapManagerApp
+from pymapmanager.interface.stackWidgets import stackWidget
+from pymapmanager.interface.stackWidgets.event.spineEvent import AddSpineEvent, EditSpinePropertyEvent, DeleteSpineEvent, MoveSpineEvent
+from pymapmanager.interface.stackWidgets.event.annotationEvent import UndoEvent, RedoEvent 
 from pymapmanager._logger import logger
 
 # this makes qapp be our PyMapManagerApp, it is derived from QApplication
@@ -29,7 +29,7 @@ def test_Undos(stackWidgetObject, qapp):
     logger.info(f'{stackWidgetObject}')
     
     assert stackWidgetObject is not None
-    assert isinstance(stackWidgetObject, stackWidget2)
+    assert isinstance(stackWidgetObject, stackWidget)
 
     # pytest.set_trace()  # Enter debugger here
     # zoom to point for visual testing
@@ -135,7 +135,7 @@ def test_Undos(stackWidgetObject, qapp):
 def test_Redos(stackWidgetObject, qapp):
 
     assert stackWidgetObject is not None
-    assert isinstance(stackWidgetObject, stackWidget2)
+    assert isinstance(stackWidgetObject, stackWidget)
 
     # Redo previous delete on spine 2
     stackWidgetObject.emitRedoEvent()

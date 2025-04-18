@@ -1,6 +1,6 @@
 import pytest
 
-from pymapmanager.interface2 import PyMapManagerApp
+from pymapmanager.interface import PyMapManagerApp
 # from pymapmanager import stack
 from mapmanagercore.data import getTiffChannel_1
 

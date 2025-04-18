@@ -2,9 +2,9 @@ import pytest
 
 import mapmanagercore.data
 
-from pymapmanager.interface2 import PyMapManagerApp
-from pymapmanager.interface2.stackWidgets import stackWidget2
-from pymapmanager.interface2.stackWidgets.event.spineEvent import EditSpinePropertyEvent, DeleteSpineEvent
+from pymapmanager.interface import PyMapManagerApp
+from pymapmanager.interface.stackWidgets import stackWidget
+from pymapmanager.interface.stackWidgets.event.spineEvent import EditSpinePropertyEvent, DeleteSpineEvent
 from pymapmanager._logger import logger
 
 # this makes qapp be our PyMapManagerApp, it is derived from QApplication
@@ -17,7 +17,7 @@ def stackWidgetObject(qtbot, qapp):
 	# path = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
     path = mapmanagercore.data.getSingleTimepointMap()
     
-    # sw = stackWidget2(path=path)
+    # sw = stackWidget(path=path)
     sw = qapp.loadStackWidget(path)
 
 	# sw.showScatterPlot2(show=True)
@@ -33,10 +33,10 @@ def test_editSpineProperty(stackWidgetObject, qapp):
     logger.info(f'{stackWidgetObject}')
 
     assert stackWidgetObject is not None
-    assert isinstance(stackWidgetObject, stackWidget2)
+    assert isinstance(stackWidgetObject, stackWidget)
 
     # path = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
-    # sw = stackWidget2(path=path)
+    # sw = stackWidget(path=path)
 
     spineID = 2
     col = 'userType'

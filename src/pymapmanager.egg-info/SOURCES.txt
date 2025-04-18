@@ -132,7 +132,7 @@ src/pymapmanager/interface2/mainWindow.py
 src/pymapmanager/interface2/openFirstWindow.py
 src/pymapmanager/interface2/openFolderWindow.py
 src/pymapmanager/interface2/preferences.py
-src/pymapmanager/interface2/pyMapManagerApp2.py
+src/pymapmanager/interface2/pyMapManagerApp.py
 src/pymapmanager/interface2/runInterface2.py
 src/pymapmanager/interface2/runInterfaceBob.py
 src/pymapmanager/interface2/runInterfaceJohnson.py
@@ -161,7 +161,7 @@ src/pymapmanager/interface2/stackWidgets/imagePlotWidget2.py
 src/pymapmanager/interface2/stackWidgets/scatterplotwidget.py
 src/pymapmanager/interface2/stackWidgets/searchWidget.py
 src/pymapmanager/interface2/stackWidgets/spineInfoWidget.py
-src/pymapmanager/interface2/stackWidgets/stackWidget2.py
+src/pymapmanager/interface2/stackWidgets/stackWidget.py
 src/pymapmanager/interface2/stackWidgets/tracingWidget.py
 src/pymapmanager/interface2/stackWidgets/base/__init__.py
 src/pymapmanager/interface2/stackWidgets/base/annotationPlotWidget2.py

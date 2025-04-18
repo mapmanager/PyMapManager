@@ -2,8 +2,8 @@ import pytest
 
 import mapmanagercore.data
 
-from pymapmanager.interface2 import PyMapManagerApp
-from pymapmanager.interface2.stackWidgets import stackWidget2
+from pymapmanager.interface import PyMapManagerApp
+from pymapmanager.interface.stackWidgets import stackWidget
 
 from pymapmanager._logger import logger
 
@@ -20,9 +20,9 @@ def stackWidgetObject(qtbot, qapp):
 	# path = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
     path = mapmanagercore.data.getSingleTimepointMap()
     
-    # abb we would need to open stackWidget2 with a TimeSeriesCore(from path)
+    # abb we would need to open stackWidget with a TimeSeriesCore(from path)
     # instead, open it with the PyMqpMqnqgerApp
-    # sw = stackWidget2(path=path)
+    # sw = stackWidget(path=path)
     sw = qapp.loadStackWidget(path)
 
 	# sw.showScatterPlot2(show=True)

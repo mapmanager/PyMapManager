@@ -4,17 +4,17 @@ import pytest
 
 import mapmanagercore.data
 
-from pymapmanager.interface2.pyMapManagerApp2 import PyMapManagerApp
-from pymapmanager.interface2.stackWidgets import stackWidget2
+from pymapmanager.interface.pyMapManagerApp import PyMapManagerApp
+from pymapmanager.interface.stackWidgets import stackWidget
 
 from pymapmanager._logger import logger
-from pymapmanager.interface2.stackWidgets.event.annotationEvent import RedoEvent, UndoEvent
-from pymapmanager.interface2.stackWidgets.event.spineEvent import (AddSpineEvent,
+from pymapmanager.interface.stackWidgets.event.annotationEvent import RedoEvent, UndoEvent
+from pymapmanager.interface.stackWidgets.event.spineEvent import (AddSpineEvent,
                                                                    DeleteSpineEvent,
                                                                    MoveSpineEvent,
                                                                 #    UndoSpineEvent,
                                                                    SelectSpine)
-from pymapmanager.interface2.stackWidgets.base.mmWidget2 import pmmEvent, pmmEventType
+from pymapmanager.interface.stackWidgets.base.mmWidget2 import pmmEvent, pmmEventType
 
 
 # Make sure each stack widget will open when 
@@ -51,7 +51,7 @@ def test_plugins_empty(qtbot, qapp):
     mmapPath = mapmanagercore.data.getTiffChannel_1()
 
     stackWidgetWindow = qapp.loadStackWidget(mmapPath)
-    # stackWidgetWindow = stackWidget2(path=mmapPath)
+    # stackWidgetWindow = stackWidget(path=mmapPath)
 
     # get list of all stack widgets from app, keys are class of plugin
     stackPluginDict = qapp.getStackPluginDict()
@@ -72,7 +72,7 @@ def test_plugins(qtbot, qapp):
 
     logger.info(f'opening stack widget path {mmapPath}')
     stackWidgetWindow = qapp.loadStackWidget(mmapPath)
-    # stackWidgetWindow = stackWidget2(path=mmapPath)
+    # stackWidgetWindow = stackWidget(path=mmapPath)
 
     # get list of all stack widgets from app, keys are class of plugin
     stackPluginDict = qapp.getStackPluginDict()

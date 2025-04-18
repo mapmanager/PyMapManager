@@ -1,6 +1,6 @@
 import pytest
 
-from pymapmanager.interface2 import PyMapManagerApp
+from pymapmanager.interface import PyMapManagerApp
 from pymapmanager._logger import logger
 
 # this makes qapp be our PyMapManagerApp, it is derived from QApplication

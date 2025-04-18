@@ -1,10 +1,10 @@
 # circular import for typechecking
-# from pymapmanager.interface2 import PyMapManagerApp
+# from pymapmanager.interface import PyMapManagerApp
 # see: https://stackoverflow.com/questions/39740632/python-type-hinting-without-cyclic-imports
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from pymapmanager.interface2.stackWidgets.base.mmWidget2 import pmmEvent
+    from pymapmanager.interface.stackWidgets.base.mmWidget2 import pmmEvent
 
 import os
 from typing import Optional, Tuple, Union
@@ -14,11 +14,11 @@ import numpy as np
 from mapmanagercore import LOAD_SAVE_EXTENSIONS  # , IMPORT_FILE_EXTENSIONS
 from mapmanagercore import MapAnnotations, MultiImageLoader
 from mapmanagercore.metadata import AnalysisParams
-from mapmanagercore.schemas import Spine, Segment
-from mapmanagercore.lazy_geo_pd_images.loader.zarr import ZarrLoader
+# from mapmanagercore.schemas import Spine, Segment
+# from mapmanagercore.lazy_geo_pd_images.loader.zarr import ZarrLoader
 # from mapmanagercore.lazy_geo_pd_images.loader.imageio import MultiImageLoader
 from mapmanagercore.annotations.single_time_point import SingleTimePointAnnotations
-from mapmanagercore.metadata import TimepointMetadata
+from mapmanagercore.metadata import TimepointMetadata, mmMapMetadata
 
 from pymapmanager._logger import logger
 
@@ -43,13 +43,17 @@ class ImagesCore:
         return self._fullMap._images.fetchSlices(timepoint, channelIdx, zRange)
         # return self._fullMap._images.fetchSlices(timepoint, channelIdx, (zRange, zRange+1))
 
-    def metadata(self, timepoint) -> TimepointMetadata:
+    def timepointMetadata(self, timepoint) -> TimepointMetadata:
         """Get metadata for a timepoint.
         """
         # return self._fullMap.metadata(timepoint)
         #return self._fullMap._images.metadata(timepoint) # abj
-        return self._fullMap._images.metadata.getTimepoint(timepoint) # abb
+        return self._fullMap._images.getTimepointMetadata(timepoint) # abb
     
+    @property
+    def mapMetadata(self) -> mmMapMetadata:
+        return self._fullMap._images.metadata
+
     def getTotalChannels(self, tp):
         return self._fullMap._images.channels(tp)
     
@@ -59,9 +63,7 @@ class ImagesCore:
 class UndoRedoManager:
     """Undo and Redo spine events for a stack widget.
     """
-    # def __init__(self, parentStackWidget : stackWidget2):
     def __init__(self):
-        # self._parentStackWidget = parentStackWidget  # TODO: not used and not needed
         self._undoList = []
         self._redoList = []
 
@@ -170,8 +172,11 @@ class TimeSeriesCore():
 
         self._undoRedoManager = UndoRedoManager()
 
-    def getTimepointMetadata(self, tp:int):
-        return self._imagesCore.metadata(tp)
+    def getTimepointMetadata(self, tp:int) -> TimepointMetadata:
+        return self._imagesCore.timepointMetadata(tp)
+    
+    def getMapMetadata(self) -> mmMapMetadata:
+        return self._imagesCore.mapMetadata
     
     def getFileName(self):
         return self._path
@@ -198,47 +203,9 @@ class TimeSeriesCore():
     def setDirty(self, dirty=True):
         self._isDirty = dirty
 
-    def getAnalysisParams(self) -> AnalysisParams:
-        return self._fullMap.analysisParams
-    
     def getMapImages(self) -> ImagesCore:
         return self._imagesCore
     
-    # def getMapPoints(self) -> PointsCore:
-    #     return self._pointsCore
-    
-    # def getMapSegments(self) -> SegmentsCore:
-    #     return self._segmentCore
-
-    def _old_isTifPath(self) -> bool:
-        """ Check if stack has been saved by checking extension
-
-            ".mmap" = has been saved before -> we can get json from .zattributes
-            ".tif" = has not been saved -> use default json in users/documents
-        """
-        path = self.getStack().getPath()
-        ext = os.path.splitext(path)[1]
-        # logger.info(f"ext {ext}")
-        if ext == ".tif":
-            return True
-        elif ext == ".mmap":
-            return False
-        else:
-            logger.info(f"Unsupported extension: {ext}")
-    
-
-    # abj
-    # def storeLastSaveTime(self):
-    #     """Last time .mmap was saved
-
-    #     in the format: ‘yyyymmdd hh:mm’
-    #     """
-    #     currentTime = datetime.now()
-    #     # Format the current time
-    #     formatted_time = currentTime.strftime('%Y%m%d %H:%M')
-    #     logger.info(f"storeLastSaveTime {formatted_time}")
-    #     self.lastSaveTime = formatted_time
-
     def getLastSaveTime(self):
         """Last time .mmap was saved
 
@@ -391,7 +358,7 @@ class TimeSeriesCore():
         logger.warning('abb imageImport')
         self._fullMap.loader.importChannel(importPath, time)
 
-    def loadInNewChannel(self, path: Union[str, np.ndarray], time: int = 0, channel: int = 1):
+    def _old_loadInNewChannel(self, path: Union[str, np.ndarray], time: int = 0, channel: int = 1):
         """ Call loadInNewChannel in backend MapManagerCore
 
         args:
@@ -434,10 +401,10 @@ class TimeSeriesCore():
         # totalChannels = self._imagesCore.getTotalChannels()
         # logger.info(f"after total channel in timeseriescore: {totalChannels}")
 
-    def getImagesCoreTotalChannels(self, tp):
-        """ Get total number of channels loaded within Images core
-        """
-        return self._imagesCore.getTotalChannels(tp)
+    # def getImagesCoreTotalChannels(self, tp):
+    #     """ Get total number of channels loaded within Images core
+    #     """
+    #     return self._imagesCore.getTotalChannels(tp)
     
     def swapChannels(self, tp, srcChannel, destChannel):
         """
@@ -470,7 +437,7 @@ class TimeSeriesCore():
         # self._fullMap._images.deleteChannel(time = tp, channel = channelIdx)
         self._fullMap._images.deleteChannel(tp, channelIdx)
 
-    def validateNewChannel(self, newTifPath, tp):
+    def _old_validateNewChannel(self, newTifPath, tp):
         """ Call validateImageSize in mapmanagercore backend
 
         Returns true or false

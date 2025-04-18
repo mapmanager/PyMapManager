@@ -59,7 +59,7 @@ pymapmanager/interface2/mainWindow.py
 pymapmanager/interface2/openFirstWindow.py
 pymapmanager/interface2/openFolderWindow.py
 pymapmanager/interface2/preferences.py
-pymapmanager/interface2/pyMapManagerApp2.py
+pymapmanager/interface2/pyMapManagerApp.py
 pymapmanager/interface2/runInterface2.py
 pymapmanager/interface2/runInterfaceBob.py
 pymapmanager/interface2/runInterfaceJohnson.py
@@ -87,7 +87,7 @@ pymapmanager/interface2/stackWidgets/imagePlotWidget2.py
 pymapmanager/interface2/stackWidgets/scatterplotwidget.py
 pymapmanager/interface2/stackWidgets/searchWidget.py
 pymapmanager/interface2/stackWidgets/spineInfoWidget.py
-pymapmanager/interface2/stackWidgets/stackWidget2.py
+pymapmanager/interface2/stackWidgets/stackWidget.py
 pymapmanager/interface2/stackWidgets/tracingWidget.py
 pymapmanager/interface2/stackWidgets/base/__init__.py
 pymapmanager/interface2/stackWidgets/base/annotationPlotWidget2.py

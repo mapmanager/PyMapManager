@@ -128,7 +128,7 @@ def getUserAnalysisParamJsonData() -> Optional[dict]:
             jsonString = json.load(readFile)
             jsonDict = json.loads(jsonString)
         except (json.JSONDecodeError) as e:
-            logger.error(f'error loading in user json: {e}')
+            logger.error(f'error loading user json: {e}')
 
         # logger.info(f"jsonDict {jsonDict}")
         return jsonDict
@@ -150,6 +150,8 @@ def _getUserDocumentsFolder():
     else:
         return userDocumentsFolder
 
+def _getAppIconPath():
+    return os.path.join(getBundledDir(), 'interface2', 'icons', 'mapmanager-icon.png')
 
 def calculateRectangleROIcoords(xPlotLines, yPlotLines, xPlotSpines, yPlotSpines):
     """

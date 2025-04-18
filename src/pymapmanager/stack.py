@@ -5,8 +5,8 @@ import numpy as np
 # from mapmanagercore.lazy_geo_pd_images import Metadata
 
 import pymapmanager
-from pymapmanager.annotations.baseAnnotationsCore import SpineAnnotationsCore, LineAnnotationsCore
-from mapmanagercore.metadata import TimepointMetadata, ChannelMetadata
+from pymapmanager.annotations import SpineAnnotationsCore, LineAnnotationsCore
+from mapmanagercore.metadata import TimepointMetadata, ChannelMetadata, AnalysisParams
 
 from pymapmanager._logger import logger
 
@@ -46,6 +46,11 @@ class stack:
         """Get metadata from the core map.
         """
         return self._fullMap.getTimepointMetadata(self.timepoint)
+    
+    def getAnalysisParams(self) -> AnalysisParams:
+        """Get metadata from the core map.
+        """
+        return self._fullMap.getTimepointMetadata(self.timepoint).analysisParameters
     
     def getChannelMetadata(self, channel:int) -> ChannelMetadata:
         """Get channel metadata for one channel (use for contrast).
@@ -88,10 +93,6 @@ class stack:
     def timepoint(self) -> int:
         return self._timepoint
     
-    # def getAnalysisParameters(self):
-    #     # TODO: get analysis params for timepoint !!!.
-    #     return self._fullMap.getAnalysisParams()
-
     def getPointAnnotations(self) -> SpineAnnotationsCore:
         return self._annotations
 
