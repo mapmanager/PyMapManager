@@ -490,4 +490,16 @@ class TimeSeriesCore():
 
         return check
     
+    def getDendrogramReplot(self, newSegmentID, spineAngleChecked, spineLengthChecked , spineLengthConstant):
+        """ get dataframes to plot dendrogram widget from backend
+
+        returns: 
+            plotDF - df for points
+            spineLineDF - df for spine lines to points
+            segmentLength = float representing length of segment
+        """
+
+        plotDF, spineLineDF, segmentLength = \
+            self._fullMap.getDendrogramReplot(newSegmentID, spineAngleChecked, spineLengthChecked, spineLengthConstant)
+        return plotDF, spineLineDF, segmentLength
 

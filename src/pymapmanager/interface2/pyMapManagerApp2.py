@@ -1,5 +1,7 @@
 # see: https://stackoverflow.com/questions/63871662/python-multiprocessing-freeze-support-error
 from multiprocessing import freeze_support
+
+from shapely import Point
 freeze_support()
 
 import json
@@ -9,7 +11,7 @@ import math
 from typing import List, Union, Optional  # , Callable, Iterator
 
 import inspect
-
+import geopandas as gp
 from platformdirs import user_data_dir
 
 from qtpy import QtGui, QtWidgets, QtCore
@@ -21,7 +23,8 @@ import pymapmanager
 # required so pyinstaller includes all plugins in bundle
 from pymapmanager.interface2.stackWidgets import *
 
-from mapmanagercore.metadata import AnalysisParams
+from mapmanagercore.analysis_params import AnalysisParams
+from mapmanagercore.metadata3 import VoxelMetadata
 
 from pymapmanager.interface2.openFirstWindow import OpenFirstWindow
 from pymapmanager.interface2.openFolderWindow import OpenFolderWindow
@@ -869,7 +872,6 @@ class PyMapManagerApp(QtWidgets.QApplication):
         self.apWidget = AnalysisParamWidget(stackWidget=None, pmmApp=self)
         self.apWidget.show()
 
-
     def openLogWindow(self):
         """Show the python logger.
         """
@@ -940,6 +942,73 @@ class PyMapManagerApp(QtWidgets.QApplication):
         retDict['email'] = 'robert.cudmore@gmail.com'
 
         return retDict
+    
+
+    def convertToMicrometer(self, df):
+        """  Convert df columns values in pixels to micrometer
+        """
+ 
+        # Point (x, y)
+        df['point'] = df['point'].apply(lambda p: 
+                                              Point(p.x * VoxelMetadata.xVoxel, 
+                                                    p.y * VoxelMetadata.yVoxel))
+        # z 
+        df['z'] = df['z'] * 2
+
+        # Anchor (x, y)
+        df['anchor'] =  df['anchor'].apply(lambda p: 
+                                              Point(p.x * VoxelMetadata.xVoxel, 
+                                                    p.y * VoxelMetadata.yVoxel))
+        
+        # xBackgroundOffset, yBackgroundOffset
+        df['xBackgroundOffset'] = df['xBackgroundOffset'] * VoxelMetadata.xVoxel
+        df['yBackgroundOffset'] = df['yBackgroundOffset'] * VoxelMetadata.yVoxel
+
+        # spineLength
+        # logger.info(f"df['spineLength'] {type(df['spineLength'])}")
+        df['spineLength'] = gp.GeoSeries(df["anchor"]).distance(df["point"])
+
+        # spinePosition
+        # assuming voxel size is isotropic (same in all directions)
+        # VoxelMetadata.xVoxel = VoxelMetadata.yVoxel
+        # distances can be scaled with either scaling factor
+        df['spinePosition'] = df['spinePosition'] * VoxelMetadata.xVoxel
+
+        return df
+
+    def copySpineTable(self):
+        """ Copy Spine Dataframe to clipboards
+        """
+        # get spine dataframe
+        
+        frontStackWindow = self.getFrontWindow()
+        df = frontStackWindow.getPointDataFrame()
+        df = self.convertToMicrometer(df)
+
+        # logger.info(f"from app df {df}")
+        df.to_clipboard()
+
+    def exportSpineTable(self):
+        """ Export Spine Dataframe to csv
+        """
+        frontStackWindow = self.getFrontWindow()
+        df = frontStackWindow.getPointDataFrame()
+        df = self.convertToMicrometer(df)
+        # dialog = QtWidgets.QFileDialog(None)
+        # openFolderPath = dialog.getExistingDirectory()
+
+        filters = 'CSV file (*.csv)'
+        filePath, _ = QtWidgets.QFileDialog.getSaveFileName(frontStackWindow,
+                                                            caption='Save CSV File',
+                                                            #   dir=_path,
+                                                              filter=filters)
+        if filePath == "":
+            logger.info(f"Export cancelled")
+            # QtWidgets.QMessageBox.critical(frontStackWindow, "Export cancelled", "Please use enter a valid file name")
+            return
+        
+        # df.to_csv(openFolderPath +, index=False)
+        df.to_csv(filePath, index=False)
     
 def run():
     """Run the PyMapManager app.

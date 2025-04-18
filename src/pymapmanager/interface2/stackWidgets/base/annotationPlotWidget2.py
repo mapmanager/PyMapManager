@@ -342,10 +342,18 @@ class annotationPlotWidget(mmWidget2):
 
             # self._scatterUserSelection.sigPointsClicked.connect(self._on_highlighted_mouse_click) 
 
-    def toggleScatterPlot(self) -> bool:
+    def toggleScatterPlot(self, toggle: bool = None) -> bool:
         """
+
+        Args:
+            toggle: boolean, manually toggle the plot
+            - only used by "Annotations" checkbox in toptool bar to forcibly change the other plots
         """
-        self.showScatter = not self.showScatter
+
+        if toggle is not None:
+            self.showScatter = toggle
+        else:
+            self.showScatter = not self.showScatter
         logger.info(f'self.showScatter:{self.showScatter}')
         self._scatter.setVisible(self.showScatter)
         self._scatterUserSelection.setVisible(self.showScatter)
@@ -521,6 +529,8 @@ class annotationPlotWidget(mmWidget2):
             sliceNumber:
         """
         
+        # logger.info(f'{self.getClassName()} sliceNumber:{sliceNumber}')
+
         self._currentSlice = sliceNumber
 
         # TODO: (6/19/24) Change this to be connected to top tool bar zSlider
@@ -1133,8 +1143,17 @@ class pointPlotWidget(annotationPlotWidget):
 
         return color
     
-    def toggleLabels(self):
-        self.showLabel = not self.showLabel
+    def toggleLabels(self, toggle: bool = None):
+        """
+        Args:
+            toggle: boolean, manually toggle the plot
+            - only used by "Annotations" checkbox in toptool bar to forcibly change the other plots
+        """
+        
+        if toggle is None:
+            self.showLabel = not self.showLabel
+        else:
+            self.showLabel = toggle
         _rows = self._dfPlot["index"].to_list()
  
         if self.showLabel:
@@ -1143,8 +1162,21 @@ class pointPlotWidget(annotationPlotWidget):
             self._pointLabels.hideAllLabels(_rows)
         return self.showLabel
     
-    def toggleSpineLines(self):
-        visible = not self._spineConnections.isVisible()
+    def areLabelsShown(self):
+        return self.showLabel
+
+    def toggleSpineLines(self, toggle: bool = None):
+        """
+        Args:
+            toggle: boolean, manually toggle the plot
+            - only used by "Annotations" checkbox in toptool bar to forcibly change the other plots
+        """
+        
+        if toggle is None:
+            visible = not self._spineConnections.isVisible()
+        else:
+            visible = toggle
+
         self._spineConnections.setVisible(visible)
         return visible
 
@@ -1261,8 +1293,16 @@ class linePlotWidget(annotationPlotWidget):
             segmentID = item['segmentID']
             logger.info(f'TODO set segmentID:"{segmentID}" to newSegmentColor:{newSegmentColor}')
 
-    def toggleRadiusLines(self):
-        self.showRadiusLines = not self.showRadiusLines
+    def toggleRadiusLines(self, toggle: bool = None):
+        """
+        Args:
+            toggle: boolean, manually toggle the plot
+            - only used by "Annotations" checkbox in toptool bar to forcibly change the other plots
+        """
+        if toggle is None:
+            self.showRadiusLines = not self.showRadiusLines
+        else:
+            self.showRadiusLines = toggle
         self._leftRadiusLines.setVisible(self.showRadiusLines)
         self._rightRadiusLines.setVisible(self.showRadiusLines)
         return self.showRadiusLines
@@ -1331,6 +1371,7 @@ class linePlotWidget(annotationPlotWidget):
                 0 : do not connect to next
         """
 
+        # logger.info(f"checking df {df}")
         if len(df) == 0:
             return None
         

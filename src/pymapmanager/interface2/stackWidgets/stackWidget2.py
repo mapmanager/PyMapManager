@@ -1194,7 +1194,7 @@ class stackWidget2(mmWidget2):
         
         event.setUndoEvent(undoEvent)
 
-        logger.info(f'event:{event}')
+        # logger.info(f'event:{event}')
         logger.info(f'abj check undoEvent: {undoEvent}')
 
         self.setDirtyTrue() # abj
@@ -1209,13 +1209,12 @@ class stackWidget2(mmWidget2):
         if redoEvent is None:
             return
         annotationType = redoEvent.category
-        logger.info(f'redoEvent:{redoEvent}')
         self.getStack().redo(annotationType)
         
         event.setRedoEvent(redoEvent)
 
         # logger.info(f'event:{event}')
-        # logger.info(f'redoEvent:{redoEvent}')
+        logger.info(f'redoEvent: {redoEvent} type: {redoEvent.type}')
 
         self.setDirtyTrue() # abj
 
@@ -1397,7 +1396,18 @@ class stackWidget2(mmWidget2):
             logger.info("showing channels")
             _imagePlotWidget = self._widgetDict[self._imagePlotName]
             _imagePlotWidget.show()
-            
+    
+    def showConfirmationDialog(self, fileDimensions):
+        # Create a confirmation dialog with "Yes" and "No" buttons
+        x,y,z = fileDimensions
+        reply = QtWidgets.QMessageBox.question(self, 'Confirm Import', f"Image of Size: ({x}, {y}),  Slices: {z}",
+                                     QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No)
+        
+        if reply == QtWidgets.QMessageBox.Yes:
+            return True
+        else:
+            print("Canceled!")
+            return False
 
     def swapChannels(self, srcChannel, destChannel):
         """ Call mapmanagercore to swap channels
@@ -1428,7 +1438,10 @@ class stackWidget2(mmWidget2):
         self.getTimeSeriesCore().updateChannel(timePoint, channelIdx, newChannelName)
 
     def deleteChannel(self, channelIdx):
-        """ Delete channel name in backend
+        """ Delete channel in backend
+
+        Args:
+            channelIdx: Channel number that is being deleted
         """
 
         timePoint = self._stack.timepoint
@@ -1439,34 +1452,55 @@ class stackWidget2(mmWidget2):
         numChannels = self._stack.numChannels
         if numChannels <= 0:
             _imagePlotWidget = self._widgetDict[self._imagePlotName]
-
             _imagePlotWidget.hide()
 
-        currentChannel = self._topToolbar.getCurrentChannel()
+        currentChannel = self._topToolbar.getCurrentChannel() # top tool bar is 1 based, incoming channelIdx is 0
         logger.info(f"currentChannel {currentChannel}")
-
         logger.info(f"channelIdx {channelIdx}")
 
-        # Check if current channel is selected. If it is then default select to channel - 1
-        if self._topToolbar.getCurrentChannel() == channelIdx and channelIdx - 1 >= 0:
-            logger.info(f"selecting new channel")
-            # need to update toptoolbar manually since it is not a pmmWidget
-            self._topToolbar.slot_setChannel(channelIdx - 1)
-            
-            # emit change to all widgets
-            _pmmEvent = pmmEvent(pmmEventType.setColorChannel, self)
-            _pmmEvent.setColorChannel(channelIdx - 1)
-            self.emitEvent(_pmmEvent)
+        # # Check if current channel is selected. If it is then default select to channel - 1
+        # or if there is only one channel left after first delete
+        if self._topToolbar.getCurrentChannel() - 1 == channelIdx or numChannels == 1:
+            logger.info(f"selecting next channel")
+            self.selectNextChannel(channelIdx)
 
         # reset stackToolBar
         self._topToolbar._setStack(theStack=self._stack)
 
         # reset stack Contrast
         # self._stack.resetStackContrast()
+        self._stack.resetStackContrast()
+
+    def selectNextChannel(self, channelIdx):
+        """ Select next available channel within toptoolbar and emit the change to the rest of the widgets
+        - this is primarily done after deleting a channel
+
+        Args:
+            channelIdx: Index of channel within backend that is deleted
+        """
+        leftOverChannels = self.getStack().getLeftOverChannels(channelIdx)
+        # logger.info(f"leftOverChannels {leftOverChannels}")
+        nextChannel = leftOverChannels[0]
+        self._topToolbar.slot_setChannel(nextChannel)
+        
+        _pmmEvent = pmmEvent(pmmEventType.setColorChannel, self)
+        _pmmEvent.setColorChannel(nextChannel)
+        self.emitEvent(_pmmEvent)
+
+    def setSegmentColorEvent(self, event : SetSegmentColorEvent):
+        newSegmentColor = event.newSegmentColor  # only one
+        for item in event:
+            segmentID = item['segmentID']
+            logger.info(f'TODO set segmentID:"{segmentID}" to newSegmentColor:{newSegmentColor}')
+            self.getStack().getLineAnnotations().setValue('color', segmentID, newSegmentColor)
 
     # abj
     def moveChannel(self, srcChannel, destChannel):
         """ call getTimeSeriesCore to move channel (change channel indexing in backend)
+
+        Args:
+            srcChannel: initial channel number
+            destChannel: new channel number that srcChannel is moved to
         """
 
         timePoint = self._stack.timepoint
@@ -1479,12 +1513,27 @@ class stackWidget2(mmWidget2):
         # reset stack Contrast
         # self._stack.resetStackContrast()
 
-    def setSegmentColorEvent(self, event : SetSegmentColorEvent):
-        newSegmentColor = event.newSegmentColor  # only one
-        for item in event:
-            segmentID = item['segmentID']
-            logger.info(f'TODO set segmentID:"{segmentID}" to newSegmentColor:{newSegmentColor}')
-            self.getStack().getLineAnnotations().setValue('color', segmentID, newSegmentColor)
+    def getDendrogramReplot(self, newSegmentID, spineAngleChecked, spineLengthChecked, spineLengthConstant):
+        """ get necessary values to replot dendrogram widget
 
+        returns: 
+            plotDF - df for points
+            spineLineDF - df for spine lines to points
+            segmentLength = float representing length of segment
 
-        
+        """
+        return self._stack.getDendrogramReplot(newSegmentID, spineAngleChecked, spineLengthChecked , spineLengthConstant)
+
+    def getPointDataFrame(self):
+        """
+        Return: 
+            Spine Annotations Dataframe of type Pandas DF
+        """
+        return self._stack.getPointAnnotations().getDataFrame()
+    
+    def getLineDataFrame(self):
+        """
+        Return: 
+            Line Annotations Dataframe of type Pandas DF
+        """
+        return self._stack.getLineAnnotations().getDataFrame()

@@ -36,7 +36,9 @@ def run():
     # path = '../PyMapManager-Data/core-map/one-timepoint/oneTimepoint.mmap'
     # path ='\\Users\\johns\\Documents\\GitHub\\MapManagerCore\\sandbox\\data\\rr30a_s0.mmap'
     # path = 'C:\\Users\\johns\\Documents\\GitHub\\MapManagerCore\\data\\rr30a_s0u.mmap'
-    path = '\\Users\\johns\\Documents\\GitHub\\MapManagerCore\\data\\rr30a_s0u.mmap'
+    # path = '\\Users\\johns\\Documents\\GitHub\\MapManagerCore\\data\\rr30a_s0u.mmap'
+
+    path = 'C:\\Users\\johns\\Documents\\GitHub\\MapManagerCore-Data\\data\\single_timepoint.mmap'
     # path = '/Users/johns/Documents/GitHub/MapManagerCore/data/rr30a_s0u.mmap'
 
 
@@ -49,7 +51,7 @@ def run():
     # pooch path
     import mapmanagercore.data
     ## path = mapmanagercore.getSingleTimepointMap()
-    path = mapmanagercore.data.getSingleTimepointMap()
+    # path = mapmanagercore.data.getSingleTimepointMap()
 
     print("path", path)
     sw2 = app.loadStackWidget(path)
@@ -69,8 +71,9 @@ def run():
     # sw2.forceRefresh()
     # sw2.zoomToPointAnnotation(1, isAlt=True)
 
-    sw2.zoomToPointAnnotation(75, isAlt=True)
+    sw2.zoomToPointAnnotation(5, isAlt=True)
 
+    # sw2.runPlugin('Scatter Plot', inDock=False)
     
     # spineID = 75
     # deleteEvent = DeleteSpineEvent(sw2, spineID)
@@ -254,7 +257,6 @@ def runThenLoad():
     # path4 = 'C:/Users/johns/Documents/GitHub/PyMapManager-Data/one-timepoint/rr30a_s0_ch2.tif'
     # sw2.loadInNewChannel(path4)
 
-
     pluginID = sw2.runPlugin('Channel Editor', inDock=False)
  
     sys.exit(app.exec_())
@@ -300,14 +302,14 @@ def testingGetValues():
     print("testGetValues: ", test)
 
 if __name__ == '__main__':
-    # run()
+    run()
     # testingGetValues()
 
     # TODO: fix merging for just tif, only works for zarr
     # run_tif()
     # run_2_tifs()
 
-    runThenLoad()
+    # runThenLoad()
     # runMultiTimepointMap()
     # run2()
     # run3()

@@ -209,7 +209,7 @@ class SpineInfoWidget(mmWidget2):
         # keys are all possible columns, we only show columns in infoList
         # values are, well, the values
         rowDict = self.pa.getRow(firstRowIndex)
-        logger.info(f'rowDict:{rowDict}')
+        # logger.info(f'rowDict:{rowDict}')
 
         for index, itemName in enumerate(self.infoList):
             if itemName not in self.widgetDict.keys():

@@ -15,7 +15,7 @@ def qapp_cls():
 def test_app(qtbot, qapp):
     logger.info(f'app:{qapp}')
 
-@pytest.fixture
+@pytest.fixture 
 def stackWidgetObject(qtbot, qapp):
 	# path = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
     path = mapmanagercore.data.getSingleTimepointMap()

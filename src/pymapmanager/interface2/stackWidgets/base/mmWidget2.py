@@ -658,8 +658,10 @@ class mmWidget2(QtWidgets.QMainWindow):
 
         # filter = "(*.mmap)"
         _path = self.getPath()
+        # logger.info(f"save as path: {_path}")
         # defaultPath, defaultFileName = os.path.split(_path)
-        filters = 'MapManager files (*.mmap, *.zip)'
+        # filters = 'MapManager files (*.mmap, *.zip)'
+        filters = 'MapManager files (*.mmap)'
         
         saveAsPath, _ = QtWidgets.QFileDialog.getSaveFileName(self,
                                                               caption='Save mmap File',
@@ -674,6 +676,7 @@ class mmWidget2(QtWidgets.QMainWindow):
             return False
         
         ext = os.path.splitext(saveAsPath)[1]
+        # TODO: remove .zip?
         if ext not in ['.mmap', '.zip']:
             logger.error(f'map must have extension ".mmap" or ".zip", got "{ext}" -->> did not save.')
             QtWidgets.QMessageBox.critical(self,"Error: Incorrect Extension", "Please use .mmap as the file extension to save")
@@ -1100,7 +1103,6 @@ class mmWidget2(QtWidgets.QMainWindow):
                         return
                     
                     if undoEvent.type == pmmEventType.add:
-                        logger.info(f"add point Undoooo!")
                         # cancel spine selection
                         _spines = []
                         _selectionEvent = pmmEvent(pmmEventType.selection, self)

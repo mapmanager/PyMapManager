@@ -75,6 +75,7 @@ class ImagePlotWidget(mmWidget2):
 
         self._sliceImage = None
         self._sliderBlocked = False
+        self._toggleAllAnnotations = True # abj
 
         self._buildUI()
 
@@ -673,12 +674,14 @@ class ImagePlotWidget(mmWidget2):
         visible = False
 
         if plotName == "Annotations":
-            visible = self._aPointPlot.toggleScatterPlot() # spines
-            self._aPointPlot.toggleSpineLines() # spine (lines)
-            visible2 = self._aLinePlot.toggleScatterPlot() # center line
-            visible3 = self._aLinePlot.toggleRadiusLines() # radius lines 
-            visible4 = self._aPointPlot.toggleLabels() # labels
-
+            self._toggleAllAnnotations = not self._toggleAllAnnotations 
+            toggle = self._toggleAllAnnotations
+            visible = self._aPointPlot.toggleScatterPlot(toggle) # spines
+            self._aPointPlot.toggleSpineLines(toggle) # spine (lines)
+            visible2 = self._aLinePlot.toggleScatterPlot(toggle) # center line
+            visible3 = self._aLinePlot.toggleRadiusLines(toggle) # radius lines 
+            visible4 = self._aPointPlot.toggleLabels(toggle) # labels
+            # pass
         elif plotName == "Spines":
             visible = self._aPointPlot.toggleScatterPlot()
             self._aPointPlot.toggleSpineLines()
