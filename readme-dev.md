@@ -3,12 +3,22 @@
 
 To install PyMapManager and MapManagerCore
 
-Make sure you have <your_source_folder> that contains the Core, Py, and Data
+Make sure you have <your_source_folder> that contains the Core, Py, and Data repositories
 
     <your_source_folder>
     ├── MapManagerCore
     ├── MapManagerCore-Data
     ├── PyMapManager
+
+0) Copy the map folder `single_timepoint_202504/` to MapManagerCore-Data
+
+Make sure you drop the supplied map folder (not zip) into `MapManagerCore-Data/data/202504`. You will also need to make the enclosing `202504` folder.
+
+    MapManagerCore-Data/data/202504
+    ├── single_timepoint_202504.mmap
+    │   ├── 1
+    │   ├── lineSegments
+    │   └── points
 
 From your cloned PyMapManager directory/folder
 

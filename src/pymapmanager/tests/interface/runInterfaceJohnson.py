@@ -47,6 +47,7 @@ def run():
 
     # abb, macOS
     # you need to MANUALLY place this new mmap folder
+    # on Windows and in python, will this kind of path work???
     # path = '../MapManagerCore-Data/data/202504/single_timepoint_202504.mmap'
 
     logger.error('abb Johnson needs to ensure this exists for 202504')
