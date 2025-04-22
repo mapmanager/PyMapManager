@@ -1,4 +1,55 @@
 
+## 202504
+
+To install PyMapManager and MapManagerCore
+
+Make sure you have <your_source_folder> that contains the Core, Py, and Data
+
+    <your_source_folder>
+    ├── MapManagerCore
+    ├── MapManagerCore-Data
+    ├── PyMapManager
+
+From your cloned PyMapManager directory/folder
+
+1) Create and activate a conda environment
+
+    conda create -y -n pmm_env2 python=3.11
+    conda activate pmm_env2
+
+2) Install MapManagerCore from source
+    
+    pip install -e ../MapManagerCore/.
+
+3) Install PyMapManager from source, use `[test]` to install pytest
+
+    pip install -e '.[test]'
+
+4) Run some tests, if these fail -->> DO NOT CONTINUE
+
+Run some MapManagerCore tests (from PyMapManager)
+
+    pytest ../MapManagerCore/tests/test_mmMapLoader.py
+    pytest ../MapManagerCore/tests/test_mmMapLoader_image_channel.py
+
+Run main PyMapManager stack widget tests
+
+    pytest src/pymapmanager/tests/interface/test_stack_widgets.py
+
+5) run the PyMapManager GUI with your custom script
+
+This will work if the following manually copied mmap folder exists
+
+`../MapManagerCore-Data/data/202504/single_timepoint_202504.mmap`
+
+    python src/pymapmanager/tests/interface/runInterfaceBob.py
+
+See comments in `runInterfaceJohnson.py'
+
+    # abb, macOS
+    # you need to MANUALLY place this new mmap folder
+    # path = '../MapManagerCore-Data/data/202504/single_timepoint_202504.mmap'
+
 ## Start working on multi timepoint
 
 1) Write function to make best guess of connected spines
@@ -8,7 +59,6 @@
 2) Write function to force a spine ROI to have a given lnegth. The length of all connected spines need to be the same so they have the same number of pixels in the ROI. Such that the sum intensity will be normalized
 
 # 20241211
-
 
 1) extend map dendogram to multiple y property
 

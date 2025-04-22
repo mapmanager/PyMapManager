@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "pymapmanager"
 dynamic = ["version"]
 dependencies = [
-        "mapmanagercore",
+        #"mapmanagercore",  # 202504 need local pip install
         "numpy",
         "pandas",
         # "scipy",

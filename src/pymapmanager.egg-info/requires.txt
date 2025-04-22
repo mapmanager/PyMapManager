@@ -1,4 +1,3 @@
-mapmanagercore
 numpy
 pandas
 shapely
