@@ -12,8 +12,8 @@ import pandas as pd
 import numpy as np
 
 from mapmanagercore import LOAD_SAVE_EXTENSIONS  # , IMPORT_FILE_EXTENSIONS
-from mapmanagercore import MapAnnotations, MultiImageLoader
-from mapmanagercore.metadata import AnalysisParams
+from mapmanagercore import MapAnnotations
+# from mapmanagercore.metadata import AnalysisParams
 # from mapmanagercore.schemas import Spine, Segment
 # from mapmanagercore.lazy_geo_pd_images.loader.zarr import ZarrLoader
 # from mapmanagercore.lazy_geo_pd_images.loader.imageio import MultiImageLoader

@@ -372,7 +372,7 @@ class OpenWidgetList:
         if _saved:
             self.updateMapPathDict(aWidget) # abj
 
-    def _checkWidgetExists(self, path) -> bool:
+    def _old__checkWidgetExists(self, path) -> bool:
         """ Check if a widget exists in the widget dict list
         """
         if path in self._widgetDictList:
@@ -746,7 +746,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
         from pymapmanager.interface.openFolderWindow import openFolderWindow
         self._folderWindow = openFolderWindow(self)
         
-    def checkWidgetExists(self, path):
+    def _old_checkWidgetExists(self, path):
         return self._openWidgetList._checkWidgetExists(path)
 
     def isFolderWindowEnabled(self):
@@ -840,7 +840,51 @@ class PyMapManagerApp(QtWidgets.QApplication):
 
         return retDict
     
+    """
+    (1)
+    All convert to micrometer functions should be in the `class SpineAnnotationsCore`.
+    They should not be ain PyMapManagerApp.
 
+    We want to keep our GUI widgets as simple as possible, we do not want to do calulations.
+    Thus, this `computation` should go into a class/file that IS NOT part of the GUI
+
+    (2) 
+        When converting to micron, we do not want shapely objects.
+        All cells/items in dataframe [row,col] should be simple python types
+        like int, float, bool, etc
+        We want the user to copy/paste into excel (or similar) and have access to the data, not shapely (that only exists in python).
+
+        We are already doing this in `SpineAnnotationsCore._buildDataFrame()`, like this
+
+        xyCoord = allSpinesDf['point'].get_coordinates()
+        allSpinesDf['x'] = xyCoord['x']
+        allSpinesDf['y'] = xyCoord['y']
+
+        Basically, do not convert points['point'] and points['anchor'] directly,
+        take them apart into repsective x/y/z and do the conversion.
+        
+    (3) Many of the columns in points[:] are not needed on export
+        They are internal columns we use during runtime.
+        For example, we have a lot of shapely roi columns such as (we don't want these)
+            roiBaseBg
+            roiHead
+            roiHeadBg
+            roi
+            roiBg
+            roiInBounds
+            roiBgInBounds
+            isValid
+
+        Note: some of these column names may be slightly different in your dev branch.
+
+    (3) You can combine the two functions copySpineTable() and exportSpineTable()
+        into one function that does both.
+        Just add a parameter to the function to indicate if you want to copy or export.
+
+        The function would first convert the dataframe to micrometers
+        and then export to clipboard or csv.
+
+    """
     def convertToMicrometer(self, df, voxelMetadata: VoxelMetadata):
         """  Convert df columns values in pixels to micrometer
         """
@@ -850,7 +894,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
                                               Point(p.x * voxelMetadata.xVoxel, 
                                                     p.y * voxelMetadata.yVoxel))
         # z 
-        df['z'] = df['z'] * 2
+        df['z'] = df['z'] * voxelMetadata.zVoxel
 
         # Anchor (x, y)
         df['anchor'] =  df['anchor'].apply(lambda p: 
@@ -883,7 +927,7 @@ class PyMapManagerApp(QtWidgets.QApplication):
         if frontStackWindow is None:
             return
         voxelMetadata = frontStackWindow.getStack().getMetadata().voxelMetadata
-        logger.info(f'voxelMetadata:{voxelMetadata}')
+        # logger.info(f'voxelMetadata:{voxelMetadata}')
         df = frontStackWindow.getPointDataFrame()
         df = self.convertToMicrometer(df, voxelMetadata)
 
@@ -900,8 +944,9 @@ class PyMapManagerApp(QtWidgets.QApplication):
         if frontStackWindow is None:
             logger.warning('front window is not a stack window.')
             return
+        voxelMetadata = frontStackWindow.getStack().getMetadata().voxelMetadata
         df = frontStackWindow.getPointDataFrame()
-        df = self.convertToMicrometer(df)
+        df = self.convertToMicrometer(df, voxelMetadata)
         # dialog = QtWidgets.QFileDialog(None)
         # openFolderPath = dialog.getExistingDirectory()
 

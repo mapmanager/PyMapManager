@@ -502,11 +502,11 @@ class ImagePlotWidget(mmWidget2):
             logger.warning("TODO: add color str like ('red', 'green' 'blue')")
             colorStr = self._myStack.getChannelColor(self._displayThisChannelIdx)  # like 'r', 
 
-            if colorStr == 'r':
+            if colorStr == 'red':
                 cm = pg.colormap.get('Reds_r', source='matplotlib')
-            elif colorStr == 'g':
+            elif colorStr == 'green':
                 cm = pg.colormap.get('Greens_r', source='matplotlib')
-            elif colorStr == 'b':
+            elif colorStr == 'blue':
                 cm = pg.colormap.get('Blues_r', source='matplotlib')
             else:
                 logger.warning(f'did not understand color {colorStr} -->> defaulting to Greens_r')
@@ -542,6 +542,9 @@ class ImagePlotWidget(mmWidget2):
             self._myImage.setLevels(levelList, update=True)
 
         else:
+            logger.warning('abb turned off contrast, using auto contrast')
+            return
+            
             # one channel
             minUserContrast, maxUserContrast = \
                 self._myStack.getChannelMetadata(self._displayThisChannelIdx).getUserContrast()

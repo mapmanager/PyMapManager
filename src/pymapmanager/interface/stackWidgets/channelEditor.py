@@ -32,10 +32,10 @@ class ChannelEditor(mmWidget2):
         # listOfChannelIdx = self.stackWidget.getStack().getChannelKeys()
         # self._listOfChannelIdx = listOfChannelIdx
         
-        _shape = self.stackWidget.getStack().shape
-        zSlice = _shape[0]
-        xVal = _shape[2]
-        yVal = _shape[1]
+        _shapeDict = self.getStack().getMetadata().shapeDict
+        zSlice = _shapeDict['z']
+        xVal = _shapeDict['x']
+        yVal = _shapeDict['y']
         sizeWidget = QtWidgets.QLabel(f"Size: ({xVal}, {yVal}),  Slices: {zSlice}")
 
         # Labeled Columns
@@ -63,7 +63,7 @@ class ChannelEditor(mmWidget2):
                     channelPath = dictOfChannelPaths[channelKey]
                 except:
                     logger.error(f'xxx abb missing `dictOfChannelPaths`')
-                    channelPath = " "
+                    channelPath = "xxx"
 
                 # abb actualIndex and channelRowNum are redundant -> removed
                 # Offset by 1,  channel idx being 0 based

@@ -20,6 +20,9 @@ def test_load_tiff(qapp):
     qapp.loadStackWidget(tiffpath)
 
 def test_stack_from_tif():
+    logger.error('depreciated, use mmMapLoader!!!')
+    return
+
     import pandas as pd
     from mapmanagercore import MapAnnotations, MultiImageLoader
 

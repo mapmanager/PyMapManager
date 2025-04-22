@@ -60,6 +60,9 @@ class mapTableWidget(QtWidgets.QWidget):
         
         logger.info('adding new timepoint from tif, timePoint:{timePoint}')
         
+        logger.error('depreciated, use mmMapLoader !!!')
+        return
+    
         from mapmanagercore.lazy_geo_pd_images.loader.imageio import MultiImageLoader
         _loader = MultiImageLoader()
         _loader.read(file_path, time=timePoint, channel=channel, name=name)

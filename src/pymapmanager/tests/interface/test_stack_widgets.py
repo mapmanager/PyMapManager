@@ -4,7 +4,7 @@ import pytest
 
 import mapmanagercore.data
 
-from pymapmanager.interface.pyMapManagerApp import PyMapManagerApp
+from pymapmanager.interface import PyMapManagerApp
 from pymapmanager.interface.stackWidgets import stackWidget
 
 from pymapmanager._logger import logger
@@ -63,12 +63,14 @@ def test_plugins(qtbot, qapp):
     """Run all plugins through a number of different tests.
     """
     
-    print('qapp:', qapp)
-    
-    logger.warning('push new maps to core and reactivate')
+    # print('qapp:', qapp)
+
     # mmapPath = mapmanagercore.data.getSingleTimepointMap()
-    # mmapPath = '/Users/cudmore/Desktop/sample_mmaps/zarLoader_1.mmap'
-    mmapPath = '/Users/cudmore/Desktop/single_timepoint_20250415.mmap'
+    logger.info('202504 loading from local mmap directory')
+    mmapPath = '../MapManagerCore-Data/data/202504/single_timepoint_202504.mmap'
+    if not os.path.isdir(mmapPath):
+        logger.error(f'did not find folder path mmapPath: {mmapPath}')
+        return
 
     logger.info(f'opening stack widget path {mmapPath}')
     stackWidgetWindow = qapp.loadStackWidget(mmapPath)
