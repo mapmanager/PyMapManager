@@ -319,11 +319,11 @@ def testingGetValues():
     print("testGetValues: ", test)
 
 if __name__ == '__main__':
-    run()
+    # run()
     # testingGetValues()
 
     # TODO: fix merging for just tif, only works for zarr
-    # run_tif()
+    run_tif()
     # run_2_tifs()
 
     # runThenLoad()

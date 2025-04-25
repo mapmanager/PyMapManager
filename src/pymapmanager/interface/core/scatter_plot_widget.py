@@ -600,10 +600,14 @@ class ScatterPlotWidget_(QtWidgets.QWidget):
     def checkFloat(self, val):
         """
             Check if column values are floats. 
-            These is used to determine if they should be available to be selected in in the plot
+            This is used to determine if they should be available to be selected in in the plot
             If they are not floats they are unincluded from the drop down lists
         """
         try:
+            # logger.info(f"val type is {type(val)}")
+            if isinstance(val, np.bool):
+                logger.info(f"val is {val}")
+                return False
             float(val)
             return True
         except ValueError:

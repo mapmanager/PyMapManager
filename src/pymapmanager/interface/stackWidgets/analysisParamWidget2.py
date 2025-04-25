@@ -5,7 +5,8 @@ from pymapmanager._logger import logger
 
 class AnalysisParamWidget(EditDataClass):
 
-    _widgetName = 'Analysis Parameters'
+    # Name commented out to be used in meta data widget
+    # _widgetName = 'Analysis Parameters'
 
     def __init__(self,
                  stackWidget: stackWidget,

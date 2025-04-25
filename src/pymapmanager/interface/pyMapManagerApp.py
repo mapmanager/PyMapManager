@@ -38,6 +38,8 @@ from pymapmanager.interface.openFirstWindow import OpenFirstWindow
 # from pymapmanager.interface.mainMenus import PyMapManagerMenus
 from pymapmanager.pmmUtils import addUserPath
 
+from pymapmanager.annotations.spineAnnotationsCore import SpineAnnotationsCore
+
 # circular import
 # from pymapmanager.interface import Preferences
 
@@ -839,129 +841,47 @@ class PyMapManagerApp(QtWidgets.QApplication):
         retDict['email'] = 'robert.cudmore@gmail.com'
 
         return retDict
-    
-    """
-    (1)
-    All convert to micrometer functions should be in the `class SpineAnnotationsCore`.
-    They should not be ain PyMapManagerApp.
 
-    We want to keep our GUI widgets as simple as possible, we do not want to do calulations.
-    Thus, this `computation` should go into a class/file that IS NOT part of the GUI
-
-    (2) 
-        When converting to micron, we do not want shapely objects.
-        All cells/items in dataframe [row,col] should be simple python types
-        like int, float, bool, etc
-        We want the user to copy/paste into excel (or similar) and have access to the data, not shapely (that only exists in python).
-
-        We are already doing this in `SpineAnnotationsCore._buildDataFrame()`, like this
-
-        xyCoord = allSpinesDf['point'].get_coordinates()
-        allSpinesDf['x'] = xyCoord['x']
-        allSpinesDf['y'] = xyCoord['y']
-
-        Basically, do not convert points['point'] and points['anchor'] directly,
-        take them apart into repsective x/y/z and do the conversion.
-        
-    (3) Many of the columns in points[:] are not needed on export
-        They are internal columns we use during runtime.
-        For example, we have a lot of shapely roi columns such as (we don't want these)
-            roiBaseBg
-            roiHead
-            roiHeadBg
-            roi
-            roiBg
-            roiInBounds
-            roiBgInBounds
-            isValid
-
-        Note: some of these column names may be slightly different in your dev branch.
-
-    (3) You can combine the two functions copySpineTable() and exportSpineTable()
-        into one function that does both.
-        Just add a parameter to the function to indicate if you want to copy or export.
-
-        The function would first convert the dataframe to micrometers
-        and then export to clipboard or csv.
-
-    """
-    def convertToMicrometer(self, df, voxelMetadata: VoxelMetadata):
-        """  Convert df columns values in pixels to micrometer
+    def extractSpineTable(self, mode: str = ["export", "copy"]):
         """
- 
-        # Point (x, y)
-        df['point'] = df['point'].apply(lambda p: 
-                                              Point(p.x * voxelMetadata.xVoxel, 
-                                                    p.y * voxelMetadata.yVoxel))
-        # z 
-        df['z'] = df['z'] * voxelMetadata.zVoxel
-
-        # Anchor (x, y)
-        df['anchor'] =  df['anchor'].apply(lambda p: 
-                                              Point(p.x * voxelMetadata.xVoxel, 
-                                                    p.y * voxelMetadata.yVoxel))
-        
-        # xBackgroundOffset, yBackgroundOffset
-        df['xBackgroundOffset'] = df['xBackgroundOffset'] * voxelMetadata.xVoxel
-        df['yBackgroundOffset'] = df['yBackgroundOffset'] * voxelMetadata.yVoxel
-
-        # spineLength
-        # logger.info(f"df['spineLength'] {type(df['spineLength'])}")
-        df['spineLength'] = gp.GeoSeries(df["anchor"]).distance(df["point"])
-
-        # spinePosition
-        # assuming voxel size is isotropic (same in all directions)
-        # VoxelMetadata.xVoxel = VoxelMetadata.yVoxel
-        # distances can be scaled with either scaling factor
-        df['spinePosition'] = df['spinePosition'] * voxelMetadata.xVoxel
-
-        return df
-
-    def copySpineTable(self):
-        """ Copy Spine Dataframe to clipboards
-        """
-        # get spine dataframe
-        
-        # abb todo: check that frontStackWindow is a stackWidget
-        frontStackWindow = self.getFrontStackWindow()
-        if frontStackWindow is None:
-            return
-        voxelMetadata = frontStackWindow.getStack().getMetadata().voxelMetadata
-        # logger.info(f'voxelMetadata:{voxelMetadata}')
-        df = frontStackWindow.getPointDataFrame()
-        df = self.convertToMicrometer(df, voxelMetadata)
-
-        # logger.info(f"from app df {df}")
-        df.to_clipboard()
-
-        logger.info('copied to clipboard')
-        print(df)
-
-    def exportSpineTable(self):
-        """ Export Spine Dataframe to csv
         """
         frontStackWindow = self.getFrontStackWindow()
         if frontStackWindow is None:
             logger.warning('front window is not a stack window.')
             return
-        voxelMetadata = frontStackWindow.getStack().getMetadata().voxelMetadata
-        df = frontStackWindow.getPointDataFrame()
-        df = self.convertToMicrometer(df, voxelMetadata)
-        # dialog = QtWidgets.QFileDialog(None)
-        # openFolderPath = dialog.getExistingDirectory()
-
-        filters = 'CSV file (*.csv)'
-        filePath, _ = QtWidgets.QFileDialog.getSaveFileName(frontStackWindow,
-                                                            caption='Save CSV File',
-                                                            #   dir=_path,
-                                                              filter=filters)
-        if filePath == "":
-            logger.info(f"Export cancelled")
-            # QtWidgets.QMessageBox.critical(frontStackWindow, "Export cancelled", "Please use enter a valid file name")
-            return
+        # voxelMetadata = frontStackWindow.getStack().getMetadata().voxelMetadata
         
-        # df.to_csv(openFolderPath +, index=False)
-        df.to_csv(filePath, index=False)
+        voxelMetadata = frontStackWindow.getStack().getMetadata().voxelMetadata
+
+        logger.info(f"voxelMetadata {voxelMetadata}")
+
+        df = frontStackWindow.getPointDataFrame()
+        saCore = frontStackWindow.getStack().getPointAnnotations()
+
+        df = SpineAnnotationsCore.convertToMicrometer(saCore, df, voxelMetadata)
+
+        logger.info(f"extracted df is {df}")
+        if mode == "export":
+            logger.info('df exported')
+            filters = 'CSV file (*.csv)'
+            filePath, _ = QtWidgets.QFileDialog.getSaveFileName(frontStackWindow,
+                                                        caption='Save CSV File',
+                                                        #   dir=_path,
+                                                            filter=filters)
+            if filePath == "":
+                logger.info(f"Export cancelled")
+                # QtWidgets.QMessageBox.critical(frontStackWindow, "Export cancelled", "Please use enter a valid file name")
+                return
+            
+            # df.to_csv(openFolderPath +, index=False)
+            df.to_csv(filePath, index=False)
+
+        elif mode == "copy":
+            logger.info('copied to clipboard')
+            df.to_clipboard()
+        else:
+            logger.error(f"Wrong mode for extract spine table: {mode}")
+
     
 def run():
     """Run the PyMapManager app.

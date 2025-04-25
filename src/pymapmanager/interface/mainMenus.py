@@ -143,10 +143,11 @@ class PyMapManagerMenus:
         """If our front window is a stack widget."""
         for pluginName in stackPluginDict.keys():
             # logger.info(f'pluginName:{pluginName}')
-            action = QtWidgets.QAction(pluginName, self.getApp(), checkable=True)
-            action.setEnabled(_frontStackWindow is not None)
-            action.triggered.connect(partial(self._onPluginMenuAction, pluginName, 'stack'))
-            self.pluginsMenu.addAction(action)
+            if pluginName != "__UNDEFINED__":
+                action = QtWidgets.QAction(pluginName, self.getApp(), checkable=True)
+                action.setEnabled(_frontStackWindow is not None)
+                action.triggered.connect(partial(self._onPluginMenuAction, pluginName, 'stack'))
+                self.pluginsMenu.addAction(action)
 
         #
         self.pluginsMenu.addSeparator()
@@ -494,11 +495,11 @@ class PyMapManagerMenus:
         self.spineTableMenu = QtWidgets.QMenu("Spine Table ...")
         self.spineTableMenu.setEnabled(_frontStackWindow is not None)
         copySpineTableAction = QtWidgets.QAction('Copy to ClipBoard', self.getApp())
-        copySpineTableAction.triggered.connect(self.getApp().copySpineTable)
+        copySpineTableAction.triggered.connect(lambda: self.getApp().extractSpineTable("copy"))
         self.spineTableMenu.addAction(copySpineTableAction)
 
         exportSpineTableAction = QtWidgets.QAction('Export to CSV', self.getApp())
-        exportSpineTableAction.triggered.connect(self.getApp().exportSpineTable)
+        exportSpineTableAction.triggered.connect(lambda: self.getApp().extractSpineTable("export"))
         self.spineTableMenu.addAction(exportSpineTableAction)
         self.fileMenu.addMenu(self.spineTableMenu)
 
