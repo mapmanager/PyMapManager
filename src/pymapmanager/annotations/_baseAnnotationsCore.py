@@ -123,7 +123,7 @@ class AnnotationsCore:
             df = df[(df['z']>=_startSlice) & (df['z']<=_stopSlice)]
 
         if segmentID is not None:
-            df = df[ df['segmentID'] == segmentID]
+            df = df[df['segmentID'] == segmentID]
 
         return df
     

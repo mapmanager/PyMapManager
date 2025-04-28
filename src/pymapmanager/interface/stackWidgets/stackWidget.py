@@ -1522,3 +1522,17 @@ class stackWidget(MainWindow):
             Line Annotations Dataframe of type Pandas DF
         """
         return self._stack.getLineAnnotations().getDataFrame()
+    
+    def getPyMapManagerApp(self) -> Optional[PyMapManagerApp]:
+        """Get the running PyMapManagerApp(QApplication).
+        
+        If not PyMapManagerApp, will return None.
+        """
+        
+        # the running QApplication
+        app = QtWidgets.QApplication.instance()
+        if isinstance(app, PyMapManagerApp):
+            return app
+        else:
+            logger.error(f'fail to get PyMapManagerApp, got {app}')
+

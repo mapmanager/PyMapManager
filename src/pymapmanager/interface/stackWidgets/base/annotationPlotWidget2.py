@@ -28,7 +28,7 @@ from pymapmanager.interface.stackWidgets.event.spineEvent import (AddSpineEvent,
                                                                    SelectSpine,
                                                                    MoveBackgroundRoiEvent)
 
-from pymapmanager.interface.stackWidgets.event.segmentEvent import (DeleteSegmentEvent)
+from pymapmanager.interface.stackWidgets.event.segmentEvent import (AddSegmentEvent, DeleteSegmentEvent)
 
 # import seaborn as sns  # to color points with userType
 
@@ -520,8 +520,6 @@ class annotationPlotWidget(mmWidget2):
         # logger.info(f'{self.getClassName()} sliceNumber:{sliceNumber}')
 
         self._currentSlice = sliceNumber
-
-        # TODO: (6/19/24) Change this to be connected to top tool bar zSlider
         zPlusMinus = self._displayOptions["zPlusMinus"]
 
         segmentIDList = None  # none for all segments
@@ -533,10 +531,11 @@ class annotationPlotWidget(mmWidget2):
             segmentIDList,
         )
         self._dfPlot = dfPlot
+        # logger.info(f"self._dfPlot {self._dfPlot}")
 
         try:
-            x = dfPlot["x"].tolist()  # x is pandas.core.series.Series
-            y = dfPlot["y"].tolist()
+            self.xData = dfPlot["x"].tolist()  # x is pandas.core.series.Series
+            self.yData = dfPlot["y"].tolist()
         except (KeyError) as e:
             # this happens when the dataframe is empty (no points or segments)
             logger.error(f'{self.getClassName()} did not find x/y, avail columns are: {dfPlot.columns.to_list()}')
@@ -554,7 +553,7 @@ class annotationPlotWidget(mmWidget2):
 
         if self.showScatter:
             # logger.warning(f'{self.getClassName()} _symbolBrush:{_symbolBrush}')
-            self._scatter.setData(x, y,
+            self._scatter.setData(self.xData, self.yData,
                                 symbolBrush=_symbolBrush,
                                 connect=_connect)
             
@@ -1418,7 +1417,8 @@ class linePlotWidget(annotationPlotWidget):
             if dfLeft is not None:
                 xLeft = dfLeft["x"].to_numpy()
                 yLeft = dfLeft["y"].to_numpy()
-                _lineConnectLeft = self.old_getScatterConnect(dfLeft)
+                # _lineConnectLeft = self.old_getScatterConnect(dfLeft)
+                _lineConnectLeft = self._getScatterConnect(dfLeft)
                 # leftColor = dfLeft['color']
                 # logger.error(f"dfLeft['color']:{dfLeft['color']}")
                 # leftColor = leftColor.map(lambda x : pg.mkPen(width=5, color=x))
@@ -1428,12 +1428,12 @@ class linePlotWidget(annotationPlotWidget):
             if dfRight is not None:
                 xRight = dfRight["x"].to_numpy()
                 yRight = dfRight["y"].to_numpy()
-                _lineConnectRight = self.old_getScatterConnect(dfRight)
+                _lineConnectRight = self._getScatterConnect(dfRight)
                 # rightColor = dfLeft['color']  # hex rgb
                 # rightColor = rightColor.map(lambda x : pg.mkPen(width=5, color=x))
 
         # TODO: just get one color from segment id
-        # 
+        # Might have to create a different radius line for each segment to customize color?
         self._leftRadiusLines.setData(
             xLeft, yLeft,
             connect=_lineConnectLeft,
@@ -1468,6 +1468,7 @@ class linePlotWidget(annotationPlotWidget):
     def slot_setSlice(self, sliceNumber: int):
         super().slot_setSlice(sliceNumber)  # draws centerline
 
+        # logger.info(f"self._dfPlot {self._dfPlot}")
         self.refreshRadiusLines(sliceNumber)
         
         # _symbolBrush = self._getScatterColor()

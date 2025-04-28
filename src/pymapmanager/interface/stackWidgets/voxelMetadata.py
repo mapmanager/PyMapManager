@@ -1,12 +1,14 @@
 from pymapmanager.interface.stackWidgets.base.editDataclass import EditDataClass
 from pymapmanager.interface.stackWidgets import stackWidget
+from pymapmanager._logger import logger, setLogLevel
 
-class ExperimentMetadata(EditDataClass):
-      # Name commented out to be used in meta data widget
-    # _widgetName = 'Experiment Metadata'
+class VoxelMetadata(EditDataClass):
+    # _widgetName = 'Voxel Metadata'
     def __init__(self, stackWidget: stackWidget):
         super().__init__(stackWidget)
+
+        self._stackWidget = stackWidget
         # grab metadata from stack
-        experimentMetadata = stackWidget.getStack().getMetadata().experimentMetadata
+        voxelMetadata = stackWidget.getStack().getMetadata().voxelMetadata
         # build gui
-        self.setDataclass(experimentMetadata)
+        self.setDataclass(voxelMetadata)

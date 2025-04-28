@@ -47,7 +47,7 @@ class EditDataClass(mmWidget2):
         self.layout = QtWidgets.QVBoxLayout()
         self._makeCentralWidget(self.layout)
 
-        windowLayout = self._builldLayout()
+        windowLayout = self._buildLayout()
         self.layout.addLayout(windowLayout)
 
     def _controlUI(self) -> QtWidgets.QHBoxLayout:
@@ -69,7 +69,7 @@ class EditDataClass(mmWidget2):
         hControlLayout.addStretch()
         return hControlLayout
     
-    def _builldLayout(self) -> QtWidgets.QVBoxLayout:
+    def _buildLayout(self) -> QtWidgets.QVBoxLayout:
         # key = name of parameter
         # val = columns within dictionary. Used column name to get value
 
@@ -151,6 +151,13 @@ class EditDataClass(mmWidget2):
                 aWidget.editingFinished.connect(
                     partial(self.on_text_edit, paramKey)
                 )
+            elif valueType == "Literal":
+                aWidget = QtWidgets.QLineEdit(currentValue)
+                aWidget.setAlignment(QtCore.Qt.AlignLeft)
+                aWidget.editingFinished.connect(
+                    partial(self.on_text_edit, paramKey)
+                )
+            
             else:
                 logger.error(
                     f'Did not understand valueType:"{valueType}" for parameter:"{paramKey}"'
@@ -247,3 +254,6 @@ class EditDataClass(mmWidget2):
             else:
                 logger.warning(
                     f'key "{paramKey}" has value "{currentValue}" but widget type "{type(aWidget)}" not understood.')
+
+    def getDict(self):
+        return self._dict

@@ -33,7 +33,6 @@ class LineAnnotationsCore(AnnotationsCore):
         
         # _added = self.getMapSegments().appendSegmentPoint(self.timepoint, segmentID, x, y, z)
         _added = self.singleTimepoint.appendSegmentPoint(segmentID, x, y, z)
-
         if _added is not None:
             self._buildDataFrame()
             self._setDirty(True) #abb
@@ -117,12 +116,15 @@ class LineAnnotationsCore(AnnotationsCore):
         summaryDf = pd.DataFrame(columns=_columns)
 
         try:
-            # _list = segmentDf.index.to_list()
+            _list = segmentDf.index.to_list()
+            logger.info(f"_list")
             summaryDf['Segment'] = segmentDf.index.to_list()
             summaryDf.index = segmentDf.index
             summaryDf['Radius'] = segmentDf['radius']
             summaryDf['Pivot Distance'] = segmentDf['pivotDistance']
             summaryDf['Color'] = segmentDf['color']
+            summaryDf['Points'] = segmentDf['points']
+            summaryDf['roughTracing'] = segmentDf['roughTracing'] # Represents point or linestring of segment
         
         except (KeyError) as e:
             logger.error(e)
@@ -134,7 +136,7 @@ class LineAnnotationsCore(AnnotationsCore):
             logger.warning(e)
         else:
 
-            pointsList = []
+            # pointsList = []
             lengthList = []            
             for row_do_not_use, _data in summaryDf.iterrows():
                 segmentID = _data['Segment']  # shapely line str
@@ -143,12 +145,12 @@ class LineAnnotationsCore(AnnotationsCore):
                 _len = self.getLength(segmentID)
                 if _len > 0:
                     _len = round(_len,2)
-                pointsList.append(_numPoints)
+                # pointsList.append(_numPoints)
                 lengthList.append(_len)
 
-            summaryDf['Points'] = pointsList
+            # summaryDf['Points'] = pointsList
             summaryDf['Length'] = lengthList
-            logger.info(f"summaryDf['Length'] {summaryDf['Length'] }")
+            # logger.info(f"summaryDf['Length'] {summaryDf['Length'] }")
         
         self._summaryDf = summaryDf
 
@@ -170,20 +172,35 @@ class LineAnnotationsCore(AnnotationsCore):
         dfRet = pd.DataFrame(columns=_columns)
 
         segmentDf = self.singleTimepoint.segments[:]
+        logger.info(f"check {segmentDf.columns}")
         
         if len(segmentDf) > 0:
-            xyCoord = segmentDf['segment'].get_coordinates(include_z=True)
+            # xyCoord = segmentDf['segment'].get_coordinates(include_z=True)
+            coords = []
+            for idx, geom in segmentDf['segment'].items():
+                # check2 = segmentDf[segmentDf.index == idx]["roughTracing"]
+                # logger.info(f"wooooo {check2}")
+                if geom.is_empty:
+                    # Replace with a LineString containing just the known point
+                    try:
+                        firstPoint = segmentDf.at[segmentDf[segmentDf.index == idx].index[0], "roughTracing"]
+                        # logger.info(f"firstPoint {firstPoint}")
+                        coords.append(firstPoint)
+                    except:
+                        logger.error(f"No first point in rough coords of segment {idx}")
 
-            #TODO: get distance along line and add as a column
-            
+                elif isinstance(geom, shapely.LineString):
+                    # Access coordinates with z (if present)
+                    coords.append(geom)
+                    
+            xyCoord = gp.GeoSeries(coords).get_coordinates(include_z=True)
+            # logger.info(f"coords {coords}")
             dfRet['segmentID'] = xyCoord.index
             
             xyCoord = xyCoord.reset_index()  # xyCoord still has labels as segmentID
-
             dfRet['x'] = xyCoord['x']
             dfRet['y'] = xyCoord['y']
             dfRet['z'] = xyCoord['z']
-        
 
             # dfRet['leftRadius'] = segmentDf['leftRadius']
             # dfRet['rightRadius'] = segmentDf['rightRadius']
@@ -322,9 +339,6 @@ class LineAnnotationsCore(AnnotationsCore):
 
         _startSlice = zSlice - zPlusMinus
         _stopSlice = zSlice + zPlusMinus
-        # logger.info(f"getRadiusPlot segmentDf[leftRight] {segmentDf[leftRight]} type: {type(segmentDf[leftRight])}")
-        # one row per segment -> gp.GeoSeries
-        # xyLeft = clipLines(segmentDf[leftRight], zRange = (_startSlice, _stopSlice))
         
         xyRadius = self.explodeLineStrings(segmentDf[leftRight])
         xyRadius['rowIndex'] = xyRadius.index
@@ -332,11 +346,6 @@ class LineAnnotationsCore(AnnotationsCore):
         if 'z' not in xyRadius:
             return None
         xyRadius = xyRadius[(xyRadius['z'] >= _startSlice) & (xyRadius['z'] <= _stopSlice)]
-        
-        # xyLeft = xyLeft.get_coordinates(include_z=True)  # z is empty
-
-        # this is inaccurate. Need to set rowindex beforehand
-        # xyLeft['rowIndex'] = list(np.arange(len(xyLeft)))  # used to determine if points in plot are contiguous
 
         summaryDf = self.getSummaryDf()  # gives us 'Color' per segment ID
         # logger.info(f"summaryDf {summaryDf}")
