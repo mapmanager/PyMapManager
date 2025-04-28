@@ -68,6 +68,7 @@ def test_plugins(qtbot, qapp):
     # mmapPath = mapmanagercore.data.getSingleTimepointMap()
     logger.info('202504 loading from local mmap directory')
     mmapPath = '../MapManagerCore-Data/data/202504/single_timepoint_202504.mmap'
+    mmapPath = '../MapManagerCore-Data/data/202504/single_timepoint_202504.mmap.zip'
     if not os.path.isdir(mmapPath):
         logger.error(f'did not find folder path mmapPath: {mmapPath}')
         return

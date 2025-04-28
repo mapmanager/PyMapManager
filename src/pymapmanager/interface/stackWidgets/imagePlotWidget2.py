@@ -243,14 +243,17 @@ class ImagePlotWidget(mmWidget2):
         else:
             logger.info('No action?')
 
-    def keyPressEvent(self, event : QtGui.QKeyEvent):
+    # abb interfering with mainwindow actions
+    def _keyPressEvent(self, event : QtGui.QKeyEvent):
         """Override PyQt key press.
         
         Args:
             event: QtGui.QKeyEvent
         """
 
-        # logger.info(f'{self.getClassName()} {event.text()}')
+        super().keyPressEvent(event)
+
+        logger.info(f'{self.getClassName()} {event.text()}')
         
         if event.key() in [QtCore.Qt.Key_Enter, QtCore.Qt.Key_Return]:
             self._setFullView()

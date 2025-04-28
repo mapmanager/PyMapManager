@@ -1336,7 +1336,7 @@ class mmWidget2(QtWidgets.QMainWindow):
         event.setStateChange(state)
         self.emitEvent(event, blockSlots=False)
 
-    def keyPressEvent(self, event : QtGui.QKeyEvent):
+    def _keyPressEvent(self, event : QtGui.QKeyEvent):
         logger.info(f'{self.getName()} {event.text()}')
 
         # if event.key() == QtCore.Qt.Key_Escape:
@@ -1346,6 +1346,8 @@ class mmWidget2(QtWidgets.QMainWindow):
         #     self._deleteSelection()
 
     def closeEvent(self, event : QtGui.QKeyEvent):
+        logger.info('')
+        
         # logger.info(f"closing plugin: {self._widgetName} with id: {self._id}")
         stackWidget = self.getStackWidget()
         # logger.info(f"stackWidget {temp}")

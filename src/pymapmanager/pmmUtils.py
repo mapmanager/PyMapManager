@@ -151,7 +151,7 @@ def _getUserDocumentsFolder():
         return userDocumentsFolder
 
 def _getAppIconPath():
-    return os.path.join(getBundledDir(), 'interface2', 'icons', 'mapmanager-icon.png')
+    return os.path.join(getBundledDir(), 'interface', 'icons', 'mapmanager-icon.png')
 
 def calculateRectangleROIcoords(xPlotLines, yPlotLines, xPlotSpines, yPlotSpines):
     """

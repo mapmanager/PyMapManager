@@ -45,6 +45,8 @@ class MainWindow(mmWidget2):
         self._mainMenu = pymapmanager.interface.PyMapManagerMenus(self.getApp())
         self._mainMenu._buildMenus(mainMenu, self)
 
+        # self._mainMenu.viewMenu.aboutToShow.connect(self._refreshViewMenu)
+
     def _on_user_close(self):
         """Called when user closes window.
         

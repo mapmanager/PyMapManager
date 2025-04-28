@@ -20,6 +20,9 @@ from qtpy import QtGui, QtCore, QtWidgets
 from mapmanagercore import IMPORT_FILE_EXTENSIONS
 
 import pymapmanager
+
+from pymapmanager.interface.mainWindow import MainWindow
+
 from pymapmanager.interface.stackWidgets.base.mmWidget2 import mmWidget2, pmmEventType, pmmStates, pmmEvent, StackSelection
 from .base.stacktoolbar import StackToolBar
 from .base.stackstatusbar import StatusToolbar
@@ -43,7 +46,9 @@ from pymapmanager.interface.stackWidgets.event.segmentEvent import (AddSegmentEv
 from pymapmanager.interface.stackWidgets.event.annotationEvent import RedoEvent, UndoEvent
 from pymapmanager._logger import logger
 
-class stackWidget(mmWidget2):
+# abb 202504
+# class stackWidget(mmWidget2):
+class stackWidget(MainWindow):
     _widgetName = 'Stack Widget'
 
     def __init__(self,
@@ -92,7 +97,8 @@ class stackWidget(mmWidget2):
 
         self._buildUI()
         self._buildMenus()
-        self.setContextMenuPolicy(QtCore.Qt.NoContextMenu) # abj - disabled hidden context menu
+
+        # self.setContextMenuPolicy(QtCore.Qt.NoContextMenu) # abj - disabled hidden context menu
 
         # abb, on creation set to first slice
         _pmmEvent = pmmEvent(pmmEventType.setSlice, self)
@@ -254,6 +260,10 @@ class stackWidget(mmWidget2):
             self.slot_pmmEvent(event)
 
     def keyPressEvent(self, event : QtGui.QKeyEvent):
+        _handled = super().keyPressEvent(event)
+        if _handled:
+            return
+        
         logger.info(f'{self.getClassName()} {event.text()}')
 
         # abj: moved undo/ redo shortcuts to stackwidget level
@@ -306,21 +316,25 @@ class stackWidget(mmWidget2):
             logger.warning(f'available keys are: {self._widgetDict.keys()}')
 
     def _buildMenus(self) -> QtWidgets.QMenuBar:
-        mainMenu = self.menuBar()
+        super()._buildMenus()
 
-        self._mainMenu = pymapmanager.interface.PyMapManagerMenus(self.getApp())
-        self._mainMenu._buildMenus(mainMenu, self)
-
-        #_mainMenu = self.getApp().getMainMenu()
-
-        # close
-        self.closeShortcut = QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+W"), self)
-        self.closeShortcut.activated.connect(self._on_user_close)
-
-        # we will append to this
-        # viewMenu = self._mainMenu.viewMenu
         self._mainMenu.viewMenu.aboutToShow.connect(self._refreshViewMenu)
-        # _mainMenu.viewMenu.aboutToShow.connect(self._refreshViewMenu)
+
+        # mainMenu = self.menuBar()
+
+        # self._mainMenu: pymapmanager.interface.PyMapManagerMenus \
+        #       = pymapmanager.interface.PyMapManagerMenus(self.getApp())
+        # self._mainMenu._buildMenus(mainMenu, self)
+
+        # #_mainMenu = self.getApp().getMainMenu()
+
+        # # abb moved to mainwindow
+        # # close
+        # self.closeShortcut = QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+W"), self)
+        # self.closeShortcut.activated.connect(self._on_user_close)
+
+        # # we will append to this
+        # self._mainMenu.viewMenu.aboutToShow.connect(self._refreshViewMenu)
         
     def _refreshViewMenu(self):
         logger.info('')
@@ -340,7 +354,9 @@ class stackWidget(mmWidget2):
         humanName, newPlugin, pluginNumber = self.createAndShowNewPlugin(pluginName)
         return humanName, newPlugin
 
-    def runPlugin(self, pluginName: str, show: bool = True, inDock=False):
+    def runPlugin(self, pluginName: str,
+                  show: bool = True,
+                  inDock=False):
         """Run one stack plugin.
 
         Args:
@@ -390,7 +406,9 @@ class stackWidget(mmWidget2):
 
         return pluginID
 
-    def createAndShowNewPlugin(self, pluginName, show: bool = True):
+    def createAndShowNewPlugin(self,
+                               pluginName: str,
+                               show: bool = True):
         """ 
             Creates shows a new stack plugin. Checks to make sure that plugin has not already been created in storedDict.
             This implementation limits one of each type of stack plugin for both the dock and general stackWidget interface.
@@ -414,14 +432,15 @@ class stackWidget(mmWidget2):
             return
         else:
             humanName = pluginDict[pluginName]["constructor"]._widgetName
-            logger.info(f'Running plugin: "{pluginName}"')
+            # logger.info(f'Running plugin: "{pluginName}"')
 
+            # call plugin constructor
             newPlugin = pluginDict[pluginName]["constructor"](
                 stackWidget=self
             )
             newPlugin.setStackWidget(self)
 
-            logger.info(f'Running newPlugin: {newPlugin}')
+            # logger.info(f'Running newPlugin: "{newPlugin._widgetName}"')
 
             # check if plugin has been run befor/ stored in dictionary
             pluginNumber = self.getPluginWindowNumber(pluginName)
@@ -513,13 +532,6 @@ class stackWidget(mmWidget2):
 
         self._topToolbar.signalChannelChange.connect(self.slot_setChannel)
 
-        # abb removed 20241118
-        # _histWidget = pymapmanager.interface.stackWidgets.histogramWidget2.HistogramWidget(self)
-        # _histWidgetName = _histWidget._widgetName
-        # _histDock = self._addDockWidget(_histWidget, 'bottom', 'Histogram')
-        # self._widgetDict[_histWidgetName] = _histWidget  # the dock, not the widget ???
-        # self._widgetDict[_histWidgetName].hide()  # hide histogram by default
-
         #
         # plugin panel with tabs
         self.pluginDock1 = StackPluginDock(self)
@@ -528,7 +540,8 @@ class stackWidget(mmWidget2):
         self._widgetDict[pluginDockName] = self.pluginDock1  # the dock
 
         # set focus to image plot widget
-        self._widgetDict[imagePlotName].setFocus()
+        logger.warning('abb 202504 removed focus')
+        # self._widgetDict[imagePlotName].setFocus()
 
     def updateDisplayOptionsZ(self, d):
         """
@@ -564,13 +577,13 @@ class stackWidget(mmWidget2):
         imagePlotWidget = self._widgetDict[imagePlotName]
         imagePlotWidget.togglePlot(plotName)
 
-    def _on_user_close(self):
-        """Called when user closes window.
+    # def _on_user_close(self):
+    #     """Called when user closes window.
         
-        Assigned in _buildUI.
-        """
-        logger.info('')
-        self.close()
+    #     Assigned in _buildUI.
+    #     """
+    #     logger.info('')
+    #     self.close()
 
     def selectedEvent(self, event : "pmmEvent"):
         """Set selection based on event.
@@ -1290,8 +1303,8 @@ class stackWidget(mmWidget2):
             # close plugin
             pluginObj.getWidget().close() 
 
-        logger.info('dict of open plugins:')
-        print(self._openPluginDict)
+        # logger.info('dict of open plugins:')
+        # print(self._openPluginDict)
 
     def getOpenPluginDict(self):
         """

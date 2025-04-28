@@ -10,7 +10,7 @@ Make sure you have <your_source_folder> that contains the Core, Py, and Data rep
     ├── MapManagerCore-Data
     ├── PyMapManager
 
-0) Copy the map folder `single_timepoint_202504/` to MapManagerCore-Data
+0) Copy the provided map folder `single_timepoint_202504/` to MapManagerCore-Data/data/202504
 
 Make sure you drop the supplied map folder (not zip) into `MapManagerCore-Data/data/202504`. You will also need to make the enclosing `202504` folder.
 
@@ -28,10 +28,14 @@ From your cloned PyMapManager directory/folder
     conda activate pmm_env2
 
 2) Install MapManagerCore from source
-    
+
+Make sure the MapManagerCore/ folder is in the `cudmore-dev` branch!
+
     pip install -e ../MapManagerCore/.
 
 3) Install PyMapManager from source, use `[test]` to install pytest
+
+Make sure the PyMapManager/ folder is in the `cudmore-dev` branch!
 
     pip install -e '.[test]'
 
@@ -46,7 +50,7 @@ Run main PyMapManager stack widget tests
 
     pytest src/pymapmanager/tests/interface/test_stack_widgets.py
 
-5) run the PyMapManager GUI with your custom script
+5) Run the PyMapManager GUI with your custom script
 
 This will work if the following manually copied mmap folder exists
 
@@ -54,11 +58,13 @@ This will work if the following manually copied mmap folder exists
 
     python src/pymapmanager/tests/interface/runInterfaceBob.py
 
-See comments in `runInterfaceJohnson.py'
+See comments in `runInterfaceJohnson.py`
 
     # abb, macOS
     # you need to MANUALLY place this new mmap folder
     # path = '../MapManagerCore-Data/data/202504/single_timepoint_202504.mmap'
+
+# old
 
 ## Start working on multi timepoint
 

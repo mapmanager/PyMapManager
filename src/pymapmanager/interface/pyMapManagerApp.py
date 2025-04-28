@@ -367,6 +367,9 @@ class OpenWidgetList:
 
     def saveAs(self, aWidget):
         # abb only stackWidget has fileSaveAs(), e.g. map widgets do not
+        if aWidget is None:
+            logger.error('aWidget is None')
+            return    
         logger.info(f'save as widget: {aWidget}')
         _saved = aWidget.saveAs()
         if _saved:
@@ -929,6 +932,11 @@ class PyMapManagerApp(QtWidgets.QApplication):
         voxelMetadata = frontStackWindow.getStack().getMetadata().voxelMetadata
         # logger.info(f'voxelMetadata:{voxelMetadata}')
         df = frontStackWindow.getPointDataFrame()
+        
+        if df.empty:
+            logger.error('empty df')
+            return
+        
         df = self.convertToMicrometer(df, voxelMetadata)
 
         # logger.info(f"from app df {df}")
@@ -946,6 +954,11 @@ class PyMapManagerApp(QtWidgets.QApplication):
             return
         voxelMetadata = frontStackWindow.getStack().getMetadata().voxelMetadata
         df = frontStackWindow.getPointDataFrame()
+
+        if df.empty:
+            logger.error('empty df')
+            return
+
         df = self.convertToMicrometer(df, voxelMetadata)
         # dialog = QtWidgets.QFileDialog(None)
         # openFolderPath = dialog.getExistingDirectory()

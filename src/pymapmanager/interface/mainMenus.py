@@ -38,26 +38,31 @@ class PyMapManagerMenus:
         mainWindow : QtWidgets.QMainMenu
             Owner/parent of the mainMenu
         """
+
+        self._menuDict = {}
+
         #
         # file
         self.fileMenu = mainMenu.addMenu("&File")
         _emptyAction = QtWidgets.QAction("None", mainWindow)
         self.fileMenu.addAction(_emptyAction)
         self.fileMenu.aboutToShow.connect(self._refreshFileMenu)
-
+        self._menuDict['File'] = self.fileMenu
         #
         # edit
         self.editMenu = mainMenu.addMenu("&Edit")
         _emptyAction = QtWidgets.QAction("None", mainWindow)
         self.editMenu.addAction(_emptyAction)
         self.editMenu.aboutToShow.connect(self._refreshEditMenu)
+        self._menuDict['Edit'] = self.editMenu
 
         #
         # view, used by stack windows
         self.viewMenu = mainMenu.addMenu("View")
         _emptyAction = QtWidgets.QAction("None", mainWindow)
         self.viewMenu.addAction(_emptyAction)
-        
+        self._menuDict['View'] = self.viewMenu
+
         # self.mapsMenu.aboutToShow.connect(self._refreshMapsMenu)
         
         # #
@@ -82,6 +87,7 @@ class PyMapManagerMenus:
         _emptyAction = QtWidgets.QAction("None", self.getApp())
         self.pluginsMenu.addAction(_emptyAction)
         self.pluginsMenu.aboutToShow.connect(self._refreshPluginsMenu)
+        self._menuDict['Plugins'] = self.pluginsMenu
 
         # windows
         name = "Windows"
@@ -89,6 +95,7 @@ class PyMapManagerMenus:
         _emptyAction = QtWidgets.QAction("None", self.getApp())
         self.windowsMenu.addAction(_emptyAction)
         self.windowsMenu.aboutToShow.connect(self._refreshWindowsMenu)
+        self._menuDict['Windows'] = self.windowsMenu
 
         # help menu
         self.helpMenu = mainMenu.addMenu("Help")
@@ -114,6 +121,8 @@ class PyMapManagerMenus:
             # print('   ', _action.menu(), actionText, _action)
             if actionText == 'Help':
                 self._helpMenuAction = _action
+
+        self._menuDict['Help'] = self.helpMenu
 
         return self._helpMenuAction
 
@@ -173,7 +182,7 @@ class PyMapManagerMenus:
     def _refreshWindowsMenu(self):
         """A menu with stacks and maps
         """
-        logger.info('')
+        logger.info('_refreshWindowsMenu')
         
         self.windowsMenu.clear()
 
@@ -228,7 +237,7 @@ class PyMapManagerMenus:
         #abb
         # Show all plugin widgets that are opened
         activeWindow = self.getApp().activeWindow()
-        if activeWindow._widgetName == 'Stack Widget':
+        if activeWindow is not None and activeWindow._widgetName == 'Stack Widget':
             # triggers except (AttributeError) when front window is not a stackWidget
             pluginWidgetDict = activeWindow.getOpenPluginDict()
             for pluginKey, _pluginObj in pluginWidgetDict.items():
@@ -256,7 +265,7 @@ class PyMapManagerMenus:
          - Plugin is a stack and window is a stack
          - Plugin is a map and window is a map
          """
-        logger.info(f'pluginName:{pluginName} mapOrStack:{mapOrStack}')
+        logger.info(f'pluginName:"{pluginName}" mapOrStack:{mapOrStack}')
         
         # check front window and based on if it is a stack or map, run the plugin
         # self.getApp().runPlugin(pluginName)
@@ -458,11 +467,20 @@ class PyMapManagerMenus:
         self.fileMenu.addMenu(self.openRecentMenu)
 
         clearRecentAction = QtWidgets.QAction("Clear Recent", self.getApp()) # abj
+        clearRecentAction.setObjectName("Clear Recent")
         clearRecentAction.setCheckable(False)  
         clearRecentAction.triggered.connect(self.getApp().clearRecentFiles)
         self.fileMenu.addAction(clearRecentAction)
         self.fileMenu.addSeparator()
         
+        # 202504 debug
+        # _actions = self.fileMenu.actions()
+        # for _action in _actions:
+        #     logger.error(f'  action.objectName(): "{_action.objectName()}"')
+        # logger.error(f'clearRecentAction objectName:{clearRecentAction.objectName()}')
+        # clear_recent_action = self.fileMenu.findChild(QtWidgets.QAction, 'Clear Recent')
+        # logger.error(f'clear_recent_action:{clear_recent_action}')
+
         self.settingsMenu = self.fileMenu.addMenu('User Options...')
         self.settingsMenu.aboutToShow.connect(self._refreshSettingsMenu)
         self.fileMenu.addSeparator()
@@ -480,6 +498,8 @@ class PyMapManagerMenus:
         # open some mapmanagercore sample data (download and store locally with pooch)
         self.fileMenu.addSeparator()
         self.sampleDataMenu = QtWidgets.QMenu("Sample Data ...")
+        # self.sampleDataMenu.setObjectName('Sample Data ...')
+
         importList = ['Tiff File Ch1', 'Tiff File Ch2', 'mmap with spines and segments']
         for importType in importList:
             loadSampleAction = QtWidgets.QAction(importType, self.getApp())

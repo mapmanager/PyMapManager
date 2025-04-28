@@ -20,7 +20,10 @@ To add a new display value, like spineLength (not editable)
     if itemName in ['index', 'segmentID', 'note', 'spineLength']:
 """
 
-class SpineInfoWidget(mmWidget2):
+from pymapmanager.interface import MainWindow
+
+# class SpineInfoWidget(mmWidget2):
+class SpineInfoWidget(MainWindow):
     """A widget that displays the information of the Spine that is selected.
     
     Some information can be altered by the user.
