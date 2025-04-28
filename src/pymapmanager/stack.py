@@ -6,7 +6,10 @@ import numpy as np
 
 import pymapmanager
 from pymapmanager.annotations import SpineAnnotationsCore, LineAnnotationsCore
-from mapmanagercore.metadata import TimepointMetadata, ChannelMetadata, AnalysisParams
+from mapmanagercore.metadata import (TimepointMetadata,
+                                     ChannelMetadata,
+                                    #  VoxelMetadata,
+                                     AnalysisParams)
 
 from pymapmanager._logger import logger
 
@@ -238,3 +241,116 @@ class stack:
     def getDendrogramReplot(self, newSegmentID, spineAngleChecked, spineLengthChecked , spineLengthConstant):
         return self._fullMap.getDendrogramReplot(newSegmentID, spineAngleChecked, spineLengthChecked, spineLengthConstant)
     
+    def exportSpines(self, mode:str, filename:str = None):
+        """Export spines to clipboard or file.
+        
+        Parameters
+        ==========
+        mode:
+            in ['export', 'copy']
+        filename:
+            file name to save to if mode is 'export'
+        """
+        # get the spine dataframe in physical units
+        df = self._convertToMicrometer()
+
+        if df.empty:
+            logger.error('empty df')
+            return
+
+        if mode == 'export':
+            logger.error(f'todo: save csv to filename:{filename}')
+            #df.to_csv(filename, index=False)
+
+        elif mode == 'copy':
+            logger.info(f'copied {len(df)} spines to clipboard.')
+            df.to_clipboard()
+
+    def _convertToMicrometer(self):
+        """  Convert df columns values in pixels to micrometer
+
+        Uses current VoxelMetadata
+        """
+
+        voxelMetadata = self.getMetadata().voxelMetadata
+        df = self.getPointAnnotations().getDataFrame()
+
+        if df.empty:
+            logger.error('empty df')
+            return
+
+        # Point (x, y)
+        df = self._filterDFColumn(df)
+
+        cols_to_front = ['index', 'segmentID', 'x', 'y', 'z', 'anchorX', 'anchorY', 'anchorZ']  # put these in the order you want at the front
+        remaining_cols = [col for col in df.columns if col not in cols_to_front]
+        df = df[cols_to_front + remaining_cols]
+
+        # roiInBounds, roiBgInBounds, isValid, intBad, accept
+        # points:
+        df['x'] = df['x'] * voxelMetadata.xVoxel
+        df['y'] = df['y'] * voxelMetadata.yVoxel
+        df['z'] = df['z'] * voxelMetadata.zVoxel
+
+        # Anchor 
+        df['anchorX'] = df['anchorX'] * voxelMetadata.xVoxel
+        df['anchorY'] = df['anchorY'] * voxelMetadata.yVoxel
+        df['anchorZ'] = df['anchorZ'] * voxelMetadata.zVoxel
+        
+        # xBackgroundOffset, yBackgroundOffset
+        df['xBackgroundOffset'] = df['xBackgroundOffset'] * voxelMetadata.xVoxel
+        df['yBackgroundOffset'] = df['yBackgroundOffset'] * voxelMetadata.yVoxel
+
+        # spineLength
+        # logger.info(f"df['spineLength'] {type(df['spineLength'])}")
+        # df['spineLength'] = gp.GeoSeries(df["anchor"]).distance(df["point"])
+        df['spineLength'] = df['spineLength'] * voxelMetadata.xVoxel
+
+        # spinePosition
+        # assuming voxel size is isotropic (same in all directions)
+        # VoxelMetadata.xVoxel = VoxelMetadata.yVoxel
+        # distances can be scaled with either scaling factor
+        df['spinePosition'] = df['spinePosition'] * voxelMetadata.xVoxel
+
+        return df
+    
+    def _filterDFColumn(self, df):
+        """
+            Filter list to only include columns that can be plotted
+
+            From: ScatterplotWidget- setColumnlist
+        """
+        self.filteredColumnList = []
+        for column in df:
+            try:
+                firstColVal= df[column].iloc[0]
+                # logger.info(f" column Name: {column} firstColVal {firstColVal}")
+                # valid = self._checkFloat(firstColVal) 
+                if self._checkFloat(firstColVal) :
+                    self.filteredColumnList.append(column)
+            except (IndexError):
+                logger.warning(f'Index error when converting value to micrometer')
+                pass
+        
+        # logger.info(f"self.filteredColumnList {self.filteredColumnList}")
+        return df[self.filteredColumnList]
+
+    def _checkFloat(self, val):
+        """
+            Check if column values are floats. 
+            This is used to determine if they should be available to be shown
+            If they are not floats they are unincluded
+        """
+        try:
+            # logger.info(f"val type is {type(val)}")
+            if isinstance(val, np.bool):
+                # logger.info(f"val is {val}")
+                return False
+            float(val)
+            return True
+        except ValueError:
+            # logger.info(f'Cant make float of {val}')
+            return False
+        except TypeError:
+            # logger.info(f'Cant make float of this type: {type(val)}')
+            return False

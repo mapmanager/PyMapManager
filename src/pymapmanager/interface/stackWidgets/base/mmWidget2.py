@@ -1376,6 +1376,21 @@ class mmWidget2(QtWidgets.QMainWindow):
     def getID(self):
         return self._id
 
+    def exportSpines(self, mode: str):
+        """Export spines as table to either clipboard or file.
+
+        Parameters
+        ----------
+        mode: str
+            "export" or "copy"
+        """    
+        filename = None
+        if mode == 'export':
+            logger.error('todo: prompt user for a file')
+            filename = ''
+
+        self.getStack().exportSpines(mode, filename=filename)
+
 if __name__ == '__main__':
     from pymapmanager._logger import setLogLevel
     setLogLevel()

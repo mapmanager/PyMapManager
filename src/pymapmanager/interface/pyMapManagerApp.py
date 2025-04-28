@@ -198,7 +198,7 @@ def loadPlugins(pluginType : str, verbose = False) -> dict:
                 continue
             
             # don't add widgets with no specific name
-            if _widgetName == 'not assigned':
+            if _widgetName == '__UNDEFINED__':  # generally base stack widget classes
                 continue
 
             # don't add widgets with no specific name
@@ -845,73 +845,15 @@ class PyMapManagerApp(QtWidgets.QApplication):
 
         return retDict
 
-    def extractSpineTable(self, mode: str = ["export", "copy"]):
+    # def extractSpineTable(self, mode: str = ["export", "copy"]):
+    def exportSpineTable(self, mode: str = ["export", "copy"]):
         """
         """
         frontStackWindow = self.getFrontStackWindow()
         if frontStackWindow is None:
             logger.warning('front window is not a stack window.')
             return
-        # voxelMetadata = frontStackWindow.getStack().getMetadata().voxelMetadata
-        
-        voxelMetadata = frontStackWindow.getStack().getMetadata().voxelMetadata
-        # logger.info(f'voxelMetadata:{voxelMetadata}')
-        df = frontStackWindow.getPointDataFrame()
-        
-        if df.empty:
-            logger.error('empty df')
-            return
-        
-        df = self.convertToMicrometer(df, voxelMetadata)
-
-        # logger.info(f"from app df {df}")
-        df.to_clipboard()
-
-        logger.info('copied to clipboard')
-        print(df)
-
-    def exportSpineTable(self):
-        """ Export Spine Dataframe to csv
-        """
-        frontStackWindow = self.getFrontStackWindow()
-        if frontStackWindow is None:
-            logger.warning('front window is not a stack window.')
-            return
-        voxelMetadata = frontStackWindow.getStack().getMetadata().voxelMetadata
-        df = frontStackWindow.getPointDataFrame()
-
-        if df.empty:
-            logger.error('empty df')
-            return
-
-        df = self.convertToMicrometer(df, voxelMetadata)
-        # dialog = QtWidgets.QFileDialog(None)
-        # openFolderPath = dialog.getExistingDirectory()
-
-        df = SpineAnnotationsCore.convertToMicrometer(saCore, df, voxelMetadata)
-
-        logger.info(f"extracted df is {df}")
-        if mode == "export":
-            logger.info('df exported')
-            filters = 'CSV file (*.csv)'
-            filePath, _ = QtWidgets.QFileDialog.getSaveFileName(frontStackWindow,
-                                                        caption='Save CSV File',
-                                                        #   dir=_path,
-                                                            filter=filters)
-            if filePath == "":
-                logger.info(f"Export cancelled")
-                # QtWidgets.QMessageBox.critical(frontStackWindow, "Export cancelled", "Please use enter a valid file name")
-                return
-            
-            # df.to_csv(openFolderPath +, index=False)
-            df.to_csv(filePath, index=False)
-
-        elif mode == "copy":
-            logger.info('copied to clipboard')
-            df.to_clipboard()
-        else:
-            logger.error(f"Wrong mode for extract spine table: {mode}")
-
+        frontStackWindow.exportSpines(mode)
     
 def run():
     """Run the PyMapManager app.

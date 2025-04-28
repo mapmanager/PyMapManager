@@ -117,7 +117,7 @@ class LineAnnotationsCore(AnnotationsCore):
 
         try:
             _list = segmentDf.index.to_list()
-            logger.info(f"_list")
+            # logger.info(f"_list")
             summaryDf['Segment'] = segmentDf.index.to_list()
             summaryDf.index = segmentDf.index
             summaryDf['Radius'] = segmentDf['radius']

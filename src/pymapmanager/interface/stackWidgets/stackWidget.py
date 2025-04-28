@@ -136,7 +136,7 @@ class stackWidget(MainWindow):
         ----------
         event : PyQt5.QtGui.QCloseEvent
         """
-        logger.warning('NEED TO CHECK IF DIRTY AND PROMPT TO SAVE')
+        logger.warning('NEED TO CHECK IF spine/segment IS DIRTY AND PROMPT TO SAVE')
         
         # logger.info(self.geometry())t
         temp = len(self._openPluginDict)
