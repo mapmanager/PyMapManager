@@ -1,5 +1,5 @@
 
-from mapmanagercore.data import getSingleTimepointMap
+from mapmanagercore.data import get202504_map
 
 from pymapmanager import TimeSeriesCore, stack
 
@@ -7,10 +7,7 @@ from pymapmanager._logger import logger
 
 def test_init_stack():
 
-    logger.error('202504 zip maps are broken')
-    return
-
-    path = getSingleTimepointMap()
+    path = get202504_map()
 
     tsc = TimeSeriesCore(path)
 

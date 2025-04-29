@@ -149,7 +149,7 @@ class TimeSeriesCore():
         _ext = os.path.splitext(path)[1]
         if _ext in LOAD_SAVE_EXTENSIONS:
             self._load_zarr()
-        elif path.endswith('.tif') or path.endswith('.nd2'):
+        elif path.endswith('.tif'):
             self._import_tiff()
         else:
             # TODO properly handle this

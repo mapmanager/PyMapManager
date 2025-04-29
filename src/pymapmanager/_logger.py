@@ -14,7 +14,8 @@ def setLogLevel(newLogLevel : str = 'INFO'):
     logger = logging.getLogger(__name__)
 
     logger.info(f'setLogLevel() newLogLevel "{newLogLevel}"')
-    logger.info(f'   logging to file: {getLoggerFilePath()}')
+    logger.info(f'   logging to file:')
+    logger.info(f'{getLoggerFilePath()}')
 
     if newLogLevel == 'DEBUG':
         logLevel = logging.DEBUG

@@ -262,9 +262,9 @@ class stackWidget(MainWindow):
             self.slot_pmmEvent(event)
 
     def keyPressEvent(self, event : QtGui.QKeyEvent):
-        _handled = super().keyPressEvent(event)
-        if _handled:
-            return
+        # _handled = super().keyPressEvent(event)
+        # if _handled:
+        #     return
         
         logger.info(f'{self.getClassName()} {event.text()}')
 

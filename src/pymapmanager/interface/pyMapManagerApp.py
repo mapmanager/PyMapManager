@@ -263,7 +263,8 @@ class OpenWidgetList:
         Returns a stack widget (tp==1) or a map widget (tp>1)
         """
         if path not in self._widgetDictList.keys():
-            logger.info(f'loading widget path:{path}')
+            logger.info(f'loading widget path:')
+            logger.info(f'  {path}')
             
             # open timeseries core
             _timeSeriesCore = TimeSeriesCore(path)

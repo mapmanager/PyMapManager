@@ -1,16 +1,17 @@
-from mapmanagercore.data import getMultiTimepointMap
+from mapmanagercore.data import get202504_map
 
 from pymapmanager import stack, TimeSeriesCore
 
 from pymapmanager._logger import logger, setLogLevel
 
 def test_timeseriescore():
-    zarrPath = getMultiTimepointMap()
+    zarrPath = get202504_map()
     
     # _map = AnnotationsBaseMut(Loader())
     # _map = MapAnnotations(MMapLoader(zarrPath).cached())
     # tsc = TimeSeriesCore(zarrPath)
-    _stack = stack(timeseriescore=TimeSeriesCore(zarrPath), timepoint=0)
+    _timepoint = 1
+    _stack = stack(timeseriescore=TimeSeriesCore(zarrPath), timepoint=_timepoint)
 
     # update spine does not make sense before we add spine?
     # _map.updateSpine(("spine_id", 0), {"z": 0})

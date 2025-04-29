@@ -120,7 +120,7 @@ def runMultiTimepointMap():
     app = PyMapManagerApp(sys.argv)
     import mapmanagercore.data
     ## path = mapmanagercore.getSingleTimepointMap()
-    path = mapmanagercore.data.getMultiTimepointMap()
+    path = mapmanagercore.data.get202504_map()
 
     print("path", path)
     sw2 = app.loadStackWidget(path)

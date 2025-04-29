@@ -316,11 +316,12 @@ class PyMapManagerMenus:
         
         # from pymapmanager.interface.stackWidgets import stackWidget
         frontWindow = self.getApp().getFrontWindow()
-        if isinstance(frontWindow, (mmWidget2, mapWidget)):
-            nextUndo = frontWindow.getUndoRedo().nextUndoStr()
-            nextRedo = frontWindow.getUndoRedo().nextRedoStr()
-            enableUndo = frontWindow.getUndoRedo().numUndo() > 0
-            enableRedo = frontWindow.getUndoRedo().numRedo() > 0
+        if isinstance(frontWindow, (mmWidget2, mapWidget)) \
+            and frontWindow.getUndoRedo() is not None:
+                nextUndo = frontWindow.getUndoRedo().nextUndoStr()
+                nextRedo = frontWindow.getUndoRedo().nextRedoStr()
+                enableUndo = frontWindow.getUndoRedo().numUndo() > 0
+                enableRedo = frontWindow.getUndoRedo().numRedo() > 0
         else:
             nextUndo = ''
             nextRedo = ''

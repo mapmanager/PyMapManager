@@ -1,10 +1,10 @@
-from mapmanagercore.data import getMultiTimepointMap
+from mapmanagercore.data import get202504_map
 
 from pymapmanager.timeseriesCore import TimeSeriesCore
 from pymapmanager._logger import logger
 
 def test_time_series_core_points():
-    path = getMultiTimepointMap()
+    path = get202504_map()
     tsc = TimeSeriesCore(path)
 
     logger.info(tsc)
@@ -26,7 +26,7 @@ def test_time_series_core_points():
     # print(df)
 
 def test_time_series_core_segments():
-    path = getMultiTimepointMap()
+    path = get202504_map()
     tsc = TimeSeriesCore(path)
 
     logger.info('TimeSeriesCore is:')
@@ -52,14 +52,12 @@ def test_time_series_core_segments():
     # print(dfSummary)
 
 def test_single_timepoint():
-    logger.error('202504 zip maps are broken')
-    return
 
-    path = getMultiTimepointMap()
+    path = get202504_map()
     tsc = TimeSeriesCore(path)
     
     from mapmanagercore.annotations.single_time_point import SingleTimePointAnnotations
-    thisTp = 2
+    thisTp = 1
     stp = SingleTimePointAnnotations(tsc._fullMap, thisTp)
     print(f'stp is:{stp}')
 

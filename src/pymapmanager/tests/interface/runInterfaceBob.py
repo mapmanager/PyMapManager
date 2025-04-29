@@ -21,7 +21,6 @@ def runBob():
     
     # a mmap with multiple timepoints, connects segments and spines
     # path = '/Users/cudmore/Desktop/multi_timepoint_map_seg_spine_connected.mmap'
-    # path = mapmanagercore.data.getMultiTimepointMap()
 
     # path = '/Users/cudmore/Desktop/olsen_example.mmap'
     # path = '/Users/cudmore/Desktop/example_nd2.mmap'
@@ -47,7 +46,10 @@ def runBob():
         logger.error('did not find folder path')
         logger.error(path)
         return
-    
+
+    from mapmanagercore.data import get202504_map
+    path = get202504_map()
+
     # turn off SettingWithCopyWarning
     import pandas as pd
     pd.options.mode.chained_assignment = None  # default='warn'

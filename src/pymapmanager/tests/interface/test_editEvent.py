@@ -15,7 +15,7 @@ def qapp_cls():
 @pytest.fixture
 def stackWidgetObject(qtbot, qapp):
 	# path = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
-    path = mapmanagercore.data.getSingleTimepointMap()
+    path = mapmanagercore.data.get202504_map()
     
     # sw = stackWidget(path=path)
     sw = qapp.loadStackWidget(path)

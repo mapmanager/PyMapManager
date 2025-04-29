@@ -42,27 +42,34 @@ def test_menu_action(qtbot, qapp):
 
     for name, menu in mainMenus._menuDict.items():
         menuTitle = menu.title()
-        logger.info(f'=== Testing action name:{name} menuTitle:{menuTitle}')
+        # logger.info(f'=== Testing action name:{name} menuTitle:{menuTitle}')
 
         menu.aboutToShow.emit()
         
         if name == 'Plugins':
-            logger.info(f'skipping "Plugins"')
+            logger.info(f'-->> skipping "Plugins" menu')
             continue
         
         actions = _get_all_actions(menu)
 
         # logger.info(f'found {len(actions)} actions')
+        numTested = 0
         for action in actions:
             _actionText = action.text()
             logger.info(f'  trigger menuTitle:{menuTitle} _actionText:"{_actionText}"')
-            if _actionText in ['Tiff File Ch1',
-                               'Tiff File Ch2',
-                               'mmap with spines and segments'
+            if _actionText in [
+                                # 'Tiff File Ch1',
+                            #    'Tiff File Ch2',
+                               'mmap with spines and segments',
+                               'Open Folder Window',
+                               'Save As'
                                ]:
+                logger.warning(f'-->> skipping action: "{_actionText}"')
                 continue
 
             if not action.isEnabled():
                 logger.info(f'    -->> _actionText:{_actionText} is not enabled')
             else:
                 action.trigger()
+            numTested += 1
+        logger.info(f'tested {numTested} actions in menuTitle:{menuTitle}')

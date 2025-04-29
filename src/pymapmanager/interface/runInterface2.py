@@ -11,7 +11,7 @@ def run():
     app = PyMapManagerApp()
 
     # path = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
-    path = mapmanagercore.data.getSingleTimepointMap()
+    path = mapmanagercore.data.get202504_map()
     
     sw2 = app.loadStackWidget(path)
     
