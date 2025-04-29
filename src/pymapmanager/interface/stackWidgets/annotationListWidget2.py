@@ -45,15 +45,6 @@ class annotationListWidget(mmWidget2):
         # rewire context menu
         self._myTableView.contextMenuEvent = self._contextMenuEvent
 
-    def _contextMenuEvent(self, event):
-        self.menu = QtWidgets.QMenu(self)
-        colorAction = QtWidgets.QAction('Set Color', self)
-        colorAction.triggered.connect(lambda: self._colorPickerSlot(event))
-        self.menu.addAction(colorAction)
-
-        # action = _menu.exec_(self.mapToGlobal(event.pos()))
-        self.menu.popup(QtGui.QCursor.pos())
-
     def _colorPickerSlot(self, event):
         """Show color dialog and set segment color.
         """
@@ -273,6 +264,10 @@ class annotationListWidget(mmWidget2):
         event.getStackSelection().setPointSelection(itemList)
         self.emitEvent(event, blockSlots=False)
 
+    def _contextMenuEvent(self, event):
+        """Define in derived."""
+        logger.error(f'{self.getClassName()} base class called')
+    
 class pointListWidget(annotationListWidget):
 
     _widgetName = 'Point List'
@@ -361,6 +356,31 @@ class pointListWidget(annotationListWidget):
         if len(spineLabelList) > 0:
             deleteSpineEvent = DeleteSpineEvent(self, spineLabelList)
             self.emitEvent(deleteSpineEvent)
+
+    def _contextMenuEvent(self, event):
+        
+        logger.info(f'{self.getClassName()}')
+
+        self.menu = QtWidgets.QMenu(self)
+
+        # export spines to clipboard
+        exportToClipboardAction = QtWidgets.QAction('Copy Spines To Clipboard', self)
+        # exportToClipboardAction.triggered.connect(lambda: self.getStackWidget().exportSpines(mode='copy'))
+        exportToClipboardAction.triggered.connect(lambda: self._exportSpines(mode='copy'))
+        self.menu.addAction(exportToClipboardAction)
+
+        # export spines to csv file
+        exportToFileAction = QtWidgets.QAction('Export Spines To File', self)
+        # exportToFileAction.triggered.connect(lambda: self.getStackWidget().exportSpines(mode='export'))
+        exportToFileAction.triggered.connect(lambda: self._exportSpines(mode='export'))
+        self.menu.addAction(exportToFileAction)
+
+        # action = _menu.exec_(self.mapToGlobal(event.pos()))
+        self.menu.popup(QtGui.QCursor.pos())
+
+    def _exportSpines(self, mode):
+        logger.warning(f'mode:{mode}')
+        self.getStackWidget().exportSpines(mode=mode)
 
 class lineListWidget(annotationListWidget):
 
@@ -581,3 +601,13 @@ class lineListWidget(annotationListWidget):
         """
         self.tracingWidget.on_segment_button_clicked(state = None, buttonName= '+')
         
+    def _contextMenuEvent(self, event):
+        self.menu = QtWidgets.QMenu(self)
+        
+        # color dialog to set color
+        colorAction = QtWidgets.QAction('Set Color', self)
+        colorAction.triggered.connect(lambda: self._colorPickerSlot(event))
+        self.menu.addAction(colorAction)
+
+        # action = _menu.exec_(self.mapToGlobal(event.pos()))
+        self.menu.popup(QtGui.QCursor.pos())

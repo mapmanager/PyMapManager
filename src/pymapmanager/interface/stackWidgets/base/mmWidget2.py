@@ -1382,14 +1382,15 @@ class mmWidget2(QtWidgets.QMainWindow):
         Parameters
         ----------
         mode: str
-            "export" or "copy"
+            "export" to file or "copy" to clipboard.
         """    
         filename = None
         if mode == 'export':
-            logger.error('todo: prompt user for a file')
-            filename = ''
+            # abb, we need this here because once we are in stack(), we don't have a GUI
+            logger.error('todo: prompt user for a csv file')
+            # filename = ''
 
-        self.getStack().exportSpines(mode, filename=filename)
+        self.getStack().exportSpines(filename=filename)
 
 if __name__ == '__main__':
     from pymapmanager._logger import setLogLevel

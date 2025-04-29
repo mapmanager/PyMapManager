@@ -511,18 +511,18 @@ class PyMapManagerMenus:
         self.fileMenu.addMenu(self.sampleDataMenu)
         
         # abj: copy spine dataframe to clip board or export spine dataframe to csv
-        self.fileMenu.addSeparator()
-        self.spineTableMenu = QtWidgets.QMenu("Spine Table ...")
-        self.spineTableMenu.setEnabled(_frontStackWindow is not None)
-        self.fileMenu.addMenu(self.spineTableMenu)
+        # self.fileMenu.addSeparator()
+        # self.spineTableMenu = QtWidgets.QMenu("Spine Table ...")
+        # self.spineTableMenu.setEnabled(_frontStackWindow is not None)
+        # self.fileMenu.addMenu(self.spineTableMenu)
         
-        copySpineTableAction = QtWidgets.QAction('Copy to ClipBoard', self.getApp())
-        copySpineTableAction.triggered.connect(lambda: self.getApp().exportSpineTable("copy"))
-        self.spineTableMenu.addAction(copySpineTableAction)
+        # copySpineTableAction = QtWidgets.QAction('Copy to ClipBoard', self.getApp())
+        # copySpineTableAction.triggered.connect(lambda: self.getApp().exportSpineTable("copy"))
+        # self.spineTableMenu.addAction(copySpineTableAction)
 
-        exportSpineTableAction = QtWidgets.QAction('Export to CSV', self.getApp())
-        exportSpineTableAction.triggered.connect(lambda: self.getApp().exportSpineTable("export"))
-        self.spineTableMenu.addAction(exportSpineTableAction)
+        # exportSpineTableAction = QtWidgets.QAction('Export to CSV', self.getApp())
+        # exportSpineTableAction.triggered.connect(lambda: self.getApp().exportSpineTable("export"))
+        # self.spineTableMenu.addAction(exportSpineTableAction)
 
     def _refreshOpenRecent(self):
         """Dynamically generate the open recent stack/map menu.

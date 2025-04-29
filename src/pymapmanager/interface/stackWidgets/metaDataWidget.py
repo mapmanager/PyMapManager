@@ -1,15 +1,12 @@
+from qtpy import QtWidgets
+
 from pymapmanager.interface.stackWidgets.base.editDataclass import EditDataClass
 from pymapmanager.interface.stackWidgets import stackWidget
-from pymapmanager._logger import logger, setLogLevel
-from qtpy import QtGui, QtCore, QtWidgets
 
-from pymapmanager.interface.pyMapManagerApp import PyMapManagerApp
-from pymapmanager._logger import logger
-from pymapmanager.interface.stackWidgets.experimentMetadata import ExperimentMetadata
-from pymapmanager.interface.stackWidgets.voxelMetadata import VoxelMetadata 
 from pymapmanager.interface.stackWidgets.analysisParamWidget2 import AnalysisParamWidget 
+from pymapmanager.interface.stackWidgets.base.mmWidget2  import mmWidget2
 
-from pymapmanager.interface.stackWidgets.base.mmWidget2  import mmWidget2, pmmEventType, pmmEvent
+# from pymapmanager._logger import logger
 
 class MetaDataWidget(mmWidget2):
     _widgetName = 'Metadata Widget'
@@ -21,9 +18,13 @@ class MetaDataWidget(mmWidget2):
         self.tabWidget = QtWidgets.QTabWidget()
         layout.addWidget(self.tabWidget)
 
-        # Instantiate and add tabs
-        self.voxelTab = VoxelMetadata(stackWidget)
-        self.experimentTab = ExperimentMetadata(stackWidget)
+        # add tabs
+        voxelMetadata = stackWidget.getStack().getMetadata().voxelMetadata
+        self.voxelTab = EditDataClass(stackWidget, dataClass=voxelMetadata)
+
+        experimentMetadata = stackWidget.getStack().getMetadata().experimentMetadata
+        self.experimentTab = EditDataClass(stackWidget, dataClass=experimentMetadata)
+
         self.analysisParamsTab = AnalysisParamWidget(stackWidget)
 
         # self.tabWidget.addTab(self.geometryTab, self.geometryTab._widgetName)

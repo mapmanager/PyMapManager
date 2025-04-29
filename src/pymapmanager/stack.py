@@ -241,15 +241,13 @@ class stack:
     def getDendrogramReplot(self, newSegmentID, spineAngleChecked, spineLengthChecked , spineLengthConstant):
         return self._fullMap.getDendrogramReplot(newSegmentID, spineAngleChecked, spineLengthChecked, spineLengthConstant)
     
-    def exportSpines(self, mode:str, filename:str = None):
+    def exportSpines(self, filename:str = None):
         """Export spines to clipboard or file.
         
         Parameters
         ==========
-        mode:
-            in ['export', 'copy']
         filename:
-            file name to save to if mode is 'export'
+            file name to export to, if None then copy to clipboard
         """
         # get the spine dataframe in physical units
         df = self._convertToMicrometer()
@@ -258,14 +256,14 @@ class stack:
             logger.error('empty df')
             return
 
-        if mode == 'export':
-            logger.error(f'todo: save csv to filename:{filename}')
-            #df.to_csv(filename, index=False)
-
-        elif mode == 'copy':
-            logger.info(f'copied {len(df)} spines to clipboard.')
+        if filename is None:
             df.to_clipboard()
-
+            logger.info(f'copied {len(df)} spines to clipboard')
+            
+        else:
+            logger.error('todo: be sure to fill in proper filename when still in PyQt GUI')
+            df.to_csv(filename, index=False)
+            
     def _convertToMicrometer(self):
         """  Convert df columns values in pixels to micrometer
 

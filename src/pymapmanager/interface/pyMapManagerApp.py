@@ -29,7 +29,7 @@ from mapmanagercore.metadata import VoxelMetadata, AnalysisParams
 
 from pymapmanager.interface.openFirstWindow import OpenFirstWindow
 from pymapmanager.interface.openFolderWindow import OpenFolderWindow
-from pymapmanager.interface.stackWidgets.analysisParamWidget2 import AnalysisParamWidget
+from pymapmanager.interface.stackWidgets.metaDataWidget import AnalysisParamWidget
 from pymapmanager.timeseriesCore import TimeSeriesCore
 
 from pymapmanager.interface.mapWidgets.mapWidget import mapWidget

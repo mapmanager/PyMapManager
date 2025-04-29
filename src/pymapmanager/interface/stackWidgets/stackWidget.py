@@ -96,7 +96,9 @@ class stackWidget(MainWindow):
         self.setWindowTitle(self.getStack().getFileName())
 
         self._buildUI()
-        self._buildMenus()
+        
+        # moved to MainWindow
+        # self._buildMenus()
 
         # self.setContextMenuPolicy(QtCore.Qt.NoContextMenu) # abj - disabled hidden context menu
 

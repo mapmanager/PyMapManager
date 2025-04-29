@@ -14,12 +14,12 @@ class EditDataClass(mmWidget2):
 
     def __init__(self,
                  stackWidget: stackWidget,
+                 dataClass: "_metadataBase" = None,
                  ):
         """After init, must call setDataclass().
         """
         super().__init__(stackWidget)
 
-        # self._dataclass: _metadataBase = None
         self._dataclass: "_metadataBase" = None
         """The dataclass we are editing."""
 
@@ -29,7 +29,13 @@ class EditDataClass(mmWidget2):
         self.widgetDict = {}
         self.canApply = False
 
+        if dataClass is not None:
+            self.setDataclass(dataClass)
+
     def setDataclass(self, dataClass):
+        if self._dataclass is not None:
+            logger.warning(f'reassigning _dataclass, already assigned as {type(self_dataclass)}')
+        
         self._dataclass = dataClass
         self._dict = self._dataclass.to_dict_with_metadata()
         
