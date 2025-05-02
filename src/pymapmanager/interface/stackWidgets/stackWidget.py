@@ -140,9 +140,9 @@ class stackWidget(MainWindow):
         """
         logger.warning('NEED TO CHECK IF spine/segment IS DIRTY AND PROMPT TO SAVE')
         
-        # logger.info(self.geometry())t
-        temp = len(self._openPluginDict)
-        logger.info(f"temp {temp}")
+        # logger.info(self.geometry())
+        # temp = len(self._openPluginDict)
+        # logger.info(f"temp {temp}")
 
         # check if openPluginDict is not empty
         if len(self._openPluginDict) > 0:
@@ -1090,8 +1090,11 @@ class stackWidget(MainWindow):
         segmentID = event.getFirstSegmentSelection()
         newRadius = event.getNewRadiusVal()
 
-        logger.info(f"newRadius {newRadius}")
+        # logger.info(f"newRadius {newRadius}")
         # self.getStack().getLineAnnotations().setValue("radius", segmentID, newRadius)
+        if newRadius is None:
+            return
+        
         self.getStack().getLineAnnotations().setValue('radius', segmentID, newRadius)
 
         # self.getUndoRedo().addUndo(event)

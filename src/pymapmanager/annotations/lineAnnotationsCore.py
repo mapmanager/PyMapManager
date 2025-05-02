@@ -116,15 +116,16 @@ class LineAnnotationsCore(AnnotationsCore):
         summaryDf = pd.DataFrame(columns=_columns)
 
         try:
-            _list = segmentDf.index.to_list()
-            # logger.info(f"_list")
+            # _list = segmentDf.index.to_list()
+            # logger.info(f"_list {_list}")
             summaryDf['Segment'] = segmentDf.index.to_list()
             summaryDf.index = segmentDf.index
+            summaryDf['Length'] = segmentDf['length']
             summaryDf['Radius'] = segmentDf['radius']
             summaryDf['Pivot Distance'] = segmentDf['pivotDistance']
             summaryDf['Color'] = segmentDf['color']
             summaryDf['Points'] = segmentDf['points']
-            summaryDf['roughTracing'] = segmentDf['roughTracing'] # Represents point or linestring of segment
+            # summaryDf['roughTracing'] = segmentDf['roughTracing'] # Represents point or linestring of segment
         
         except (KeyError) as e:
             logger.error(e)
@@ -134,26 +135,8 @@ class LineAnnotationsCore(AnnotationsCore):
             # when no segments
             logger.warning('NO SEGMENTS !!!!!!!!')
             logger.warning(e)
-        else:
 
-            # pointsList = []
-            lengthList = []            
-            for row_do_not_use, _data in summaryDf.iterrows():
-                segmentID = _data['Segment']  # shapely line str
-                
-                _numPoints = self.getNumPoints(segmentID)
-                _len = self.getLength(segmentID)
-                if _len > 0:
-                    _len = round(_len,2)
-                # pointsList.append(_numPoints)
-                lengthList.append(_len)
-
-            # summaryDf['Points'] = pointsList
-            summaryDf['Length'] = lengthList
-            # logger.info(f"summaryDf['Length'] {summaryDf['Length'] }")
-        
         self._summaryDf = summaryDf
-
         # logger.info('summary df is now:')
         # print(summaryDf)
 
@@ -195,7 +178,8 @@ class LineAnnotationsCore(AnnotationsCore):
                     
             xyCoord = gp.GeoSeries(coords).get_coordinates(include_z=True)
             # logger.info(f"coords {coords}")
-            dfRet['segmentID'] = xyCoord.index
+            dfRet['segmentID'] = xyCoord.index + 1 # abj offsetting by 1 from 0 based indexing
+            # dfRet['segmentID'] = xyCoord.index 
             
             xyCoord = xyCoord.reset_index()  # xyCoord still has labels as segmentID
             dfRet['x'] = xyCoord['x']
@@ -318,12 +302,22 @@ class LineAnnotationsCore(AnnotationsCore):
         # logger.info(f"exploded linestrings: {df}")
         return df
 
-    def getRadiusPlot(self, leftRight : str, sliceNumber, zPlusMinus) -> gp.GeoSeries:
+    def getRadiusPlot(self, leftRight : str, sliceNumber, zPlusMinus, segmentID: None) -> gp.GeoSeries:
         """
         Parameters
         ==========
         leftRight : str
             One of ('leftRadius', 'rightRadius')
+
+        sliceNumber : int
+            Slice number
+
+        zPlusMinus : int
+            Number to offset Slice number
+
+        SegmentID: None or Int
+            None for all segments
+            or Int for individual segments
 
         Returns
         =======
@@ -352,5 +346,41 @@ class LineAnnotationsCore(AnnotationsCore):
         # xyLeft['color'] = summaryDf.loc[xyLeft['segmentID'], 'Color']
         xyRadius['color'] = xyRadius['segmentID'].map(summaryDf['Color'])
 
+        if segmentID is not None:
+            xyRadius = xyRadius[xyRadius['segmentID'] == segmentID]
+
         return xyRadius
     
+    def getSegmentID(self, zSlice, zPlusMinus):
+        """
+        Return a list of unique segment IDs within a range of z-slices around zSlice.
+
+        Args:
+            zSlice (int or float): Central z-slice.
+            zPlusMinus (int or float): Range to include before and after zSlice.
+
+        Returns:
+            list: Unique segment IDs in the specified z-range.
+        """
+
+        _startSlice = zSlice - zPlusMinus
+        _stopSlice = zSlice + zPlusMinus
+
+        df = self.getDataFrame()
+        
+        if df.empty or 'z' not in df.columns or 'segmentID' not in df.columns:
+            return []
+
+        df_filtered = df[(df['z'] >= _startSlice) & (df['z'] <= _stopSlice)]
+        # logger.info(f"df_filtered {df_filtered}")
+
+        temp = df_filtered['segmentID'].dropna().unique().tolist()
+        return temp
+    
+    def getColor(self, segmentID):
+        """ Get segment color from SegmentID
+        """
+        # df.loc[df['segmentID'] == segment_id, 'color']
+        color = self._summaryDf.loc[self._summaryDf['Segment'] == segmentID, 'Color'].item()
+        # logger.info(f"color is {color}")
+        return color

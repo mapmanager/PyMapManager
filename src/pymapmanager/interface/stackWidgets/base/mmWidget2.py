@@ -394,7 +394,7 @@ class pmmEvent():
 
             'editSpine' : None,
 
-            'emittedValue' : None # integer for set radius event
+            'radiusValue' : None # integer for set radius event
 
         }
 
@@ -475,11 +475,11 @@ class pmmEvent():
         """ Used by setRadius event to set and get new radius
         """
         # self.getStackSelection().setNewRadiusVal(newRadiusVal)
-        self._dict["emittedValue"] = newRadiusVal
+        self._dict["radiusValue"] = newRadiusVal
 
     def getNewRadiusVal(self) -> int:
         # return self.getStackSelection().getNewRadiusVal()
-        return self._dict["emittedValue"]
+        return self._dict["radiusValue"]
 
     def setType(self, theType : pmmEventType):
         self._dict['type'] = theType

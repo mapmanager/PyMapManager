@@ -453,7 +453,7 @@ class ImagePlotWidget(mmWidget2):
         self._setSlice(sliceNumber, doEmit=False)
 
     def setRadiusEvent(self, event):
-        """ only called by line Plot to update segments' radius lines
+        """ update segments' radius lines
         """
         sliceNumber = self._currentSlice
         self._aLinePlot.slot_setSlice(sliceNumber)
@@ -693,7 +693,7 @@ class ImagePlotWidget(mmWidget2):
             self._aPointPlot.toggleSpineLines()
             # self.plotDict[plotName].toggleScatterPlot()
         elif plotName == "Center Line":
-            visible = self._aLinePlot.toggleScatterPlot()
+            visible = self._aLinePlot.toggleSegmentPlot()
         elif plotName == "Radius Lines":
             visible = self._aLinePlot.toggleRadiusLines()
         elif plotName == "UnRefreshed Labels": # Update Labels without Refreshing slice
@@ -707,6 +707,7 @@ class ImagePlotWidget(mmWidget2):
             visible = self._aLinePlot.togglePivotPoints()
 
         if visible:
+            logger.info(f"refreshing slice from {plotName}")
             self.refreshSlice()
 
     def _buildUI(self):
