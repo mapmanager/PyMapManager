@@ -210,7 +210,7 @@ class SpineAnnotationsCore(AnnotationsCore):
         self._setDirty(True) #abj
 
         return True
-    
+
     def editSpine(self, editSpineProperty : List[dict]):
         # spineID:117 col:isBad value:True
         # logger.info(editSpineProperty)

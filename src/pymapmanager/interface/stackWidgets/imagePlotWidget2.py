@@ -9,6 +9,7 @@ from mapmanagercore import IMPORT_FILE_EXTENSIONS
 import pymapmanager
 import pymapmanager.annotations
 # import pymapmanager.interface2
+from pymapmanager.interface.stackWidgets.base.rightCheckBoxAction import RightCheckBoxAction
 from pymapmanager.interface.stackWidgets.event.spineEvent import (
                 SelectSpine,
                 EditSpinePropertyEvent,
@@ -160,10 +161,15 @@ class ImagePlotWidget(mmWidget2):
         _pointAnnotations = self._myStack.getPointAnnotations()
         _accept = hasPointSelection and _pointAnnotations.getValue('accept', firstPointSelection)
 
-        acceptAction = _menu.addAction(f'Accept {point_roiType} ')
-        acceptAction.setCheckable(True)
-        acceptAction.setChecked(_accept)
-        acceptAction.setEnabled(hasPointSelection)
+        # acceptAction = _menu.addAction(f'Accept {point_roiType} ')
+        # acceptAction.setCheckable(True)
+        # acceptAction.setChecked(_accept)
+        # acceptAction.setEnabled(hasPointSelection)
+        acceptAction = RightCheckBoxAction(f'Accept {point_roiType}', 
+                                                           checked =_accept, enabled=hasPointSelection, parent=_menu)
+        # acceptAction.toggled.connect(lambda checked: print("Accepted:", checked))
+        acceptAction.toggled.connect(lambda checked: self.acceptAction(checked, firstPointSelection))
+        _menu.addAction(acceptAction)
 
         # user type submenu
         userTypeMenu = _menu.addMenu('User Type')
@@ -189,6 +195,11 @@ class ImagePlotWidget(mmWidget2):
         # abj
         moveBackgroundRoiAction = _menu.addAction(f'Move Spine Background ROI')
         moveBackgroundRoiAction.setEnabled(hasPointSelection)
+
+        _menu.addSeparator()
+        # Copy/ Export
+        copyImageAction = _menu.addAction(f'Copy Image')
+        exportImageAction = _menu.addAction(f'Export Image')
         
         # show the menu
         action = _menu.exec_(self.mapToGlobal(event.pos()))
@@ -217,10 +228,10 @@ class ImagePlotWidget(mmWidget2):
             esp = EditSpinePropertyEvent(self, firstPointSelection, 'userType', action.text())
             self.emitEvent(esp)
 
-        elif action == acceptAction:
-            _newValue = action.isChecked()
-            esp = EditSpinePropertyEvent(self, firstPointSelection, 'accept', _newValue)
-            self.emitEvent(esp)
+        # elif action == acceptAction:
+        #     _newValue = action.isChecked()
+        #     esp = EditSpinePropertyEvent(self, firstPointSelection, 'accept', _newValue)
+        #     self.emitEvent(esp)
 
         elif action == setSegmentPivotAction:
             imagePos = self._myImage.mapFromScene(event.pos())
@@ -239,9 +250,36 @@ class ImagePlotWidget(mmWidget2):
             event = pmmEvent(pmmEventType.stateChange, self)
             event.setStateChange(pmmStates.movingBackgroundRoi)
             self.emitEvent(event)
+        
+        elif action == copyImageAction:
+            # pass
+            exporter = pg.exporters.ImageExporter(self.getPlotWidget().plotItem)
+            qimage = exporter.export(toBytes=True)
+
+            app = self._stackWidget.getPyMapManagerApp()
+            # Copy to clipboard
+            clipboard = app.clipboard()
+            clipboard.setImage(qimage)
+            
+        elif action == exportImageAction:
+            # Prompt for file location
+            exporter = pg.exporters.ImageExporter(self.getPlotWidget().plotItem)
+            _path = self.getPath()
+            filters = '(*.png)'
+            savePath, _ = QtWidgets.QFileDialog.getSaveFileName(self,
+                                                                caption='Save Image File',
+                                                                dir=_path,
+                                                                filter=filters,
+                                                              )
+            exporter.export(savePath)
 
         else:
             logger.info('No action?')
+
+    def acceptAction(self, checked, firstPointSelection):
+        _newValue = checked
+        esp = EditSpinePropertyEvent(self, firstPointSelection, 'accept', _newValue)
+        self.emitEvent(esp)
 
     # abb interfering with mainwindow actions
     def _keyPressEvent(self, event : QtGui.QKeyEvent):
@@ -901,6 +939,9 @@ class ImagePlotWidget(mmWidget2):
         if self.getStack() is not None:
             self.getStackWidget().loadInNewChannel(file_path)
             logger.info(f'file_path:{file_path}')
+
+    def getPlotWidget(self):
+        return self._plotWidget 
 
 class StackSlider(QtWidgets.QSlider):
     """Slider to set the stack image slice.

@@ -980,7 +980,6 @@ class pointPlotWidget(annotationPlotWidget):
         self._refreshSlice()
 
     def editedEvent(self, event: pmmEvent):
-
         for spine in event:
             # update label
             spineID = spine['spineID']
@@ -1226,7 +1225,7 @@ class linePlotWidget(annotationPlotWidget):
         )  #
 
         color= "yellow"
-        _pen = pg.mkPen(width=3, color=color)
+        _pen = pg.mkPen(width=2, color=color)
         self._selectedLines = self._view.plot(
             [],
             [],

@@ -1528,7 +1528,7 @@ class stackWidget(MainWindow):
         """
         return self._stack.getLineAnnotations().getDataFrame()
     
-    def getPyMapManagerApp(self) -> Optional[PyMapManagerApp]:
+    def getPyMapManagerApp(self) -> Optional[pymapmanager.interface.PyMapManagerApp]:
         """Get the running PyMapManagerApp(QApplication).
         
         If not PyMapManagerApp, will return None.
@@ -1536,8 +1536,8 @@ class stackWidget(MainWindow):
         
         # the running QApplication
         app = QtWidgets.QApplication.instance()
-        if isinstance(app, PyMapManagerApp):
+        if isinstance(app, pymapmanager.interface.PyMapManagerApp):
             return app
         else:
-            logger.error(f'fail to get PyMapManagerApp, got {app}')
+            logger.error(f'failed to get PyMapManagerApp, got {app}')
 

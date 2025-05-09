@@ -19,8 +19,7 @@ from pymapmanager.interface.core._data_model import pandasModel
 from pymapmanager.interface.stackWidgets.base.mmWidget2  import mmWidget2, pmmEventType, pmmEvent, pmmStates
 
 from pymapmanager.interface.stackWidgets.event.spineEvent import DeleteSpineEvent
-from pymapmanager.interface.stackWidgets.event.segmentEvent import AddSegmentEvent, DeleteSegmentEvent
-
+from pymapmanager.interface.stackWidgets.event.segmentEvent import AddSegmentEvent, DeleteSegmentEvent, SetSegmentColorEvent
 from pymapmanager._logger import logger
 
 class annotationListWidget(mmWidget2):
@@ -66,9 +65,9 @@ class annotationListWidget(mmWidget2):
             newColor = colorDialog.getColor()  # QColor
             if newColor.isValid():
                 logger.info(f'selected color:{newColor.name()}')  # name defaults to hex
-                # TODO emit color change event
-                from pymapmanager.interface.stackWidgets.event.segmentEvent import SetSegmentColorEvent
+
                 setSegmentColorEvent = SetSegmentColorEvent(self, selectedRowLabel, newColor.name())
+                setSegmentColorEvent.setSegmentSelection([selectedRowLabel])
                 self.emitEvent(setSegmentColorEvent)
 
     def undoEvent(self, event):
@@ -87,15 +86,6 @@ class annotationListWidget(mmWidget2):
     def deletedEvent(self, event):
         # logger.info('')
         self._setModel()
-
-    def editedEvent(self, event):
-        logger.info(f'{event}')
-        
-        self._setModel()
-
-        # reselect previous selection
-        spineIDs = event.getSpines()
-        self._myTableView._selectRow(spineIDs)
 
     def addedEvent(self, event):
         # logger.info('')
@@ -382,6 +372,15 @@ class pointListWidget(annotationListWidget):
         logger.warning(f'mode:{mode}')
         self.getStackWidget().exportSpines(mode=mode)
 
+    def editedEvent(self, event): # Spine only event
+        logger.info(f'{event}')
+        
+        self._setModel()
+        
+        # reselect previous selection
+        spineIDs = event.getSpines()
+        self._myTableView._selectRow(spineIDs)
+
 class lineListWidget(annotationListWidget):
 
     _widgetName = 'Segment List'
@@ -509,7 +508,6 @@ class lineListWidget(annotationListWidget):
         logger.info(f"reselect segmentID in Linelistwidget {segmentID}")
         self._myTableView.mySelectRows(segmentID)
 
-
     def deletedSegmentPointEvent(self, event):
         self._setModel()
 
@@ -563,6 +561,11 @@ class lineListWidget(annotationListWidget):
     def setSegmentColorEvent(self, event):
         logger.info('')
         self._setModel()
+
+        segmentID = event.getFirstSegmentSelection()
+        logger.info(f"segment color of {segmentID}")
+        # reselect current segment
+        self._myTableView._selectRow([segmentID])
 
     def updateSegmentRadius(self, newRadius):
         """ Update segment radius stored in backend
