@@ -434,11 +434,15 @@ class lineListWidget(annotationListWidget):
 
         logger.info(f'{self.getClassName()} itemList:{itemList} isAlt:{isAlt}')
 
-        # abb 20240724
-        # get segment from segment column
-        segmentList = self._getSelectedRowLabels()
+        if itemList == []:
+            # abj: ensure that we are emitting no segments upon escape key
+            segmentList = itemList
+        else: 
+            # abb 20240724
+            # get segment from segment column
+            segmentList = self._getSelectedRowLabels()
         
-        # logger.info(f'   selected segmentList:{segmentList}')
+        logger.info(f'   selected segmentList:{segmentList}')
     
         # abb
         # self._myTableView.mySelectRows(segmentList)
