@@ -2,6 +2,7 @@ from functools import partial
 
 from qtpy import QtGui, QtCore, QtWidgets
 
+from pymapmanager.interface.stackWidgets.base.mmWidget2 import pmmEvent
 from pymapmanager.stack import stack
 
 from pymapmanager._logger import logger
@@ -145,7 +146,7 @@ class StackToolBar(QtWidgets.QToolBar):
         self.signalSlidingZChanged.emit(d)
 
     def slot_setChannel(self, channelIdx: int):
-        """Turn on button for slected channel.
+        """Turn on button for selected channel.
         
         These are a disjoint list, only one can be active. Others automatically disable.
         """
@@ -184,28 +185,29 @@ class StackToolBar(QtWidgets.QToolBar):
         # make ['1', '2', '3', 'rgb'] disjoint selections
         self.channelActionGroup = QtWidgets.QActionGroup(self)
 
-        for channelIdx in self._myStack.getChannelKeys():
-            iconPath = ''  # use toolName to get from canvas.util
-            theIcon = QtGui.QIcon(iconPath)
+        if len(self._myStack.getChannelKeys()) > 0:
+            logger.info(f"channel keys {self._myStack.getChannelKeys()}")
+            for channelIdx in self._myStack.getChannelKeys():
+                iconPath = ''  # use toolName to get from canvas.util
+                theIcon = QtGui.QIcon(iconPath)
 
-            # toolNameStr = str(int(channelIdx) + 1)
-            toolNameStr = str(channelIdx)
+                # toolNameStr = str(int(channelIdx) + 1)
+                toolNameStr = str(channelIdx)
 
-            theAction = QtWidgets.QAction(theIcon, toolNameStr)
-            theAction.setCheckable(True)
-            if toolNameStr == str(_defaultChannel):
-                theAction.setChecked(True)
-                self.setCurrentChannel(_defaultChannel) # abj
-            # do not set shortcut, handled by main stack widget
-            #theAction.setShortcut('1')# or 'Ctrl+r' or '&r' for alt+r
-            theAction.setToolTip(f'View Channel {toolNameStr}')
+                theAction = QtWidgets.QAction(theIcon, toolNameStr)
+                theAction.setCheckable(True)
+                if toolNameStr == str(_defaultChannel):
+                    theAction.setChecked(True)
+                    self.setCurrentChannel(_defaultChannel) # abj
+                # do not set shortcut, handled by main stack widget
+                #theAction.setShortcut('1')# or 'Ctrl+r' or '&r' for alt+r
+                theAction.setToolTip(f'View Channel {toolNameStr}')
+                theAction.triggered.connect(partial(self._on_channel_callback, toolNameStr))
 
-            theAction.triggered.connect(partial(self._on_channel_callback, toolNameStr))
-
-            # add action
-            self.addAction(theAction)
-            self.channelActionGroup.addAction(theAction)
-            self._actionDict[channelIdx] = theAction
+                # add action
+                self.addAction(theAction)
+                self.channelActionGroup.addAction(theAction)
+                self._actionDict[channelIdx] = theAction
 
         #
         toolNameStr = 'rgb'
@@ -341,16 +343,10 @@ class StackToolBar(QtWidgets.QToolBar):
     def setCurrentChannel(self, channelIdx):
         """ set current channel selected
         """
+        logger.info(f"setCurrentChannel {channelIdx}")
         self._currentChannel = channelIdx
 
     def getCurrentChannel(self):
         """ Get current channel selected
         """
         return self._currentChannel
-
-    # def setColorChannelEvent(self, event : pmmEvent):
-    #     """ Respond to events that emit color channel update
-    #     """
-    #     colorChannel = event.getColorChannel()
-    #     logger.info(f"colorChannel in stacktoolbar {colorChannel}")
-    #     self.slot_setChannel(colorChannel)

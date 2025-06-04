@@ -982,6 +982,12 @@ class stackWidget(MainWindow):
                 return False
             _pointAnnotation.moveSpine(spineID=spineID, x=x, y=y, z=z)
 
+        # # abj: look here
+        # tempDF = _pointAnnotation.getDataFrame()
+        # logger.info(f"tempDF test {tempDF}")
+        # tempCol = tempDF["spineRoi_ch2_sum"]
+        # logger.info(f"checking spineRoi_ch2_sum {tempCol}")
+
         # PUT THIS BACK IN
         self.getUndoRedo().addUndo(event)
 
@@ -1105,11 +1111,13 @@ class stackWidget(MainWindow):
 
     def setColorChannelEvent(self, event):
         colorChannel = event.getColorChannel()
+        logger.info(f"colorChannel event {colorChannel}")
         self._topToolbar.slot_setChannel(colorChannel)
 
     def slot_setChannel(self, colorChannel : int):
         """Received from child top toolbar widget.
         """        
+        logger.info(f"slot_setChannel colorChannel {colorChannel}")
         _pmmEvent = pmmEvent(pmmEventType.setColorChannel, self)
         _pmmEvent.setColorChannel(colorChannel)
         self.emitEvent(_pmmEvent)
@@ -1331,8 +1339,9 @@ class stackWidget(MainWindow):
 
         useImageImporter = True
         if useImageImporter:
+            logger.info(f"importing New channel")
             # new version 202504
-            self.getTimeSeriesCore().importChannels(importPath, time=time)
+            newChannelNum = self.getTimeSeriesCore().importChannels(importPath, time=time)
 
         # else:
         #     # old version
@@ -1375,8 +1384,18 @@ class stackWidget(MainWindow):
         self._topToolbar._setStack(theStack=self._stack)
 
         # update channel editor widget
-        _pmmEvent = pmmEvent(pmmEventType.importNewChannel, self)
-        self.emitEvent(_pmmEvent)
+        # _pmmEvent = pmmEvent(pmmEventType.importNewChannel, self)
+        # self.emitEvent(_pmmEvent)
+
+        _pmmEvent = pmmEvent(pmmEventType.setColorChannel, self)
+        _pmmEvent.setColorChannel(newChannelNum)
+        self.setColorChannelEvent(_pmmEvent) # chooses it in toptool bar
+        self.slot_setChannel(newChannelNum) # actually changes image in imageplotwidget
+
+        # abj: update backend 
+        # self.getPointDataFrame()
+        _pointAnnotations = self.getStack().getPointAnnotations()
+        _pointAnnotations.updateChannel() # important (this refreshes timepoint for new aggregate columns)
 
         # numChannels = self.getTimeSeriesCore().getImagesCoreTotalChannels(timePoint)
         logger.warning('abb turned off abj code, not sure the purpose ???')
@@ -1422,11 +1441,22 @@ class stackWidget(MainWindow):
         _pmmEvent = pmmEvent(pmmEventType.importNewChannel, self)
         self.emitEvent(_pmmEvent)
 
+        # select dest Channel
+        _pmmEvent = pmmEvent(pmmEventType.setColorChannel, self)
+        _pmmEvent.setColorChannel(destChannel)
+        self.setColorChannelEvent(_pmmEvent) # chooses it in toptool bar
+        self.slot_setChannel(destChannel) # actually changes image in imageplotwidget
+
     def updateChannel(self, newChannelName, channelIdx):
         """ Update channel name in backend
         """
         timePoint = self._stack.timepoint
         self.getTimeSeriesCore().updateChannel(timePoint, channelIdx, newChannelName)
+
+        # # refresh backend
+        # _pointAnnotations = self.getStack().getPointAnnotations()
+        # _pointAnnotations.updateChannel()
+     
 
     def deleteChannel(self, channelIdx):
         """ Delete channel in backend
@@ -1477,6 +1507,16 @@ class stackWidget(MainWindow):
         _pmmEvent.setColorChannel(nextChannel)
         self.emitEvent(_pmmEvent)
 
+    def activateChannel(self, channelIdx, activateChannel):
+        """ Call backend to activate/ deactivate channel for aggregate calculation
+        """ 
+        timePoint = self._stack.timepoint
+        self.getTimeSeriesCore().activateChannel(timePoint, channelIdx, activateChannel)
+
+        # refresh backend
+        _pointAnnotations = self.getStack().getPointAnnotations()
+        _pointAnnotations.updateChannel()
+     
     def setSegmentColorEvent(self, event : SetSegmentColorEvent):
         newSegmentColor = event.newSegmentColor  # only one
         for item in event:

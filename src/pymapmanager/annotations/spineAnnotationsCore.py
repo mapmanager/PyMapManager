@@ -30,6 +30,7 @@ class SpineAnnotationsCore(AnnotationsCore):
         """
         
         allSpinesDf = self.singleTimepoint.points[:]
+        # logger.info(f"allSpinesDf {allSpinesDf}")
 
         if len(allSpinesDf) > 0:  
             
@@ -334,5 +335,14 @@ class SpineAnnotationsCore(AnnotationsCore):
 
         self._setDirty(True) #abj
 
+    def updateChannel(self):
 
-            
+        # self.getPointDataFrame()
+        # logger.info(f"import channel --> update dataframe")
+     
+        self._buildTimepoint()
+        self._buildDataFrame()
+        self._setDirty(True) #abj
+
+
+    

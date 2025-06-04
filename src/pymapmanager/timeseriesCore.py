@@ -227,7 +227,13 @@ class TimeSeriesCore():
         """Total number of unique segment id in the map.
         """
         return len(self._fullMap.segments[:].index.unique(0))
-    
+
+    def getActivatedChannels(self, t):
+        """List of channels that are activates
+        """
+        return self._fullMap.getActivatedChannels(t)
+
+
     # @property # abj
     # def numChannels(self):
     #     """Number of timepoints in the map.
@@ -356,7 +362,11 @@ class TimeSeriesCore():
         #     self._fullMap.loader.appendChannels(importPath, time)
         
         logger.warning('abb imageImport')
-        self._fullMap.loader.importChannel(importPath, time)
+        channelNum = self._fullMap.loader.importChannel(importPath, time)
+        if channelNum is not None:
+            return channelNum
+        else:
+            logger.error(f"importValid was not valid")
 
     def _old_loadInNewChannel(self, path: Union[str, np.ndarray], time: int = 0, channel: int = 1):
         """ Call loadInNewChannel in backend MapManagerCore
@@ -420,22 +430,37 @@ class TimeSeriesCore():
         # srcTimePoint: int, srcChannel: int, destTimePoint: int, destChannel: int)
         self._fullMap._images.moveChannel(srcTimePoint = tp, srcChannel = srcChannel, 
                                   destTimePoint = tp, destChannel = destChannel)
-        
+    
+    # DEFUNCT
+    # def updateChannel(self, tp, channelIdx, newChannelName: str):
+    #     """
+    #     """
+
+    #     # dict uses one based indexing
+    #     updateDict = {"name" : newChannelName,
+    #                     "timePoint": tp + 1, #
+    #                     "channel": channelIdx + 1
+    #                     }
+    #     self._fullMap._images.updateChannel(timePoint = tp, channel = channelIdx, updates = updateDict)
+
     def updateChannel(self, tp, channelIdx, newChannelName: str):
         """
         """
-
-        # dict uses one based indexing
-        updateDict = {"name" : newChannelName,
-                        "timePoint": tp + 1, #
-                        "channel": channelIdx + 1
-                        }
-        self._fullMap._images.updateChannel(timePoint = tp, channel = channelIdx, updates = updateDict)
+        logger.info(f"update channel name")
+        self._fullMap._images.updateChannel(timepointIdx = tp, channelIdx = channelIdx, 
+                                            channelProperty = "name", 
+                                            propertyValue = newChannelName)
 
     def deleteChannel(self, tp, channelIdx):
         logger.info(f"deleting channel")
         # self._fullMap._images.deleteChannel(time = tp, channel = channelIdx)
         self._fullMap._images.deleteChannel(tp, channelIdx)
+
+    def activateChannel(self, tp, channelIdx, activateBool):
+        logger.info(f"activating channel {channelIdx}")
+        # self._fullMap._images.deleteChannel(time = tp, channel = channelIdx)
+        # images = mmMapLoader
+        self._fullMap._images.activateChannel(tp, channelIdx, activateBool)
 
     def _old_validateNewChannel(self, newTifPath, tp):
         """ Call validateImageSize in mapmanagercore backend

@@ -128,7 +128,8 @@ def runMultiTimepointMap():
 
 def run_tif():
     app = PyMapManagerApp(sys.argv)
-    path = '/Users/johns/Documents/GitHub/PyMapManager-Data/one-timepoint/rr30a_s0_ch1.tif'
+    # path = '/Users/johns/Documents/GitHub/PyMapManager-Data/one-timepoint/rr30a_s0_ch1.tif'
+    path = 'C:/Users/johns/Documents/GitHub/MapManagerCore-Data/data/rr30a_s0u/t0/rr30a_s0_ch1.tif'
     # path = '/Users/johns/Documents/GitHub/PyMapManager-Data/one-timepoint/rr30a_s0_ch1.mmap'
     # # sw2 = app.loadTifFile(path)
     sw2 = app.loadStackWidget(path)

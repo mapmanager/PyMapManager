@@ -352,3 +352,24 @@ class stack:
         except TypeError:
             # logger.info(f'Cant make float of this type: {type(val)}')
             return False
+
+    # def getChannelDict(self):
+    #     # TODO: current metaData is not storing channel names
+    #     metaData = self.getMetadata()
+    #     listOfChannels = metaData.channelNames
+    #     # logger.info(f"dict of channels {listOfChannels}")
+    #     return listOfChannels
+
+    def getChannelNameDict(self):
+        channelNames = self.getMetadata().getChannelNames()
+        return channelNames
+    
+    def getLeftOverChannels(self, channelIdx):
+        """ Get list of current channels, after deleting a channel
+        """
+
+        temp = self.getChannelKeys()
+        logger.info(f"getLeftOverChannels {temp}")
+        return temp
+
+

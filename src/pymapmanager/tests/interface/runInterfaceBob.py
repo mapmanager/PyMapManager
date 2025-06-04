@@ -62,7 +62,7 @@ def runBob():
     # mw.runPlugin('Stack Contrast')
 
     # zoom to point (single timepoint)
-    # sw2.zoomToPointAnnotation(120, isAlt=True)
+    mw.zoomToPointAnnotation(120, isAlt=True)
 
     # multi timepoint map
     # centerTimepoint = 2

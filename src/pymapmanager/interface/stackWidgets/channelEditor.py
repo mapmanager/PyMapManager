@@ -1,7 +1,8 @@
 
 from functools import partial
+# from tkinter import Image
 from qtpy import QtWidgets, QtCore
-# from PIL import Image
+from PIL import Image
 
 from pymapmanager._logger import logger
 
@@ -30,7 +31,9 @@ class ChannelEditor(mmWidget2):
         # numberOfChannels = self.stackWidget.getStack().numChannels
         # dictOfChannelPaths = self.stackWidget.getStack().getChannelDict()
         # listOfChannelIdx = self.stackWidget.getStack().getChannelKeys()
+        self._listOfChannelIdx = self.stackWidget.getStack().getChannelKeys()
         # self._listOfChannelIdx = listOfChannelIdx
+        dictOfChannelNames = self.stackWidget.getStack().getChannelNameDict()
         
         _shapeDict = self.getStack().getMetadata().shapeDict
         zSlice = _shapeDict['z']
@@ -50,7 +53,7 @@ class ChannelEditor(mmWidget2):
         self.gridLayout.addLayout(qHLayout1, 0, 1)
         # self.gridLayout.addWidget(QtWidgets.QLabel("Image Name"), 0, 1)
         # self.gridLayout.addWidget(xySizeWidget, 0, 1)
-        
+        channelKey = 0
         # Display channel list based on what is shown rather than the actual index in the backend
         # for channelIdx in range(maxNumChannels): # max number of channels designated by user
         for channelKey in self.stackWidget.getStack().getChannelKeys():
@@ -60,7 +63,7 @@ class ChannelEditor(mmWidget2):
                 # logger.info(f"channel index in loop {channelKey}")
                 self.totalChannelsShown += 1
                 try:
-                    channelPath = dictOfChannelPaths[channelKey]
+                    channelPath = dictOfChannelNames[channelKey]
                 except:
                     logger.error(f'xxx abb missing `dictOfChannelPaths`')
                     channelPath = "xxx"
@@ -85,11 +88,30 @@ class ChannelEditor(mmWidget2):
                 
                                                 # ), channelKey + 1, 1)
 
-                # if channelIdx > 0: # For now have a restriction on deleting first channel
-                if 1:
+                
+                # --- Activate Box for all channels ---
+                activateBox = QtWidgets.QComboBox()
+                # self.gridLayout.addWidget(deleteButton, channelIdx + 1, 2)
+                activateBox.addItem("On")
+                activateBox.addItem("Off")
+
+                # get activate channel value from backend
+                timePoint = self.getStack().timepoint
+                activatedChannels = self.getStack().getTimeSeriesCore().getActivatedChannels(t=timePoint)
+
+                if channelKey in activatedChannels:
+                    activateBox.setCurrentText("On")
+                else:
+                    activateBox.setCurrentText("Off")
+
+                self.gridLayout.addWidget(activateBox, self.totalChannelsShown, 2)
+                activateBox.currentTextChanged.connect(partial(self._onActivate, channelKey))
+                
+                if channelKey > 1: # For now have a restriction on deleting first channel
+                # if 1:
                     deleteButton = QtWidgets.QPushButton('')
                     # self.gridLayout.addWidget(deleteButton, channelIdx + 1, 2)
-                    self.gridLayout.addWidget(deleteButton, self.totalChannelsShown, 2)
+                    self.gridLayout.addWidget(deleteButton, self.totalChannelsShown, 3)
 
                     # Set a trashcan icon (using standard icon set)
                     pixmapi = getattr(QtWidgets.QStyle, "SP_TrashIcon")
@@ -146,18 +168,32 @@ class ChannelEditor(mmWidget2):
             newImgWidth, newImgHeight = img.size
             newImgSlices = img.n_frames  # z dimension
 
-        confirmed, selectedChannelIdx = \
-            self.showConfirmationDialog(fileDimensions=(newImgWidth,newImgHeight,newImgSlices))
-        if not confirmed:
-            return
+        # confirmed, selectedChannelIdx = \
+        #     self.showConfirmationDialog(fileDimensions=(newImgWidth,newImgHeight,newImgSlices))
+        # if not confirmed:
+        #     return
         
-        self._stackWidget.loadInNewChannel(path = tifFile, channel = selectedChannelIdx)
+        # self._stackWidget.loadInNewChannel(path = tifFile, channel = selectedChannelIdx)
+        self._stackWidget.loadInNewChannel(path = tifFile)
         self.refreshGUI()
 
     def on_button_click(self, channelIdx):
         print("Button clicked!, ", channelIdx)
         # prevChannel = self._listOfChannelIdx[0]
         self.stackWidget.deleteChannel(channelIdx)    
+        self.refreshGUI()
+
+    def _onActivate(self, channelIdx, activate):
+        print(f"Button activate!, ", activate, "on channel ", channelIdx)
+        # prevChannel = self._listOfChannelIdx[0]
+
+        if activate == "On":
+            activateChannel = True
+        elif activate == "Off":
+            activateChannel= False  
+        else:
+            logger.error(f"activate receving bad item")
+        self.stackWidget.activateChannel(channelIdx, activateChannel)    
         self.refreshGUI()
 
     def refreshGUI(self):
@@ -476,6 +512,7 @@ class DraggableWidget(QtWidgets.QWidget):
 
         # add logic to swap in backend
         # already knows time point, srcChannel, destChannel 
+        logger.info(f"swapDraggableWidget srcChannel {self.channelIdx} destChannel {widgetUnderCursor.getChannelIdx()}")
         self.stackWidget.swapChannels(srcChannel = self.channelIdx, 
                                       destChannel = widgetUnderCursor.getChannelIdx())
 
