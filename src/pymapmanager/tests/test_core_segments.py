@@ -4,19 +4,22 @@ import pytest
 # import geopandas as gpd
 
 from mapmanagercore import MapAnnotations, mmMapLoader
-from mapmanagercore.data import getTiffChannel_1, getSingleTimepointMap
+from mapmanagercore.data import getTiffChannel_1, get202504_map
 
 from pymapmanager import stack
 from pymapmanager.annotations import LineAnnotationsCore
 from pymapmanager._logger import logger
 
-def _fix_test_empty_map():
+def test_empty_map():
     # add image channels to the loader
     
     path = getTiffChannel_1()
-    loader = mmMapLoader(path)
+    # logger.info(f'test_empty_map path:{path}')
+    # loader = mmMapLoader(path)
 
-    map = MapAnnotations.load(loader)
+    # logger.info(f'loader is:{loader}')
+    logger.error(f'creating MapAnnotations from path:{path}')
+    map = MapAnnotations.load(path)
     tp = map.getTimePoint(1)
 
     return tp
@@ -60,21 +63,22 @@ def _fix_test_empty_map():
 #     print('rough tracing length:', tp.segments[:]['roughTracing'].length)
 
 
-def _fix_test_qt_segments():
+def test_qt_segments():
     """Load zarr, test core segment
      - add a segment
      - add a point
      - rebuild main df and summary df
     """
     
-    zarrPath = getSingleTimepointMap()
+    zarrPath = get202504_map()
     # zarrPath = getTiffChannel_1()  # make a mmap with no segments, no spine
 
     from pymapmanager import TimeSeriesCore
     
+    logger.warning(f'creating xxx from zarrPath:{zarrPath}')
     tsc = TimeSeriesCore(zarrPath)
 
-    thisTp = 0
+    thisTp = 1
     _stack = stack(tsc, timepoint=thisTp)
     print('_stack is:')
     print(_stack)
@@ -90,8 +94,6 @@ def _fix_test_qt_segments():
 
     print('=== after newSegment tsc _fullMap segments[:] is:')
     print(tsc._fullMap.segments[:])
-
-    return
 
     x = 100
     y = 100

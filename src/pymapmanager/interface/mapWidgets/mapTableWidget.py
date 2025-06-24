@@ -4,7 +4,7 @@ from typing import List, Union  # , Callable, Iterator, Optional
 
 from qtpy import QtGui, QtCore, QtWidgets
 
-from mapmanagercore import IMPORT_FILE_EXTENSIONS
+# from mapmanagercore import IMPORT_FILE_EXTENSIONS
 from pymapmanager.interface.core.search_widget import myQTableView
 from pymapmanager.timeseriesCore import TimeSeriesCore
 from pymapmanager._logger import logger

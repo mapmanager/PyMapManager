@@ -18,7 +18,7 @@ def test_app(qtbot, qapp):
 @pytest.fixture 
 def stackWidgetObject(qtbot, qapp):
 	# path = '../PyMapManager-Data/maps/rr30a/rr30a_s0_ch2.tif'
-    path = mapmanagercore.data.getSingleTimepointMap()
+    path = mapmanagercore.data.get202504_map()
     
     # abb we would need to open stackWidget with a TimeSeriesCore(from path)
     # instead, open it with the PyMqpMqnqgerApp

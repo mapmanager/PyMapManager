@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: pymapmanager
-Version: 0.0.7.dev374+gb914846.d20250422
+Version: 0.0.7.dev384+g144a945.d20250430
 Requires-Python: >=3.11
 License-File: LICENSE
 Requires-Dist: numpy

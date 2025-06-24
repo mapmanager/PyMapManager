@@ -4,12 +4,10 @@ import numpy as np
 from qtpy import QtGui, QtCore, QtWidgets
 import pyqtgraph as pg
 
-from mapmanagercore import IMPORT_FILE_EXTENSIONS
+from mapmanagercore.imageImporter import acceptedExtensions
 
 import pymapmanager
 import pymapmanager.annotations
-# import pymapmanager.interface2
-from pymapmanager.interface.stackWidgets.base.rightCheckBoxAction import RightCheckBoxAction
 from pymapmanager.interface.stackWidgets.event.spineEvent import (
                 SelectSpine,
                 EditSpinePropertyEvent,
@@ -933,8 +931,7 @@ class ImagePlotWidget(mmWidget2):
             url = urlList[0]
             file_path = url.toLocalFile()
             _, _ext = os.path.splitext(file_path)
-            logger.warning(f'TODO refactor to use image import, not IMPORT_FILE_EXTENSIONS:{IMPORT_FILE_EXTENSIONS}')
-            if _ext in IMPORT_FILE_EXTENSIONS:
+            if _ext in acceptedExtensions():
                 event.acceptProposedAction()
 
     def dropEvent(self, event):

@@ -46,7 +46,7 @@ def addUserPath(jsonDump):
     and add it to the Python sys.path
 
     Returns:
-        True: If we made the folder (first time SanPy is running)
+        True: If made user folder (first time PyMapManager is run).
     """
 
     madeUserFolder = _makePmmFolders(jsonDump)  # make <user>/Documents/Pmm if necc

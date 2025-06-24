@@ -112,7 +112,8 @@ class LineAnnotationsCore(AnnotationsCore):
 
         segmentDf = self.singleTimepoint.segments[:]
 
-        _columns = ['Segment', 'Points', 'Length', 'Radius', 'Pivot Distance', 'Color']
+        # _columns = ['Segment', 'Points', 'Length', 'Radius', 'Pivot Distance', 'Color']
+        _columns = ['Segment', 'Length', 'Radius', 'Pivot Distance', 'Color']
         summaryDf = pd.DataFrame(columns=_columns)
 
         try:
@@ -128,7 +129,7 @@ class LineAnnotationsCore(AnnotationsCore):
             # summaryDf['roughTracing'] = segmentDf['roughTracing'] # Represents point or linestring of segment
         
         except (KeyError) as e:
-            logger.error(e)
+            logger.error(f'KeyError:"{e}"')
             logger.error(f'available keys are: {segmentDf.keys()}')
             
         except (AttributeError) as e:
@@ -155,7 +156,7 @@ class LineAnnotationsCore(AnnotationsCore):
         dfRet = pd.DataFrame(columns=_columns)
 
         segmentDf = self.singleTimepoint.segments[:]
-        logger.info(f"check {segmentDf.columns}")
+        # logger.info(f"check {segmentDf.columns}")
         
         if len(segmentDf) > 0:
             # xyCoord = segmentDf['segment'].get_coordinates(include_z=True)

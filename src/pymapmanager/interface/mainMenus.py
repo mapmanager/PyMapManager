@@ -63,24 +63,6 @@ class PyMapManagerMenus:
         self.viewMenu.addAction(_emptyAction)
         self._menuDict['View'] = self.viewMenu
 
-        # self.mapsMenu.aboutToShow.connect(self._refreshMapsMenu)
-        
-        # #
-        # # stacks
-        # name = "Stacks"
-        # self.stacksMenu = mainMenu.addMenu(name)
-        # _emptyAction = QtWidgets.QAction("None", self.getApp())
-        # self.stacksMenu.addAction(_emptyAction)
-        # self.stacksMenu.aboutToShow.connect(self._refreshStacksMenu)
-        # # self.stacksMenu.triggered.connect(partial(self._onStacksMenuAction, name))
-
-        # #
-        # # maps
-        # self.mapsMenu = mainMenu.addMenu("Maps")
-        # _emptyAction = QtWidgets.QAction("None", self.getApp())
-        # self.mapsMenu.addAction(_emptyAction)
-        # self.mapsMenu.aboutToShow.connect(self._refreshMapsMenu)
-
         # plugin (stack then map plugins)
         name = "Plugins"
         self.pluginsMenu = mainMenu.addMenu(name)
@@ -316,11 +298,12 @@ class PyMapManagerMenus:
         
         # from pymapmanager.interface.stackWidgets import stackWidget
         frontWindow = self.getApp().getFrontWindow()
-        if isinstance(frontWindow, (mmWidget2, mapWidget)):
-            nextUndo = frontWindow.getUndoRedo().nextUndoStr()
-            nextRedo = frontWindow.getUndoRedo().nextRedoStr()
-            enableUndo = frontWindow.getUndoRedo().numUndo() > 0
-            enableRedo = frontWindow.getUndoRedo().numRedo() > 0
+        if isinstance(frontWindow, (mmWidget2, mapWidget)) \
+            and frontWindow.getUndoRedo() is not None:
+                nextUndo = frontWindow.getUndoRedo().nextUndoStr()
+                nextRedo = frontWindow.getUndoRedo().nextRedoStr()
+                enableUndo = frontWindow.getUndoRedo().numUndo() > 0
+                enableRedo = frontWindow.getUndoRedo().numRedo() > 0
         else:
             nextUndo = ''
             nextRedo = ''
@@ -416,16 +399,23 @@ class PyMapManagerMenus:
         
         self.fileMenu.clear()
         
-        frontWindow = self.getApp().getFrontWindow()
-        _frontStackWindow = self.getApp().getFrontStackWindow()
-
-        loadFileAction = QtWidgets.QAction("Open...", self.getApp())
-        loadFileAction.setCheckable(False)  # setChecked is True by default?
-        loadFileAction.setShortcut("Ctrl+O")
         _app = self.getApp()
-        # if _app is not None:
-        #     loadFileAction.triggered.connect(_app.openFile)
-        self.fileMenu.addAction(loadFileAction)
+        frontWindow = self.getApp().getFrontWindow()
+        # _frontStackWindow = self.getApp().getFrontStackWindow()
+
+        openMapAction = QtWidgets.QAction("Open mmap Folder...", self.getApp())
+        openMapAction.setCheckable(False)  # setChecked is True by default?
+        openMapAction.setShortcut("Ctrl+O")
+        if _app is not None:
+            openMapAction.triggered.connect(_app.openMap)
+        self.fileMenu.addAction(openMapAction)
+        
+        importFileAction = QtWidgets.QAction("Open File...", self.getApp())
+        importFileAction.setCheckable(False)  # setChecked is True by default?
+        importFileAction.setShortcut("Ctrl+Shift+O")
+        if _app is not None:
+            importFileAction.triggered.connect(_app.openFile)
+        self.fileMenu.addAction(importFileAction)
         
         # loadFolderAction = QtWidgets.QAction("Open Time-Series...", self.getApp())
         # loadFolderAction.setCheckable(False)  # setChecked is True by default?
@@ -433,8 +423,11 @@ class PyMapManagerMenus:
         # self.fileMenu.addAction(loadFolderAction)
         # self.fileMenu.addSeparator()
 
-        # enableUndo = False
-        # enableRedo = False
+        # open recent (submenu) will show two lists, one for files and then one for folders
+        self.openRecentMenu = QtWidgets.QMenu("Open Recent ...")
+        self.openRecentMenu.aboutToShow.connect(self._refreshOpenRecent)
+        self.fileMenu.addMenu(self.openRecentMenu)
+
         enableSave = False
 
         if isinstance(frontWindow, (mmWidget2, mapWidget)):
@@ -451,36 +444,17 @@ class PyMapManagerMenus:
         saveFileAction.setShortcut("Ctrl+S")
         # saveFileAction.setEnabled(enableUndo and isDirty)
         saveFileAction.setEnabled(enableSave)
-        # saveFileAction.triggered.connect(self.getApp().saveFile)
+        saveFileAction.triggered.connect(self.getApp().saveAs)
         self.fileMenu.addAction(saveFileAction)
         
+        # TODO: add export mmap to zip (a bit complicated)
         # save as
-        saveAsFileAction = QtWidgets.QAction("Save As", self.getApp())
+        saveAsFileAction = QtWidgets.QAction("Save As...", self.getApp())
         saveAsFileAction.setCheckable(False)  # setChecked is True by default?
         saveAsFileAction.triggered.connect(self.getApp().saveAs)
         self.fileMenu.addAction(saveAsFileAction)
         
         self.fileMenu.addSeparator()
-
-        # open recent (submenu) will show two lists, one for files and then one for folders
-        self.openRecentMenu = QtWidgets.QMenu("Open Recent ...")
-        self.openRecentMenu.aboutToShow.connect(self._refreshOpenRecent)
-        self.fileMenu.addMenu(self.openRecentMenu)
-
-        clearRecentAction = QtWidgets.QAction("Clear Recent", self.getApp()) # abj
-        clearRecentAction.setObjectName("Clear Recent")
-        clearRecentAction.setCheckable(False)  
-        clearRecentAction.triggered.connect(self.getApp().clearRecentFiles)
-        self.fileMenu.addAction(clearRecentAction)
-        self.fileMenu.addSeparator()
-        
-        # 202504 debug
-        # _actions = self.fileMenu.actions()
-        # for _action in _actions:
-        #     logger.error(f'  action.objectName(): "{_action.objectName()}"')
-        # logger.error(f'clearRecentAction objectName:{clearRecentAction.objectName()}')
-        # clear_recent_action = self.fileMenu.findChild(QtWidgets.QAction, 'Clear Recent')
-        # logger.error(f'clear_recent_action:{clear_recent_action}')
 
         self.settingsMenu = self.fileMenu.addMenu('User Options...')
         self.settingsMenu.aboutToShow.connect(self._refreshSettingsMenu)
@@ -490,11 +464,11 @@ class PyMapManagerMenus:
         analysisParametersAction.triggered.connect(self.getApp()._showAnalysisParameters)
         self.fileMenu.addAction(analysisParametersAction)
 
-        self.fileMenu.addSeparator()
-        importNewTIFAction = QtWidgets.QAction('Import new TIF (channel)', self.getApp())
-        importNewTIFAction.setEnabled(_frontStackWindow is not None)
-        importNewTIFAction.triggered.connect(self.getApp().importNewTIF)
-        self.fileMenu.addAction(importNewTIFAction)
+        # self.fileMenu.addSeparator()
+        # importNewTIFAction = QtWidgets.QAction('Import new TIF (channel)', self.getApp())
+        # importNewTIFAction.setEnabled(_frontStackWindow is not None)
+        # importNewTIFAction.triggered.connect(self.getApp().importNewTIF)
+        # self.fileMenu.addAction(importNewTIFAction)
 
         # open some mapmanagercore sample data (download and store locally with pooch)
         self.fileMenu.addSeparator()
@@ -544,6 +518,14 @@ class PyMapManagerMenus:
 
             self.openRecentMenu.addAction(loadFileAction)
         
+        self.openRecentMenu.addSeparator()
+
+        clearRecentAction = QtWidgets.QAction("Clear Recent", self.getApp()) # abj
+        # clearRecentAction.setObjectName("Clear Recent")
+        clearRecentAction.setCheckable(False)  
+        clearRecentAction.triggered.connect(self.getApp().clearRecentFiles)
+        self.openRecentMenu.addAction(clearRecentAction)
+
         # self.openRecentMenu.addSeparator()
 
         # add recent folders

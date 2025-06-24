@@ -24,8 +24,10 @@ import pymapmanager
 # required so pyinstaller includes all plugins in bundle
 from pymapmanager.interface.stackWidgets import *
 
-# abb we need to get voxel metadata from tp in map !!!
-from mapmanagercore.metadata import VoxelMetadata, AnalysisParams
+from mapmanagercore.imageImporter import acceptedExtensions
+from mapmanagercore import canImportPath, canLoadPath  # depreciate ???
+
+from mapmanagercore.metadata import AnalysisParams
 
 from pymapmanager.interface.openFirstWindow import OpenFirstWindow
 from pymapmanager.interface.openFolderWindow import OpenFolderWindow
@@ -263,7 +265,8 @@ class OpenWidgetList:
         Returns a stack widget (tp==1) or a map widget (tp>1)
         """
         if path not in self._widgetDictList.keys():
-            logger.info(f'loading widget path:{path}')
+            logger.info(f'loading widget path:')
+            logger.info(f'  {path}')
             
             # open timeseries core
             _timeSeriesCore = TimeSeriesCore(path)
@@ -286,7 +289,7 @@ class OpenWidgetList:
                 _aWidget.show()
             
             # always close open first
-            self._app.closeFirstWindow()
+            # self._app.closeFirstWindow()
 
             self._widgetDictList[path] = _aWidget
         
@@ -357,17 +360,22 @@ class OpenWidgetList:
                     "Timepoints": str(numTimepoints)}
         self._app.getConfigDict().addMapPathDict(pathDict)
         
-    def save(self, aWidget):
+    def save(self, frontStackWindow:stackWidget = None):
         # abb only stackWidget has save(), e.g. map widgets do not
-        logger.info(f'save widget: {aWidget}')
-        aWidget.save()
+        if frontStackWindow is None:
+            frontStackWindow = self.getFrontStackWindow()
+            if frontStackWindow is None:
+                logger.warning('front window is not a stack window.')
+                return
+        logger.info(f'save widget: {frontStackWindow}')
+        frontStackWindow.save()
 
-        self.updateMapPathDict(aWidget) # abj
+        self.updateMapPathDict(frontStackWindow) # abj
       
         # logger.info(f'aWidget.getLastSaveTime: {lastSaveTime}')
         # self.pathDict["lastSaveTime"] = lastSaveTime
 
-    def saveAs(self, aWidget):
+    def _old_saveAs(self, aWidget):
         # abb only stackWidget has fileSaveAs(), e.g. map widgets do not
         if aWidget is None:
             logger.error('aWidget is None')
@@ -405,6 +413,8 @@ class PyMapManagerApp(QtWidgets.QApplication):
         logger.info(f'Starting PyMapManagerApp() logLevel:{logLevel} argv:{argv}')
         setLogLevel('DEBUG')
 
+        from mapmanagercore.imageImporter import acceptedExtensions
+        logger.info(f'available extensions for import is: {acceptedExtensions()}')
         self._analysisParams : AnalysisParams = AnalysisParams()
         
         self._initUserDocuments()  # first time run, will set User/Documents
@@ -563,6 +573,18 @@ class PyMapManagerApp(QtWidgets.QApplication):
         self._openWidgetList.closeWidget(mapWidget)
         return
 
+    def openFile(self):
+        """Called from menu."
+        """
+        # logger.error('TODO prompt user for path and open file (mmap, mmap.zip, .tif)')
+        self.loadStackWidget(loadFile=True)
+
+    def openMap(self):
+        """Called from menu."
+        """
+        # logger.error('TODO prompt user for path and open file (mmap, mmap.zip, .tif)')
+        self.loadStackWidget(loadFile=False)
+
     def openFirstWindow(self):
         """Toggle or create an OpenFirstWindow.
         """
@@ -592,8 +614,11 @@ class PyMapManagerApp(QtWidgets.QApplication):
     def saveAs(self):
         """ Save as a new file
         """
-        _frontWidget = self.getFrontWindow()
-        self._openWidgetList.saveAs(_frontWidget)
+        _frontWidget = self.getFrontStackWindow()
+        if _frontWidget is None:
+            return
+        # self._openWidgetList.saveAs(_frontWidget)
+        _frontWidget.saveAs(_frontWidget)
 
     #abj
     def _showAnalysisParameters(self):
@@ -675,14 +700,17 @@ class PyMapManagerApp(QtWidgets.QApplication):
                 self.loadStackWidget(tiffPath)
         elif sampleName == 'mmap with spines and segments':
             import mapmanagercore.data
-            from mapmanagercore.data import getSingleTimepointMap
-            tiffPath = getSingleTimepointMap()
-            if os.path.isfile(tiffPath):
-                self.loadStackWidget(tiffPath)
+            from mapmanagercore.data import get202504_map
+            mapPath = get202504_map()
+            if os.path.isfile(mapPath):
+                self.loadStackWidget(mapPath)
         else:
             logger.warning(f'did not understand "{sampleName}"')
             
-    def loadStackWidget(self, path : str = None) -> Union[stackWidget, mapWidget]:
+    def loadStackWidget(self,
+                        path : str = None,
+                        loadFile : bool = True,
+                        deferOpenFirstClose:bool = False) -> Union[stackWidget, mapWidget]:
         """Load a stack from a path and open a stackWidget or mapWidget
 
         Path can be a .mmap or .tif file.
@@ -697,40 +725,53 @@ class PyMapManagerApp(QtWidgets.QApplication):
         Either a stackWidget (single timepoint) or a MapWidget (multiple timepoint)
         """
         
+        # logger.info(f'path:{path} loadFile:{loadFile}')
+
         if path is None:
-            # logger.warning('TODO: write a file open dialog to open an mmap file')
-            # openFilePath, fileType = QtWidgets.QFileDialog.getOpenFileName(None, "Open File", "", "Zarr (*.mmap)")
-            # customDialog = QtWidgets.QFileDialog.setNameFilter(None, "zarr directory (*.mmap)")
-            # openFilePath = customDialog.getExistingDirectory(None)
-            # openFilePath = QtWidgets.QFileDialog.getExistingDirectory(None)
-
             dialog = QtWidgets.QFileDialog(None)
-            # dialog.setFileMode(QtWidgets.QFileDialog.Directory)
-            dialog.setNameFilter("MapManager Files (*.mmap, *.zip)")
-            # openFilePath = dialog.getExistingDirectory(None)
-            # dialog.setOptions(options)
-            openFilePath = dialog.getExistingDirectory()
-            # openFilePath = QtWidgets.QFileDialog.getExistingDirectory(None)
 
-            logger.info(f"openFilePath {openFilePath}")
+            if loadFile:
+                # make qt dialog filter from IMPORT_FILE_EXTENSIONS
+                _filter = "Import Files ("
+                for _ext in acceptedExtensions():
+                    _filter += f'*{_ext};'
+                _filter += ')'
+                # logger.info(f'2 _filter:"{_filter}"')
+                path, fileType = dialog.getOpenFileName(filter=_filter)
+            else:
+                # load .mmap/ dir
+                # mmap directory store
+                path = dialog.getExistingDirectory()
+
+            # logger.info(f'user path:"{path}"')
             
-            _ext = os.path.splitext(openFilePath)[1]
-            window = self.activeWindow() 
-            if openFilePath == "":
+            if path == "":
                 # logger.warning("openFilePath is Empty")
                 # QtWidgets.QMessageBox.critical(window, "Error", "File Path is Empty")
                 return
-            elif _ext not in ['.mmap', '.zip']: # could make this into a for loop until user inputs .mmap
-                logger.warning(f"incorrect directory type, must be of extension: .mmap or .zip") 
-                QtWidgets.QMessageBox.critical(window, "Error", "Incorrect directory type, must be of extension: (.mmap)")
-                return
-            
-            _aWidget = self._openWidgetList.openWidgetFromPath(openFilePath)
 
-            # return
-            return _aWidget
-            
+        if path.endswith('/'):
+            path = path[:-1]
+
+        if loadFile and not canImportPath(path):
+            _errorStr = f'Incorrect file type, expecting one of :{acceptedExtensions()}'
+            logger.warning(_errorStr)
+            window = self.activeWindow() 
+            QtWidgets.QMessageBox.critical(window, "Error", _errorStr)
+            return
+        
+        elif not loadFile and not canLoadPath(path):
+            _errorStr = f'Incorrect directory extension, expecting one of :{acceptedExtensions()}'
+            logger.warning(_errorStr)
+            window = self.activeWindow() 
+            QtWidgets.QMessageBox.critical(window, "Error", _errorStr)
+            return
+
         _aWidget = self._openWidgetList.openWidgetFromPath(path)
+
+        if not deferOpenFirstClose:
+            self.closeFirstWindow()
+
         return _aWidget
 
     def get_folders_with_mmap(self, rootDir) -> List[str]:
@@ -767,12 +808,12 @@ class PyMapManagerApp(QtWidgets.QApplication):
         # refresh first window 
         self._openFirstWindow.refreshUI()
 
-    def importNewTIF(self):
+    # def importNewTIF(self):
 
-        frontStackWindow = self.getFrontStackWindow()
-        if frontStackWindow is None:
-            return
-        frontStackWindow.loadInNewChannel()
+    #     frontStackWindow = self.getFrontStackWindow()
+    #     if frontStackWindow is None:
+    #         return
+    #     frontStackWindow.loadInNewChannel()
 
     def openLogWindow(self):
         """Show the python logger.
