@@ -158,20 +158,33 @@ class stackWidget(MainWindow):
             msg_box.setIcon(QtWidgets.QMessageBox.Warning)  # or QMessageBox.Information, QMessageBox.Critical, etc.
 
             # Set the buttons
-            msg_box.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
-            msg_box.setDefaultButton(QtWidgets.QMessageBox.No)  # Set the default button
+
+            # Save Don't Save Cancel
+            discard = "Don't Save"
+       
+            msg_box.setStandardButtons(QtWidgets.QMessageBox.Save| QtWidgets.QMessageBox.Discard | QtWidgets.QMessageBox.Cancel)
+            msg_box.setDefaultButton(QtWidgets.QMessageBox.Cancel)  # Set the default button
+
+            # Manually rename "Discard" to "Don't Save"
+            dont_save_button = msg_box.button(QtWidgets.QMessageBox.Discard)
+            dont_save_button.setText("Don't Save")
+
             result = msg_box.exec_()
-            if result == QtWidgets.QMessageBox.Yes:
+            pluginObjList = list(self._openPluginDict.values())
+
+            if result == QtWidgets.QMessageBox.Save or result == QtWidgets.QMessageBox.Discard:
                 # User clicked Yes
                 print("User clicked Yes")
-                # self._openPluginDict.clear() # clears dictionary and close all the plugins
-                pluginObjList = list(self._openPluginDict.values())
                 for pluginObj in pluginObjList:
                     self.closePluginInDict(pluginObj)
+                
+                if result == QtWidgets.QMessageBox.Save:
+                    self._stack.save()
                 pass # proceed to closing stackwindow
-            else:
+        
+            elif result == QtWidgets.QMessageBox.Cancel:
                 # User clicked No or closed the dialog so we cancel the event
-                print("User clicked No or closed the dialog")
+                print("User clicked Cancel or closed the dialog")
                 # prevent window from closing
                 event.ignore()
                 return

@@ -429,8 +429,13 @@ class ImagePlotWidget(mmWidget2):
         x = imagePos.x()  # float
         y = imagePos.y()
 
-        x = int(round(x))  # int
-        y = int(round(y))
+        # x = int(round(x))  # int
+        # y = int(round(y))
+
+        #  abj, convert pixel to voxel
+        voxelMetadata = self.getStackWidget().getStack().getMetadata().voxelMetadata
+        x = int(round(x)) * voxelMetadata.xVoxel
+        y = int(round(y)) * voxelMetadata.yVoxel
 
         if self._channelIsRGB():
             intensity = float('nan')
