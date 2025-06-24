@@ -17,12 +17,8 @@ if TYPE_CHECKING:
 
 from qtpy import QtGui, QtCore, QtWidgets
 
-from mapmanagercore import IMPORT_FILE_EXTENSIONS
-
 import pymapmanager
-
 from pymapmanager.interface.mainWindow import MainWindow
-
 from pymapmanager.interface.stackWidgets.base.mmWidget2 import mmWidget2, pmmEventType, pmmStates, pmmEvent, StackSelection
 from .base.stacktoolbar import StackToolBar
 from .base.stackstatusbar import StatusToolbar
@@ -321,22 +317,6 @@ class stackWidget(MainWindow):
         super()._buildMenus()
 
         self._mainMenu.viewMenu.aboutToShow.connect(self._refreshViewMenu)
-
-        # mainMenu = self.menuBar()
-
-        # self._mainMenu: pymapmanager.interface.PyMapManagerMenus \
-        #       = pymapmanager.interface.PyMapManagerMenus(self.getApp())
-        # self._mainMenu._buildMenus(mainMenu, self)
-
-        # #_mainMenu = self.getApp().getMainMenu()
-
-        # # abb moved to mainwindow
-        # # close
-        # self.closeShortcut = QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+W"), self)
-        # self.closeShortcut.activated.connect(self._on_user_close)
-
-        # # we will append to this
-        # self._mainMenu.viewMenu.aboutToShow.connect(self._refreshViewMenu)
         
     def _refreshViewMenu(self):
         logger.info('')

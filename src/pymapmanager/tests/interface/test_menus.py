@@ -40,16 +40,17 @@ def test_menu_action(qtbot, qapp):
     # menu_bar = stackWidgetWindow.menuBar()
     mainMenus = stackWidgetWindow._mainMenu
 
+    # we create _menuDict in xxx
     for name, menu in mainMenus._menuDict.items():
+        # if name == 'Plugins':
+        #     logger.info(f'-->> skipping "Plugins" menu')
+        #     continue
+
         menuTitle = menu.title()
         # logger.info(f'=== Testing action name:{name} menuTitle:{menuTitle}')
 
         menu.aboutToShow.emit()
-        
-        if name == 'Plugins':
-            logger.info(f'-->> skipping "Plugins" menu')
-            continue
-        
+                
         actions = _get_all_actions(menu)
 
         # logger.info(f'found {len(actions)} actions')
@@ -58,11 +59,11 @@ def test_menu_action(qtbot, qapp):
             _actionText = action.text()
             logger.info(f'  trigger menuTitle:{menuTitle} _actionText:"{_actionText}"')
             if _actionText in [
-                                # 'Tiff File Ch1',
-                            #    'Tiff File Ch2',
-                               'mmap with spines and segments',
+                            #    'mmap with spines and segments',
                                'Open Folder Window',
-                               'Save As'
+                            #    'Save As...',
+                               'Open mmap Folder...',
+                               'Open File...',
                                ]:
                 logger.warning(f'-->> skipping action: "{_actionText}"')
                 continue

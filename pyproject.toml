@@ -21,12 +21,13 @@ dependencies = [
         'PyQt5',  # This will not work on macOS arm
         'pyqtgraph',
         'pyqtdarktheme',
-        # 'plotly'
+        # 'plotly',
+        'qtawesome',  # for icons
     ]
 requires-python = ">=3.11"
 
 [project.scripts]
-pymapmanager = "pymapmanager.interface2.pyMapManagerApp2:run"
+pymapmanager = "pymapmanager.interface.pyMapManagerApp:run"
 
 [tool.setuptools_scm]
 version_file = "src/pymapmanager/_version.py"

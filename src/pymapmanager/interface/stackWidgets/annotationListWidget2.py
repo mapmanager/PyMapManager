@@ -361,22 +361,22 @@ class pointListWidget(annotationListWidget):
         
         logger.info(f'{self.getClassName()}')
 
-        self.menu = QtWidgets.QMenu(self)
+        menu = QtWidgets.QMenu(self)
 
         # export spines to clipboard
         exportToClipboardAction = QtWidgets.QAction('Copy Spines To Clipboard', self)
         # exportToClipboardAction.triggered.connect(lambda: self.getStackWidget().exportSpines(mode='copy'))
         exportToClipboardAction.triggered.connect(lambda: self._exportSpines(mode='copy'))
-        self.menu.addAction(exportToClipboardAction)
+        menu.addAction(exportToClipboardAction)
 
         # export spines to csv file
         exportToFileAction = QtWidgets.QAction('Export Spines To File', self)
         # exportToFileAction.triggered.connect(lambda: self.getStackWidget().exportSpines(mode='export'))
         exportToFileAction.triggered.connect(lambda: self._exportSpines(mode='export'))
-        self.menu.addAction(exportToFileAction)
+        menu.addAction(exportToFileAction)
 
         # action = _menu.exec_(self.mapToGlobal(event.pos()))
-        self.menu.popup(QtGui.QCursor.pos())
+        menu.popup(QtGui.QCursor.pos())
 
     def _exportSpines(self, mode):
         logger.warning(f'mode:{mode}')
@@ -602,12 +602,12 @@ class lineListWidget(annotationListWidget):
         self.tracingWidget.on_segment_button_clicked(state = None, buttonName= '+')
         
     def _contextMenuEvent(self, event):
-        self.menu = QtWidgets.QMenu(self)
+        menu = QtWidgets.QMenu(self)
         
         # color dialog to set color
         colorAction = QtWidgets.QAction('Set Color', self)
         colorAction.triggered.connect(lambda: self._colorPickerSlot(event))
-        self.menu.addAction(colorAction)
+        menu.addAction(colorAction)
 
         # action = _menu.exec_(self.mapToGlobal(event.pos()))
-        self.menu.popup(QtGui.QCursor.pos())
+        menu.popup(QtGui.QCursor.pos())

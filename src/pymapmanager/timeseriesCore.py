@@ -11,12 +11,7 @@ from typing import Optional, Tuple, Union
 import pandas as pd
 import numpy as np
 
-from mapmanagercore import LOAD_SAVE_EXTENSIONS  # , IMPORT_FILE_EXTENSIONS
 from mapmanagercore import MapAnnotations
-# from mapmanagercore.metadata import AnalysisParams
-# from mapmanagercore.schemas import Spine, Segment
-# from mapmanagercore.lazy_geo_pd_images.loader.zarr import ZarrLoader
-# from mapmanagercore.lazy_geo_pd_images.loader.imageio import MultiImageLoader
 from mapmanagercore.annotations.single_time_point import SingleTimePointAnnotations
 from mapmanagercore.metadata import TimepointMetadata, mmMapMetadata
 
@@ -136,40 +131,28 @@ class TimeSeriesCore():
     """
     def __init__(self, path : str):
         self._path = path
-
         self._fullMap : MapAnnotations = None
-
         self._isDirty : bool = False
         
         # when user drags/drops a mmap zarr DirectoryStore folder
         if path.endswith('/'):
             path = path[:-1]
 
+        from mapmanagercore import canImportPath, canLoadPath
+
         # TODO just use endswith(), splitext does not handle '.ome.zarr'
-        _ext = os.path.splitext(path)[1]
-        if _ext in LOAD_SAVE_EXTENSIONS:
+        # _ext = os.path.splitext(path)[1]
+        if canLoadPath(path):
             self._load_zarr()
-        elif path.endswith('.tif'):
-            self._import_tiff()
+        elif canImportPath(path):
+            self._import_from_path()
         else:
             # TODO properly handle this
-            logger.error(f'did not load file extension: "{_ext}"')
+            logger.error(f'did not load file : "{os.path.split(path)[1]}"')
             return
         
         self._imagesCore = ImagesCore(self._fullMap)
         
-        # self._pointsCore = PointsCore(self, self._fullMap)
-        # self._segmentCore = SegmentsCore(self, self._fullMap)
-
-        # every mutation sets to True
-
-        # TODO only .mmap ext is not dirty (all other path ext were import)
-        if _ext in LOAD_SAVE_EXTENSIONS:
-            self._isDirty = False
-        else:
-            # assuming import
-            self._isDirty = True
-
         self._undoRedoManager = UndoRedoManager()
 
     def getTimepointMetadata(self, tp:int) -> TimepointMetadata:
@@ -282,8 +265,8 @@ class TimeSeriesCore():
 
         # logger.info(f'loaded full map:{self._fullMap}')
 
-    def _import_tiff(self):
-        """Load from tif file.
+    def _import_from_path(self):
+        """Load from image file (e.g. .tif, .nd2, ...)
         
         Result is a single timepoint with no segments and no spines.
         
@@ -300,6 +283,8 @@ class TimeSeriesCore():
 
         self._fullMap : MapAnnotations = map
 
+        self._isDirty = True
+        
     def save(self):
         """ Stack saves changes to its .mmap Zarr file that is stored
         """

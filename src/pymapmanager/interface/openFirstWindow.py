@@ -10,10 +10,13 @@ import os
 from functools import partial
 from typing import List
 
+import qtawesome as qta
+
 from qtpy import QtCore, QtWidgets, QtGui
 
 import pymapmanager
 # from pymapmanager.interface.mainWindow import MainWindow
+from pymapmanager.pmmUtils import _getAppIconPath
 
 from pymapmanager._logger import logger
 
@@ -35,7 +38,6 @@ class OpenFirstWindow(QtWidgets.QMainWindow):
 
         self.recentMapDictList = self.getApp().getConfigDict().getRecentMapDicts()
 
-        from pymapmanager.pmmUtils import _getAppIconPath
         appIconPath = _getAppIconPath()    
         if os.path.isfile(appIconPath):
             # logger.info(f'  app.setWindowIcon with: "{appIconPath}"')
@@ -137,7 +139,10 @@ class OpenFirstWindow(QtWidgets.QMainWindow):
         # abb we open both zip and folder mmap zarr!
         # if os.path.isdir(path) or os.path.isfile(path) or path.startswith('http'):
         if os.path.isdir(path) or os.path.isfile(path):
-            _aWidget = self.getApp().loadStackWidget(path)
+            loadFile = True
+            if os.path.isdir(path):
+                loadFile = False
+            _aWidget = self.getApp().loadStackWidget(path, loadFile=loadFile, deferOpenFirstClose=True)
             if _aWidget is None:
                 _statusStr = f'error opening path: {path}'
                 logger.error(_statusStr)
@@ -150,17 +155,6 @@ class OpenFirstWindow(QtWidgets.QMainWindow):
         
         self.setStatus(_statusStr)
 
-    def _on_open_button_click(self, name : str):
-        logger.info(name)
-        if name == 'Open...':
-            self._app.loadStackWidget()
-
-        elif name == 'Open Folder...':
-            self._app.openFolderWindow()  # load a folder of mmap
-
-        # elif name == 'Clear Files':
-        #     self._clearFileList()
-
     def _clearFileList(self):
         self.getApp().getConfigDict().clearMapPathDict()
 
@@ -171,15 +165,18 @@ class OpenFirstWindow(QtWidgets.QMainWindow):
         self._buildUI()
 
     def _buildUI(self):
+
+        self.setAcceptDrops(True)
+
         # typical wrapper for PyQt, we can't use setLayout(), we need to use setCentralWidget()
         _mainWidget = QtWidgets.QWidget()
-        _mainVLayout = QtWidgets.QVBoxLayout()
+        _mainVLayout = QtWidgets.QHBoxLayout()
         _mainWidget.setLayout(_mainVLayout)
         self.setCentralWidget(_mainWidget)
         
         # for open and open folder buttons
-        hBoxLayout = QtWidgets.QHBoxLayout()
-        hBoxLayout.setAlignment(QtCore.Qt.AlignLeft)
+        hBoxLayout = QtWidgets.QVBoxLayout()
+        hBoxLayout.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
         _mainVLayout.addLayout(hBoxLayout)
 
         # aLabel = QtWidgets.QLabel()
@@ -187,29 +184,63 @@ class OpenFirstWindow(QtWidgets.QMainWindow):
         # hBoxLayout.addWidget(aLabel,
         #                      alignment=QtCore.Qt.AlignLeft)
 
-        aLabel = QtWidgets.QLabel('MapManager')
-        hBoxLayout.addWidget(aLabel,
+        _iconSize = QtCore.QSize(32, 32)
+
+        # aLabel = QtWidgets.QLabel('MapManager')
+        aButton = QtWidgets.QPushButton()
+        appIconPath = _getAppIconPath()    
+        icon = QtGui.QIcon(appIconPath)
+        aButton.setIcon(icon)
+        aButton.setIconSize(_iconSize)
+        # aPixMap = QtGui.QPixmap(appIconPath, QtCore.QSize(32, 32))
+        # aLabel.setPixmap(aPixMap)
+
+        hBoxLayout.addWidget(aButton,
                              alignment=QtCore.Qt.AlignLeft)
 
-        name = 'Open...'
+        # open an mmap zarr folder
+        icon = qta.icon('mdi6.folder-arrow-up-outline')  # , color='black')
+        name = 'Open mmap Folder...'
+        name = ''
         aButton = QtWidgets.QPushButton(name)
-        aButton.setFixedSize(QtCore.QSize(180, 40))
-        aButton.setToolTip('Open a tif or mmap file.')
-        aButton.clicked.connect(partial(self._on_open_button_click, name))
+        aButton.setIcon(icon)
+        aButton.setIconSize(_iconSize)
+        # aButton.setFixedSize(QtCore.QSize(180, 40))
+        aButton.setToolTip('Open an mmap from a folder.')
+        aButton.clicked.connect(self._app.openMap)
         hBoxLayout.addWidget(aButton, alignment=QtCore.Qt.AlignLeft)
 
-        name = 'Open Folder...'
+        # import an image
+        icon = qta.icon('mdi6.import')  # , color='black')
+        name = 'Import Image...'
+        name = ''
         aButton = QtWidgets.QPushButton(name)
-        aButton.setFixedSize(QtCore.QSize(180, 40))
+        aButton.setIcon(icon)
+        aButton.setIconSize(_iconSize)
+        # aButton.setFixedSize(QtCore.QSize(180, 40))
+        from mapmanagercore.imageImporter import acceptedExtensions
+        aButton.setToolTip(f'Import an image file like {acceptedExtensions()}')
+        # aButton.clicked.connect(self._app.importImage)
+        aButton.clicked.connect(self._app.openFile)
+
+        hBoxLayout.addWidget(aButton, alignment=QtCore.Qt.AlignLeft)
+
+        # name = 'Open File...'
+        # aButton = QtWidgets.QPushButton(name)
+        # aButton.setFixedSize(QtCore.QSize(180, 40))
+        # aButton.setToolTip('Open an image file.')
+        # aButton.clicked.connect(self._app.openFile)
+        # hBoxLayout.addWidget(aButton, alignment=QtCore.Qt.AlignLeft)
+
+        icon = qta.icon('mdi.folder-multiple-outline')
+        name = 'Open Folder Of mmmap...'
+        name = ''
+        aButton = QtWidgets.QPushButton(name)
+        aButton.setIcon(icon)
+        aButton.setIconSize(_iconSize)
+        # aButton.setFixedSize(QtCore.QSize(180, 40))
         aButton.setToolTip('Open a folder of mmap files.')
-        aButton.clicked.connect(partial(self._on_open_button_click, name))
-        hBoxLayout.addWidget(aButton, alignment=QtCore.Qt.AlignLeft)
-
-        name = 'Drag and Drop'
-        aButton = DragAndDropWidget(name, self._app)
-        aButton.setFixedSize(QtCore.QSize(180, 40))
-        aButton.setToolTip('Drag and drop a tif or mmap file.')
-        # aButton.clicked.connect(partial(self._on_open_button_click, name))
+        aButton.clicked.connect(self._app.openFolderWindow)
         hBoxLayout.addWidget(aButton, alignment=QtCore.Qt.AlignLeft)
 
         # recent files and tables
@@ -244,18 +275,6 @@ class OpenFirstWindow(QtWidgets.QMainWindow):
 
         _mainVLayout.addLayout(recent_vBoxLayout)
 
-
-# QtWidgets.QPushButton
-# QtWidgets.QMainWindow
-class DragAndDropWidget(QtWidgets.QPushButton):
-    def __init__(self, name, app: PyMapManagerApp):
-        super().__init__(name)
-        self.setWindowTitle("Drag and Drop")
-        self.resize(720, 480)
-        self.setAcceptDrops(True)
-
-        self._app = app
-
     def dragEnterEvent(self, event):
         if event.mimeData().hasUrls():
             event.accept()
@@ -264,20 +283,41 @@ class DragAndDropWidget(QtWidgets.QPushButton):
 
     def dropEvent(self, event):
         files = [u.toLocalFile() for u in event.mimeData().urls()]
-        for tifFile in files:
-            # print(f)
-            logger.info(f"loading file {tifFile}")
-            
-            # abj
-            # self._app.loadTifFile(tifFile)
-            
-            # abb
-            self._app.loadStackWidget(tifFile)
-            
-            # Create new image loader iwth path
-            # emit f = path to file
-             
-if __name__ == '__main__':
-    logger.error('xxx')
-    pass
-    # test()
+        loadedWidget = False
+        for file in files:
+            if os.path.isdir(file):
+                loadFile = False
+            else:
+                loadFile = True
+            logger.info(f"loading loadFile:{loadFile} : {file}")
+            _stackWidget = self._app.loadStackWidget(file, loadFile=loadFile, deferOpenFirstClose=True)
+            if _stackWidget is not None:
+                loadedWidget = True
+        
+        # causes crash if in wrong place ???
+        if loadedWidget:
+            self.close()
+
+# QtWidgets.QPushButton
+# QtWidgets.QMainWindow
+# class DragAndDropWidget(QtWidgets.QPushButton):
+#     def __init__(self, name, app: PyMapManagerApp):
+#         super().__init__(name)
+#         self.setWindowTitle("Drag and Drop")
+#         # self.resize(720, 480)
+#         self.setAcceptDrops(True)
+
+#         self._app = app
+
+#     def dragEnterEvent(self, event):
+#         if event.mimeData().hasUrls():
+#             event.accept()
+#         else:
+#             event.ignore()
+
+#     def dropEvent(self, event):
+#         files = [u.toLocalFile() for u in event.mimeData().urls()]
+#         for file in files:
+#             logger.info(f"loading file: {file}")
+#             self._app.loadStackWidget(file)
+
