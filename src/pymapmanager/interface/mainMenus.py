@@ -444,7 +444,7 @@ class PyMapManagerMenus:
         saveFileAction.setShortcut("Ctrl+S")
         # saveFileAction.setEnabled(enableUndo and isDirty)
         saveFileAction.setEnabled(enableSave)
-        saveFileAction.triggered.connect(self.getApp().saveAs)
+        saveFileAction.triggered.connect(self.getApp().save)
         self.fileMenu.addAction(saveFileAction)
         
         # TODO: add export mmap to zip (a bit complicated)

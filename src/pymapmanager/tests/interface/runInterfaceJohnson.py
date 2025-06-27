@@ -54,7 +54,9 @@ def run():
     logger.error(f"C:\\Users\\johns\\Documents\\GitHub\\MapManagerCore-Data\\data\\202504\\single_timepoint_202504.mmap")
 
     # abb 202504, this is what you were loading
-    path = 'C:\\Users\\johns\\Documents\\GitHub\\MapManagerCore-Data\\data\\single_timepoint.mmap'
+    # path = 'C:\\Users\\johns\\Documents\\GitHub\\MapManagerCore-Data\\data\\single_timepoint.mmap'
+    # path = "C:\\Users\\johns\\Documents\\GitHub\\MapManagerCore-Data\\data\\202504\\single_timepoint_202504.mmap"
+    path = "C:\\Users\\johns\\Documents\\GitHub\\MapManagerCore-Data\\data\\202504\\jcopy_single_timepoint.mmap"
     
     # path = '/Users/johns/Documents/GitHub/MapManagerCore/data/rr30a_s0u.mmap'
 
@@ -320,11 +322,11 @@ def testingGetValues():
     print("testGetValues: ", test)
 
 if __name__ == '__main__':
-    # run()
+    run()
     # testingGetValues()
 
     # TODO: fix merging for just tif, only works for zarr
-    run_tif()
+    # run_tif()
     # run_2_tifs()
 
     # runThenLoad()

@@ -133,12 +133,17 @@ class stackWidget(MainWindow):
         Parameters
         ----------
         event : PyQt5.QtGui.QCloseEvent
-        """
-        logger.warning('NEED TO CHECK IF spine/segment IS DIRTY AND PROMPT TO SAVE')
-        
+        """ 
         # logger.info(self.geometry())
         # temp = len(self._openPluginDict)
         # logger.info(f"temp {temp}")
+
+        # check dirty
+        if not self.getDirty():
+            pluginObjList = list(self._openPluginDict.values())
+            for pluginObj in pluginObjList:
+                self.closePluginInDict(pluginObj)
+            return
 
         # check if openPluginDict is not empty
         if len(self._openPluginDict) > 0:
@@ -154,10 +159,6 @@ class stackWidget(MainWindow):
             msg_box.setIcon(QtWidgets.QMessageBox.Warning)  # or QMessageBox.Information, QMessageBox.Critical, etc.
 
             # Set the buttons
-
-            # Save Don't Save Cancel
-            discard = "Don't Save"
-       
             msg_box.setStandardButtons(QtWidgets.QMessageBox.Save| QtWidgets.QMessageBox.Discard | QtWidgets.QMessageBox.Cancel)
             msg_box.setDefaultButton(QtWidgets.QMessageBox.Cancel)  # Set the default button
 

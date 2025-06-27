@@ -618,7 +618,16 @@ class PyMapManagerApp(QtWidgets.QApplication):
         if _frontWidget is None:
             return
         # self._openWidgetList.saveAs(_frontWidget)
-        _frontWidget.saveAs(_frontWidget)
+        # _frontWidget.saveAs(_frontWidget)
+        _frontWidget.saveAs()
+
+    def save(self):
+        """ Save to file
+        """
+        _frontWidget = self.getFrontStackWindow()
+        if _frontWidget is None:
+            return
+        _frontWidget.save()
 
     #abj
     def _showAnalysisParameters(self):

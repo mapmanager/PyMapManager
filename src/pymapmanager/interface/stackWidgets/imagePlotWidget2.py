@@ -25,6 +25,7 @@ from pymapmanager.interface.stackWidgets.base.mmWidget2 import mmWidget2, pmmEve
 from .base.annotationPlotWidget2 import pointPlotWidget, linePlotWidget
 
 from pymapmanager._logger import logger
+from pymapmanager.interface.stackWidgets.base.rightCheckBoxAction import RightCheckBoxAction
 
 class ImagePlotWidget(mmWidget2):
     """A plot widget (pg.PlotWidget) to plot
