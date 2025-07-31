@@ -1,6 +1,7 @@
 
 from functools import partial
 # from tkinter import Image
+from PyQt5 import QtGui
 from qtpy import QtWidgets, QtCore
 from PIL import Image
 
@@ -106,12 +107,21 @@ class ChannelEditor(mmWidget2):
 
                 self.gridLayout.addWidget(activateBox, self.totalChannelsShown, 2)
                 activateBox.currentTextChanged.connect(partial(self._onActivate, channelKey))
-                
+
+                # Color picker
+                # logger.info(f"checking channelKey {channelKey}")
+                channelMetaData = self.getStack().getChannelMetadata(channelKey)
+                initialColor = channelMetaData.color
+                # logger.info(f"checking initialColor {initialColor}")
+                colorPicker = ColorPicker(initialColor, channelKey, self.stackWidget)
+                self.gridLayout.addWidget(colorPicker, self.totalChannelsShown, 3)
+
+                # Deleting Channel
                 if channelKey > 1: # For now have a restriction on deleting first channel
                 # if 1:
                     deleteButton = QtWidgets.QPushButton('')
                     # self.gridLayout.addWidget(deleteButton, channelIdx + 1, 2)
-                    self.gridLayout.addWidget(deleteButton, self.totalChannelsShown, 3)
+                    self.gridLayout.addWidget(deleteButton, self.totalChannelsShown, 4)
 
                     # Set a trashcan icon (using standard icon set)
                     pixmapi = getattr(QtWidgets.QStyle, "SP_TrashIcon")
@@ -518,3 +528,38 @@ class DraggableWidget(QtWidgets.QWidget):
 
     def updateChannelName(self, newChannelName: str = ""):
         self.stackWidget.updateChannel(newChannelName, channelIdx = self.getChannelIdx())
+
+class ColorPicker(QtWidgets.QWidget):
+    def __init__(self, initialColor, channelIdx, stackWidget):
+        super().__init__()
+        self.setWindowTitle("Color Picker")
+
+        self.initialColor = initialColor
+        self.channelIdx = channelIdx
+        self.stackWidget = stackWidget
+        self.button = QtWidgets.QPushButton("", self)
+        self.button.setStyleSheet(f"background-color: {initialColor}; padding: 10px;")
+        self.button.clicked.connect(self.open_color_dialog)
+
+        layout = QtWidgets.QVBoxLayout()
+        # layout.addWidget(self.label)
+        layout.addWidget(self.button)
+        self.setLayout(layout)
+
+    def open_color_dialog(self):
+        if type(self.initialColor) == str:
+            self.initialColor = QtGui.QColor(self.initialColor)
+        color = QtWidgets.QColorDialog.getColor(self.initialColor)
+
+        if color.isValid():
+            # self.label.setText(f"Selected Color: {color.name()}")
+            logger.info(f"name is {color.name()}")
+            self.button.setStyleSheet(f"background-color: {color.name()}; padding: 10px;")
+            self.storeChannelColor(self.channelIdx, color.name())
+            self.initialColor = color.name() # update color picker to new color
+
+    def storeChannelColor(self, channelIdx, newColor):
+        """ Store channel color into channelMetadata
+        """
+        # stackwidget wil emit signal to update the rest of widgets
+        self.stackWidget.setChannelProperty(channelIdx, "color", newColor)

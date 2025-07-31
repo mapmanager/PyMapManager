@@ -1,9 +1,13 @@
 import os
 import numpy as np
+import re
+import matplotlib.colors as mcolors
 
+import matplotlib.pyplot as plt
 from qtpy import QtGui, QtCore, QtWidgets
 import pyqtgraph as pg
-
+from pyqtgraph.exporters import ImageExporter
+from matplotlib.colors import to_rgb
 from mapmanagercore.imageImporter import acceptedExtensions
 
 import pymapmanager
@@ -252,7 +256,7 @@ class ImagePlotWidget(mmWidget2):
         
         elif action == copyImageAction:
             # pass
-            exporter = pg.exporters.ImageExporter(self.getPlotWidget().plotItem)
+            exporter = ImageExporter(self.getPlotWidget().plotItem)
             qimage = exporter.export(toBytes=True)
 
             app = self._stackWidget.getPyMapManagerApp()
@@ -262,7 +266,7 @@ class ImagePlotWidget(mmWidget2):
             
         elif action == exportImageAction:
             # Prompt for file location
-            exporter = pg.exporters.ImageExporter(self.getPlotWidget().plotItem)
+            exporter = ImageExporter(self.getPlotWidget().plotItem)
             _path = self.getPath()
             filters = '(*.png)'
             savePath, _ = QtWidgets.QFileDialog.getSaveFileName(self,
@@ -500,6 +504,12 @@ class ImagePlotWidget(mmWidget2):
         sliceNumber = self._currentSlice
         self._aLinePlot.slot_setSlice(sliceNumber)
 
+    def updateChannelMetadataEvent(self, event):
+        """
+        """
+        # refresh image with new image color
+        self.refreshSlice()
+
     def slot_setSlice(self, sliceNumber, doEmit=True):
         if self.slotsBlocked():
             return
@@ -546,7 +556,7 @@ class ImagePlotWidget(mmWidget2):
         if not self._channelIsRGB():
             logger.warning("TODO: add color str like ('red', 'green' 'blue')")
             colorStr = self._myStack.getChannelColor(self._displayThisChannelIdx)  # like 'r', 
-
+            logger.info(f"colorStr is {colorStr}")
             if colorStr == 'red':
                 cm = pg.colormap.get('Reds_r', source='matplotlib')
             elif colorStr == 'green':
@@ -554,11 +564,73 @@ class ImagePlotWidget(mmWidget2):
             elif colorStr == 'blue':
                 cm = pg.colormap.get('Blues_r', source='matplotlib')
             else:
-                logger.warning(f'did not understand color {colorStr} -->> defaulting to Greens_r')
-                # cm = pg.colormap.get('Greys_r', source='matplotlib')
-                cm = pg.colormap.get('Greens_r', source='matplotlib')
+            
+                # logger.warning(f'did not understand color {colorStr} -->> defaulting to Greens_r')
+                # # cm = pg.colormap.get('Greens_r', source='matplotlib')
+
+                # here colorStr is a hehex code
+                colorRGB = to_rgb(colorStr)
+                
+                # Create a list of colors transitioning from dark to bright
+                cm_qcolors = []
+                num_steps = 256  # More steps for smoother gradient
+                
+                import numpy as np
+                
+                for i in range(num_steps):
+                    value_factor = i / (num_steps - 1)
+                    # Adjust logarithmic scaling to match matplotlib's dynamic range
+                    log_factor = np.log1p(value_factor * 5) / np.log1p(5)
+                    log_factor = log_factor ** 0.7
+                    
+                    # Start from a dark version of the color and interpolate to bright
+                    dark_brightness = 0.3
+                    
+                    # Find the dominant channel (should be the one with highest value)
+                    max_channel = max(colorRGB)
+                    is_dominant = [c == max_channel for c in colorRGB]
+                    
+                    # Calculate base factors for each channel
+                    r_factor = log_factor * 1.2 if is_dominant[0] else log_factor * 0.3
+                    g_factor = log_factor * 1.2 if is_dominant[1] else log_factor * 0.3
+                    b_factor = log_factor * 1.2 if is_dominant[2] else log_factor * 0.3
+                    
+                    # Allow transition to white at highest intensities
+                    white_threshold = 0.7  # When to start transitioning to white
+                    if log_factor > white_threshold:
+                        # Calculate how far we are into the white transition
+                        white_amount = (log_factor - white_threshold) / (1 - white_threshold)
+                        # Smoothly interpolate to white
+                        r_factor = r_factor * (1 - white_amount) + white_amount
+                        g_factor = g_factor * (1 - white_amount) + white_amount
+                        b_factor = b_factor * (1 - white_amount) + white_amount
+                    
+                    # Ensure we don't exceed valid values
+                    r_factor = min(1.0, r_factor)
+                    g_factor = min(1.0, g_factor)
+                    b_factor = min(1.0, b_factor)
+                    
+                    r = int((colorRGB[0] * dark_brightness * 255) + (255 - colorRGB[0] * dark_brightness * 255) * r_factor)
+                    g = int((colorRGB[1] * dark_brightness * 255) + (255 - colorRGB[1] * dark_brightness * 255) * g_factor)
+                    b = int((colorRGB[2] * dark_brightness * 255) + (255 - colorRGB[2] * dark_brightness * 255) * b_factor)
+                    
+                    # Keep alpha at full opacity
+                    a = 255
+                    
+                    cm_qcolors.append(QtGui.QColor(r, g, b, a))
+
+                # Create matching normalized positions
+                positions = [i / (len(cm_qcolors) - 1) for i in range(len(cm_qcolors))]
+
+                # Create pyqtgraph ColorMap
+                cm = pg.ColorMap(positions, cm_qcolors)
+            
+                # # Apply to image
+                # self._myImage.setLookupTable(lut)
+                    
 
             self._myImage.setColorMap(cm)
+
 
     def _setContrast(self):
         if self._channelIsRGB():
@@ -649,6 +721,8 @@ class ImagePlotWidget(mmWidget2):
                                     upSlices=upDownSlices, downSlices=upDownSlices,
                                     func=np.max)
             
+            # logger.info(f"check ch0_image min {ch1_image.min()} max {ch1_image.max()}")
+            
             # rgb requires 8-bit images
             ch0_image = ch0_image/ch0_image.max() * 2**8
             ch1_image = ch1_image/ch1_image.max() * 2**8
@@ -662,10 +736,30 @@ class ImagePlotWidget(mmWidget2):
             _yShape = ch0_image.shape[1]
             sliceImage = np.ndarray((_xShape,_yShape,3))
             
-            # magenta is blue + red
-            sliceImage[:,:,0] = ch1_image  # red
-            sliceImage[:,:,1] = ch0_image  # green
-            sliceImage[:,:,2] = ch1_image  # blue
+            # # magenta is blue + red
+            # sliceImage[:,:,0] = ch1_image  # red
+            # sliceImage[:,:,1] = ch0_image  # green
+            # sliceImage[:,:,2] = ch1_image  # blue
+
+            # Get first two channel colors
+            color0 = self._myStack.getChannelColor(1)
+            color1 = self._myStack.getChannelColor(2)
+
+            color0 = self.colorToHex(color0)
+            color1 = self.colorToHex(color1)
+            logger.info(f"color0 {color0} color1 {color1}")
+
+            # Convert hex color to RGB arrays
+            rgb0 = to_rgb(color0)  # for ch0_image
+            rgb1 = to_rgb(color1)  # for ch1_image
+
+            brightness_factor = 2
+            for i in range(3):  # R, G, B
+                sliceImage[:,:,i] = (
+                    brightness_factor *
+                    (ch0_image * (rgb0[i])) + 
+                    (ch1_image * (rgb1[i])) * i 
+                ).clip(0, 255).astype(np.uint8)
 
         else:
             sliceImage = self._myStack.getMaxProjectSlice(sliceNumber,
@@ -693,6 +787,23 @@ class ImagePlotWidget(mmWidget2):
 
             logger.info(f'  -->> emitEvent signalUpdateSlice() _currentSlice:{self._currentSlice}')
             self.emitEvent(_pmmEvent, blockSlots=True)
+
+
+    def colorToHex(self, color_str):
+        # Normalize input
+        color_str = color_str.strip().lower()
+
+        # Regex for valid hex color: #RGB, #RRGGBB, RGB, or RRGGBB
+        hex_pattern = r'^#?([0-9a-f]{3}|[0-9a-f]{6})$'
+
+        if re.fullmatch(hex_pattern, color_str):
+            # Add '#' if missing
+            return '#' + color_str.lstrip('#')
+        
+        try:
+            return mcolors.to_hex(color_str)
+        except ValueError:
+            raise ValueError(f"Unknown color name or invalid hex: '{color_str}'")
 
     def _emitSetSlice(self, newSlice):
             _pmmEvent = pmmEvent(pmmEventType.setSlice, self)
@@ -724,11 +835,13 @@ class ImagePlotWidget(mmWidget2):
         if plotName == "Annotations":
             self._toggleAllAnnotations = not self._toggleAllAnnotations 
             toggle = self._toggleAllAnnotations
+            logger.info(f"toggle {toggle}")
             visible = self._aPointPlot.toggleScatterPlot(toggle) # spines
             self._aPointPlot.toggleSpineLines(toggle) # spine (lines)
-            visible2 = self._aLinePlot.toggleScatterPlot(toggle) # center line
+            visible2 = self._aLinePlot.toggleSegmentPlot(toggle) # center line
             visible3 = self._aLinePlot.toggleRadiusLines(toggle) # radius lines 
             visible4 = self._aPointPlot.toggleLabels(toggle) # labels
+            visible5 = self._aLinePlot.togglePivotPoints(toggle)
             # pass
         elif plotName == "Spines":
             visible = self._aPointPlot.toggleScatterPlot()

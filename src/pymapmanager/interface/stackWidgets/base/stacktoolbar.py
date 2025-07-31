@@ -265,6 +265,14 @@ class StackToolBar(QtWidgets.QToolBar):
 
         #self.setFocus()
 
+    def manuallyUpdatePlotBoxes(self, plotName, checked: bool = False):
+        """
+        """
+        action = self.actionMenuDict[plotName]
+        # self.plotMenuChange(action)
+        action.setChecked(checked)
+        self.plotMenuChange(action)
+
     def labelBoxUpdate(self):
         """ Part of plot menu Change
 
@@ -306,6 +314,9 @@ class StackToolBar(QtWidgets.QToolBar):
 
         centerLineAction = self.actionMenuDict["Center Line"]
         centerLineAction.setChecked(check)
+
+        pivotPointsAction = self.actionMenuDict["Pivot Points"]
+        pivotPointsAction.setChecked(check)
 
     def plotMenuChange(self, action):
         """ Emit a plot name after a given action (check box) is clicked

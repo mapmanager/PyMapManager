@@ -617,4 +617,4 @@ class lineListWidget(annotationListWidget):
         menu.addAction(colorAction)
 
         # action = _menu.exec_(self.mapToGlobal(event.pos()))
-        self.menu.popup(QtGui.QCursor.pos())
+        menu.popup(QtGui.QCursor.pos())

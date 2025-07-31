@@ -1280,9 +1280,16 @@ class linePlotWidget(annotationPlotWidget):
 
         return self.showRadiusLines
 
-    def togglePivotPoints(self):
-        self.showPivotPoints = not self.showPivotPoints
+    def togglePivotPoints(self, toggle: bool = None):
+        if toggle is None:
+            self.showPivotPoints = not self.showPivotPoints
+        else:
+            self.showPivotPoints = toggle
+            
         self._pivotPoints.setVisible(self.showPivotPoints)
+        return self.showPivotPoints
+    
+    def arePivotPointsShown(self):
         return self.showPivotPoints
 
     # def _getScatterColor(self):

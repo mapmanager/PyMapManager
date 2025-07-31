@@ -3,6 +3,8 @@
 
 import sys
 
+from pyqtgraph import Qt
+
 # from qtpy import QtWidgets
 
 
@@ -90,7 +92,12 @@ def run():
     # sw2.forceRefresh()
     # sw2.zoomToPointAnnotation(1, isAlt=True)
 
-    sw2.zoomToPointAnnotation(5, isAlt=True)
+    sw2.zoomToPointAnnotation(120, isAlt=True)
+    sw2._updatePlotBoxes("Annotations", False)
+    from PyQt5.QtGui import QKeyEvent
+    from PyQt5.QtCore import Qt, QEvent
+    event = QKeyEvent(QEvent.KeyPress, Qt.Key_Escape, Qt.NoModifier)
+    sw2.keyPressEvent(event)
 
     # sw2.runPlugin('Scatter Plot', inDock=False)
     

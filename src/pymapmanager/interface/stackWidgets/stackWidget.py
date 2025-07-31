@@ -566,8 +566,15 @@ class stackWidget(MainWindow):
         logger.info(f'  -->> emit updateDisplayOptionsZ() self._currentSliceNumber :{self._currentSliceNumber}')
         self.emitEvent(_pmmEvent, blockSlots=True)
 
+    def _updatePlotBoxes(self, plotName: str, checked: bool = False):
+        """ stackwidget function to update plot boxes within a script
+        """
+        self._topToolbar.manuallyUpdatePlotBoxes(plotName, checked)
+
     def updatePlotBoxes(self, plotName):
         """ update check boxes that displays individual plots in ImagePlotWidget
+
+        Signal from top toolbar to stackWidget to update plot boxes
         """
         imagePlotName = ImagePlotWidget._widgetName
         imagePlotWidget = self._widgetDict[imagePlotName]
@@ -1575,3 +1582,10 @@ class stackWidget(MainWindow):
         else:
             logger.error(f'failed to get PyMapManagerApp, got {app}')
 
+    def setChannelProperty(self, channelIdx:int, channelProperty: str, propertyValue):
+
+        self._stack.setChannelProperty(channelIdx, channelProperty, propertyValue)
+
+        # send signal to update image
+        _pmmEvent = pmmEvent(pmmEventType.updateChannelMetadata, self)
+        self.emitEvent(_pmmEvent, blockSlots=True)

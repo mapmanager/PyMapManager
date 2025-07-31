@@ -60,6 +60,11 @@ class stack:
         """
         return self.getMetadata().getChannelMetadata(channel)
     
+    def setChannelProperty(self, channelIdx:int, channelProperty: str, propertyValue):
+        """ Set channel metadata for one channel
+        """
+        self.getMetadata().setChannelProperty(channelIdx, channelProperty, propertyValue)
+
     def __str__(self):
         _shape = self.getMetadata().shape
         _dtype = self.getChannelMetadata(1).dtype

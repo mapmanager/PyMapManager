@@ -57,6 +57,7 @@ class pmmEventType(Enum):
     setColorChannel = auto()
     
     setRadius = auto() # abj
+    updateChannelMetadata = auto()
 
     # added to refresh gui after modifying the core with undo and redo
     refreshSpineEvent = auto()
@@ -851,8 +852,9 @@ class mmWidget2(QtWidgets.QMainWindow):
     def getMapTimepoint(self) -> Optional[int]:
         """Get map session from the stack.
         """
-        if self.getStack() is not None:
-            return self.getStack().timepoint
+        stack = self.getStack() # time series core object?
+        if stack is not None:
+            return stack.timepoint
             # return self.getStack().timepoint()
         
     def getClassName(self) -> str:
@@ -969,6 +971,8 @@ class mmWidget2(QtWidgets.QMainWindow):
         #abj
         elif event.type == pmmEventType.setRadius:
             acceptEvent = self.setRadiusEvent(event)
+        elif event.type == pmmEventType.updateChannelMetadata:
+            acceptEvent = self.updateChannelMetadataEvent(event)
 
         # abb 20240716
         # segment events
@@ -1321,6 +1325,9 @@ class mmWidget2(QtWidgets.QMainWindow):
     #abj
     def setRadiusEvent(self, event : pmmEvent):
         # logger.warning(f'{self.getClassName()} base class called')
+        pass
+
+    def updateChannelMetadataEvent(self, event: pmmEvent):
         pass
 
     def setSegmentColorEvent(self, event : pmmEvent):
