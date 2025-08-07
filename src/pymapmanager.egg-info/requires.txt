@@ -8,6 +8,7 @@ qtpy
 PyQt5
 pyqtgraph
 pyqtdarktheme
+qtawesome
 
 [docs]
 mkdocs

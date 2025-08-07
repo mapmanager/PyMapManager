@@ -70,7 +70,7 @@ class pandasModel(QtCore.QAbstractTableModel):
                         retVal = float(retVal)
                     elif isinstance(retVal, np.int64):
                         retVal = int(retVal)
-                    elif isinstance(retVal, np.bool_):
+                    elif isinstance(retVal, bool):
                         retVal = str(retVal)
                     elif isinstance(retVal, list):
                         retVal = str(retVal)

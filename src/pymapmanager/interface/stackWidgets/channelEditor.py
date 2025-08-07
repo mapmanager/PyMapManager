@@ -34,7 +34,7 @@ class ChannelEditor(mmWidget2):
         # listOfChannelIdx = self.stackWidget.getStack().getChannelKeys()
         self._listOfChannelIdx = self.stackWidget.getStack().getChannelKeys()
         # self._listOfChannelIdx = listOfChannelIdx
-        dictOfChannelNames = self.stackWidget.getStack().getChannelNameDict()
+        # dictOfChannelNames = self.stackWidget.getStack().getChannelNameDict()
         
         _shapeDict = self.getStack().getMetadata().shapeDict
         zSlice = _shapeDict['z']
@@ -63,11 +63,12 @@ class ChannelEditor(mmWidget2):
             if 1:
                 # logger.info(f"channel index in loop {channelKey}")
                 self.totalChannelsShown += 1
-                try:
-                    channelPath = dictOfChannelNames[channelKey]
-                except:
-                    logger.error(f'xxx abb missing `dictOfChannelPaths`')
-                    channelPath = "xxx"
+
+                # try:
+                #     channelPath = dictOfChannelNames[channelKey]
+                # except:
+                #     logger.error(f'xxx abb missing `dictOfChannelPaths`')
+                #     channelPath = "xxx"
 
                 # abb actualIndex and channelRowNum are redundant -> removed
                 # Offset by 1,  channel idx being 0 based
@@ -83,9 +84,13 @@ class ChannelEditor(mmWidget2):
                 # Diplaying channel as seen in the row rather than actual index in backend
                 self.gridLayout.addWidget(QtWidgets.QLabel(str(self.totalChannelsShown)), self.totalChannelsShown, 0)
 
-                self.gridLayout.addWidget(DraggableWidget(channelPath, self.totalChannelsShown, 1, self, name = "widget " + 
-                                                str(channelKey), stackWidget = self.stackWidget,
-                                                channelIdx = channelKey), self.totalChannelsShown, 1)
+                self.gridLayout.addWidget(DraggableWidget(str(channelKey),
+                                                          self.totalChannelsShown, 1,
+                                                          self, name = "widget " + 
+                                                str(channelKey), 
+                                                stackWidget = self.stackWidget,
+                                                channelIdx = channelKey),
+                                                self.totalChannelsShown, 1)
                 
                                                 # ), channelKey + 1, 1)
 
@@ -97,13 +102,13 @@ class ChannelEditor(mmWidget2):
                 activateBox.addItem("Off")
 
                 # get activate channel value from backend
-                timePoint = self.getStack().timepoint
-                activatedChannels = self.getStack().getTimeSeriesCore().getActivatedChannels(t=timePoint)
+                # timePoint = self.getStack().timepoint
+                # activatedChannels = self.getStack().getTimeSeriesCore().getActivatedChannels(t=timePoint)
 
-                if channelKey in activatedChannels:
-                    activateBox.setCurrentText("On")
-                else:
-                    activateBox.setCurrentText("Off")
+                # if channelKey in activatedChannels:
+                #     activateBox.setCurrentText("On")
+                # else:
+                #     activateBox.setCurrentText("Off")
 
                 self.gridLayout.addWidget(activateBox, self.totalChannelsShown, 2)
                 activateBox.currentTextChanged.connect(partial(self._onActivate, channelKey))
@@ -174,9 +179,9 @@ class ChannelEditor(mmWidget2):
             logger.info(f"cancelling import")
             return
         
-        with Image.open(tifFile) as img:
-            newImgWidth, newImgHeight = img.size
-            newImgSlices = img.n_frames  # z dimension
+        # with Image.open(tifFile) as img:
+        #     newImgWidth, newImgHeight = img.size
+        #     newImgSlices = img.n_frames  # z dimension
 
         # confirmed, selectedChannelIdx = \
         #     self.showConfirmationDialog(fileDimensions=(newImgWidth,newImgHeight,newImgSlices))
@@ -326,7 +331,7 @@ class ImportChannelWidget(QtWidgets.QWidget):
             self.importChannel(self.channelIdx, tifFile)
 
 class DraggableWidget(QtWidgets.QWidget):
-    def __init__(self, text, row, column, parent=None, name = None, 
+    def __init__(self, text: str, row, column, parent=None, name = None, 
                  stackWidget = None, channelIdx = None):
         
         """ Draggable widget

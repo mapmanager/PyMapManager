@@ -605,7 +605,7 @@ class ScatterPlotWidget_(QtWidgets.QWidget):
         """
         try:
             # logger.info(f"val type is {type(val)}")
-            if isinstance(val, np.bool):
+            if isinstance(val, bool):
                 logger.info(f"val is {val}")
                 return False
             float(val)

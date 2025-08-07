@@ -211,6 +211,7 @@ class TimeSeriesCore():
         """
         return len(self._fullMap.segments[:].index.unique(0))
 
+    # abb 202508 remove
     def getActivatedChannels(self, t):
         """List of channels that are activates
         """

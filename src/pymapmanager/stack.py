@@ -346,7 +346,7 @@ class stack:
         """
         try:
             # logger.info(f"val type is {type(val)}")
-            if isinstance(val, np.bool):
+            if isinstance(val, bool):
                 # logger.info(f"val is {val}")
                 return False
             float(val)
@@ -366,7 +366,7 @@ class stack:
     #     return listOfChannels
 
     def getChannelNameDict(self):
-        channelNames = self.getMetadata().getChannelNames()
+        channelNames = self.getMetadata().channelKeys
         return channelNames
     
     def getLeftOverChannels(self, channelIdx):
