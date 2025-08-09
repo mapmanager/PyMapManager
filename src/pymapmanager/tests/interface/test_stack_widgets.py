@@ -65,16 +65,20 @@ def test_plugins(qtbot, qapp):
     
     # print('qapp:', qapp)
 
+    # abb 202508, this downloads a zip. OUR LOADING OF ZAR ZIP IS BROKEN !!!
     mmapPath = mapmanagercore.data.get202504_map()
+
     # logger.info('202504 loading from local mmap directory')
     # mmapPath = '../MapManagerCore-Data/data/202504/single_timepoint_202504.mmap'
     # mapPath = '../MapManagerCore-Data/data/202504/single_timepoint_202504.mmap.zip'
+    
+    logger.info(f'trying to open mmapPath:{mmapPath}')
     if not os.path.isdir(mmapPath) and not mmapPath.endswith('.zip'):
         logger.error(f'did not find folder path mmapPath: {mmapPath}')
         return
 
     logger.info(f'opening stack widget path {mmapPath}')
-    stackWidgetWindow = qapp.loadStackWidget(mmapPath)
+    stackWidgetWindow = qapp.loadStackWidget(mmapPath, loadFile=False)  # we are loading a mmap, not a zip file
     # stackWidgetWindow = stackWidget(path=mmapPath)
 
     # get list of all stack widgets from app, keys are class of plugin

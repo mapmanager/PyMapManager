@@ -51,7 +51,8 @@ class LineAnnotationsCore(AnnotationsCore):
         logger.info(f'   -->> pivotDistance: {pivotDistance}')
 
         # self._buildDataFrame()
-        self._buildTimepoint()
+        logger.warning('abb 202508 removed call to _buildTimepoint')
+        # self._buildTimepoint()
 
         self._buildDataFrame()
 
@@ -246,7 +247,8 @@ class LineAnnotationsCore(AnnotationsCore):
 
         self.singleTimepoint.updateSegment(segmentId = segmentID, value=_segment)
 
-        self._buildTimepoint()
+        logger.warning('abb 202508 removed call to _buildTimepoint')
+        # self._buildTimepoint()
         self._buildDataFrame()
 
         # self._buildDataFrame()

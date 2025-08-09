@@ -273,7 +273,8 @@ class stack:
 
         # Not redoing add properly
         # CRITICAL FOR REDO !!!!!
-        self.getPointAnnotations()._buildTimepoint()  # rebuild single timepoint
+        # abb 202508 removed
+        # self.getPointAnnotations()._buildTimepoint()  # rebuild single timepoint
 
         if annotationType == "Spine":
             self.getPointAnnotations()._buildDataFrame()

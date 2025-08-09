@@ -625,7 +625,7 @@ class stackWidget(MainWindow):
             _pointSelection = _eventSelection.getPointSelection()
             _stackSelection.setPointSelection(_pointSelection)
 
-            logger.info(f'   === processing _pointSelection:{_pointSelection}')
+            # logger.info(f'   === processing _pointSelection:{_pointSelection}')
 
             if len(_pointSelection) == 1:
                 # check if event spine id exists

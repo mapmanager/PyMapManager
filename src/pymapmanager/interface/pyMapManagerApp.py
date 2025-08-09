@@ -763,7 +763,8 @@ class PyMapManagerApp(QtWidgets.QApplication):
             path = path[:-1]
 
         if loadFile and not canImportPath(path):
-            _errorStr = f'Incorrect file type, expecting one of :{acceptedExtensions()}'
+            _ext = os.path.split(path)[1]
+            _errorStr = f'Incorrect file type "{_ext}, expecting one of :{acceptedExtensions()}'
             logger.warning(_errorStr)
             window = self.activeWindow() 
             QtWidgets.QMessageBox.critical(window, "Error", _errorStr)
