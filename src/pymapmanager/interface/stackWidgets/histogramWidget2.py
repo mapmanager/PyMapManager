@@ -259,8 +259,8 @@ class _histogram(QtWidgets.QWidget):
     def _updateContrast(self, theMin, theMax):
         # set contrast in metadata
         if self.isRgb:
-            self._myStack.getChannelMetadata(self._channelIdx).setValue('minAutoContrast-rgb', theMin)
-            self._myStack.getChannelMetadata(self._channelIdx).setValue('maxAutoContrast-rgb', theMax)
+            self._myStack.getChannelMetadata(self._channelIdx).setValue('minAutoContrast_rgb', theMin)
+            self._myStack.getChannelMetadata(self._channelIdx).setValue('maxAutoContrast_rgb', theMax)
         else:
             self._myStack.getChannelMetadata(self._channelIdx).setUserContrast(theMin, theMax)
 
@@ -322,8 +322,8 @@ class _histogram(QtWidgets.QWidget):
         
         globalMin = 0
         if self.isRgb:
-            minContrast = _channelMetadata.getValue('minAutoContrast-rgb')
-            maxContrast = _channelMetadata.getValue('maxAutoContrast-rgb')
+            minContrast = _channelMetadata.getValue('minAutoContrast_rgb')
+            maxContrast = _channelMetadata.getValue('maxAutoContrast_rgb')
             globalMax = 256
         else:
             minContrast, maxContrast = _channelMetadata.getUserContrast()

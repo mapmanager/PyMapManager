@@ -64,7 +64,7 @@ class ImagePlotWidget(mmWidget2):
         """
         super().__init__(stackWidget)
         
-        self._myStack = stackWidget.getStack()
+        self._myStack: pymapmanager.stack = stackWidget.getStack()
         self._displayOptionsDict = stackWidget._displayOptionsDict
         
         self._currentSlice = 0
@@ -634,10 +634,11 @@ class ImagePlotWidget(mmWidget2):
 
     def _setContrast(self):
         if self._channelIsRGB():
+            logger.warning(f'TODO: hard coding min/max for rgb -->> fix')
             tmpLevelList = []  # list of [min,max]
             for channelIdx in self._myStack.getChannelKeys():
-                # oneMinContrast = self._myStack.contrast.getValue(channelIdx, 'minAutoContrast-rgb')
-                # oneMaxContrast = self._myStack.contrast.getValue(channelIdx, 'maxAutoContrast-rgb')
+                # oneMinContrast = self._myStack.contrast.getValue(channelIdx, 'minAutoContrast_rgb')
+                # oneMaxContrast = self._myStack.contrast.getValue(channelIdx, 'maxAutoContrast_rgb')
                 oneMinContrast = 0
                 oneMaxContrast = 200
 
@@ -659,8 +660,8 @@ class ImagePlotWidget(mmWidget2):
             self._myImage.setLevels(levelList, update=True)
 
         else:
-            logger.warning('abb turned off contrast, using auto contrast')
-            return
+            # logger.warning('abb turned off contrast, using auto contrast')
+            # return
             
             # one channel
             minUserContrast, maxUserContrast = \
@@ -694,7 +695,7 @@ class ImagePlotWidget(mmWidget2):
         TODO: get rid of doEmit, use _blockSlots
         """
         
-        logger.warning(f'xxx EXPENSIVE ONLY CALL ONCE sliceNumber:{sliceNumber} doEmit:{doEmit}')
+        # logger.warning(f'xxx EXPENSIVE ONLY CALL ONCE sliceNumber:{sliceNumber} doEmit:{doEmit}')
 
         if isinstance(sliceNumber, float):
             sliceNumber = int(sliceNumber)
@@ -707,58 +708,69 @@ class ImagePlotWidget(mmWidget2):
         upDownSlices = self._displayOptionsDict['windowState']['zPlusMinus']
 
         if self._channelIsRGB():
-            logger.warning('TODO: remove hard coded two channel assumption for rgb')
-            logger.warning('    use core loader channel metadata to get actual channel keys.')
+            logger.info(f'-->> setSlice rgb sliceNumber:{sliceNumber}')
+            # logger.warning('TODO: remove hard coded two channel assumption for rgb')
+            # logger.warning('    use core loader channel metadata to get actual channel keys.')
             
-            # ch1_image = self._myStack.getImageSlice(imageSlice=sliceNumber, channelIdx=0)
-            # ch2_image = self._myStack.getImageSlice(imageSlice=sliceNumber, channelIdx=1)
-            ch0_image = self._myStack.getMaxProjectSlice(sliceNumber,
-                                    channelIdx=1,
+            channelKeys = self._myStack.getChannelKeys()
+            
+            if len(channelKeys) < 2:
+                logger.error(f'Expected at least 2 channels for RGB, found {len(channelKeys)}')
+                return
+            
+            _shape = self._myStack.getMetadata().shape  # (z, y, x)
+            _xShape = _shape[2]
+            _yShape = _shape[1]
+            
+            # make the 3d slice we will return
+            sliceImage = np.zeros((_xShape,_yShape,3), dtype=np.uint8)
+
+            _redIdx = 0
+            _greenIdx = 1
+            _blueIdx = 2
+
+            maxImageDict = {}
+            channelColorDict = {}
+            for sliceChannel, channelKey in enumerate(channelKeys):
+                ch_image = self._myStack.getMaxProjectSlice(sliceNumber,
+                                    channelIdx=channelKey,
                                     upSlices=upDownSlices, downSlices=upDownSlices,
                                     func=np.max)
-            ch1_image = self._myStack.getMaxProjectSlice(sliceNumber,
-                                    channelIdx=2,
-                                    upSlices=upDownSlices, downSlices=upDownSlices,
-                                    func=np.max)
-            
-            # logger.info(f"check ch0_image min {ch1_image.min()} max {ch1_image.max()}")
-            
-            # rgb requires 8-bit images
-            ch0_image = ch0_image/ch0_image.max() * 2**8
-            ch1_image = ch1_image/ch1_image.max() * 2**8
+                # rgb requires 8-bit images
+                ch_image = ch_image/ch_image.max() * 2**8
+                ch_image = ch_image.astype(np.uint8)
+                
+                # here is where we need a user option for channel color
+                sliceImage[:,:,sliceChannel] = ch_image
 
-            ch0_image = ch0_image.astype(np.uint8)
-            ch1_image = ch1_image.astype(np.uint8)
+                maxImageDict[channelKey] = ch_image
             
-            # print('2) ch1_image:', ch1_image.shape, ch1_image.dtype)
-
-            _xShape = ch0_image.shape[0]
-            _yShape = ch0_image.shape[1]
-            sliceImage = np.ndarray((_xShape,_yShape,3))
+                # redundant, all channels have same shape
+                # _xShape = ch_image.shape[0]
+                # _yShape = ch_image.shape[1]
+            
+                _color = self._myStack.getChannelColor(channelKey)
+                _color = self.colorToHex(_color)
+                _color = to_rgb(_color)  # for ch0_image
+                channelColorDict[channelKey] = _color
             
             # # magenta is blue + red
             # sliceImage[:,:,0] = ch1_image  # red
             # sliceImage[:,:,1] = ch0_image  # green
             # sliceImage[:,:,2] = ch1_image  # blue
 
-            # Get first two channel colors
-            color0 = self._myStack.getChannelColor(1)
-            color1 = self._myStack.getChannelColor(2)
-
-            color0 = self.colorToHex(color0)
-            color1 = self.colorToHex(color1)
-            logger.info(f"color0 {color0} color1 {color1}")
-
-            # Convert hex color to RGB arrays
-            rgb0 = to_rgb(color0)  # for ch0_image
-            rgb1 = to_rgb(color1)  # for ch1_image
-
             brightness_factor = 2
             for i in range(3):  # R, G, B
+                # channelKeys is a list (we don't care if it is [int] or [str])
+                if i == 2:
+                    _channelKey = channelKeys[1]
+                else:
+                    _channelKey = channelKeys[i]
+
                 sliceImage[:,:,i] = (
                     brightness_factor *
-                    (ch0_image * (rgb0[i])) + 
-                    (ch1_image * (rgb1[i])) * i 
+                    (maxImageDict[_channelKey] * (channelColorDict[_channelKey][0])) + 
+                    (maxImageDict[_channelKey] * (channelColorDict[_channelKey][1])) * i 
                 ).clip(0, 255).astype(np.uint8)
 
         else:

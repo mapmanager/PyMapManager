@@ -354,7 +354,7 @@ class StackToolBar(QtWidgets.QToolBar):
     def setCurrentChannel(self, channelIdx):
         """ set current channel selected
         """
-        logger.info(f"setCurrentChannel {channelIdx}")
+        logger.info(f"setCurrentChannel {channelIdx} {type(channelIdx)}")
         self._currentChannel = channelIdx
 
     def getCurrentChannel(self):

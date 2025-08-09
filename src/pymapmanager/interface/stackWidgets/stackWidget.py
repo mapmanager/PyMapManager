@@ -1346,10 +1346,12 @@ class stackWidget(MainWindow):
         # refresh stackToolBar
         self._topToolbar._setStack(theStack=self._stack)
 
-        _pmmEvent = pmmEvent(pmmEventType.setColorChannel, self)
-        _pmmEvent.setColorChannel(newChannelNum)
-        self.setColorChannelEvent(_pmmEvent) # chooses it in toptool bar
-        self.slot_setChannel(newChannelNum) # actually changes image in imageplotwidget
+        # abb 20250808
+        if newChannelNum is not None:
+            _pmmEvent = pmmEvent(pmmEventType.setColorChannel, self)
+            _pmmEvent.setColorChannel(newChannelNum)
+            self.setColorChannelEvent(_pmmEvent) # chooses it in toptool bar
+            self.slot_setChannel(newChannelNum) # actually changes image in imageplotwidget
     
     def deleteChannel(self, channelIdx):
         """ Delete channel in backend
@@ -1366,7 +1368,8 @@ class stackWidget(MainWindow):
             _imagePlotWidget = self._widgetDict[self._imagePlotName]
             _imagePlotWidget.hide()
 
-        currentChannel = self._topToolbar.getCurrentChannel() # top tool bar is 1 based, incoming channelIdx is 0
+        # top tool bar is 1 based, incoming channelIdx is 0
+        currentChannel = self._topToolbar.getCurrentChannel()
         logger.info(f"currentChannel {currentChannel}")
         logger.info(f"channelIdx {channelIdx}")
 

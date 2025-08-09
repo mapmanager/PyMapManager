@@ -43,7 +43,7 @@ class stack:
         self.getImageSlice(0, defaultChannelIdx)
     
     def importChannels(self, importPath: str):
-        """Import channels from a .mmap file.
+        """Import channels from a file.
         
         Parameters
         ----------
@@ -54,7 +54,7 @@ class stack:
         
         # import channels from another .mmap file
         # this will add channels to the current timepoint
-        self._fullMap.importChannels(importPath, self)
+        self._fullMap.importChannels(importPath, self.timepoint)
 
         # important (this refreshes timepoint for new aggregate columns)
         self.getPointAnnotations().updateChannel()
@@ -105,7 +105,7 @@ class stack:
     def getTimeSeriesCore(self) -> pymapmanager.TimeSeriesCore:
         return self._fullMap
 
-    def getMetadata(self) -> TimepointMetadata:  #Metadata:
+    def getMetadata(self) -> TimepointMetadata:
         """Get metadata from the core map.
         """
         return self._fullMap.getTimepointMetadata(self.timepoint)
@@ -191,7 +191,7 @@ class stack:
     
     def getMaxProjectSlice(self, 
                             imageSlice : int, 
-                            channelIdx : int = 1, 
+                            channelIdx : int, 
                             upSlices : int = 1, 
                             downSlices : int = 1,
                             func = np.max
@@ -205,7 +205,12 @@ class stack:
             downSlices:
             func: Reference to np funtion to use like np.max
         """
-
+        # make sure we have channelId in metadata
+        if channelIdx not in self.getChannelKeys():
+            logger.error(f'channelIdx {channelIdx} not in channel keys {self.getChannelKeys()}')
+            return None
+        
+        # make sure imageSlice is an integer
         if not isinstance(imageSlice, int):
             #logger.warning('not an integer, converting')
             imageSlice = int(imageSlice)
@@ -294,7 +299,7 @@ class stack:
     def getLastSaveTime(self):
         return self._fullMap.getLastSaveTime()
 
-    def getChannelKeys(self) -> List[int]:
+    def getChannelKeys(self) -> list[int]:
         """Get list of channel keys.
         """
         return self.getMetadata().channelKeys

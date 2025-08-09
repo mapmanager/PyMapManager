@@ -347,7 +347,7 @@ class TimeSeriesCore():
         # elif isinstance(self._fullMap._images, MultiImageLoader):
         #     self._fullMap.loader.appendChannels(importPath, time)
         
-        logger.warning('abb imageImport')
+        logger.warning(f'abb imageImport importPath {importPath} time:{time}')
         channelNum = self._fullMap.loader.importChannel(importPath, time)
         if channelNum is not None:
             return channelNum
