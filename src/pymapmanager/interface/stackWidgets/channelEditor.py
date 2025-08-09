@@ -1,21 +1,16 @@
 
 from functools import partial
-# from tkinter import Image
-from PyQt5 import QtGui
-from qtpy import QtWidgets, QtCore
-from PIL import Image
+from qtpy import QtWidgets, QtCore, QtGui
 
 from pymapmanager._logger import logger
 
 from pymapmanager.interface.stackWidgets.base.mmWidget2  import mmWidget2
-from PyQt5.QtCore import Qt, QPoint
-
-# from pymapmanager.interface.openFirstWindow import DragAndDropWidget
+from pymapmanager.interface.stackWidgets.stackWidget import stackWidget
 
 class ChannelEditor(mmWidget2):
     _widgetName = 'Channel Editor'
 
-    def __init__(self, stackWidget):
+    def __init__(self, stackWidget:stackWidget):
         """Widget to edit/ rearrange channels in each time point
         """
         super().__init__(stackWidget)
@@ -84,15 +79,18 @@ class ChannelEditor(mmWidget2):
                 # Diplaying channel as seen in the row rather than actual index in backend
                 self.gridLayout.addWidget(QtWidgets.QLabel(str(self.totalChannelsShown)), self.totalChannelsShown, 0)
 
-                self.gridLayout.addWidget(DraggableWidget(str(channelKey),
-                                                          self.totalChannelsShown, 1,
-                                                          self, name = "widget " + 
-                                                str(channelKey), 
-                                                stackWidget = self.stackWidget,
-                                                channelIdx = channelKey),
-                                                self.totalChannelsShown, 1)
+                userChannelName = self.stackWidget.getStack().getChannelMetadata(channelKey).getValue('name')
+
+                self.gridLayout.addWidget(DraggableWidget(userChannelName,
+                                                          self.totalChannelsShown,
+                                                          1,
+                                                          self,
+                                                          name = "widget " + str(channelKey),
+                                                            stackWidget = self.stackWidget,
+                                                            channelIdx = channelKey),
+                                                            self.totalChannelsShown,
+                                                            1)
                 
-                                                # ), channelKey + 1, 1)
 
                 
                 # --- Activate Box for all channels ---
@@ -132,7 +130,7 @@ class ChannelEditor(mmWidget2):
                     pixmapi = getattr(QtWidgets.QStyle, "SP_TrashIcon")
                     icon = self.style().standardIcon(pixmapi)
                     deleteButton.setIcon(icon)
-                    deleteButton.clicked.connect(partial(self.on_button_click, channelKey))
+                    deleteButton.clicked.connect(partial(self.on_delete_button, channelKey))
                 
                 # lastChannelIdx = channelIdx
     
@@ -192,7 +190,7 @@ class ChannelEditor(mmWidget2):
         self._stackWidget.loadInNewChannel(path = tifFile)
         self.refreshGUI()
 
-    def on_button_click(self, channelIdx):
+    def on_delete_button(self, channelIdx):
         print("Button clicked!, ", channelIdx)
         # prevChannel = self._listOfChannelIdx[0]
         self.stackWidget.deleteChannel(channelIdx)    
@@ -294,7 +292,7 @@ class ImportChannelWidget(QtWidgets.QWidget):
         hLayout = QtWidgets.QHBoxLayout()
 
         # missingChannelLabel = QtWidgets.QLabel('Missing Channel', self)
-        openFileButton = QtWidgets.QPushButton('Open File')
+        openFileButton = QtWidgets.QPushButton('Import File')
         pixmapi = getattr(QtWidgets.QStyle, "SP_FileDialogToParent")
         icon = self.style().standardIcon(pixmapi)
         openFileButton.setIcon(icon)
@@ -331,8 +329,13 @@ class ImportChannelWidget(QtWidgets.QWidget):
             self.importChannel(self.channelIdx, tifFile)
 
 class DraggableWidget(QtWidgets.QWidget):
-    def __init__(self, text: str, row, column, parent=None, name = None, 
-                 stackWidget = None, channelIdx = None):
+    def __init__(self,
+                 text: str,  # the user set name of the channel image
+                 row, column,
+                 parent=None,
+                 name = None, 
+                 stackWidget = None,
+                 channelIdx = None):
         
         """ Draggable widget
         - shows and allows for editing of the name of the channel image
@@ -342,7 +345,7 @@ class DraggableWidget(QtWidgets.QWidget):
         Note: name was for testing purposes only
 
         Args:
-            text - Name of file
+            text - The user set name of the channel image
             row - row within grid layout
             column - column within gridlayout
             parent = Channel editor
@@ -409,8 +412,9 @@ class DraggableWidget(QtWidgets.QWidget):
 
     def mousePressEvent(self, event):
         """Store the initial position of the mouse."""
-        logger.info(f"test")
-        if event.button() == Qt.LeftButton:
+        _leftMouseButton = event.button() == QtCore.Qt.LeftButton
+        logger.info(f"_leftMouseButton {event.button()}")
+        if _leftMouseButton:
             self._drag_position = event.pos()
             # self.mousePos = self._drag_position
             event.accept()
@@ -428,9 +432,11 @@ class DraggableWidget(QtWidgets.QWidget):
 
     def mouseMoveEvent(self, event):
         """Move the widget as the mouse moves."""
-        # logger.info(f"test 2")
         
-        if event.buttons() & Qt.LeftButton:  # Check if the left button is held down
+        # if event.buttons() & Qt.LeftButton:  # Check if the left button is held down
+        _leftMouseButton = event.buttons() & QtCore.Qt.LeftButton
+        # logger.info(f"_leftMouseButton {_leftMouseButton}")
+        if _leftMouseButton:
             if self._drag_position:
                 # logger.info(f"test 2")
                 # record mouse position relative to parent 
@@ -504,6 +510,11 @@ class DraggableWidget(QtWidgets.QWidget):
         if self.lock is False:
             return
         
+        # swap in backend
+        logger.info(f"swapDraggableWidget srcChannel {self.channelIdx} destChannel {widgetUnderCursor.getChannelIdx()}")
+        self.stackWidget.swapChannels(srcChannel = self.channelIdx, 
+                                      destChannel = widgetUnderCursor.getChannelIdx())
+
         self.parent.getGridLayout().removeWidget(self)
         self.parent.getGridLayout().addWidget(self, widgetUnderCursor.getRow(), widgetUnderCursor.getColumn())
 
@@ -525,14 +536,9 @@ class DraggableWidget(QtWidgets.QWidget):
 
         self.lock = False
 
-        # add logic to swap in backend
-        # already knows time point, srcChannel, destChannel 
-        logger.info(f"swapDraggableWidget srcChannel {self.channelIdx} destChannel {widgetUnderCursor.getChannelIdx()}")
-        self.stackWidget.swapChannels(srcChannel = self.channelIdx, 
-                                      destChannel = widgetUnderCursor.getChannelIdx())
 
     def updateChannelName(self, newChannelName: str = ""):
-        self.stackWidget.updateChannel(newChannelName, channelIdx = self.getChannelIdx())
+        self.stackWidget.updateChannelName(newChannelName, channelIdx = self.getChannelIdx())
 
 class ColorPicker(QtWidgets.QWidget):
     def __init__(self, initialColor, channelIdx, stackWidget):

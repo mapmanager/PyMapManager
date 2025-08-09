@@ -12,7 +12,8 @@ class LineAnnotationsCore(AnnotationsCore):
         # self.getMapSegments().newSegment(self.timepoint)
         newSegmentID = self.singleTimepoint.newSegment()
         logger.info(f'created newSegmentID:{newSegmentID}')
-        self._buildTimepoint()
+        # abb removed
+        # self._buildTimepoint()
         self._buildDataFrame()
         self._setDirty(True) #abb
         return newSegmentID
@@ -223,10 +224,13 @@ class LineAnnotationsCore(AnnotationsCore):
         # return self._df
     
     def getNumSegments(self) -> int:
-        if self._singleTimePoint.segments[:] is None:
-            return 0
-        else:
-            return len(self._singleTimePoint.segments[:])
+        # abb 202508
+        return len(self._summaryDf)
+    
+        # if self._singleTimePoint.segments[:] is None:
+        #     return 0
+        # else:
+        #     return len(self._singleTimePoint.segments[:])
 
     # abb this needs to be specifically for 'radius'
     def setValue(self, colName, segmentID, value):

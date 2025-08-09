@@ -42,6 +42,66 @@ class stack:
         # get the first image slice from defaultChannelIdx
         self.getImageSlice(0, defaultChannelIdx)
     
+    def importChannels(self, importPath: str):
+        """Import channels from a .mmap file.
+        
+        Parameters
+        ----------
+        importPath : str
+            Path to the file to import (like .tif)
+        """
+        logger.info(f"importing channels from {importPath}")
+        
+        # import channels from another .mmap file
+        # this will add channels to the current timepoint
+        self._fullMap.importChannels(importPath, self)
+
+        # important (this refreshes timepoint for new aggregate columns)
+        self.getPointAnnotations().updateChannel()
+
+    def deleteChannel(self, channelIdx: int):
+        """Delete a channel from the stack.
+        
+        Parameters
+        ----------
+        channelIdx : int
+            Channel index to delete, one based.
+        """
+        logger.info(f"deleting channel {channelIdx}")
+        self._fullMap.deleteChannel(self.timepoint, channelIdx)
+
+        # rebuild point annotations dataframe
+        self.getPointAnnotations()._buildDataFrame()
+
+    def swapChannels(self, srcChannel: int, destChannel: int):
+        """Swap two channels in the stack.
+        
+        Parameters
+        ----------
+        srcChannel : int
+            Source channel index, one based.
+        destChannel : int
+            Destination channel index, one based.
+        """
+        logger.info(f"swapping channels {srcChannel} and {destChannel}")
+        # self._fullMap.swapChannels(self.timepoint, srcChannel, destChannel)
+        _swapped = self.getMetadata().swapChannels(srcChannel, destChannel)
+        logger.info(f'  swapped channels: {srcChannel} and {destChannel} result: {_swapped}')
+
+    def updateChannelName(self, channelIdx: int, newChannelName: str):
+        """Update the name of a channel in the stack.
+        
+        Parameters
+        ----------
+        channelIdx : int
+            Channel index to update, one based.
+        newChannelName : str
+            New name for the channel.
+        """
+        logger.info(f"updating channel {channelIdx} to {newChannelName}")
+        _ok = self.getMetadata().setChannelProperty(channelIdx, 'name', newChannelName)
+        logger.info(f'  updated channel {channelIdx} to {newChannelName} result: {_ok}')
+
     def getTimeSeriesCore(self) -> pymapmanager.TimeSeriesCore:
         return self._fullMap
 

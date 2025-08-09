@@ -354,55 +354,13 @@ class TimeSeriesCore():
         else:
             logger.error(f"importValid was not valid")
 
-    def _old_loadInNewChannel(self, path: Union[str, np.ndarray], time: int = 0, channel: int = 1):
-        """ Call loadInNewChannel in backend MapManagerCore
+    def deleteChannel(self, tp, channelIdx):
+        logger.info(f"deleting channel tp:{tp} channelIdx:{channelIdx}")
+        # self._fullMap._images.deleteChannel(time = tp, channel = channelIdx)
+        # self._fullMap._images.deleteChannel(tp, channelIdx)
+        _deleted = self._fullMap.deleteChannel(timepoint=tp, channel=channelIdx)
 
-        args:
-            path
-            time
-            channel: if channel = None, then backend will automatically increment it
-        """
-
-        # totalChannels = self._imagesCore.getTotalChannels()
-        # logger.info(f"before total channel in timeseriescore: {totalChannels}")
-
-        logger.info(f" type of self._fullMap {type(self._fullMap)}")
-        # class 'mapmanagercore.annotations.mutation.AnnotationsBaseMut
-        # self._fullMap.loadInNewChannel(path, time, channel)
-
-        # create new imageloader with new image
-        # merge into previous image map
-
-        # For Tif (MultiImageLoader)
-        logger.info(f"self._fullMap._images {type(self._fullMap._images)}")
-
-        if isinstance(self._fullMap._images, ZarrLoader):
-            # For Zarr Loader
-            logger.info(f"path {path} channel check {channel}, time {time}")
-            newImageLoader = MultiImageLoader()
-            # newImageLoader.read(path, time=time, channel=channel)
-            newImageLoader.read(path, time=time, channel=channel, name=None)
-            self._fullMap.merge(newImageLoader)
-
-        elif isinstance(self._fullMap._images, MultiImageLoader):
-            self._fullMap._images.read(path, time=time, channel=channel)
-
-        # For Zarr Loader
-        # logger.info(f"path {path} channel check {channel}, time {time}")
-        # newImageLoader = MultiImageLoader()
-        # # newImageLoader.read(path, time=time, channel=channel)
-        # newImageLoader.read(path, time=time, channel=channel, name=None)
-        # self._fullMap.merge(newImageLoader)
-
-        # totalChannels = self._imagesCore.getTotalChannels()
-        # logger.info(f"after total channel in timeseriescore: {totalChannels}")
-
-    # def getImagesCoreTotalChannels(self, tp):
-    #     """ Get total number of channels loaded within Images core
-    #     """
-    #     return self._imagesCore.getTotalChannels(tp)
-    
-    def swapChannels(self, tp, srcChannel, destChannel):
+    def _old_swapChannels(self, tp, srcChannel, destChannel):
         """
         """
 
@@ -416,31 +374,16 @@ class TimeSeriesCore():
         # srcTimePoint: int, srcChannel: int, destTimePoint: int, destChannel: int)
         self._fullMap._images.moveChannel(srcTimePoint = tp, srcChannel = srcChannel, 
                                   destTimePoint = tp, destChannel = destChannel)
-    
-    # DEFUNCT
-    # def updateChannel(self, tp, channelIdx, newChannelName: str):
-    #     """
-    #     """
 
-    #     # dict uses one based indexing
-    #     updateDict = {"name" : newChannelName,
-    #                     "timePoint": tp + 1, #
-    #                     "channel": channelIdx + 1
-    #                     }
-    #     self._fullMap._images.updateChannel(timePoint = tp, channel = channelIdx, updates = updateDict)
 
-    def updateChannel(self, tp, channelIdx, newChannelName: str):
+    def _old_updateChannel(self, tp, channelIdx, newChannelName: str):
         """
         """
-        logger.info(f"update channel name")
-        self._fullMap._images.updateChannel(timepointIdx = tp, channelIdx = channelIdx, 
+        logger.info(f"update channel name tp:{tp} channelIdx:{channelIdx} newChannelName:{newChannelName}")
+        self._fullMap._images.updateChannel(timepointIdx = tp,
+                                            channelIdx = channelIdx, 
                                             channelProperty = "name", 
                                             propertyValue = newChannelName)
-
-    def deleteChannel(self, tp, channelIdx):
-        logger.info(f"deleting channel")
-        # self._fullMap._images.deleteChannel(time = tp, channel = channelIdx)
-        self._fullMap._images.deleteChannel(tp, channelIdx)
 
     def activateChannel(self, tp, channelIdx, activateBool):
         logger.info(f"activating channel {channelIdx}")
@@ -448,15 +391,7 @@ class TimeSeriesCore():
         # images = mmMapLoader
         self._fullMap._images.activateChannel(tp, channelIdx, activateBool)
 
-    def _old_validateNewChannel(self, newTifPath, tp):
-        """ Call validateImageSize in mapmanagercore backend
-
-        Returns true or false
-        """
-
-        return self._fullMap._images.validateImageSize(newTifPath, tp)
-    
-    def moveChannel(self, tp, srcChannel, destChannel):
+    def _old_moveChannel(self, tp, srcChannel, destChannel):
         """ call moveChannel in mapmanagercore backend
 
         Returns true or false

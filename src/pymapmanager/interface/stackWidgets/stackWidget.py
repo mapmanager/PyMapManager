@@ -107,6 +107,7 @@ class stackWidget(MainWindow):
     def getTimeSeriesCore(self):
         return self._stack.getTimeSeriesCore()
     
+    # abb this is confusing, this is really for a map
     @property
     def numSessions(self):
         return self.getTimeSeriesCore().numSessions
@@ -1336,129 +1337,20 @@ class stackWidget(MainWindow):
         else:
             importPath = path
 
-        time = self.getStack().timepoint
-
-        useImageImporter = True
-        if useImageImporter:
-            logger.info(f"importing New channel")
-            # new version 202504
-            newChannelNum = self.getTimeSeriesCore().importChannels(importPath, time=time)
-
-        # else:
-        #     # old version
-        #     # check to ensure it is a tif file, Note: might need to expand to list of supported files
-        #     _path, _ext = os.path.splitext(importPath)
-        #     if _ext not in IMPORT_FILE_EXTENSIONS:
-        #         logger.error(f'import must have extension "{IMPORT_FILE_EXTENSIONS}", got "{_ext}" -->> did not load.')
-        #         QtWidgets.QMessageBox.critical(self, "Error: Incorrect Extension", "Please use .tif as the file extension to save")
-        #         return
-
-        #     # # Get old tif path
-        #     stackHeader = self.getStack().header
-        #     x = stackHeader["xPixels"]
-        #     y = stackHeader["yPixels"]
-        #     z = stackHeader["numSlices"]
-        #     # if newImgHeight != y or newImgWidth != x or newImgSlices != z:
-        #     #     logger.error(f'Incorrect shape when loading in new image.')
-        #     #     QtWidgets.QMessageBox.critical(self, "Error: Incorrect Image Size", 
-        #     #                                    f"Please upload an image with size x: {x}, y: {y}, z: {z} ")
-        #     #     return
-
-        #     isImgValid = self.getTimeSeriesCore().validateNewChannel(importPath, time)
-
-        #     if not isImgValid:
-        #         logger.error(f'Incorrect shape when loading in new image.')
-        #         QtWidgets.QMessageBox.critical(self, "Error: Incorrect Image Size", 
-        #                                     f"Please upload an image with size x: {x}, y: {y}, z: {z} ")
-        #         return
-
-        #     if channel is None:
-        #         # channel = self._stack.getTimeSeriesTotalChannels() # len of total channels = new channel, since it is 0 based
-        #         channel = self._stack.numChannels
-
-        #     logger.info(f"channel num {channel}")
-        #     self.getTimeSeriesCore().loadInNewChannel(importPath, time=time, channel=channel)
+        logger.info(f"importing New channel")
+        # new version 202504
+        newChannelNum = self.getStack().importChannels(importPath)
 
         # abb TODO make a signalChannelUpdate for add/remove/edit (channel name)
         
         # refresh stackToolBar
         self._topToolbar._setStack(theStack=self._stack)
 
-        # update channel editor widget
-        # _pmmEvent = pmmEvent(pmmEventType.importNewChannel, self)
-        # self.emitEvent(_pmmEvent)
-
         _pmmEvent = pmmEvent(pmmEventType.setColorChannel, self)
         _pmmEvent.setColorChannel(newChannelNum)
         self.setColorChannelEvent(_pmmEvent) # chooses it in toptool bar
         self.slot_setChannel(newChannelNum) # actually changes image in imageplotwidget
-
-        # abj: update backend 
-        # self.getPointDataFrame()
-        _pointAnnotations = self.getStack().getPointAnnotations()
-        _pointAnnotations.updateChannel() # important (this refreshes timepoint for new aggregate columns)
-
-        # numChannels = self.getTimeSeriesCore().getImagesCoreTotalChannels(timePoint)
-        logger.warning('abb turned off abj code, not sure the purpose ???')
-        # numChannels = self._stack.numChannels
-        # logger.info(f"numChannels {numChannels}")
-        # if numChannels > 0:
-        #     logger.info("showing channels")
-        #     _imagePlotWidget = self._widgetDict[self._imagePlotName]
-        #     _imagePlotWidget.show()
     
-    # # abb depreciate, not used
-    # def showConfirmationDialog(self, fileDimensions):
-    #     # Create a confirmation dialog with "Yes" and "No" buttons
-    #     x,y,z = fileDimensions
-    #     reply = QtWidgets.QMessageBox.question(self, 'Confirm Import', f"Image of Size: ({x}, {y}),  Slices: {z}",
-    #                                  QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No)
-        
-    #     if reply == QtWidgets.QMessageBox.Yes:
-    #         return True
-    #     else:
-    #         print("Canceled!")
-    #         return False
-
-    def swapChannels(self, srcChannel, destChannel):
-        """ Call mapmanagercore to swap channels
-        # Stack already knows time point so pass that it
-        """
-
-        timePoint = self._stack.timepoint
-        self.getTimeSeriesCore().swapChannels(timePoint, srcChannel, destChannel)
-
-        # Update image
-        _imagePlotWidget = self._widgetDict[self._imagePlotName]
-        _imagePlotWidget.refreshSlice()
-
-        # reset stackToolBar
-        self._topToolbar._setStack(theStack=self._stack)
-
-        # reset stack Contrast
-        # self._stack.resetStackContrast()
-
-        # update channel editor widget
-        _pmmEvent = pmmEvent(pmmEventType.importNewChannel, self)
-        self.emitEvent(_pmmEvent)
-
-        # select dest Channel
-        _pmmEvent = pmmEvent(pmmEventType.setColorChannel, self)
-        _pmmEvent.setColorChannel(destChannel)
-        self.setColorChannelEvent(_pmmEvent) # chooses it in toptool bar
-        self.slot_setChannel(destChannel) # actually changes image in imageplotwidget
-
-    def updateChannel(self, newChannelName, channelIdx):
-        """ Update channel name in backend
-        """
-        timePoint = self._stack.timepoint
-        self.getTimeSeriesCore().updateChannel(timePoint, channelIdx, newChannelName)
-
-        # # refresh backend
-        # _pointAnnotations = self.getStack().getPointAnnotations()
-        # _pointAnnotations.updateChannel()
-     
-
     def deleteChannel(self, channelIdx):
         """ Delete channel in backend
 
@@ -1466,11 +1358,9 @@ class stackWidget(MainWindow):
             channelIdx: Channel number that is being deleted
         """
 
-        timePoint = self._stack.timepoint
-        self.getTimeSeriesCore().deleteChannel(timePoint, channelIdx)
+        self.getStack().deleteChannel(channelIdx)
 
         # reset image for 1 channel delete
-        # numChannels = self.getTimeSeriesCore().getImagesCoreTotalChannels(timePoint)
         numChannels = self._stack.numChannels
         if numChannels <= 0:
             _imagePlotWidget = self._widgetDict[self._imagePlotName]
@@ -1492,6 +1382,47 @@ class stackWidget(MainWindow):
         # reset stack Contrast
         # self._stack.resetStackContrast()
 
+    def swapChannels(self, srcChannel, destChannel):
+        """ Call mapmanagercore to swap channels
+        # Stack already knows time point so pass that it
+        """
+        self.getStack().swapChannels(srcChannel, destChannel)
+
+        # timePoint = self._stack.timepoint
+        # self.getTimeSeriesCore().swapChannels(timePoint, srcChannel, destChannel)
+
+        # Update image
+        _imagePlotWidget = self._widgetDict[self._imagePlotName]
+        _imagePlotWidget.refreshSlice()
+
+        # reset stackToolBar
+        self._topToolbar._setStack(theStack=self._stack)
+
+        # reset stack Contrast
+        # self._stack.resetStackContrast()
+
+        # update channel editor widget
+        _pmmEvent = pmmEvent(pmmEventType.importNewChannel, self)
+        self.emitEvent(_pmmEvent)
+
+        # select dest Channel
+        _pmmEvent = pmmEvent(pmmEventType.setColorChannel, self)
+        _pmmEvent.setColorChannel(destChannel)
+        self.setColorChannelEvent(_pmmEvent) # chooses it in toptool bar
+        self.slot_setChannel(destChannel) # actually changes image in imageplotwidget
+
+    def updateChannelName(self, newChannelName, channelIdx):
+        """ Update channel name in backend
+        """
+        self._stack.updateChannelName(channelIdx, newChannelName)
+
+        # timePoint = self._stack.timepoint
+        # self.getTimeSeriesCore().updateChannel(timePoint, channelIdx, newChannelName)
+
+        # # refresh backend
+        # _pointAnnotations = self.getStack().getPointAnnotations()
+        # _pointAnnotations.updateChannel()
+     
     def selectNextChannel(self, channelIdx):
         """ Select next available channel within toptoolbar and emit the change to the rest of the widgets
         - this is primarily done after deleting a channel
@@ -1526,7 +1457,7 @@ class stackWidget(MainWindow):
             self.getStack().getLineAnnotations().setValue('color', segmentID, newSegmentColor)
 
     # abj
-    def moveChannel(self, srcChannel, destChannel):
+    def _old_moveChannel(self, srcChannel, destChannel):
         """ call getTimeSeriesCore to move channel (change channel indexing in backend)
 
         Args:

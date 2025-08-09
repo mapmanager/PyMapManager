@@ -38,22 +38,24 @@ class AnnotationsCore:
         self._timepoint = timepoint
 
         # self._singleTimePoint = self._buildTimepoint()
-        self._buildTimepoint()
+        # self._buildTimepoint()
 
         self._df = None
         self._isDirty = False #abj
 
         self._buildDataFrame()
     
-    def _buildTimepoint(self):
-        """Build single timepoint by calling getTimepoint(timepoint).
-        """
-        logger.warning(f'building SingleTimePointAnnotations {self.getClassName()}')
-        self._singleTimePoint : SingleTimePointAnnotations = self._fullMap.getTimepoint(self._timepoint)
+    # def _buildTimepoint(self):
+    #     """Build single timepoint by calling getTimepoint(timepoint).
+    #     """
+    #     logger.warning(f'building SingleTimePointAnnotations {self.getClassName()}')
+    #     self._singleTimePoint : SingleTimePointAnnotations = self._fullMap.getTimepoint(self._timepoint)
 
+    # abb 202508, now rebuilding each time???
     @property
     def singleTimepoint(self) -> SingleTimePointAnnotations:
-        return self._singleTimePoint
+        return self._fullMap.getTimepoint(self._timepoint)
+        # return self._singleTimePoint
     
     # def getMapPoints(self):
     #     return self._fullMap.getMapPoints()
