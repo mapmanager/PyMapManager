@@ -54,16 +54,14 @@ class pmmEventType(Enum):
     autoConnectSpine = auto()
 
     setSlice = auto()
-    setColorChannel = auto()
     
     setRadius = auto() # abj
+
     updateChannelMetadata = auto()
+    setColorChannel = auto()  # when user chooses channel (1,2,3,rgb,...)
 
     # added to refresh gui after modifying the core with undo and redo
     refreshSpineEvent = auto()
-
-    # undoSpineEvent = auto()
-    # redoSpineEvent = auto()
 
     # abj 
     undoEvent = auto() # for both spines and segments
@@ -75,13 +73,14 @@ class pmmEventType(Enum):
     deleteSegment = auto()
     addSegmentPoint = auto()
     deleteSegmentPoint = auto()
-
-    # setPivotPoint = auto() # abj
-    importNewChannel = auto() # abj
     setSegmentPivot = auto() # abj
+    setSegmentColor = auto()
+
     moveBackgroundRoi = auto()
 
-    setSegmentColor = auto()
+    # abb 202508, one event for all channel edits(import, delete, swap, set name, set color LUT)
+    editChannel = auto()
+    importNewChannel = auto() # abj, abb 202508 TODO: depreciate
 
     @property
     def category(self):
@@ -918,7 +917,7 @@ class mmWidget2(QtWidgets.QMainWindow):
 
         elif event.type == pmmEventType.redoEvent:
             
-            logger.info(f"test redo")
+            # logger.info(f"test redo")
             acceptEvent = self.redoEvent(event)
 
         # abb 20240906
@@ -934,7 +933,7 @@ class mmWidget2(QtWidgets.QMainWindow):
             acceptEvent = self.addedEvent(event)
 
         elif event.type == pmmEventType.delete:
-            logger.info(f"test delete")
+            # logger.info(f"test delete")
             acceptEvent = self.deletedEvent(event)
         
         elif event.type == pmmEventType.edit:
@@ -960,9 +959,6 @@ class mmWidget2(QtWidgets.QMainWindow):
         elif event.type == pmmEventType.setSlice:
             acceptEvent = self.setSliceEvent(event)
         
-        elif event.type == pmmEventType.setColorChannel:
-            acceptEvent = self.setColorChannelEvent(event)
-
         # elif event.type == pmmEventType.undoSpineEvent:
         #     acceptEvent = self.undoEvent(event)
         # elif event.type == pmmEventType.redoSpineEvent:
@@ -971,10 +967,18 @@ class mmWidget2(QtWidgets.QMainWindow):
         #abj
         elif event.type == pmmEventType.setRadius:
             acceptEvent = self.setRadiusEvent(event)
+
+        # abb 202508 add ChannelEditEvent()
+        # for import channel, delete channel, swap channel,set name, set color LUT
+        elif event.type == pmmEventType.editChannel:
+            acceptEvent = self.editChannelEvent(event)
+
+        # not used?
         elif event.type == pmmEventType.updateChannelMetadata:
             acceptEvent = self.updateChannelMetadataEvent(event)
+        elif event.type == pmmEventType.setColorChannel:
+            acceptEvent = self.setColorChannelEvent(event)
 
-        # abb 20240716
         # segment events
         elif event.type == pmmEventType.addSegment:
             # stack widget needs to select new segment
@@ -1327,6 +1331,11 @@ class mmWidget2(QtWidgets.QMainWindow):
         # logger.warning(f'{self.getClassName()} base class called')
         pass
 
+    # channel event
+    def editChannelEvent(self, event : pmmEvent):
+        pass
+    
+    # TODO: depreciate
     def updateChannelMetadataEvent(self, event: pmmEvent):
         pass
 

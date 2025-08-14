@@ -280,6 +280,8 @@ class TimeSeriesCore():
         """
         path = self.path
 
+        logger.info(f'importing from path ... mmMapLoader ... MapAnnotations: {path}')
+
         from mapmanagercore.lazy_geo_pd_images.loader.mm_map_loader import mmMapLoader
         loader = mmMapLoader()
         loader.importTimepoint(path)
@@ -340,12 +342,15 @@ class TimeSeriesCore():
 
     # abb imageImport can we just always have a
     # zarr loader or a MultiImageLoader (not both)
-    def importChannels(self, importPath:str, time:int):
-        # if isinstance(self._fullMap._images, ZarrLoader):
-        #     logger.error('abb NOT IMPLEMENTED for ZarrLoader')
-        #     # self._fullMap._images.read(path, time=time, channel=channel)
-        # elif isinstance(self._fullMap._images, MultiImageLoader):
-        #     self._fullMap.loader.appendChannels(importPath, time)
+    def importChannels(self, importPath:str, time:int) -> int | None:
+        """Import and append a channel from path.
+        
+        Can fail if the file is not valid.
+
+        Returns:
+            int: The channel number of the new channel.
+            None: If the import failed.
+        """
         
         logger.warning(f'abb imageImport importPath {importPath} time:{time}')
         channelNum = self._fullMap.loader.importChannel(importPath, time)
@@ -354,11 +359,12 @@ class TimeSeriesCore():
         else:
             logger.error(f"importValid was not valid")
 
-    def deleteChannel(self, tp, channelIdx):
+    def deleteChannel(self, tp, channelIdx) -> bool:
+        """Delete a channel from the stack.
+        """
         logger.info(f"deleting channel tp:{tp} channelIdx:{channelIdx}")
-        # self._fullMap._images.deleteChannel(time = tp, channel = channelIdx)
-        # self._fullMap._images.deleteChannel(tp, channelIdx)
         _deleted = self._fullMap.deleteChannel(timepoint=tp, channel=channelIdx)
+        return _deleted
 
     def _old_swapChannels(self, tp, srcChannel, destChannel):
         """

@@ -42,24 +42,32 @@ class stack:
         # get the first image slice from defaultChannelIdx
         self.getImageSlice(0, defaultChannelIdx)
     
-    def importChannels(self, importPath: str):
+    def importChannels(self, importPath: str) -> int | None:
         """Import channels from a file.
         
         Parameters
         ----------
         importPath : str
             Path to the file to import (like .tif)
+
+        Returns:
+            int: The channel number of the new channel.
+            None: If the import failed.
         """
         logger.info(f"importing channels from {importPath}")
         
         # import channels from another .mmap file
         # this will add channels to the current timepoint
-        self._fullMap.importChannels(importPath, self.timepoint)
+        newChannelNum = self._fullMap.importChannels(importPath, self.timepoint)
 
-        # important (this refreshes timepoint for new aggregate columns)
-        self.getPointAnnotations().updateChannel()
+        if newChannelNum is not None:
+            # important (this refreshes timepoint for new aggregate columns)
+            self.getPointAnnotations().updateChannel()
+            return newChannelNum
+        else:
+            return None
 
-    def deleteChannel(self, channelIdx: int):
+    def deleteChannel(self, channelIdx: int) -> bool:
         """Delete a channel from the stack.
         
         Parameters
@@ -68,11 +76,14 @@ class stack:
             Channel index to delete, one based.
         """
         logger.info(f"deleting channel {channelIdx}")
-        self._fullMap.deleteChannel(self.timepoint, channelIdx)
+        _deleted = self._fullMap.deleteChannel(self.timepoint, channelIdx)
 
         # rebuild point annotations dataframe
-        self.getPointAnnotations()._buildDataFrame()
+        if _deleted:
+            self.getPointAnnotations()._buildDataFrame()
 
+        return _deleted
+    
     def swapChannels(self, srcChannel: int, destChannel: int):
         """Swap two channels in the stack.
         
@@ -114,6 +125,11 @@ class stack:
         """Get metadata from the core map.
         """
         return self._fullMap.getTimepointMetadata(self.timepoint).analysisParameters
+
+    def getChannelKeys(self) -> list[int]:
+        """Get list of channel keys.
+        """
+        return self.getMetadata().channelKeys
     
     def getChannelMetadata(self, channel:int) -> ChannelMetadata:
         """Get channel metadata for one channel (use for contrast).
@@ -299,11 +315,6 @@ class stack:
 
     def getLastSaveTime(self):
         return self._fullMap.getLastSaveTime()
-
-    def getChannelKeys(self) -> list[int]:
-        """Get list of channel keys.
-        """
-        return self.getMetadata().channelKeys
     
     @property
     def shape(self):
@@ -435,7 +446,7 @@ class stack:
         channelNames = self.getMetadata().channelKeys
         return channelNames
     
-    def getLeftOverChannels(self, channelIdx):
+    def _old_getLeftOverChannels(self, channelIdx):
         """ Get list of current channels, after deleting a channel
         """
 

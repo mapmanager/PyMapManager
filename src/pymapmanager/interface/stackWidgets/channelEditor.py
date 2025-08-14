@@ -4,8 +4,10 @@ from qtpy import QtWidgets, QtCore, QtGui
 
 from pymapmanager._logger import logger
 
-from pymapmanager.interface.stackWidgets.base.mmWidget2  import mmWidget2
+from pymapmanager.interface.stackWidgets.base.mmWidget2  import mmWidget2, pmmEventType
 from pymapmanager.interface.stackWidgets.stackWidget import stackWidget
+
+from pymapmanager.interface.stackWidgets.event.channelEvent import ChannelEditType, EditChannelEvent
 
 class ChannelEditor(mmWidget2):
     _widgetName = 'Channel Editor'
@@ -18,7 +20,72 @@ class ChannelEditor(mmWidget2):
         self.totalChannelsShown = 0
         self.refreshGUI()
 
+    def swapChannels(self, srcChannel, destChannel):
+        # emit swap channel event
+        editChannelEvent = EditChannelEvent(
+            eventType = pmmEventType.editChannel,
+            mmWidget = self.getStackWidget(),
+            editType = ChannelEditType.swap_channel,
+            srcChannelKey = srcChannel,
+            dstChannelKey = destChannel
+        )
+        self.emitEvent(editChannelEvent)
+
+    def updateChannelName(self, srcChannel, newChannelName):
+        editChannelEvent = EditChannelEvent(
+            eventType = pmmEventType.editChannel,
+            mmWidget = self.getStackWidget(),
+            editType = ChannelEditType.set_name,
+            srcChannelKey = srcChannel,
+            newName = newChannelName
+        )
+        self.emitEvent(editChannelEvent)
+
+    def setChannelColor(self, srcChannel, newColor):
+        logger.info(f'srcChannel:{srcChannel} newColor:{newColor}')
+        editChannelEvent = EditChannelEvent(
+            eventType = pmmEventType.editChannel,
+            mmWidget = self.getStackWidget(),
+            editType = ChannelEditType.set_color_LUT,
+            srcChannelKey = srcChannel,
+            newColorLUT = newColor
+        )
+        self.emitEvent(editChannelEvent)
+
     def getGridLayout(self):
+        return self.finalLayout
+
+    def _buildUI(self):
+        self.finalLayout = QtWidgets.QVBoxLayout()
+
+        #
+        # first row is image size
+        _shapeDict = self.getStack().getMetadata().shapeDict
+        zSlice = _shapeDict['z']
+        xVal = _shapeDict['x']
+        yVal = _shapeDict['y']
+        sizeWidget = QtWidgets.QLabel(f"Size: ({xVal}, {yVal}),  Slices: {zSlice}")
+        self.finalLayout.addWidget(sizeWidget)
+
+        #
+        # list of channel widgets
+        for channelKey in self.stackWidget.getStack().getChannelKeys():
+            channelName = self.stackWidget.getStack().getChannelMetadata(channelKey).getValue('name')
+            channelColor = self.stackWidget.getStack().getChannelMetadata(channelKey).color
+            numChannels = self.stackWidget.getStack().numChannels
+
+            oneChannelWidget = OneChannelWidget(channelKey, channelName, channelColor, numChannels)
+            oneChannelWidget.setNameSignal.connect(self.on_user_set_channel_name)
+            oneChannelWidget.setColorSignal.connect(self.on_user_set_channel_color)
+            oneChannelWidget.deleteChannelSignal.connect(self.on_delete_button)
+            self.finalLayout.addWidget(oneChannelWidget)
+
+        # final row is import button
+        importButton = QtWidgets.QPushButton('Import')
+        # importButton.setCheckable(False)
+        importButton.clicked.connect(self.importChannel)
+        self.finalLayout.addWidget(importButton)
+
         return self.finalLayout
 
     def _buildGUI(self):
@@ -116,12 +183,12 @@ class ChannelEditor(mmWidget2):
                 channelMetaData = self.getStack().getChannelMetadata(channelKey)
                 initialColor = channelMetaData.color
                 # logger.info(f"checking initialColor {initialColor}")
-                colorPicker = ColorPicker(initialColor, channelKey, self.stackWidget)
+                colorPicker = ColorPicker(initialColor, channelKey, self)
                 self.gridLayout.addWidget(colorPicker, self.totalChannelsShown, 3)
 
                 # Deleting Channel
-                if channelKey > 1: # For now have a restriction on deleting first channel
-                # if 1:
+                # if channelKey > 1: # For now have a restriction on deleting first channel
+                if 1:
                     deleteButton = QtWidgets.QPushButton('')
                     # self.gridLayout.addWidget(deleteButton, channelIdx + 1, 2)
                     self.gridLayout.addWidget(deleteButton, self.totalChannelsShown, 4)
@@ -134,8 +201,6 @@ class ChannelEditor(mmWidget2):
                 
                 # lastChannelIdx = channelIdx
     
-        # abb removed
-        # if self.totalChannelsShown != maxNumChannels:
         if 1:
             self.gridLayout.addWidget(ImportChannelWidget(channelIdx = channelKey + 1, parent= self), 
                                                         self.totalChannelsShown + 1, 1)
@@ -150,129 +215,97 @@ class ChannelEditor(mmWidget2):
 
         return self.finalLayout 
 
-    def showConfirmationDialog(self, fileDimensions):
-        """ Show Custom Dialog whenever a user import a channel
+    # def _old_showConfirmationDialog(self, fileDimensions):
+    #     """ Show Custom Dialog whenever a user import a channel
         
-        This dialog allows the user to choose the channel number that they want the image to be loaded into as well
-        as confirm the import
-        """
-        showDialog = CustomDialog(self.maxNumChannels, self._listOfChannelIdx, fileDimensions)
+    #     This dialog allows the user to choose the channel number that they want the image to be loaded into as well
+    #     as confirm the import
+    #     """
+    #     showDialog = CustomDialog(self.maxNumChannels, self._listOfChannelIdx, fileDimensions)
         
-        if showDialog.exec_() == QtWidgets.QDialog.Accepted:
-            self.selectedChannelIdx = showDialog.selectedChannel
-            logger.info(f"self.selectedChannelIdx {self.selectedChannelIdx}")
-            return True, self.selectedChannelIdx
-        else:
-            print("Canceled!")
-            return False, None
+    #     if showDialog.exec_() == QtWidgets.QDialog.Accepted:
+    #         self.selectedChannelIdx = showDialog.selectedChannel
+    #         logger.info(f"self.selectedChannelIdx {self.selectedChannelIdx}")
+    #         return True, self.selectedChannelIdx
+    #     else:
+    #         print("Canceled!")
+    #         return False, None
 
-    def importChannel(self, channelIdx, tifFile = None):
+    def importChannel(self):
         """Open a file dialog and update the label with the file path."""
 
-        if tifFile is None:
-            tifFile = QtWidgets.QFileDialog.getOpenFileName(None, 'New Tif File')[0]
+        editChannelEvent = EditChannelEvent(
+            eventType = pmmEventType.editChannel,
+            mmWidget = self.getStackWidget(),
+            editType = ChannelEditType.import_new_channel,
+            # importPath = tifFile
+        )
+        self.emitEvent(editChannelEvent)
 
-        logger.info(f"tifFile {type(tifFile)}")
-        if tifFile == "": # user didnt choose a file
-            logger.info(f"cancelling import")
-            return
-        
-        # with Image.open(tifFile) as img:
-        #     newImgWidth, newImgHeight = img.size
-        #     newImgSlices = img.n_frames  # z dimension
 
-        # confirmed, selectedChannelIdx = \
-        #     self.showConfirmationDialog(fileDimensions=(newImgWidth,newImgHeight,newImgSlices))
-        # if not confirmed:
-        #     return
-        
-        # self._stackWidget.loadInNewChannel(path = tifFile, channel = selectedChannelIdx)
-        self._stackWidget.loadInNewChannel(path = tifFile)
+    # slot in response to channel edit (import, delete, swap, name, color)
+    def editChannelEvent(self, event: EditChannelEvent):
+        logger.info('')
         self.refreshGUI()
+
+    def on_user_set_channel_name(self, channelKey, newName):
+        logger.info(f'{channelKey} {newName}')
+        editChannelEvent = EditChannelEvent(
+            eventType = pmmEventType.editChannel,
+            mmWidget = self.getStackWidget(),
+            editType = ChannelEditType.set_name,
+            srcChannelKey = channelKey,
+            newName = newName       
+        )
+        self.emitEvent(editChannelEvent)
+
+    def on_user_set_channel_color(self, channelKey, newColor):
+        logger.info(f' {channelKey} {newColor}')
+        editChannelEvent = EditChannelEvent(
+            eventType = pmmEventType.editChannel,
+            mmWidget = self.getStackWidget(),
+            editType = ChannelEditType.set_color_LUT,
+            srcChannelKey = channelKey,
+            newColorLUT = newColor
+        )
+        self.emitEvent(editChannelEvent)
 
     def on_delete_button(self, channelIdx):
-        print("Button clicked!, ", channelIdx)
-        # prevChannel = self._listOfChannelIdx[0]
-        self.stackWidget.deleteChannel(channelIdx)    
-        self.refreshGUI()
+        logger.info(f'{channelIdx}')
+        
+        # emit delete channel event
+        editChannelEvent = EditChannelEvent(
+            eventType = pmmEventType.editChannel,
+            mmWidget = self.getStackWidget(),
+            editType = ChannelEditType.delete_channel,
+            srcChannelKey = channelIdx
+        )
+        self.emitEvent(editChannelEvent)
+        
+        # todo put in slot
+        # self.refreshGUI()
 
-    def _onActivate(self, channelIdx, activate):
-        print(f"Button activate!, ", activate, "on channel ", channelIdx)
-        # prevChannel = self._listOfChannelIdx[0]
+    # def _onActivate(self, channelIdx, activate):
+    #     print(f"Button activate!, ", activate, "on channel ", channelIdx)
+    #     # prevChannel = self._listOfChannelIdx[0]
 
-        if activate == "On":
-            activateChannel = True
-        elif activate == "Off":
-            activateChannel= False  
-        else:
-            logger.error(f"activate receving bad item")
-        self.stackWidget.activateChannel(channelIdx, activateChannel)    
-        self.refreshGUI()
+    #     logger.info('turned off activate -->> purpose was to add/remove ch columns from backend spines/points')
+    #     return
+    
+    #     if activate == "On":
+    #         activateChannel = True
+    #     elif activate == "Off":
+    #         activateChannel= False  
+    #     else:
+    #         logger.error(f"activate receving bad item")
+    #     self.stackWidget.activateChannel(channelIdx, activateChannel)    
+    #     self.refreshGUI()
 
     def refreshGUI(self):
         self.totalChannelsShown = 0
-        finalLayout = self._buildGUI()
+        # finalLayout = self._buildGUI()
+        finalLayout = self._buildUI()   
         self._makeCentralWidget(finalLayout)
-
-    def importedNewChannelEvent(self, event):
-        self.refreshGUI()
-
-class CustomDialog(QtWidgets.QDialog):
-    def __init__(self, maxNumChannels, channelIdxList, fileDimensions):
-        """
-        Args:
-            maxNumChannels = Max channels shown for each stack
-            channelIdxList = list of channels that are already loader in
-            fileDimensions = tuple (x,y,z) representing the dimensions of the image loaded in
-        
-        """
-        super().__init__()
-
-        self.setWindowTitle("Please confirm new channel")
-        self.setGeometry(100, 100, 300, 200)
-
-        layout = QtWidgets.QVBoxLayout()
-
-        # Label for the dialog
-        label = QtWidgets.QLabel('Choose Channel Number:')
-        layout.addWidget(label)
-
-        # ComboBox
-        self.combo = QtWidgets.QComboBox()
-        # self.combo.addItems(["Option 1", "Option 2", "Option 3"])
-        # loop through all possible channels. set(list of len(max) - currently loaded channels)
-        # currentSet = logger.info(f"channelIdxList {channelIdxList}")
-        currentSet  = set(channelIdxList)
-        fullSet = set(list(range(0,maxNumChannels)))
-        leftOverSet = fullSet.difference(currentSet)
-        leftOverSet = {x + 1 for x in leftOverSet}
-        leftOverSet = map(str, leftOverSet)
-
-        logger.info(f"leftOverSet {leftOverSet}")
-        self.combo.addItems(list(leftOverSet))
-        layout.addWidget(self.combo)
-
-        x,y,z = fileDimensions
-        label = QtWidgets.QLabel(f"You will be loading image of Size: ({x}, {y}), Slices: {z}")
-        layout.addWidget(label)
-
-        # Buttons to confirm or cancel
-        self.button_confirm = QtWidgets.QPushButton('Confirm')
-        self.button_confirm.clicked.connect(self.on_confirm)
-        layout.addWidget(self.button_confirm)
-
-        self.button_cancel = QtWidgets.QPushButton('Cancel')
-        self.button_cancel.clicked.connect(self.reject)
-        layout.addWidget(self.button_cancel)
-
-        self.setLayout(layout)
-
-    def on_confirm(self):
-        selected_option = self.combo.currentText()
-        # need to convert for 1 based indexing back to 0:
-        self.selectedChannel = int(selected_option) - 1
-        print(f"Selected option: {selected_option}")
-        self.accept()  # Close the dialog and accept the input
 
 class ImportChannelWidget(QtWidgets.QWidget):
     def __init__(self,
@@ -283,6 +316,7 @@ class ImportChannelWidget(QtWidgets.QWidget):
         self.setAcceptDrops(True)
         self.channelIdx = channelIdx
         self.parent = parent
+        
         finalLayout = self._buildLayout()
         self.setLayout(finalLayout)
         self.setSizePolicy(self.sizePolicy().Expanding, self.sizePolicy().Expanding)
@@ -308,11 +342,11 @@ class ImportChannelWidget(QtWidgets.QWidget):
 
     def onButtonPress(self):
         """ Call stackwidget to open file directory and load in new channel"""
-        self.parent.importChannel(self.channelIdx)
+        self.parent.importChannel()
 
     def importChannel(self, channelIdx, tifFile = None):
         """ Call stackwidget to open file directory and load in new channel"""
-        self.parent.importChannel(channelIdx, tifFile)
+        self.parent.importChannel(tifFile)
 
     def dragEnterEvent(self, event):
         if event.mimeData().hasUrls():
@@ -326,8 +360,83 @@ class ImportChannelWidget(QtWidgets.QWidget):
             logger.info(f"loading file {tifFile}")
 
             # abj
-            self.importChannel(self.channelIdx, tifFile)
+            self.importChannel(tifFile)
 
+class OneChannelWidget(QtWidgets.QWidget):
+    """Widget to display a single channel
+    
+    abb 202508 to simplify GUI
+
+    - Name
+    - color button
+    - trash
+    """
+
+    importChannelSignal = QtCore.Signal(object)    # channelKey
+    setNameSignal = QtCore.Signal(object, str)    # channelKey, newName
+    setColorSignal = QtCore.Signal(object, str)    # channelKey, newColor
+    deleteChannelSignal = QtCore.Signal(object)    # channelKey
+
+    def __init__(self,
+                 channelKey,
+                 channelName,
+                 channelColor,
+                 numChannels,  # number of channels in stack
+                 ):
+        super().__init__()
+        self.stackWidget = stackWidget
+        self.channelKey = channelKey
+        self.channelName = channelName
+        self.channelColor = channelColor
+        self.numChannels = numChannels
+
+        self._hLayout = None
+        self._buildUI()
+    
+    def _buildUI(self):
+        # this allows us to recreate after edit channel
+        if self._hLayout is None:
+            # create layout if it doesn't exist
+            self._hLayout = QtWidgets.QHBoxLayout()
+        else:
+            # clear layout
+            self._hLayout.clear()
+
+        # channel name QLineEdit
+        self.channelNameLineEdit = QtWidgets.QLineEdit(self.channelName)
+        self.channelNameLineEdit.editingFinished.connect(self.on_user_set_channel_name)
+        self._hLayout.addWidget(self.channelNameLineEdit)
+        
+        # color button
+        colorButton = ColorPicker(self.channelColor, self.channelKey, self)
+        colorButton.newColorSignal.connect(self.on_user_set_new_color)
+        self._hLayout.addWidget(colorButton)
+
+        # trash
+        trashButton = QtWidgets.QPushButton('Trash')
+        trashButton.clicked.connect(self.on_trash_button_press)
+        # disable if only one channel
+        if self.numChannels <= 1:
+            trashButton.setDisabled(True)
+
+        self._hLayout.addWidget(trashButton)
+
+        self.setLayout(self._hLayout)
+
+    def on_user_set_channel_name(self):
+        newName = self.channelNameLineEdit.text()
+        # logger.info(f'newName: {newName}')
+        self.setNameSignal.emit(self.channelKey, newName)
+
+    def on_user_set_new_color(self, newColor):
+        # logger.info(f'{newColor} TODO need to emit pymapmanager event')
+        self.setColorSignal.emit(self.channelKey, newColor)
+
+    def on_trash_button_press(self):
+        # logger.info(f'{self.channelKey}')
+        self.deleteChannelSignal.emit(self.channelKey)
+
+# TODO clean this up, very complicate
 class DraggableWidget(QtWidgets.QWidget):
     def __init__(self,
                  text: str,  # the user set name of the channel image
@@ -359,7 +468,7 @@ class DraggableWidget(QtWidgets.QWidget):
         self.widgetname = name
         self.rowNum = row
         self.columnNum = column
-        self.parent = parent
+        self.parent: ChannelEditor = parent
         self.stackWidget = stackWidget
         # self.setStyleSheet("background-color: black;")
         # self.setFixedSize(500, 300)  # Set a fixed size for the widgets
@@ -371,7 +480,7 @@ class DraggableWidget(QtWidgets.QWidget):
         self.mousePos = None # Parent mouse position
         # logger.info(f"text {text}")
         self._textWidget = QtWidgets.QLineEdit(text)
-        self._textWidget.textChanged.connect(self.updateChannelName)
+        self._textWidget.editingFinished.connect(self.on_update_channel_name)
 
         # Have to make container widget a draggable widget for drag and drop to register
         self.containerWidget = QtWidgets.QWidget(self)
@@ -385,9 +494,9 @@ class DraggableWidget(QtWidgets.QWidget):
         self.setLayout(mainLayout)
 
         # self.setFixedSize(500, 80)
-        self.setSizePolicy(self.sizePolicy().Expanding, self.sizePolicy().Expanding)
-        self.setMinimumSize(500, 80)
-        self.setMaximumHeight(120)
+        # self.setSizePolicy(self.sizePolicy().Expanding, self.sizePolicy().Expanding)
+        # self.setMinimumSize(500, 80)
+        # self.setMaximumHeight(120)
 
     def getDefaultStyle(self):
         self.defaultStyle = f"""
@@ -512,9 +621,9 @@ class DraggableWidget(QtWidgets.QWidget):
         
         # swap in backend
         logger.info(f"swapDraggableWidget srcChannel {self.channelIdx} destChannel {widgetUnderCursor.getChannelIdx()}")
-        self.stackWidget.swapChannels(srcChannel = self.channelIdx, 
-                                      destChannel = widgetUnderCursor.getChannelIdx())
-
+        self.parent.swapChannels(self.channelIdx, widgetUnderCursor.getChannelIdx())
+        
+        # refresh gui
         self.parent.getGridLayout().removeWidget(self)
         self.parent.getGridLayout().addWidget(self, widgetUnderCursor.getRow(), widgetUnderCursor.getColumn())
 
@@ -536,18 +645,21 @@ class DraggableWidget(QtWidgets.QWidget):
 
         self.lock = False
 
-
-    def updateChannelName(self, newChannelName: str = ""):
-        self.stackWidget.updateChannelName(newChannelName, channelIdx = self.getChannelIdx())
+    def on_update_channel_name(self):
+        newName = self._textWidget.text()
+        self.parent.updateChannelName(self.channelIdx, newName)
 
 class ColorPicker(QtWidgets.QWidget):
-    def __init__(self, initialColor, channelIdx, stackWidget):
+    # pyqt signal for new color
+    newColorSignal = QtCore.Signal(str)
+    
+    def __init__(self, initialColor, channelIdx, parent: ChannelEditor):
         super().__init__()
         self.setWindowTitle("Color Picker")
 
-        self.initialColor = initialColor
+        self.initialColor = initialColor  # abb TODO do we need this???
         self.channelIdx = channelIdx
-        self.stackWidget = stackWidget
+        self.parent = parent
         self.button = QtWidgets.QPushButton("", self)
         self.button.setStyleSheet(f"background-color: {initialColor}; padding: 10px;")
         self.button.clicked.connect(self.open_color_dialog)
@@ -558,19 +670,23 @@ class ColorPicker(QtWidgets.QWidget):
         self.setLayout(layout)
 
     def open_color_dialog(self):
-        if type(self.initialColor) == str:
-            self.initialColor = QtGui.QColor(self.initialColor)
-        color = QtWidgets.QColorDialog.getColor(self.initialColor)
+        # initial color is always set
+        # if type(self.initialColor) == str:
+        #     self.initialColor = QtGui.QColor(self.initialColor)
+        
+        # self.initialColor is always a string, convert to QColor
+        initialColor = QtGui.QColor(self.initialColor)
+        logger.info(f'converted self.initialColor:{self.initialColor} to initialColor:{initialColor}')
+        color = QtWidgets.QColorDialog.getColor(initialColor)
 
         if color.isValid():
             # self.label.setText(f"Selected Color: {color.name()}")
-            logger.info(f"name is {color.name()}")
-            self.button.setStyleSheet(f"background-color: {color.name()}; padding: 10px;")
-            self.storeChannelColor(self.channelIdx, color.name())
+            logger.info(f"user selected new color is {color.name()}")
+            # self.button.setStyleSheet(f"background-color: {color.name()}; padding: 10px;")
+            self.button.setStyleSheet(f"background-color: {color.name()};")
+            # self.storeChannelColor(self.channelIdx, color.name())
             self.initialColor = color.name() # update color picker to new color
-
-    def storeChannelColor(self, channelIdx, newColor):
-        """ Store channel color into channelMetadata
-        """
-        # stackwidget wil emit signal to update the rest of widgets
-        self.stackWidget.setChannelProperty(channelIdx, "color", newColor)
+            
+            # tell parent we set color, will emit a signal
+            #self.parent.setChannelColor(self.channelIdx, color.name())
+            self.newColorSignal.emit(color.name())

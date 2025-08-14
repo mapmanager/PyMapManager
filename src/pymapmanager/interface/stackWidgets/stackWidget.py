@@ -19,7 +19,12 @@ from qtpy import QtGui, QtCore, QtWidgets
 
 import pymapmanager
 from pymapmanager.interface.mainWindow import MainWindow
-from pymapmanager.interface.stackWidgets.base.mmWidget2 import mmWidget2, pmmEventType, pmmStates, pmmEvent, StackSelection
+from pymapmanager.interface.stackWidgets.base.mmWidget2 import (#mmWidget2,
+                                                                pmmEventType,
+                                                                pmmStates,
+                                                                pmmEvent,
+                                                                StackSelection)
+
 from .base.stacktoolbar import StackToolBar
 from .base.stackstatusbar import StatusToolbar
 from .base.stackplugindock import StackPluginDock
@@ -36,8 +41,11 @@ from pymapmanager.interface.stackWidgets.event.spineEvent import (AddSpineEvent,
 
 from pymapmanager.interface.stackWidgets.event.segmentEvent import (AddSegmentEvent,
                                                                      DeleteSegmentEvent,
-                                                                     AddSegmentPoint,
+                                                                    #  AddSegmentPoint,
                                                                      SetSegmentColorEvent)
+
+from pymapmanager.interface.stackWidgets.event.channelEvent import (ChannelEditType,
+                                                                    EditChannelEvent)
 
 from pymapmanager.interface.stackWidgets.event.annotationEvent import RedoEvent, UndoEvent
 from pymapmanager._logger import logger
@@ -471,7 +479,7 @@ class stackWidget(MainWindow):
 
         # top toolbar
         topToobarName = 'Top Toolbar'
-        self._topToolbar = StackToolBar(self._stack, self._displayOptionsDict, parent=self)
+        self._topToolbar = StackToolBar(self._stack, self._displayOptionsDict, self._stack.getChannelKeys()[0], parent=self)
         self._topToolbar.signalSlidingZChanged.connect(self.updateDisplayOptionsZ)  # removed 20241119
         # self._topToolbar.signalRadiusChanged.connect(self.updateRadius)
         self._topToolbar.signalPlotCheckBoxChanged.connect(self.updatePlotBoxes)
@@ -1118,8 +1126,19 @@ class stackWidget(MainWindow):
 
     def slot_setChannel(self, colorChannel : int):
         """Received from child top toolbar widget.
+        
+        Set the color channel in the GUI
         """        
-        logger.info(f"slot_setChannel colorChannel {colorChannel}")
+        if (colorChannel != 'rgb') and (not isinstance(colorChannel, int)):
+            colorChannel = int(colorChannel)
+
+        logger.info(f"slot_setChannel colorChannel {colorChannel} {type(colorChannel)}")
+
+        # check that channel key colorChannel exists in stack
+        if colorChannel != 'rgb' and colorChannel not in self.getStack().getChannelKeys():
+            logger.error(f"colorChannel {colorChannel} not found in stack available channels: {self.getStack().getChannelKeys()}")
+            return
+
         _pmmEvent = pmmEvent(pmmEventType.setColorChannel, self)
         _pmmEvent.setColorChannel(colorChannel)
         self.emitEvent(_pmmEvent)
@@ -1326,66 +1345,102 @@ class stackWidget(MainWindow):
         """
         return self._openPluginDict 
     
-    # abb this is always append, ignore channel
-    def loadInNewChannel(self, path:Optional[str] = None):
+    # channel event
+    def editChannelEvent(self, event : EditChannelEvent):
+        """Edit a channel in the backend
+
+        Args:
+            event : EditChannelEvent
+
+        Returns:
+            bool : True if the edit was successful, False otherwise
+        """
+        logger.info(f"editChannelEvent: {event}")
+    
+        editType = event.getEditType()
+        if editType == ChannelEditType.import_new_channel:
+            _importedChannelNum = self.loadInNewChannel(event.getImportPath())
+            if _importedChannelNum is None:
+                return False
+
+        elif editType == ChannelEditType.delete_channel:
+            _deleted = self.getStack().deleteChannel(event.getSrcChannelKey())
+            if _deleted is  None:
+                return False
+            
+            # if _topToolbar is displaying the deleted channel, need to update it
+            if self._topToolbar.getCurrentChannel() == event.getSrcChannelKey():
+                channelKeys = self.getStack().getChannelKeys()
+                firstChannelKey = channelKeys[0]
+                self._topToolbar.setCurrentChannel(firstChannelKey)
+                self._topToolbar._setStack(theStack=self._stack)
+                
+                # emit set channel event
+                _pmmEvent = pmmEvent(pmmEventType.setColorChannel, self)
+                _pmmEvent.setColorChannel(firstChannelKey)
+                self.emitEvent(_pmmEvent)
+            
+        elif editType == ChannelEditType.swap_channel:
+            # self.swapChannels(event.getSrcChannelKey(), event.getDstChannelKey())
+            self.getStack().swapChannels(event.getSrcChannelKey(), event.getDstChannelKey())
+
+            self._topToolbar._setStack(theStack=self._stack)
+
+            # Update image
+            _imagePlotWidget = self._widgetDict[self._imagePlotName]
+            _imagePlotWidget.refreshSlice()
+
+
+        elif editType == ChannelEditType.set_name:
+            self.updateChannelName(event.getNewName(), event.getSrcChannelKey())
+
+        elif editType == ChannelEditType.set_color_LUT:
+            # self.setChannelProperty(event.getSrcChannelKey(), 'colorLUT', event.getNewColorLUT())
+            logger.info(f'set_color_LUT channelkey:{event.getSrcChannelKey()} newcolor:{event.getNewColorLUT()}')
+            self._stack.setChannelProperty(event.getSrcChannelKey(),
+                                        #    'colorLUT',
+                                           'color',
+                                           event.getNewColorLUT())
+
+            # check that color was set
+            _newChannelMetadata = self._stack.getMetadata().getChannelMetadata(event.getSrcChannelKey())
+            # logger.info(f'set _newChannelMetadata:{_newChannelMetadata}')
+
+        else:
+            logger.error(f"editType: {editType} not implemented")
+    
+        return True
+
+    def loadInNewChannel(self, path:Optional[str] = None) -> int | None:
         """Given a file path append channels from file (can be more than one channel).
         
         self, path: Union[str, np.ndarray], time: int = 0, channel: int = 0):
         """
         if path is None:
             importPath = QtWidgets.QFileDialog.getOpenFileName(None, 'New Tif File')[0]
+            # logger.info(f'importPath:{importPath}')
+            if importPath == '':
+                return None
         else:
             importPath = path
 
         logger.info(f"importing New channel")
         # new version 202504
-        newChannelNum = self.getStack().importChannels(importPath)
-
-        # abb TODO make a signalChannelUpdate for add/remove/edit (channel name)
+        newChannelNum = self.getStack().importChannels(importPath)  # can fail
         
-        # refresh stackToolBar
-        self._topToolbar._setStack(theStack=self._stack)
-
-        # abb 20250808
         if newChannelNum is not None:
-            _pmmEvent = pmmEvent(pmmEventType.setColorChannel, self)
-            _pmmEvent.setColorChannel(newChannelNum)
-            self.setColorChannelEvent(_pmmEvent) # chooses it in toptool bar
+            # refresh stackToolBar
+            # self._topToolbar._setStack(theStack=self._stack)
+
+            # _pmmEvent = pmmEvent(pmmEventType.setColorChannel, self)
+            # _pmmEvent.setColorChannel(newChannelNum)
+            # self.setColorChannelEvent(_pmmEvent) # chooses it in toptool bar
             self.slot_setChannel(newChannelNum) # actually changes image in imageplotwidget
-    
-    def deleteChannel(self, channelIdx):
-        """ Delete channel in backend
+            return newChannelNum
+        else:
+            logger.warning(f"import new channel failed -->> show dialog")
 
-        Args:
-            channelIdx: Channel number that is being deleted
-        """
-
-        self.getStack().deleteChannel(channelIdx)
-
-        # reset image for 1 channel delete
-        numChannels = self._stack.numChannels
-        if numChannels <= 0:
-            _imagePlotWidget = self._widgetDict[self._imagePlotName]
-            _imagePlotWidget.hide()
-
-        # top tool bar is 1 based, incoming channelIdx is 0
-        currentChannel = self._topToolbar.getCurrentChannel()
-        logger.info(f"currentChannel {currentChannel}")
-        logger.info(f"channelIdx {channelIdx}")
-
-        # # Check if current channel is selected. If it is then default select to channel - 1
-        # or if there is only one channel left after first delete
-        if self._topToolbar.getCurrentChannel() - 1 == channelIdx or numChannels == 1:
-            logger.info(f"selecting next channel")
-            self.selectNextChannel(channelIdx)
-
-        # reset stackToolBar
-        self._topToolbar._setStack(theStack=self._stack)
-
-        # reset stack Contrast
-        # self._stack.resetStackContrast()
-
-    def swapChannels(self, srcChannel, destChannel):
+    def _old_swapChannels(self, srcChannel, destChannel):
         """ Call mapmanagercore to swap channels
         # Stack already knows time point so pass that it
         """
@@ -1395,24 +1450,24 @@ class stackWidget(MainWindow):
         # self.getTimeSeriesCore().swapChannels(timePoint, srcChannel, destChannel)
 
         # Update image
-        _imagePlotWidget = self._widgetDict[self._imagePlotName]
-        _imagePlotWidget.refreshSlice()
+        # _imagePlotWidget = self._widgetDict[self._imagePlotName]
+        # _imagePlotWidget.refreshSlice()
 
         # reset stackToolBar
-        self._topToolbar._setStack(theStack=self._stack)
+        # self._topToolbar._setStack(theStack=self._stack)
 
         # reset stack Contrast
         # self._stack.resetStackContrast()
 
         # update channel editor widget
-        _pmmEvent = pmmEvent(pmmEventType.importNewChannel, self)
-        self.emitEvent(_pmmEvent)
+        # _pmmEvent = pmmEvent(pmmEventType.importNewChannel, self)
+        # self.emitEvent(_pmmEvent)
 
         # select dest Channel
-        _pmmEvent = pmmEvent(pmmEventType.setColorChannel, self)
-        _pmmEvent.setColorChannel(destChannel)
-        self.setColorChannelEvent(_pmmEvent) # chooses it in toptool bar
-        self.slot_setChannel(destChannel) # actually changes image in imageplotwidget
+        # _pmmEvent = pmmEvent(pmmEventType.setColorChannel, self)
+        # _pmmEvent.setColorChannel(destChannel)
+        # self.setColorChannelEvent(_pmmEvent) # chooses it in toptool bar
+        # self.slot_setChannel(destChannel) # actually changes image in imageplotwidget
 
     def updateChannelName(self, newChannelName, channelIdx):
         """ Update channel name in backend
@@ -1426,7 +1481,7 @@ class stackWidget(MainWindow):
         # _pointAnnotations = self.getStack().getPointAnnotations()
         # _pointAnnotations.updateChannel()
      
-    def selectNextChannel(self, channelIdx):
+    def _old_selectNextChannel(self, channelIdx):
         """ Select next available channel within toptoolbar and emit the change to the rest of the widgets
         - this is primarily done after deleting a channel
 
@@ -1516,8 +1571,14 @@ class stackWidget(MainWindow):
         else:
             logger.error(f'failed to get PyMapManagerApp, got {app}')
 
-    def setChannelProperty(self, channelIdx:int, channelProperty: str, propertyValue):
+    def _old_setChannelProperty(self, channelIdx:int, channelProperty: str, propertyValue):
+        """ Set a channel property in the backend
 
+        Args:
+            channelIdx: Channel number that is being edited
+            channelProperty: Property that is being edited
+            propertyValue: Value of the property
+        """
         self._stack.setChannelProperty(channelIdx, channelProperty, propertyValue)
 
         # send signal to update image

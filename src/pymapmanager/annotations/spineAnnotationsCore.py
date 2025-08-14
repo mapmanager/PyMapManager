@@ -34,25 +34,6 @@ class SpineAnnotationsCore(AnnotationsCore):
 
         if len(allSpinesDf) > 0:  
             
-            # abb removed 202508
-            # if 0:
-            #     # abb 202504 reduce columns to existing channel keys
-            #     # the channel keys actually in the timepoint
-            #     existingChannelKeys = self.singleTimepoint.timepointMetadata().channelKeys
-            #     existingChannelKeys = set(existingChannelKeys)
-            #     # all possible channel keys
-            #     possibleChannelKeys = self._fullMap.getMapMetadata().possibleChannelKeys
-            #     possibleChannelKeys = set(possibleChannelKeys)
-            #     # the keys to remove
-            #     _removeChannelKeys = possibleChannelKeys - existingChannelKeys
-            #     # logger.info(f'existingChannelKeys:{existingChannelKeys} possibleChannelKeys:{possibleChannelKeys} _removeChannelKeys:{_removeChannelKeys}')
-            #     # logger.info(f'before drop _ch3_ num columns:{len(allSpinesDf.columns)}')
-            #     for _removeChannelKey in _removeChannelKeys:
-            #         _regExp = f'_ch{_removeChannelKey}_'  # like _ch3_
-            #         logger.info(f'  removing columns with _regExp:{_regExp}')
-            #         allSpinesDf = allSpinesDf[allSpinesDf.columns.drop(list(allSpinesDf.filter(regex=_regExp)))]
-            #     # logger.info(f'after drop _ch3_ num columns:{len(allSpinesDf.columns)}')
-
             # when there is 1 spine, points[:] returns
             # <class 'pandas.core.series.Series'> 
             try:

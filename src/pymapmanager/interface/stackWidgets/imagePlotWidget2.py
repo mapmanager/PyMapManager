@@ -504,6 +504,12 @@ class ImagePlotWidget(mmWidget2):
         sliceNumber = self._currentSlice
         self._aLinePlot.slot_setSlice(sliceNumber)
 
+    def editChannelEvent(self, event):
+        """
+        """
+        logger.info(f'editChannelEvent {event}')
+        self.refreshSlice()
+
     def updateChannelMetadataEvent(self, event):
         """
         """
@@ -563,10 +569,42 @@ class ImagePlotWidget(mmWidget2):
                 cm = pg.colormap.get('Greens_r', source='matplotlib')
             elif colorStr == 'blue':
                 cm = pg.colormap.get('Blues_r', source='matplotlib')
+            elif 1:
+
+                logger.warning(f'1 TODO: abb for {colorStr}')
+                positions = [0.0, 0.3, 0.7, 1.0]
+                colors = [
+                    (0, 0, 0),           # Black
+                    colorStr,        # Your color
+                    colorStr,        # Your color
+                    (1, 1, 1)           # White
+                ]
+                cm = pg.ColorMap(pos=positions, color=colors)
+
+            elif 1:
+
+                logger.warning(f'2 TODO: abb for {colorStr}')
+                
+                def hex_to_rgb(hex_color):
+                    hex_color = hex_color.lstrip('#')
+                    return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+
+                # Define hex colors
+                hex_colors = ["#000000", "#FF0000", "#FFFF00", "#FFFFFF"] # Black, Red, Yellow, White
+
+                # Convert hex colors to RGB tuples
+                rgb_colors = [hex_to_rgb(hc) for hc in hex_colors]
+
+                # Define positions for the color stops (0.0 to 1.0)
+                positions = np.linspace(0.0, 1.0, len(rgb_colors))
+
+                # 2. Create the ColorMap
+                cm = pg.ColorMap(pos=positions, color=rgb_colors)
+
+
             else:
             
-                # logger.warning(f'did not understand color {colorStr} -->> defaulting to Greens_r')
-                # # cm = pg.colormap.get('Greens_r', source='matplotlib')
+                logger.warning(f'abj colorStr:"{colorStr}" creating custom pg.ColorMap')
 
                 # here colorStr is a hehex code
                 colorRGB = to_rgb(colorStr)
@@ -574,9 +612,7 @@ class ImagePlotWidget(mmWidget2):
                 # Create a list of colors transitioning from dark to bright
                 cm_qcolors = []
                 num_steps = 256  # More steps for smoother gradient
-                
-                import numpy as np
-                
+                                
                 for i in range(num_steps):
                     value_factor = i / (num_steps - 1)
                     # Adjust logarithmic scaling to match matplotlib's dynamic range

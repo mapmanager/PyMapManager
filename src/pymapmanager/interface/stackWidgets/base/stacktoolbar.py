@@ -2,7 +2,7 @@ from functools import partial
 
 from qtpy import QtGui, QtCore, QtWidgets
 
-from pymapmanager.interface.stackWidgets.base.mmWidget2 import pmmEvent
+# from pymapmanager.interface.stackWidgets.base.mmWidget2 import pmmEvent
 from pymapmanager.stack import stack
 
 from pymapmanager._logger import logger
@@ -18,8 +18,9 @@ class StackToolBar(QtWidgets.QToolBar):
     signalRadiusChanged = QtCore.Signal(object)  # dict : {checked, upDownSlices}
     signalPlotCheckBoxChanged = QtCore.Signal(object)  # str: plot name being checked/ unchecked
     def __init__(self,
-					myStack,
+					myStack: stack,
 					displayOptionsDict : dict,
+                    channelKey,  # the channel to init with
                     parent=None):
         """
         Parameters:
@@ -27,35 +28,20 @@ class StackToolBar(QtWidgets.QToolBar):
         """
         super().__init__(parent)
 
-        self._myStack = myStack
+        self._myStack:stack = myStack
         self._displayOptionsDict = displayOptionsDict
 
-        # list of channel strings 1,2,3,...
-        # self._channelList = [str(x+1) for x in range(self._myStack.numChannels+1)]
-        self._channelList = self._myStack.getChannelKeys()
-
-        self._currentChannel = None # abj
-
-        # iconsFolderPath = ''  # TODO: get from canvas.util'
+        self._currentChannel = channelKey
 
         self.setWindowTitle('Stack Toolbar')
 
         self.setFloatable(False)
         self.setMovable(False)
 
-        #self.setOrientation(QtCore.Qt.Vertical);
-        #self.setOrientation(QtCore.Qt.Horizontal);
-
-        #myIconSize = 12 #32
-        #self.setIconSize(QtCore.QSize(myIconSize,myIconSize))
         self.setToolButtonStyle( QtCore.Qt.ToolButtonTextUnderIcon )
 
-        # myFontSize = 10
-        # myFont = self.font();
-        # myFont.setPointSize(myFontSize);
-        # self.setFont(myFont)
-
-        self._buildUI()
+        # set in _setStack
+        # self._buildUI()
 
         # refresh interface
         self._setStack(self._myStack)
@@ -64,6 +50,7 @@ class StackToolBar(QtWidgets.QToolBar):
         """Set the state of the interface based on a stack.
         
         Parameters:
+        -----------
         theStack :pymapmanager.stack
             The stack to dislpay in the widget
         """
@@ -78,10 +65,10 @@ class StackToolBar(QtWidgets.QToolBar):
             actionWidget.setVisible(False)
 
         # for channelIdx in range(self._myStack.numChannels):
-        for channelIdx in self._myStack.getChannelKeys():
+        for channelKey in self._myStack.getChannelKeys():
             # logger.info(f"channelIdx visible {channelIdx} ")
-            self._actionDict[channelIdx].setDisabled(False)
-            self._actionDict[channelIdx].setVisible(True)
+            self._actionDict[channelKey].setDisabled(False)
+            self._actionDict[channelKey].setVisible(True)
         
         if self._myStack.numChannels > 1:
             self._actionDict['rgb'].setDisabled(False)
@@ -100,7 +87,8 @@ class StackToolBar(QtWidgets.QToolBar):
         if toolNameStr == 'rgb':
             pass
         else:
-            toolNameStr = int(toolNameStr)
+            # toolNameStr = int(toolNameStr)  # TODO: don't cast int() here, do it in signal slot
+            pass
 
         self.slot_setChannel(toolNameStr)
         
@@ -145,12 +133,12 @@ class StackToolBar(QtWidgets.QToolBar):
         }
         self.signalSlidingZChanged.emit(d)
 
-    def slot_setChannel(self, channelIdx: int):
+    def slot_setChannel(self, channelKey):
         """Turn on button for selected channel.
         
         These are a disjoint list, only one can be active. Others automatically disable.
         """
-        logger.info(f'channelIdx:{channelIdx} {type(channelIdx)}')
+        logger.info(f'channelIdx:{channelKey} {type(channelKey)}')
 
         # turn off sliding z
         # slidingEnabled = channelIdx != 'rgb'
@@ -158,17 +146,17 @@ class StackToolBar(QtWidgets.QToolBar):
         # self.slidingUpDown.setEnabled(slidingEnabled)
 
         # TODO: use stack metadata channels to determine type
-        if channelIdx == 'rgb':
+        if channelKey == 'rgb':
             pass
         else:
-            channelIdx = int(channelIdx)
+            channelKey = int(channelKey)
 
         # logger.info(f'  is now {channelIdx} {type(channelIdx)}')
 
         # activate one action in [1, 2, 3, rgb]
-        self._actionDict[channelIdx].setChecked(True)
+        self._actionDict[channelKey].setChecked(True)
 
-        self.setCurrentChannel(channelIdx) # abj
+        self.setCurrentChannel(channelKey) # abj
 
         # self.signalChannelChange.emit(channelIdx)  # channel can be 'rgb'
 
@@ -177,37 +165,35 @@ class StackToolBar(QtWidgets.QToolBar):
         # used when we update stack after changing channels
         self.clear()
         
+        # abb 202508 this is problematic as we do not know the type of channelKey
         # see: https://stackoverflow.com/questions/45511056/pyqt-how-to-make-a-toolbar-button-appeared-as-pressed
-        _defaultChannel = self._displayOptionsDict['windowState']['defaultChannel']
+        # _defaultChannel = self._displayOptionsDict['windowState']['defaultChannel']
 
         self._actionDict = {}
 
         # make ['1', '2', '3', 'rgb'] disjoint selections
         self.channelActionGroup = QtWidgets.QActionGroup(self)
 
-        if len(self._myStack.getChannelKeys()) > 0:
-            logger.info(f"channel keys {self._myStack.getChannelKeys()}")
-            for channelIdx in self._myStack.getChannelKeys():
-                iconPath = ''  # use toolName to get from canvas.util
-                theIcon = QtGui.QIcon(iconPath)
+        for channelKey in self._myStack.getChannelKeys():
+            iconPath = ''  # use toolName to get from canvas.util
+            theIcon = QtGui.QIcon(iconPath)
 
-                # toolNameStr = str(int(channelIdx) + 1)
-                toolNameStr = str(channelIdx)
+            toolNameStr = str(channelKey)  # dangerous but should usually work?
 
-                theAction = QtWidgets.QAction(theIcon, toolNameStr)
-                theAction.setCheckable(True)
-                if toolNameStr == str(_defaultChannel):
-                    theAction.setChecked(True)
-                    self.setCurrentChannel(_defaultChannel) # abj
-                # do not set shortcut, handled by main stack widget
-                #theAction.setShortcut('1')# or 'Ctrl+r' or '&r' for alt+r
-                theAction.setToolTip(f'View Channel {toolNameStr}')
-                theAction.triggered.connect(partial(self._on_channel_callback, toolNameStr))
+            theAction = QtWidgets.QAction(theIcon, toolNameStr)
+            theAction.setCheckable(True)
+            if toolNameStr == str(self.getCurrentChannel()):
+                theAction.setChecked(True)
+                # self.setCurrentChannel(_defaultChannel) # abj
+            # do not set shortcut, handled by main stack widget
+            #theAction.setShortcut('1')# or 'Ctrl+r' or '&r' for alt+r
+            theAction.setToolTip(f'View Channel {toolNameStr}')
+            theAction.triggered.connect(partial(self._on_channel_callback, toolNameStr))
 
-                # add action
-                self.addAction(theAction)
-                self.channelActionGroup.addAction(theAction)
-                self._actionDict[channelIdx] = theAction
+            # add action
+            self.addAction(theAction)
+            self.channelActionGroup.addAction(theAction)
+            self._actionDict[channelKey] = theAction
 
         #
         toolNameStr = 'rgb'
@@ -351,11 +337,11 @@ class StackToolBar(QtWidgets.QToolBar):
         plotName = action.text()
         self.signalPlotCheckBoxChanged.emit(plotName)
 
-    def setCurrentChannel(self, channelIdx):
+    def setCurrentChannel(self, channelKey):
         """ set current channel selected
         """
-        logger.info(f"setCurrentChannel {channelIdx} {type(channelIdx)}")
-        self._currentChannel = channelIdx
+        logger.info(f"setCurrentChannel {channelKey} {type(channelKey)}")
+        self._currentChannel = channelKey
 
     def getCurrentChannel(self):
         """ Get current channel selected
