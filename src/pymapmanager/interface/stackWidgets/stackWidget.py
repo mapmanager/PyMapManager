@@ -1380,9 +1380,9 @@ class stackWidget(MainWindow):
                 _pmmEvent.setColorChannel(firstChannelKey)
                 self.emitEvent(_pmmEvent)
             
-        elif editType == ChannelEditType.swap_channel:
+        elif editType == ChannelEditType.move_channel:
             # self.swapChannels(event.getSrcChannelKey(), event.getDstChannelKey())
-            self.getStack().swapChannels(event.getSrcChannelKey(), event.getDstChannelKey())
+            self.getStack().moveChannel(event.getSrcChannelKey(), event.getDstChannelKey())
 
             self._topToolbar._setStack(theStack=self._stack)
 
@@ -1394,9 +1394,9 @@ class stackWidget(MainWindow):
         elif editType == ChannelEditType.set_name:
             self.updateChannelName(event.getNewName(), event.getSrcChannelKey())
 
-        elif editType == ChannelEditType.set_color_LUT:
+        elif editType == ChannelEditType.set_channel_color:
             # self.setChannelProperty(event.getSrcChannelKey(), 'colorLUT', event.getNewColorLUT())
-            logger.info(f'set_color_LUT channelkey:{event.getSrcChannelKey()} newcolor:{event.getNewColorLUT()}')
+            logger.info(f'set_channel_color channelkey:{event.getSrcChannelKey()} newcolor:{event.getNewColorLUT()}')
             self._stack.setChannelProperty(event.getSrcChannelKey(),
                                         #    'colorLUT',
                                            'color',
@@ -1430,7 +1430,7 @@ class stackWidget(MainWindow):
         
         if newChannelNum is not None:
             # refresh stackToolBar
-            # self._topToolbar._setStack(theStack=self._stack)
+            self._topToolbar._setStack(theStack=self._stack)
 
             # _pmmEvent = pmmEvent(pmmEventType.setColorChannel, self)
             # _pmmEvent.setColorChannel(newChannelNum)

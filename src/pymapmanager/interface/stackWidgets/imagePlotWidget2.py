@@ -560,7 +560,6 @@ class ImagePlotWidget(mmWidget2):
         """
         # rgb uses its own (r,g,b) LUT
         if not self._channelIsRGB():
-            logger.warning("TODO: add color str like ('red', 'green' 'blue')")
             colorStr = self._myStack.getChannelColor(self._displayThisChannelIdx)  # like 'r', 
             logger.info(f"colorStr is {colorStr}")
             if colorStr == 'red':
