@@ -69,7 +69,8 @@ class HistogramWidget(mmWidget2):
         # need to set max of spinbox and slider(s)
         # self.minSpinBox.setMaximum(globalMax)
 
-        if channelIdx in [1, 2, 3]:
+        _channelKeys = self.getStackWidget().getChannelKeys()
+        if channelIdx in _channelKeys:
             for histWidget in self.histWidgetList:
                 histWidget.isRgb = False
                 if histWidget._channelIdx == channelIdx:
@@ -86,7 +87,7 @@ class HistogramWidget(mmWidget2):
                 histWidget._refreshContrast()
                 histWidget._refreshSlice()
         else:
-            logger.error(f'Did not understand channel: {channelIdx}')
+            logger.error(f'Did not understand channel: {channelIdx}, available channels: {_channelKeys}')
 
     def slot_setSlice(self, sliceNumber):
         self._setSlice(sliceNumber)

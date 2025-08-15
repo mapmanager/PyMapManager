@@ -1430,7 +1430,7 @@ class stackWidget(MainWindow):
         
         if newChannelNum is not None:
             # refresh stackToolBar
-            # self._topToolbar._setStack(theStack=self._stack)
+            self._topToolbar._setStack(theStack=self._stack)
 
             # _pmmEvent = pmmEvent(pmmEventType.setColorChannel, self)
             # _pmmEvent.setColorChannel(newChannelNum)

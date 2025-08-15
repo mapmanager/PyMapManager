@@ -180,7 +180,7 @@ class DraggableChannelList(QWidget):
         # self.layout.setSpacing(2)
         
         # Drag state
-        self.placeholder = None
+        self._dropLineY = None  # Y position for drop line
         self.dragSourceIndex = None
 
     def dragEnterEvent(self, event):
@@ -194,7 +194,7 @@ class DraggableChannelList(QWidget):
 
     def dragMoveEvent(self, event):
         """
-        Calculates target index from mouse position, updates placeholder.
+        Calculates target index from mouse position, updates drop line position.
         Shows where the item will be dropped.
         """
         if not event.mimeData().hasText():
@@ -205,12 +205,11 @@ class DraggableChannelList(QWidget):
         localPos = event.pos()
         targetIndex = self.calculateDropIndex(localPos)
         
-        # Update placeholder position
-        if self.placeholder is None:
-            self.insertPlaceholder(targetIndex)
-        elif self.layout.indexOf(self.placeholder) != targetIndex:
-            self.layout.removeWidget(self.placeholder)
-            self.layout.insertWidget(targetIndex, self.placeholder)
+        # Calculate Y position for drop line
+        self._dropLineY = self.calculateDropLineY(localPos)
+        
+        # Trigger repaint to show the line
+        self.update()
             
         event.acceptProposedAction()
 
@@ -233,8 +232,9 @@ class DraggableChannelList(QWidget):
         localPos = event.pos()
         dstIndex = self.calculateDropIndex(localPos)
         
-        # Remove placeholder
-        self.removePlaceholder()
+        # Clear drop line
+        self._dropLineY = None
+        self.update()
         
         # Emit signal with source and destination indices
         if srcIndex != dstIndex:
@@ -243,38 +243,55 @@ class DraggableChannelList(QWidget):
         event.acceptProposedAction()
 
     def dragLeaveEvent(self, event):
-        """Remove placeholder when drag leaves the widget."""
-        self.removePlaceholder()
+        """Clear drop line when drag leaves the widget."""
+        self._dropLineY = None
+        self.update()
         super().dragLeaveEvent(event)
 
     def calculateDropIndex(self, localPos):
         """Calculate the index where the item should be dropped based on mouse position."""
         for i in range(self.layout.count()):
             item = self.layout.itemAt(i)
-            if item.widget() is None or item.widget() is self.placeholder:
+            if item.widget() is None:
                 continue
             widget = item.widget()
             if localPos.y() < widget.y() + widget.height() // 2:
                 return i
         return self.layout.count()
 
-    def insertPlaceholder(self, index):
-        """Inserts a blank spacer widget in the layout to show the gap."""
-        self.placeholder = QFrame()
-        self.placeholder.setFrameStyle(QFrame.Box | QFrame.Raised)
-        self.placeholder.setFixedHeight(30)  # Match typical channel height
-        self.placeholder.setStyleSheet("QFrame { background-color: lightblue; border: 2px dashed gray; }")
-        # Ensure we don't insert before the stretch widget
-        if index >= self.layout.count():
-            index = self.layout.count() - 1
-        self.layout.insertWidget(index, self.placeholder)
+    def calculateDropLineY(self, localPos):
+        """Calculate the Y position for the drop line based on mouse position."""
+        for i in range(self.layout.count()):
+            item = self.layout.itemAt(i)
+            if item.widget() is None:
+                continue
+            widget = item.widget()
+            if localPos.y() < widget.y() + widget.height() // 2:
+                return widget.y()
+        
+        # If we get here, we're dropping after the last widget
+        # Find the last actual widget (not stretch)
+        for i in range(self.layout.count() - 1, -1, -1):
+            item = self.layout.itemAt(i)
+            if item.widget() is not None:
+                return item.widget().y() + item.widget().height()
+        
+        # Fallback if no widgets found
+        return 0
 
-    def removePlaceholder(self):
-        """Removes the gap placeholder."""
-        if self.placeholder:
-            self.layout.removeWidget(self.placeholder)
-            self.placeholder.deleteLater()
-            self.placeholder = None
+    def paintEvent(self, event):
+        """Override paint event to draw the drop line when dragging."""
+        super().paintEvent(event)
+        
+        # Draw drop line if we have a valid position
+        if self._dropLineY is not None:
+            painter = QPainter(self)
+            painter.setPen(QColor("#2196F3"))  # Blue color
+            painter.setBrush(QColor("#2196F3"))
+            
+            # Draw a horizontal line at the drop position
+            line_height = 2
+            painter.drawRect(0, self._dropLineY - line_height//2, self.width(), line_height)
 
 
 
@@ -296,7 +313,8 @@ class ChannelEditor2(mmWidget2):
     def __init__(self, stackWidget:stackWidget):
         super().__init__(stackWidget)
         self.setWindowTitle("Channel Editor")
-        self.setGeometry(100, 100, 400, 300)
+        # Remove fixed geometry to allow auto-sizing
+        # self.setGeometry(100, 100, 400, 300)
         
         # layout = QVBoxLayout(self)
         layout = QVBoxLayout()
