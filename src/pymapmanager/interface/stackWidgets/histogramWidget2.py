@@ -72,9 +72,9 @@ class HistogramWidget(mmWidget2):
         # need to set max of spinbox and slider(s)
         # self.minSpinBox.setMaximum(globalMax)
 
-        _channelKeys = self.getStackWidget().getChannelKeys()
+        _channelKeys = self._myStack.getChannelKeys()
         if channelIdx in _channelKeys:
-            for histWidget in self.histWidgetList:
+            for histWidget in self.histWidgetDict.values():
                 histWidget.isRgb = False
                 if histWidget._channelIdx == channelIdx:
                     histWidget.show()
@@ -302,7 +302,7 @@ class _histogram(QtWidgets.QWidget):
     def _setSlice(self, sliceNumber, doInit=False):
         # logger.info(f'_histogram _channelIdx:{self._channelIdx} sliceNumber:{sliceNumber}')
         
-        # if not self.isVisible(): # not needed prevents initial loading
+        # if not self.isVisible(): # abj: not needed prevents initial loading
         #     return
         
         self._sliceNumber = sliceNumber
