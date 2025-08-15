@@ -670,26 +670,44 @@ class ImagePlotWidget(mmWidget2):
 
     def _setContrast(self):
         if self._channelIsRGB():
-            logger.warning(f'TODO: hard coding min/max for rgb -->> fix')
+            # logger.warning(f'TODO: hard coding min/max for rgb -->> fix')
             tmpLevelList = []  # list of [min,max]
             for channelIdx in self._myStack.getChannelKeys():
-                # oneMinContrast = self._myStack.contrast.getValue(channelIdx, 'minAutoContrast_rgb')
-                # oneMaxContrast = self._myStack.contrast.getValue(channelIdx, 'maxAutoContrast_rgb')
-                oneMinContrast = 0
-                oneMaxContrast = 200
+                min_c = self._myStack.getChannelMetadata(channelIdx).getValue('minContrast_rgb')
+                max_c = self._myStack.getChannelMetadata(channelIdx).getValue('maxContrast_rgb')
 
-                # convert to [0..255]
-                maxInt = 2**8  # rgb has bit depth of 8 per color channel
-                oneMinContrast = int(oneMinContrast / maxInt * 255)
-                oneMaxContrast = int(oneMaxContrast / maxInt * 255)
+                # logger.info(f"Channel {channelIdx}: min={min_c}, max={max_c}")
 
-                oneLevel = [oneMinContrast, oneMaxContrast]
-                tmpLevelList.append(oneLevel)
-            
-            levelList = [None] * 3
-            levelList[0] = tmpLevelList[1]
-            levelList[1] = tmpLevelList[0]  # green
-            levelList[2] = tmpLevelList[1]
+                # Handle missing metadata
+                if min_c is None or max_c is None:
+                    logger.warning(f"Missing contrast metadata for channel {channelIdx}, using defaults.")
+                    min_c, max_c = 0, 255
+
+                # Handle reversed values
+                # if min_c > max_c:
+                #     logger.warning(f"Min > Max for channel {channelIdx}, swapping values.")
+                #     min_c, max_c = max_c, min_c
+
+                # # convert to [0..255] 
+                maxInt = 2**8 # rgb has bit depth of 8 per color channel 
+                oneMinContrast = int(min_c / maxInt * 255)
+                oneMaxContrast = int(max_c / maxInt * 255)
+
+                tmpLevelList.append([oneMinContrast, oneMaxContrast])
+                # tmpLevelList.append([min_c, max_c])
+
+                if channelIdx == 3:
+                    break
+
+            # Expecting exactly 2 channels
+            if len(tmpLevelList) == 2:
+                levelList = [None] * 3
+                levelList[0] = tmpLevelList[1]  # R from channel 1
+                levelList[1] = tmpLevelList[0]  # G from channel 0
+                levelList[2] = tmpLevelList[1]  # B from channel 1 again
+            else:
+                logger.error(f"Expected 2 channels, got {len(tmpLevelList)} — falling back to defaults.")
+                levelList = [[0, 255]] * 3
 
             #
             # logger.info(f'{self._displayThisChannelIdx} levelList:{levelList}')
