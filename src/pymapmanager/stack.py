@@ -84,7 +84,7 @@ class stack:
 
         return _deleted
     
-    def swapChannels(self, srcChannel: int, destChannel: int):
+    def _old_swapChannels(self, srcChannel: int, destChannel: int):
         """Swap two channels in the stack.
         
         Parameters
@@ -98,6 +98,21 @@ class stack:
         # self._fullMap.swapChannels(self.timepoint, srcChannel, destChannel)
         _swapped = self.getMetadata().swapChannels(srcChannel, destChannel)
         logger.info(f'  swapped channels: {srcChannel} and {destChannel} result: {_swapped}')
+
+    def moveChannel(self, srcChannel: int, destChannel: int | None):
+        """Move a channel to a new posiiton
+        
+        Parameters
+        ----------
+        srcChannel : int
+            Source channel index, one based.
+        destChannel : int | None
+            Destination channel index, one based. If None, move to the end of the list.
+        """
+        logger.info(f"moving channels {srcChannel} to before {destChannel} if destChannel is None then move to end of list")
+        # self._fullMap.swapChannels(self.timepoint, srcChannel, destChannel)
+        _moved = self.getMetadata().moveMetadataItem(srcChannel, destChannel)
+        logger.info(f'  moved channels: {srcChannel} and {destChannel} result: {_moved}')
 
     def updateChannelName(self, channelIdx: int, newChannelName: str):
         """Update the name of a channel in the stack.

@@ -6,9 +6,9 @@ from pymapmanager._logger import logger
 class ChannelEditType(Enum):
     import_new_channel = auto()
     delete_channel = auto()
-    swap_channel = auto()
+    move_channel = auto()  # abb 202508 replacing swap_channel
     set_name = auto()
-    set_color_LUT = auto()
+    set_channel_color = auto()
 
 class EditChannelEvent(pmmEvent):
     """Class for all channel edit(s).
