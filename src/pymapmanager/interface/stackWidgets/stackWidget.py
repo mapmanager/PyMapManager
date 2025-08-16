@@ -1368,6 +1368,8 @@ class stackWidget(MainWindow):
             if _deleted is  None:
                 return False
             
+            self._topToolbar._setStack(theStack=self._stack)
+
             # if _topToolbar is displaying the deleted channel, need to update it
             if self._topToolbar.getCurrentChannel() == event.getSrcChannelKey():
                 channelKeys = self.getStack().getChannelKeys()
@@ -1417,11 +1419,27 @@ class stackWidget(MainWindow):
         self, path: Union[str, np.ndarray], time: int = 0, channel: int = 0):
         """
         if path is None:
-            importPath = QtWidgets.QFileDialog.getOpenFileName(None, 'New Tif File')[0]
+            from mapmanagercore.imageImporter import acceptedExtensions
+            # importPath = QtWidgets.QFileDialog.getOpenFileName(None, 'Import File')[0]
+            # Create filter string from accepted extensions
+            filter_parts = []
+            for ext in acceptedExtensions():
+                filter_parts.append(f"*{ext}")
+            
+            # Combine all extensions into a single filter
+            file_filter = f"Import Files ({';'.join(filter_parts)})"
+            
+            importPath, _ = QtWidgets.QFileDialog.getOpenFileName(
+                None, 
+                'Import File',
+                "",
+                file_filter
+            )
             # logger.info(f'importPath:{importPath}')
             if importPath == '':
                 return None
         else:
+            # assuming path is acceptable
             importPath = path
 
         logger.info(f"importing New channel")
@@ -1439,6 +1457,14 @@ class stackWidget(MainWindow):
             return newChannelNum
         else:
             logger.warning(f"import new channel failed -->> show dialog")
+            
+            # Show warning dialog to user
+            existingShape = self.getStack().getMetadata().shape
+            QtWidgets.QMessageBox.warning(
+                None,  # parent widget
+                "Import Failed",  # title
+                f"Import failed. The image pixels need to match existing shape {existingShape}} but got shape (x,y,z)"  # message
+            )
 
     def _old_swapChannels(self, srcChannel, destChannel):
         """ Call mapmanagercore to swap channels

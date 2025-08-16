@@ -352,7 +352,7 @@ class TimeSeriesCore():
             None: If the import failed.
         """
         
-        logger.warning(f'abb imageImport importPath {importPath} time:{time}')
+        # logger.warning(f'abb imageImport importPath {importPath} time:{time}')
         channelNum = self._fullMap.loader.importChannel(importPath, time)
         if channelNum is not None:
             return channelNum

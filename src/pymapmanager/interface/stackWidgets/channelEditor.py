@@ -1,4 +1,5 @@
 import sys
+import os
 from pprint import pprint
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QLabel, QFrame, QHBoxLayout, QLineEdit, 
@@ -6,6 +7,8 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt, QPoint, pyqtSignal, QMimeData
 from PyQt5.QtGui import QPainter, QColor, QDrag, QPixmap
+
+from mapmanagercore.imageImporter import acceptedExtensions
 
 from pymapmanager.interface import PyMapManagerApp
 from pymapmanager.interface.stackWidgets.stackWidget import stackWidget
@@ -338,11 +341,18 @@ class ChannelEditor2(mmWidget2):
         # status_label.setStyleSheet("QLabel { color: #666; }")
         # toolbar_layout.addWidget(status_label)
         
-        count_label = QLabel("Channels: 0")
+        shapeTuple = self.getStackWidget().getStack().getMetadata().shape
+        count_label = QLabel(f"Pixels:{shapeTuple}")
         count_label.setObjectName("count_label")
         count_label.setStyleSheet("QLabel { color: #666; }")
         toolbar_layout.addWidget(count_label)
         
+        voxelTuple = self.getStackWidget().getStack().getMetadata().voxelMetadata.shape
+        voxelLabel = QLabel(f"Voxels:{voxelTuple}")
+        voxelLabel.setObjectName("voxelLabel")
+        voxelLabel.setStyleSheet("QLabel { color: #666; }")
+        toolbar_layout.addWidget(voxelLabel)
+
         # Add Import File button to top toolbar
         self.importButton = QPushButton("Import File")
         self.importButton.setAcceptDrops(True)
@@ -573,19 +583,35 @@ class ChannelEditor2(mmWidget2):
  
     def onImportButtonDragEnter(self, event):
         """Handle drag enter event on import button."""
+        
         if event.mimeData().hasUrls():
-            event.acceptProposedAction()
-            self.importButton.setStyleSheet("""
-                QPushButton {
-                    background-color: #2196F3;
-                    color: white;
-                    border: 2px dashed #1976D2;
-                    padding: 6px 12px;
-                    border-radius: 4px;
-                    font-weight: bold;
-                    font-size: 12px;
-                }
-            """)
+            # Check if any of the dragged files have accepted extensions
+            accepted_exts = acceptedExtensions()
+            has_valid_file = False
+            
+            for url in event.mimeData().urls():
+                file_path = url.toLocalFile()
+                if file_path:
+                    _, ext = os.path.splitext(file_path)
+                    if ext in accepted_exts:
+                        has_valid_file = True
+                        break
+            
+            if has_valid_file:
+                event.acceptProposedAction()
+                self.importButton.setStyleSheet("""
+                    QPushButton {
+                        background-color: #2196F3;
+                        color: white;
+                        border: 2px dashed #1976D2;
+                        padding: 6px 12px;
+                        border-radius: 4px;
+                        font-weight: bold;
+                        font-size: 12px;
+                    }
+                """)
+            else:
+                event.ignore()
         else:
             event.ignore()
 
@@ -607,9 +633,17 @@ class ChannelEditor2(mmWidget2):
                     file_paths.append(file_path)
             
             if file_paths:
-                self.filesImported.emit(file_paths)
+                # self.filesImported.emit(file_paths)
                 print(f"Files dropped: {file_paths}")
             
+                editChannelEvent = EditChannelEvent(
+                    eventType = pmmEventType.editChannel,
+                    mmWidget = self.getStackWidget(),
+                    editType = ChannelEditType.import_new_channel,
+                    importPath = file_paths[0] # just the first file
+                )
+                self.emitEvent(editChannelEvent)
+
             # Reset button style
             self.importButton.setStyleSheet("""
                 QPushButton {
