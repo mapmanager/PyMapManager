@@ -1463,7 +1463,7 @@ class stackWidget(MainWindow):
             QtWidgets.QMessageBox.warning(
                 None,  # parent widget
                 "Import Failed",  # title
-                f"Import failed. The image pixels need to match existing shape {existingShape}} but got shape (x,y,z)"  # message
+                f"Import failed. The image pixels need to match existing shape {existingShape} but got shape (x,y,z)"  # message
             )
 
     def _old_swapChannels(self, srcChannel, destChannel):
