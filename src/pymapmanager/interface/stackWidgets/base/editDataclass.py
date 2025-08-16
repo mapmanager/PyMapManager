@@ -184,7 +184,15 @@ class EditDataClass(mmWidget2):
         return vLayout
     
     def on_bool_combo_box(self, paramName, value):
-        logger.warning(f'TODO: paramName:{paramName} value:{value}')
+        # logger.warning(f'TODO: paramName:{paramName} value:{value}')
+        if value == "False":
+            newVal = False
+        elif value == "True":
+            newVal = True
+        else:
+            logger.error(f"Value: {value} is not a boolean")
+        self._dict[paramName]["currentValue"] = newVal
+        self._enableButtons()
             
     def on_text_edit(self, paramName):
         # get str from widget

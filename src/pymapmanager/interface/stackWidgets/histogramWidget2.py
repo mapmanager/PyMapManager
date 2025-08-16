@@ -48,7 +48,10 @@ class HistogramWidget(mmWidget2):
     def _setSlice(self, sliceNumber):        
         self._sliceNumber = sliceNumber
         
-        for histWidget in self.histWidgetList:
+        # for histWidget in self.histWidgetList:
+        #     histWidget._setSlice(sliceNumber)
+
+        for histWidget in self.histWidgetDict.values():
             histWidget._setSlice(sliceNumber)
 
     def setSliceEvent(self, event: pmmEvent):
@@ -69,9 +72,9 @@ class HistogramWidget(mmWidget2):
         # need to set max of spinbox and slider(s)
         # self.minSpinBox.setMaximum(globalMax)
 
-        _channelKeys = self.getStackWidget().getChannelKeys()
+        _channelKeys = self._myStack.getChannelKeys()
         if channelIdx in _channelKeys:
-            for histWidget in self.histWidgetList:
+            for histWidget in self.histWidgetDict.values():
                 histWidget.isRgb = False
                 if histWidget._channelIdx == channelIdx:
                     histWidget.show()
@@ -81,7 +84,8 @@ class HistogramWidget(mmWidget2):
                     histWidget.hide()
         elif channelIdx == 'rgb':
             # show all
-            for histWidget in self.histWidgetList:
+            # for histWidget in self.histWidgetList:
+            for histWidget in self.histWidgetDict.values():
                 histWidget.isRgb = True
                 histWidget.show()
                 histWidget._refreshContrast()
@@ -126,7 +130,8 @@ class HistogramWidget(mmWidget2):
             self.repaint()
         
         elif title == 'Log':
-            for histWidget in self.histWidgetList:
+            # for histWidget in self.histWidgetList:
+            for histWidget in self.histWidgetDict.values():
                 histWidget.setLog(isChecked)
 
     def _buildUI(self):
@@ -170,11 +175,15 @@ class HistogramWidget(mmWidget2):
         hBoxLayout2 = QtWidgets.QHBoxLayout() # main layout
 
         # a _histogram for each channel
-        self.histWidgetList = []
+        # self.histWidgetList = []
+        self.histWidgetDict = {}
         for channelIdx in self._myStack.getChannelKeys():
+            #TODO: add check for to integer?
+            # logger.info(f"channelIdx when initializing {channelIdx}")
             oneHistWidget = _histogram(self, self._myStack, channelIdx, sliceNumber=self._sliceNumber)
             oneHistWidget.signalContrastChange.connect(self.slot_contrastChanged)
-            self.histWidgetList.append(oneHistWidget)
+            # self.histWidgetList.append(oneHistWidget)
+            self.histWidgetDict[channelIdx] = oneHistWidget
             hBoxLayout2.addWidget(oneHistWidget)
         vBoxLayout.addLayout(hBoxLayout2)
 
@@ -182,13 +191,29 @@ class HistogramWidget(mmWidget2):
         """Reset to min/max from metadata.
         """
         logger.error('BROKEN')
-    
-        self._myStack.getChannelMetadata(self._channelIdx).resetAutoContrast()
+        logger.info(f"self._channelIdx {self._channelIdx}")
+        logger.info(f"self._channel {self._channel}")
 
-        self.getStackWidget().slot_contrastChanged()
+        #  TODO: fix this abj - need to figure out decisively when its  rgb
+        # For some reason channel idx 2 is being used instead of 1 for resetting slider in rgb
 
-        # cludge, need to properly connect signal/slot
-        self.histWidgetList[self._channelIdx]._refreshContrast()
+        if self._channel == "rgb":
+            # TODO: loop through all channel indexes and reset rgb contrast
+            for channelIdx in self._myStack.getChannelKeys():
+                logger.info(f"channelIdx being reset {channelIdx} type {type(channelIdx)}")
+                self._myStack.getChannelMetadata(channelIdx).resetAutoRgbContrast()
+                self.getStackWidget().slot_contrastChanged()
+                # TODO: switch from list to dictionary?
+                # self.histWidgetList[channelIdx]._refreshContrast()
+                self.histWidgetDict[channelIdx]._refreshContrast()
+
+        else:
+            self._myStack.getChannelMetadata(self._channelIdx).resetAutoContrast()
+            self.getStackWidget().slot_contrastChanged()
+
+            # cludge, need to properly connect signal/slot
+            # self.histWidgetList[self._channelIdx]._refreshContrast()
+            self.histWidgetDict[self._channelIdx]._refreshContrast()
 
 #class _histogram(QtWidgets.QToolBar):
 class _histogram(QtWidgets.QWidget):
@@ -232,6 +257,8 @@ class _histogram(QtWidgets.QWidget):
         theMin = self.minContrastSlider.value()
         theMax = self.maxContrastSlider.value()
 
+        # logger.info(f"theMin {theMin} theMax {theMax}")
+
         # set spinbox(s) to current slider values
         self.minSpinBox.setValue(theMin)
         self.maxSpinBox.setValue(theMax)
@@ -260,8 +287,12 @@ class _histogram(QtWidgets.QWidget):
     def _updateContrast(self, theMin, theMax):
         # set contrast in metadata
         if self.isRgb:
-            self._myStack.getChannelMetadata(self._channelIdx).setValue('minAutoContrast_rgb', theMin)
-            self._myStack.getChannelMetadata(self._channelIdx).setValue('maxAutoContrast_rgb', theMax)
+            # self._myStack.getChannelMetadata(self._channelIdx).setValue('minAutoContrast_rgb', theMin)
+            # self._myStack.getChannelMetadata(self._channelIdx).setValue('maxAutoContrast_rgb', theMax)
+            # logger.info(f"upadting min and max rgb to {theMin} and {theMax}")
+            # logger.info(f"self._channelIdx being updated in rgb{ self._channelIdx}")
+            self._myStack.getChannelMetadata(self._channelIdx).setValue('minContrast_rgb', theMin)
+            self._myStack.getChannelMetadata(self._channelIdx).setValue('maxContrast_rgb', theMax)
         else:
             self._myStack.getChannelMetadata(self._channelIdx).setUserContrast(theMin, theMax)
 
@@ -269,10 +300,10 @@ class _histogram(QtWidgets.QWidget):
         self._setSlice(self._sliceNumber)
 
     def _setSlice(self, sliceNumber, doInit=False):
-        logger.info(f'_histogram _channelIdx:{self._channelIdx} sliceNumber:{sliceNumber}')
+        # logger.info(f'_histogram _channelIdx:{self._channelIdx} sliceNumber:{sliceNumber}')
         
-        if not self.isVisible():
-            return
+        # if not self.isVisible(): # abj: not needed prevents initial loading
+        #     return
         
         self._sliceNumber = sliceNumber
         
@@ -297,7 +328,6 @@ class _histogram(QtWidgets.QWidget):
         if self._plotLogHist:
             y = np.log10(y, where=y>0)
 
-            
         self.pgHist.setData(x=x, y=y)
 
         # color the hist based on channel number
@@ -320,26 +350,30 @@ class _histogram(QtWidgets.QWidget):
 
     def _refreshContrast(self):
         _channelMetadata = self._myStack.getChannelMetadata(self._channelIdx)
-        
+
         globalMin = 0
         if self.isRgb:
-            minContrast = _channelMetadata.getValue('minAutoContrast_rgb')
-            maxContrast = _channelMetadata.getValue('maxAutoContrast_rgb')
+            # minContrast = _channelMetadata.getValue('minAutoContrast_rgb')
+            # maxContrast = _channelMetadata.getValue('maxAutoContrast_rgb')
+            minContrast = _channelMetadata.getValue('minContrast_rgb')
+            maxContrast = _channelMetadata.getValue('maxContrast_rgb')
             globalMax = 256
         else:
             minContrast, maxContrast = _channelMetadata.getUserContrast()
             globalMax = _channelMetadata.getValue('maxInt')
 
-        # logger.info(f'isRgb:{self.isRgb} _channelIdx:{self._channelIdx} minContrast:{minContrast} maxContrast:{maxContrast}')
+        logger.info(f'isRgb:{self.isRgb} _channelIdx:{self._channelIdx} minContrast:{minContrast} maxContrast:{maxContrast}')
 
         # set the x-range of histogram plot
         self.pgPlotWidget.setXRange(globalMin, globalMax, padding=0)
 
         self.maxSpinBox.setMaximum(globalMax)  # order matters, must be first
+        self.minSpinBox.setMaximum(globalMax) # abj: ensure minimum doesnt go above max
         self.minSpinBox.setValue(minContrast)
         self.maxSpinBox.setValue(maxContrast)
 
         self.maxContrastSlider.setMaximum(globalMax)  # order matters, must be first
+        self.minContrastSlider.setMaximum(globalMax) # abj: ensure minimum doesnt go above max
         self.minContrastSlider.setValue(minContrast)
         self.maxContrastSlider.setValue(maxContrast)
 
