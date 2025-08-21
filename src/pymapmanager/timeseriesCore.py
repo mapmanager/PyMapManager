@@ -143,8 +143,10 @@ class TimeSeriesCore():
         # TODO just use endswith(), splitext does not handle '.ome.zarr'
         # _ext = os.path.splitext(path)[1]
         if canLoadPath(path):
+            # logger.info(f'loading zarr path: {path}')
             self._load_zarr()
         elif canImportPath(path):
+            # logger.info(f'importing from file path: {path}')
             self._import_from_path()
         else:
             # TODO properly handle this
@@ -171,8 +173,14 @@ class TimeSeriesCore():
         return self._undoRedoManager
     
     def getPointDataFrame(self):
-        return self._fullMap.points[:]
-    
+        """Get full map point dataframe (includes multiindex (spineID, t)
+        """
+        # logger.warning('calling points[:] -->> can trigger lots of loading slice?')
+        # return self._fullMap.points[:]
+        
+        logger.warning('fetching _fullMap.points._rootDf')
+        return self._fullMap.points._rootDf
+
     def getSegments(self):
         return self._fullMap.segments
     
@@ -267,20 +275,21 @@ class TimeSeriesCore():
     def _load_zarr(self):
         """Load from mmap zarr file.
         """
-        logger.info(f'loading zarr path: {self.path}')
+        logger.info('loading zarr path:')
+        logger.info(self.path)
         self._fullMap : MapAnnotations = MapAnnotations.load(self.path)
 
         # logger.info(f'loaded full map:{self._fullMap}')
 
     def _import_from_path(self):
-        """Load from image file (e.g. .tif, .nd2, ...)
+        """Import from image file (e.g. .tif, .nd2, ...)
         
         Result is a single timepoint with no segments and no spines.
-        
         """
         path = self.path
 
-        logger.info(f'importing from path ... mmMapLoader ... MapAnnotations: {path}')
+        logger.info('importing from path ... mmMapLoader ... MapAnnotations')
+        logger.info(path)
 
         from mapmanagercore.lazy_geo_pd_images.loader.mm_map_loader import mmMapLoader
         loader = mmMapLoader()
@@ -295,19 +304,20 @@ class TimeSeriesCore():
         self._isDirty = True
         
     def save(self):
-        """ Stack saves changes to its .mmap Zarr file that is stored
+        """ Saves changes to .mmap Zarr folder.
         """
        
         ext = os.path.splitext(self.path)[1]
 
-        if ext == ".mmap":
+        if ext == ".mmap" and os.path.isdir(self.path):
+            
             self._fullMap.save(self.path)
 
             # Store last save time to display
 
             # self.storeLastSaveTime()
         else:
-            logger.info("Not an .mmap file - Did not save")
+            logger.warning("Not an .mmap folder - Did not save")
 
     def saveAs(self, path : str):
         """ Stack saves changes to to a new zarr file path

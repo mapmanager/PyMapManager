@@ -561,7 +561,7 @@ class ImagePlotWidget(mmWidget2):
         # rgb uses its own (r,g,b) LUT
         if not self._channelIsRGB():
             colorStr = self._myStack.getChannelColor(self._displayThisChannelIdx)  # like 'r', 
-            logger.info(f"colorStr is {colorStr}")
+            # logger.info(f"colorStr is {colorStr}")
             if colorStr == 'red':
                 cm = pg.colormap.get('Reds_r', source='matplotlib')
             elif colorStr == 'green':
@@ -725,7 +725,7 @@ class ImagePlotWidget(mmWidget2):
             levelList.append([minUserContrast, maxUserContrast])
             levelList = levelList[0]
 
-            logger.info(f'setLevels channel:{self._displayThisChannelIdx} to levelList:{levelList}')
+            # logger.info(f'setLevels channel:{self._displayThisChannelIdx} to levelList:{levelList}')
             #
             self._myImage.setLevels(levelList, update=True)
 

@@ -1,4 +1,5 @@
 from typing import List, Union, Optional
+from enum import Enum
 
 # import numpy as np
 import numpy as np
@@ -14,11 +15,148 @@ from mapmanagercore.metadata import VoxelMetadata, AnalysisParams
 from pymapmanager.annotations import AnnotationsCore
 from pymapmanager._logger import logger
 
+# enum class for different spine edits like add, delete, update
+class SpineEditType(Enum):
+    ADD = 'add'
+    DELETE = 'delete'
+    UPDATE = 'update'
+
+
 def getUserTypeMarkers_mpl():
     return ['o', 'v', '^', '<', '>', 'D', 'd', '*', 'p' ,'h']
 
 class SpineAnnotationsCore(AnnotationsCore):
     
+    def _updateDataFrame(self, spineID: int | None = None, editType: SpineEditType | None = None):
+        """Update the dataframe with the new spine information.
+        """
+        if spineID is None and editType is None:
+            # update full df
+            self._buildDataFrame()
+        
+        elif editType == SpineEditType.ADD:
+            # add spine to df
+            self._addSingleRow(spineID)
+
+        elif editType == SpineEditType.DELETE:
+            # delete spine from self._df
+            self._df.drop(spineID, inplace=True)
+
+        elif editType == SpineEditType.UPDATE:
+            # update spine in self._df
+            self._updateSingleRow(spineID)
+
+        else:
+            logger.error(f'did not understand editType: {editType}')
+            raise(ValueError(f'did not understand editType: {editType}'))
+
+    def _extractCoordinates(self, df):
+        """Extract x,y coordinates from point column.
+        
+        Parameters
+        ----------
+        df : pd.DataFrame
+            DataFrame containing 'point' column with shapely Point objects
+            
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame with 'x' and 'y' columns added
+        """
+        if len(df) > 0:
+            try:
+                xyCoord = df['point'].get_coordinates()
+                df['x'] = xyCoord['x']
+                df['y'] = xyCoord['y']
+            except(AttributeError) as e:
+                logger.error(e)
+                logger.error(f'error getting x/y df is: {type(df)}')
+                print(df)
+        return df
+
+    def _addComputedColumns(self, df):
+        """Add computed columns to dataframe.
+        
+        Adds 'roiType', 'markerColor', and 'mplMarker' columns based on
+        existing data in the dataframe.
+        
+        Parameters
+        ----------
+        df : pd.DataFrame
+            DataFrame to add computed columns to
+            
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame with computed columns added
+        """
+        addTheseColumns = ['roiType', 'markerColor', 'mplMarker']
+        for aColumn in addTheseColumns:
+            df[aColumn] = None
+
+        df['roiType'] = 'spineROI'
+
+        if len(df) > 0:
+            df['markerColor'] = 'm'
+            try:
+                # after we add a spine, pandas is converting
+                # dtype of column 'accept' from bool to object?
+                _notAcceptRowLabels = df[~df['accept'].astype(bool)]
+                if len(_notAcceptRowLabels) > 0:
+                    df.loc[_notAcceptRowLabels.index, 'markerColor'] = 'w'
+            except (KeyError) as e:
+                logger.error(f'{e}')
+                raise(e)
+            
+            _userTypeMarkers = getUserTypeMarkers_mpl()
+            df['mplMarker'] = 'o'
+            for userType in range(10):
+                # 10 user types
+                _userTypeRowLabels = df[df['userType'] == userType]
+                df.loc[_userTypeRowLabels.index, 'mplMarker'] = _userTypeMarkers[userType]
+
+        return df
+
+    def _updateSingleRow(self, spineID):
+        """Update a single row in self._df with fresh data from backend.
+        
+        Parameters
+        ----------
+        spineID : int
+            The spine ID to update
+        """
+        # Get single row from backend
+        allSpinesDf = self._fullMap._fullMap.points._rootDf
+        singleRowDf = allSpinesDf.xs(self.timepoint, level="t").loc[[spineID]]
+        
+        # Apply transformations
+        singleRowDf = self._extractCoordinates(singleRowDf)
+        singleRowDf.insert(0, 'index', singleRowDf.index)
+        singleRowDf = self._addComputedColumns(singleRowDf)
+        
+        # Update the row in self._df
+        self._df.loc[spineID] = singleRowDf.iloc[0]
+
+    def _addSingleRow(self, spineID):
+        """Add a single row to self._df with data from backend.
+        
+        Parameters
+        ----------
+        spineID : int
+            The spine ID to add
+        """
+        # Get single row from backend
+        allSpinesDf = self._fullMap._fullMap.points._rootDf
+        singleRowDf = allSpinesDf.xs(self.timepoint, level="t").loc[[spineID]]
+        
+        # Apply transformations
+        singleRowDf = self._extractCoordinates(singleRowDf)
+        singleRowDf.insert(0, 'index', singleRowDf.index)
+        singleRowDf = self._addComputedColumns(singleRowDf)
+        
+        # Append the new row to self._df
+        self._df = pd.concat([self._df, singleRowDf], ignore_index=False)
+
     def _buildDataFrame(self):
         """Dataframe representing backend spines, one row per spine.
         
@@ -29,8 +167,23 @@ class SpineAnnotationsCore(AnnotationsCore):
         When no (0) spines, self._fullMap.points[:] == None
         """
         
-        allSpinesDf = self.singleTimepoint.points[:]
-        # logger.info(f"allSpinesDf.columns {allSpinesDf.columns}")
+        # v1
+        # abb 20250819 this is depreciated, it triggers load of all spine image slices
+        # allSpinesDf = self.singleTimepoint.points[:]
+        
+        # logger.info('fetching singleTimepoint.points._rootDf')
+        # allSpinesDf = self.singleTimepoint.points._rootDf
+        #allSpinesDf = self.singleTimepoint.points._root
+
+        # v2 20250819
+        # this has row multiindex of (spineID,t)
+        allSpinesDf = self._fullMap._fullMap.points._rootDf
+
+        
+        # edge case where there are not spines (e.g. when importing a raw file like (tif, nd2, etc)
+        if len(allSpinesDf) > 0:  
+            #reduce rows to self.timepoint
+            allSpinesDf = allSpinesDf.xs(self.timepoint, level="t")  # assuming we know about 2nd level 't'
 
         if len(allSpinesDf) > 0:  
             
@@ -47,7 +200,12 @@ class SpineAnnotationsCore(AnnotationsCore):
 
         # Note: this is outside above if len > 0
         # index is first column (use this as row label)
-        allSpinesDf.insert(0,'index', allSpinesDf.index)
+        try:
+            allSpinesDf.insert(0,'index', allSpinesDf.index)
+        except (ValueError) as e:
+            logger.error(f'error inserting index column {e}')
+            print(allSpinesDf)
+            raise(e)
         
         addTheseColumns = ['roiType', 'markerColor', 'mplMarker']
         for aColumn in addTheseColumns:

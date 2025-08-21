@@ -670,30 +670,26 @@ def run():
     #     1: {"label": "Channel 1 - Red", "color": "#FF0000"},
     #     2: {"label": "Channel 2 - Green", "color": "#00FF00"}, 
     # }
-    
+    import pandas as pd
+    pd.options.mode.chained_assignment = None  # default='warn'
+
     from mapmanagercore.data import get202504_map
     path = get202504_map()
+
+    path = '/Users/cudmore/Desktop/single_timepoint_20250415.mmap'
+
+    path = '/Users/cudmore/Sites/MapManagerCore-Data/data/202504/single_timepoint_202504.mmap'
+
+    print(f'path:{path}')
+
     stackWidget = app.loadStackWidget(path)
+    if stackWidget is None:
+        logger.error('did not load path')    
+    else:
+        logger.info('creating ChannelEditor2')
+        w = ChannelEditor2(stackWidget)      
+        w.show()
 
-    # channelKeys = stackWidget.getStack().getChannelKeys()
-    # logger.info('channelKeys')
-    # pprint(channelKeys)
-
-    # then
-    # for channelKey in channelKeys:
-    #     channelMetadata = stackWidget.getStack().getChannelMetadata(channelKey)
-    #     logger.info('channelMetadata')
-    #     pprint(channelMetadata)
-
-    # then
-    # channelName = channelMetadata.name
-    # logger.info('channelName')
-    # pprint(channelName)
-
-    logger.info('creating ChannelEditor2')
-    w = ChannelEditor2(stackWidget)
-      
-    w.show()
     sys.exit(app.exec_())
 
 if __name__ == "__main__":

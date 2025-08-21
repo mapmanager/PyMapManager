@@ -252,8 +252,9 @@ class stack:
 
         lastSlice = imageSlice + downSlices
         if lastSlice > self.numSlices - 1:
-            lastSlice = self.numSlices
+            lastSlice = self.numSlices - 1  # abb 20250819 added -1
 
+        # zRange is the absolute first/last slice, not last + 1
         zRange = (firstSlice, lastSlice)
         slices = self._fullMap.getMapImages().getPixels(
             timepoint=self.timepoint,

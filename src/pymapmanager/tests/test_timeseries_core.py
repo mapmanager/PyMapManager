@@ -1,23 +1,112 @@
-from mapmanagercore.data import get202504_map
+from mapmanagercore.data import get202504_map, getTiffChannel_1
 
 from pymapmanager.timeseriesCore import TimeSeriesCore
 from pymapmanager._logger import logger
 
+def test_save_as():
+    
+    # load an existing mmap folder
+    loadPath = '/Users/cudmore/Sites/MapManagerCore-Data/data/202504/single_timepoint_202504.mmap'
+    logger.info('=== loading single_timepoint_202504')
+    tsc = TimeSeriesCore(loadPath)
+    logger.info(f'loaded tsc is:{tsc}')
+
+    # save mmap folder to new mmap folder
+    # when we save as we need to ensure ALL image slices are loaded!
+    savePath = '/Users/cudmore/Sites/MapManagerCore-Data/data/202504/tmp/single_timepoint_202504_save_as.mmap'
+    logger.info(f'=== saving tsc to {savePath}')
+    tsc.saveAs(savePath)
+
+    # reload tsc from new mmap folder
+    logger.info(f'=== reloading {savePath}')
+    tscLoaded = TimeSeriesCore(savePath)
+    logger.info(f'reloaded tscLoaded is:{tscLoaded}')
+
+def test_reload():
+    savePath = '/Users/cudmore/Sites/MapManagerCore-Data/data/202504/tmp/single_timepoint_202504_save_as.mmap'
+    logger.info(f'=== reloading {savePath}')
+    tscLoaded = TimeSeriesCore(savePath)
+    logger.info(f'reloaded tscLoaded is:{tscLoaded}')
+
+    logger.info('=== calling getPointDataFrame()')
+    dfFull = tscLoaded.getPointDataFrame()
+    print('tscLoaded.getPointDataFrame')
+    print(dfFull)
+
+    # print(f'tscLoaded._fullMap.points is:{tscLoaded._fullMap.points}')  # MultiIndex
+    # print(tscLoaded._fullMap.points.columns)  # [str]
+    # print('=== fetching denRoiBg_ch2_mean')
+    # print(tscLoaded._fullMap.points['denRoiBg_ch2_mean'])  # triggers load all spine slices
+    # tscLoaded._fullMap.points[:]
+
+    # !!! !!! !!!
+    # this works, it DOES NOT REFRESH (load) and slices!
+    # print('=== tscLoaded._fullMap.points._rootDf fetching denRoiBg_ch2_mean')
+    # # print(tscLoaded._fullMap.points._rootDf)
+    # print(tscLoaded._fullMap.segments._rootDf)
+
+    # !!! yes, can we get anchorLine from points?
+    # print('=== tscLoaded._fullMap.points._rootDf fetching anchorLine')
+    # print(tscLoaded._fullMap.points._rootDf['anchorLine'])
+
+    # make a stack from TimeSeriesCore
+    from pymapmanager.stack import stack
+    stack = stack(tscLoaded, timepoint=1)
+    print('stack is:')
+    print(stack)
+    
+    # check that out dataframe gets reduced to one timepoint (no multiindex)
+    print('tack.getPointAnnotations().getDataFrame() is:')
+    print(stack.getPointAnnotations().getDataFrame())
+
+def test_load():
+    paths = [
+        get202504_map(),  # .mmap.zip
+        getTiffChannel_1(),  # .tif
+        '/Users/cudmore/Sites/MapManagerCore-Data/data/202504/single_timepoint_202504.mmap'
+    ]
+    
+
+    for path in paths:
+        logger.info(f'=== loading path:{path}')
+        tsc = TimeSeriesCore(path)
+        logger.info(f'tsc is:{tsc}')
+
 def test_time_series_core_points():
-    path = get202504_map()
+    import pandas as pd
+    pd.options.mode.chained_assignment = None  # default='warn'
+
+    path = get202504_map()  # .mmap.zip
+
+    path = getTiffChannel_1()
+
+    # path = '/Users/cudmore/Sites/MapManagerCore-Data/data/202504/single_timepoint_202504.mmap'
+
+    logger.info(f'path:{path}')
+
     tsc = TimeSeriesCore(path)
 
+    # print info on tsc
     logger.info(tsc)
 
     # df = tsc.getPointDataFrame()
     # print('=== full pooint df')
     # print(df)
 
-    df = tsc.getPointDataFrame()
-    print('=== point df for ALL tp')
-    print(f'len:{len(df)}')
-    print(df.columns)
-    print(df)
+    # dfTmp = tsc._fullMap.points  # returns MultiIndex
+    # trigger loading of all slices
+    # logger.warning('grabbing column denRoiBg_ch2_mean')
+    # dfTmp = tsc._fullMap.points['denRoiBg_ch2_mean']  # returns MultiIndex
+    # print('=== dfTmp')
+    # print(dfTmp)
+
+    # return
+
+    df = tsc.getPointDataFrame()  # this calls points[:] which loads all slices where we have spine/point
+    # print('=== point df for ALL tp')
+    # print(f'  len:{len(df)}')
+    # print(df.columns)
+    # print(df)
 
     # newSpineID = tsc.addSpine(timepoint=1, segmentID=4, x=100, y=100, z=30)
     # print('newSpineID:', newSpineID)
@@ -132,6 +221,18 @@ def _hide_test_ome_zarr():
 if __name__ == '__main__':
     logger.setLevel('DEBUG')
 
+    logger.warning('turning off pd SettingWithCopyWarning')
+    import pandas as pd
+    pd.options.mode.chained_assignment = None  # default='warn'
+
+    test_save_as()
+    
+    # was critical in understanding how to not call points[:]
+    # test_reload()
+
+    # work
+    # test_load()
+
     # works
     # test_time_series_core_points()
     
@@ -141,4 +242,5 @@ if __name__ == '__main__':
     # works
     # test_single_timepoint()
 
-    test_ome_zarr()
+    # work ni progress
+    # test_ome_zarr()

@@ -47,6 +47,10 @@ from pymapmanager.annotations.spineAnnotationsCore import SpineAnnotationsCore
 
 from pymapmanager._logger import logger, setLogLevel
 
+logger.warning('turning off pd SettingWithCopyWarning')
+import pandas as pd
+pd.options.mode.chained_assignment = None  # default='warn'
+
 def _importPlugins(pluginType : str, verbose = False):
     from inspect import isclass
     from pkgutil import iter_modules

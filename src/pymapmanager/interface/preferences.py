@@ -98,6 +98,17 @@ class Preferences:
     def clearMapPathDict(self):
         self.configDict["recentMapDicts"] = []
         
+    def removeMapPathDict(self, path: str):
+        """Remove a specific map path dict from recent maps by path."""
+        dictList = self.configDict["recentMapDicts"]
+        indexToRemove = self._find_index_of_dict_with_value(dictList, "Path", path)
+        
+        if indexToRemove is not None:
+            self.configDict["recentMapDicts"].pop(indexToRemove)
+            self.save()
+            return True
+        return False
+        
     def addMapPathDict(self, mapPathDict : dict):
         """Add a map path dict to recent maps
 

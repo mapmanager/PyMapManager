@@ -13,6 +13,7 @@ from typing import List
 import qtawesome as qta
 
 from qtpy import QtCore, QtWidgets, QtGui
+from qtpy.QtGui import QDesktopServices  # to allow 'show folder'
 
 import pymapmanager
 # from pymapmanager.interface.mainWindow import MainWindow
@@ -81,7 +82,7 @@ class OpenFirstWindow(QtWidgets.QMainWindow):
         myTableWidget.setWordWrap(False)
         myTableWidget.setRowCount(len(pathDictList))
         # myTableWidget.setColumnCount(1)
-        myTableWidget.setColumnCount(3)
+        myTableWidget.setColumnCount(4)
         myTableWidget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         myTableWidget.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         myTableWidget.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
@@ -104,28 +105,55 @@ class OpenFirstWindow(QtWidgets.QMainWindow):
         myTableWidget.verticalHeader().setFont(fnt)
 
         header = myTableWidget.horizontalHeader()
-        header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
-        # QHeaderView will automatically resize the section to fill the available space. The size cannot be changed by the user or programmatically.
-        header.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.Interactive)
+        header.resizeSection(0,200)
 
         header.setSectionResizeMode(1, QtWidgets.QHeaderView.Fixed)
         header.resizeSection(1,200)
 
-        # set headertext
-        myTableWidget.setHorizontalHeaderLabels(('Path', 'Last Save Time', 'Timepoints'))
+        header.setSectionResizeMode(2, QtWidgets.QHeaderView.Fixed)
+        header.resizeSection(2,100)
 
+        header.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
+        # QHeaderView will automatically resize the section to fill the available space. The size cannot be changed by the user or programmatically.
+        header.setSectionResizeMode(3, QtWidgets.QHeaderView.Stretch)
+
+        # set headertext
+        myTableWidget.setHorizontalHeaderLabels(('File', 'Last Save Time', 'Timepoints', 'Path'))
+
+
+        
         for idx, stat in enumerate(pathDictList):
             # logger.info(f"table displays {stat['Timepoints']}")
             path = QtWidgets.QTableWidgetItem(stat["Path"])
             lastSaveTime= QtWidgets.QTableWidgetItem(str(stat["Last Save Time"]))
             timePoints = QtWidgets.QTableWidgetItem(str(stat["Timepoints"])) # needs to be a str to be displayed
+            
+            # Extract filename from path
+            filename = os.path.basename(stat["Path"])
+            filenameItem = QtWidgets.QTableWidgetItem(filename)
+            
             # logger.info(f"Path {path}")
             # logger.info(f"lastSaveTime {lastSaveTime}")
             # logger.info(f"timePoints {timePoints}")
-            myTableWidget.setItem(idx, 0, path)
+            myTableWidget.setItem(idx, 0, filenameItem)
             myTableWidget.setItem(idx, 1, lastSaveTime)
             myTableWidget.setItem(idx, 2, timePoints)
+            myTableWidget.setItem(idx, 3, path)
             myTableWidget.setRowHeight(idx, _rowHeight + int(.7 * _rowHeight))
+            
+            # Check if file/folder exists and color row red if it doesn't
+            filePath = stat["Path"]
+            if not os.path.exists(filePath):
+                # Set red text for the entire row
+                redBrush = QtGui.QBrush(QtGui.QColor(255, 0, 0))  # Red text
+                for col in range(4):  # 4 columns
+                    item = myTableWidget.item(idx, col)
+                    if item:
+                        item.setForeground(redBrush)
+        
+        # Resize File column to fit contents
+        myTableWidget.resizeColumnToContents(0)
 
         return myTableWidget
 
@@ -154,6 +182,81 @@ class OpenFirstWindow(QtWidgets.QMainWindow):
             logger.error(_statusStr)
         
         self.setStatus(_statusStr)
+
+    def _show_context_menu(self, position):
+        """Show context menu for the table."""
+        context_menu = QtWidgets.QMenu()
+        
+        # Get the row under the cursor
+        row = self._recentFolderTable.rowAt(position.y())
+        if row >= 0:
+            # Add "Show Folder" action
+            show_folder_action = context_menu.addAction("Show Folder")
+            show_folder_action.triggered.connect(lambda: self._show_folder_in_explorer(row))
+            
+            # Add separator
+            context_menu.addSeparator()
+            
+            # Add "Remove" action
+            remove_action = context_menu.addAction("Remove")
+            remove_action.triggered.connect(lambda: self._remove_from_recent_list(row))
+            
+            # Show the context menu
+            context_menu.exec_(self._recentFolderTable.mapToGlobal(position))
+
+    def _show_folder_in_explorer(self, row_idx: int):
+        """Open the folder containing the file in the system's file explorer."""
+        try:
+            file_path = self.recentMapDictList[row_idx]["Path"]
+            
+            # Get the directory path
+            if os.path.isfile(file_path):
+                # If it's a file, get its directory
+                directory = os.path.dirname(file_path)
+            else:
+                # If it's a directory, use it directly
+                directory = file_path
+            
+            # Open folder in system file explorer (cross-platform)
+            self._open_folder_cross_platform(directory)
+            
+        except Exception as e:
+            logger.error(f"Error opening folder: {e}")
+            self.setStatus(f"Error opening folder: {e}")
+
+    def _open_folder_cross_platform(self, folder_path: str):
+        """Open a folder in the system's file explorer (cross-platform)."""
+        try:
+            # Use PyQt's built-in cross-platform folder opening
+            url = QtCore.QUrl.fromLocalFile(folder_path)
+            QDesktopServices.openUrl(url)
+            self.setStatus(f"Opened folder: {folder_path}")
+        except Exception as e:
+            logger.error(f"Failed to open folder: {e}")
+            self.setStatus(f"Failed to open folder: {e}")
+
+    def _remove_from_recent_list(self, row_idx: int):
+        """Remove an item from the recent files list."""
+        try:
+            file_path = self.recentMapDictList[row_idx]["Path"]
+            
+            # Remove from preferences backend
+            removed = self.getApp().getConfigDict().removeMapPathDict(file_path)
+            
+            if removed:
+                # Update the local list
+                self.recentMapDictList.pop(row_idx)
+                
+                # Refresh the UI
+                self.refreshUI()
+                
+                self.setStatus(f"Removed from recent files: {file_path}")
+            else:
+                self.setStatus(f"Failed to remove: {file_path}")
+                
+        except Exception as e:
+            logger.error(f"Error removing from recent list: {e}")
+            self.setStatus(f"Error removing from recent list: {e}")
 
     def _clearFileList(self):
         self.getApp().getConfigDict().clearMapPathDict()
@@ -271,6 +374,8 @@ class OpenFirstWindow(QtWidgets.QMainWindow):
         self._recentFolderTable = self._makeRecentTable(self.recentMapDictList,
                                                   headerStr=headerStr)
         self._recentFolderTable.cellDoubleClicked.connect(self._on_recent_map_click)
+        self._recentFolderTable.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self._recentFolderTable.customContextMenuRequested.connect(self._show_context_menu)
         recent_vBoxLayout.addWidget(self._recentFolderTable)
 
         _mainVLayout.addLayout(recent_vBoxLayout)
