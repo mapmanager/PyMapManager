@@ -50,19 +50,23 @@ class SpineAnnotationsCore(AnnotationsCore):
             logger.error(f'did not understand editType: {editType}')
             raise(ValueError(f'did not understand editType: {editType}'))
 
-    def _extractCoordinates(self, df):
-        """Extract x,y coordinates from point column.
+    def _transformDataFrame(self, df):
+        """Apply all transformations to a dataframe.
+        
+        Combines coordinate extraction, index insertion, and computed columns.
+        Works on dataframes of any size (single row or multiple rows).
         
         Parameters
         ----------
         df : pd.DataFrame
-            DataFrame containing 'point' column with shapely Point objects
+            Raw dataframe from backend
             
         Returns
         -------
         pd.DataFrame
-            DataFrame with 'x' and 'y' columns added
+            Transformed dataframe ready for frontend use
         """
+        # Extract x,y coordinates from point column
         if len(df) > 0:
             try:
                 xyCoord = df['point'].get_coordinates()
@@ -72,24 +76,11 @@ class SpineAnnotationsCore(AnnotationsCore):
                 logger.error(e)
                 logger.error(f'error getting x/y df is: {type(df)}')
                 print(df)
-        return df
-
-    def _addComputedColumns(self, df):
-        """Add computed columns to dataframe.
         
-        Adds 'roiType', 'markerColor', and 'mplMarker' columns based on
-        existing data in the dataframe.
+        # Insert index column
+        df.insert(0, 'index', df.index)
         
-        Parameters
-        ----------
-        df : pd.DataFrame
-            DataFrame to add computed columns to
-            
-        Returns
-        -------
-        pd.DataFrame
-            DataFrame with computed columns added
-        """
+        # Add computed columns
         addTheseColumns = ['roiType', 'markerColor', 'mplMarker']
         for aColumn in addTheseColumns:
             df[aColumn] = None
@@ -130,9 +121,7 @@ class SpineAnnotationsCore(AnnotationsCore):
         singleRowDf = allSpinesDf.xs(self.timepoint, level="t").loc[[spineID]]
         
         # Apply transformations
-        singleRowDf = self._extractCoordinates(singleRowDf)
-        singleRowDf.insert(0, 'index', singleRowDf.index)
-        singleRowDf = self._addComputedColumns(singleRowDf)
+        singleRowDf = self._transformDataFrame(singleRowDf)
         
         # Update the row in self._df
         self._df.loc[spineID] = singleRowDf.iloc[0]
@@ -150,9 +139,7 @@ class SpineAnnotationsCore(AnnotationsCore):
         singleRowDf = allSpinesDf.xs(self.timepoint, level="t").loc[[spineID]]
         
         # Apply transformations
-        singleRowDf = self._extractCoordinates(singleRowDf)
-        singleRowDf.insert(0, 'index', singleRowDf.index)
-        singleRowDf = self._addComputedColumns(singleRowDf)
+        singleRowDf = self._transformDataFrame(singleRowDf)
         
         # Append the new row to self._df
         self._df = pd.concat([self._df, singleRowDf], ignore_index=False)
@@ -185,55 +172,15 @@ class SpineAnnotationsCore(AnnotationsCore):
             #reduce rows to self.timepoint
             allSpinesDf = allSpinesDf.xs(self.timepoint, level="t")  # assuming we know about 2nd level 't'
 
-        if len(allSpinesDf) > 0:  
-            
-            # when there is 1 spine, points[:] returns
-            # <class 'pandas.core.series.Series'> 
-            try:
-                xyCoord = allSpinesDf['point'].get_coordinates()
-                allSpinesDf['x'] = xyCoord['x']
-                allSpinesDf['y'] = xyCoord['y']
-            except(AttributeError) as e:
-                logger.error(e)
-                logger.error(f'error getting x/y allSpinesDf is: {type(allSpinesDf)}')
-                print(allSpinesDf)
-
-        # Note: this is outside above if len > 0
-        # index is first column (use this as row label)
-        try:
-            allSpinesDf.insert(0,'index', allSpinesDf.index)
-        except (ValueError) as e:
-            logger.error(f'error inserting index column {e}')
-            print(allSpinesDf)
-            raise(e)
-        
-        addTheseColumns = ['roiType', 'markerColor', 'mplMarker']
-        for aColumn in addTheseColumns:
-            allSpinesDf[aColumn] = None
-
-        allSpinesDf['roiType'] = 'spineROI'
-
-        if len(allSpinesDf) > 0:
-            allSpinesDf['markerColor'] = 'm'
-            try:
-                # after we add a spine, pandas is converting
-                # dtype of column 'accept' from bool to object?
-                _notAcceptRowLabels = allSpinesDf[ ~allSpinesDf['accept'].astype(bool) ]
-                if len(_notAcceptRowLabels)>0:
-                    allSpinesDf.loc[_notAcceptRowLabels.index, 'markerColor'] = 'w'
-            except (KeyError) as e:
-                logger.error(f'{e}')
-                raise(e)
-            
-            _userTypeMarkers = getUserTypeMarkers_mpl()
-            allSpinesDf['mplMarker'] = 'o'
-            for userType in range(10):
-                # 10 user types
-                _userTypeRowLabels = allSpinesDf[ allSpinesDf['userType'] == userType]
-                allSpinesDf.loc[_userTypeRowLabels.index, 'mplMarker'] = _userTypeMarkers[userType]
+        # Apply transformations using the same helper methods
+        allSpinesDf = self._transformDataFrame(allSpinesDf)
 
         self._df = allSpinesDf
         self._buildSummaryDf()
+
+        logger.info(f'updated spineAnnotationsCore dataframe with {len(self._df)} rows and {len(self._df.columns)} columns')
+        logger.info('columns are:')
+        logger.info(self._df.columns)
 
         return self._df
         
@@ -307,12 +254,7 @@ class SpineAnnotationsCore(AnnotationsCore):
         return (x, y)
     
     def addSpine(self, segmentID : int, x : int, y : int, z : int) -> int:
-        # newSpineID = self._fullMap.addSpine(segmentId=(segmentID, self.sessionID), 
 
-        # newSpineID = self.getMapPoints().addSpine(self.timepoint, segmentID=segmentID, 
-        #                        x=x,
-        #                        y=y,
-        #                        z=z)
         newSpineID = self.singleTimepoint.addSpine(segmentId=segmentID, 
                                x=x,
                                y=y,
@@ -327,7 +269,8 @@ class SpineAnnotationsCore(AnnotationsCore):
         # do not need to rebuild after addSpine
         # self._buildTimepoint()
 
-        self._buildDataFrame()
+        # self._buildDataFrame()  # OLD: full rebuild
+        self._updateDataFrame(spineID=newSpineID, editType=SpineEditType.ADD)  # NEW: granular update
 
         self._setDirty(True) #abj
 
@@ -347,7 +290,8 @@ class SpineAnnotationsCore(AnnotationsCore):
         # self.getMapPoints().deleteSpine(self.timepoint, rowIdx)
         self.singleTimepoint.deleteSpine(rowIdx)
 
-        self._buildDataFrame()
+        # self._buildDataFrame()  # OLD: full rebuild
+        self._updateDataFrame(spineID=rowIdx, editType=SpineEditType.DELETE)  # NEW: granular update
 
         self._setDirty(True) #abj
 
@@ -367,8 +311,11 @@ class SpineAnnotationsCore(AnnotationsCore):
                 continue
 
             self.setValue(col, spineID, value)
+            
+            # Update the specific spine after each edit
+            self._updateDataFrame(spineID=spineID, editType=SpineEditType.UPDATE)
 
-        self._buildDataFrame()
+        # self._buildDataFrame()  # OLD: full rebuild (commented out since we update incrementally above)
 
         self._setDirty(True) #abj
 
@@ -404,8 +351,8 @@ class SpineAnnotationsCore(AnnotationsCore):
         #update background ROI
         # self.getTimepointMap().snapBackgroundOffset(spineID)
 
-        # rebuild df from mutated full map
-        self._buildDataFrame()
+        # self._buildDataFrame()  # OLD: full rebuild
+        self._updateDataFrame(spineID=spineID, editType=SpineEditType.UPDATE)  # NEW: granular update
 
         self._setDirty(True) #abj
 
@@ -425,8 +372,8 @@ class SpineAnnotationsCore(AnnotationsCore):
         # _moved = self.getMapPoints().moveAnchor(self.timepoint, spineID, x=x, y=y, z=z)
         _moved = self.singleTimepoint.moveAnchor(spineID, x=x, y=y, z=z)
 
-        # rebuild df from mutated full map
-        self._buildDataFrame()
+        # self._buildDataFrame()  # OLD: full rebuild
+        self._updateDataFrame(spineID=spineID, editType=SpineEditType.UPDATE)  # NEW: granular update
 
         self._setDirty(True) #abj
 
@@ -444,8 +391,8 @@ class SpineAnnotationsCore(AnnotationsCore):
         # self.getMapPoints().autoConnectBrightestIndex(self.timepoint, spineID, segmentID, point, findBrightest)
         self.singleTimepoint.autoConnectBrightestIndex(spineID, segmentID, point, findBrightest)
 
-        # refreshDataFrame
-        self._buildDataFrame()
+        # self._buildDataFrame()  # OLD: full rebuild
+        self._updateDataFrame(spineID=spineID, editType=SpineEditType.UPDATE)  # NEW: granular update
 
         self._setDirty(True) #abb
 
@@ -471,12 +418,12 @@ class SpineAnnotationsCore(AnnotationsCore):
 
         self.singleTimepoint.moveBackgroundRoi(spineID, x=offsetX, y=offsetY, z=z)
 
-        # refreshDataFrame
-        self._buildDataFrame()
+        # self._buildDataFrame()  # OLD: full rebuild
+        self._updateDataFrame(spineID=spineID, editType=SpineEditType.UPDATE)  # NEW: granular update
 
         self._setDirty(True) #abj
 
-    def updateChannel(self):
+    def _old_updateChannel(self):
 
         # self.getPointDataFrame()
         logger.info(f"updating channel for spineAnnotationsCore {self.getClassName()}")

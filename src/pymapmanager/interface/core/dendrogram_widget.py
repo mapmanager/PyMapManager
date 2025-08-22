@@ -590,10 +590,10 @@ class DendrogramPlotWidget(QtWidgets.QWidget):
         # self.setColumnList()
         self.hueColumnList = hueColumnList
 
-        if filterColumn != None:
+        if filterColumn is not None:
             self.setFilter(filterColumn)
 
-        if hueColumnList != None:
+        if hueColumnList is not None:
             self.setHueColumnList(hueColumnList)
 
         self.plotHistograms = False

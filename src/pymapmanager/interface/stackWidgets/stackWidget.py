@@ -781,7 +781,7 @@ class stackWidget(MainWindow):
         -------
         True if added, False otherwise
         """
-        logger.warning('=== ===   STACK WIDGET PERFORMING ADD SPINE   === ===')
+        logger.info('=== ===   STACK WIDGET PERFORMING ADD SPINE   === ===')
         
         # check if we have a segment selection, if not then veto add
         _stackSelection = self.getStackSelection()
@@ -806,12 +806,13 @@ class stackWidget(MainWindow):
             newSpineID = self.getStack().getPointAnnotations().addSpine(
                 segmentID=segmentID,
                 x=x, y=y, z=z)
-            logger.info(f'   newSpineID: {newSpineID}')
+            # logger.info(f'   newSpineID: {newSpineID}')
 
             # MapManagerCore returns None for NewSpineID if there was a problems:
             # Cases: Spine is outside of img, ROI outside of img
             if newSpineID is None:
-                logger.info("newSpineID added event aborted")
+                logger.warning("newSpineID added event aborted")
+                self.slot_setStatus("Spine not added ... implement system to tell user the error")
                 return
 
             # fill in newSpineID and segmentID
@@ -1523,7 +1524,7 @@ class stackWidget(MainWindow):
         _pmmEvent.setColorChannel(nextChannel)
         self.emitEvent(_pmmEvent)
 
-    def activateChannel(self, channelIdx, activateChannel):
+    def _old_activateChannel(self, channelIdx, activateChannel):
         """ Call backend to activate/ deactivate channel for aggregate calculation
         """ 
         timePoint = self._stack.timepoint

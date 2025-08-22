@@ -892,8 +892,8 @@ class pointPlotWidget(annotationPlotWidget):
         """
         """
 
-        logger.info(f'{self.getClassName()}')
-        logger.info(f'event:{event}')
+        # logger.info(f'{self.getClassName()}')
+        # logger.info(f'event:{event}')
         
         _undoEvent = event.getUndoEvent()
         if _undoEvent is None:

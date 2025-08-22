@@ -51,7 +51,7 @@ class LineAnnotationsCore(AnnotationsCore):
         logger.info(f'   -->> pivotDistance: {pivotDistance}')
 
         # self._buildDataFrame()
-        logger.warning('abb 202508 removed call to _buildTimepoint')
+        # logger.warning('abb 202508 removed call to _buildTimepoint')
         # self._buildTimepoint()
 
         self._buildDataFrame()
@@ -172,8 +172,9 @@ class LineAnnotationsCore(AnnotationsCore):
                         firstPoint = segmentDf.at[segmentDf[segmentDf.index == idx].index[0], "roughTracing"]
                         # logger.info(f"firstPoint {firstPoint}")
                         coords.append(firstPoint)
-                    except:
+                    except (IndexError) as e:
                         logger.error(f"No first point in rough coords of segment {idx}")
+                        logger.error(f"error: {e}")
 
                 elif isinstance(geom, shapely.LineString):
                     # Access coordinates with z (if present)
@@ -218,7 +219,9 @@ class LineAnnotationsCore(AnnotationsCore):
         # print("dfRet", dfRet)
 
         self._df = dfRet
-    
+
+        logger.info(f'built lineAnnotationsCore dataframe with {len(self._df)} rows and {len(self._df.columns)} columns')
+
         # summary, one row per segment        
         self._buildSummaryDf()
         
@@ -247,7 +250,7 @@ class LineAnnotationsCore(AnnotationsCore):
 
         self.singleTimepoint.updateSegment(segmentId = segmentID, value=_segment)
 
-        logger.warning('abb 202508 removed call to _buildTimepoint')
+        # logger.warning('abb 202508 removed call to _buildTimepoint')
         # self._buildTimepoint()
         self._buildDataFrame()
 

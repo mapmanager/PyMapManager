@@ -404,7 +404,7 @@ class lineListWidget(annotationListWidget):
         if self._blockSlots:
             return
 
-        logger.warning(f'{self.getClassName()} event stack selection is:')
+        # logger.warning(f'{self.getClassName()} event stack selection is:')
         # logger.warning(f'{event.getStackSelection()}')
         
         segmentSelection = event.getStackSelection().getSegmentSelection()        
@@ -413,7 +413,7 @@ class lineListWidget(annotationListWidget):
 
         # abj
         if segmentSelection is None or len(segmentSelection) <= 0:
-            logger.info(f"segmentSelection is {segmentSelection}")
+            logger.error(f"segmentSelection is {segmentSelection}")
         else:
             segmentID = segmentSelection[0]
             self.currentSegmentID = segmentID

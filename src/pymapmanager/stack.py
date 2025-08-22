@@ -62,7 +62,7 @@ class stack:
 
         if newChannelNum is not None:
             # important (this refreshes timepoint for new aggregate columns)
-            self.getPointAnnotations().updateChannel()
+            self.getPointAnnotations()._buildDataFrame() # trigger full refresh of dataframe
             return newChannelNum
         else:
             return None
@@ -80,7 +80,7 @@ class stack:
 
         # rebuild point annotations dataframe
         if _deleted:
-            self.getPointAnnotations()._buildDataFrame()
+            self.getPointAnnotations()._buildDataFrame()  # trigger full refresh of dataframe
 
         return _deleted
     
