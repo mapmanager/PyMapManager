@@ -560,7 +560,7 @@ class annotationPlotWidget(mmWidget2):
             self._scatter.setData(self.xData, self.yData,
                                 symbolBrush=_symbolBrush,
                                 connect=_connect)
-            
+
         # stopTime = time.time()
         # logger.info(f'base annotation plot widget ... {self.getClassName()} Took {round(stopTime-startTime,4)} sec')
 
@@ -997,6 +997,16 @@ class pointPlotWidget(annotationPlotWidget):
         self._spineBackgroundPolygon.setData([], [])
         self._segmentBackgroundPolygon.setData([], [])
 
+    # abj
+    def _showSpineRois(self, show: bool = True):
+        """Show spine ROI."""
+
+        self._spinePolygon.setVisible(show)
+        self._segmentPolygon.setVisible(show)
+        self._spineBackgroundPolygon.setVisible(show)
+        self._segmentBackgroundPolygon.setVisible(show)
+        self._scatterUserSelection.setVisible(show)
+
     def _selectAnnotation(self, rowIdx: List[int], isAlt: bool = False):
         """Select one annotation."""
 
@@ -1034,6 +1044,20 @@ class pointPlotWidget(annotationPlotWidget):
             if x is not None:
                 self._segmentBackgroundPolygon.setData(x, y)
 
+            z = self.pointAnnotations.getValue('z', firstSelectedRow)
+            logger.info(f'z value iss:{z}')
+            if z is not None:
+                zRange = (z - self._displayOptions["zPlusMinus"], z + self._displayOptions["zPlusMinus"])
+                logger.info(f'zRange iss:{zRange[0]} {zRange[1]}')
+                sliceNumber = self.getStackWidget().currentSliceNumber
+                logger.info(f'sliceNumber iss:{sliceNumber}')
+                if zRange[0] <= sliceNumber <= zRange[1]:
+                    logger.info(f'z is within zRange')
+                    self._showSpineRois(True)
+                else:
+                    logger.info(f'z is not within zRange')
+                    self._showSpineRois(False)
+
     # abb 20240906
     def selectedSpine(self, event : SelectSpine):
         logger.info('TODO: check if each spine is in our timepoint')
@@ -1061,6 +1085,23 @@ class pointPlotWidget(annotationPlotWidget):
         # show and hide labels based on sliceNumber
         if self.showLabel:
             self._pointLabels.hidShowLabels(_rows)
+        
+        # show and hide spine rois based on sliceNumber
+        zPlusMinus = self._displayOptions["zPlusMinus"]
+        pointSelection = self.getStackWidget().getStackSelection().getPointSelection()
+        if len(pointSelection) > 0:
+            firstSelectedRow = self.getStackWidget().getStackSelection().getPointSelection()[0]
+            z = self.pointAnnotations.getValue('z', firstSelectedRow)
+            logger.info(f'slot_setSlice z is:{z}')
+            zRange = (z - zPlusMinus, z + zPlusMinus)
+            logger.info(f'slot_setSlice zRange is:{zRange[0]} {zRange[1]}')
+            # check if spine rois are within zRange
+            if zRange[0] <= sliceNumber <= zRange[1]:
+                logger.info(f'slot_setSlice z is within zRange')
+                self._showSpineRois(True)
+            else:
+                logger.info(f'slot_setSlice z is not within zRange')
+                self._showSpineRois(False)
 
         try:
             # x/y spine lines come directly from the core

@@ -262,6 +262,9 @@ class stack:
 
         return slices
 
+    def setCurrentImageSlice(self, imageSlice : np.ndarray):
+        self._currentImageSlice = imageSlice
+
     def getPixel(self, channel : int, imageSlice : int, y, x) -> int:
         """Get the intensity of a pixel.
         
@@ -273,18 +276,18 @@ class stack:
         
         if self._currentImageSlice is None:
             logger.warning('no _currentImageSlice yet')
-        
+
         # _image = self.getImageSlice(imageSlice=imageSlice, channel=channel)
         _image = self._currentImageSlice
-
+        # logger.info(f'getPixel _image:{_image}')
         # logger.info(f'_image:{_image.shape}')
         
         if _image is None:
             return np.nan
         try:
-            _intensity = _image[y,x]
+            _intensity = _image[int(y),int(x)]
         except (IndexError) as e:
-            #logger.error(f'IndexError x:{x} y:{y}')
+            # logger.error(f'IndexError x:{x} y:{y}')
             return np.nan
         return _intensity
     

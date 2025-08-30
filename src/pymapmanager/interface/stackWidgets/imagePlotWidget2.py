@@ -443,7 +443,7 @@ class ImagePlotWidget(mmWidget2):
         if self._channelIsRGB():
             intensity = float('nan')
         else:
-            # TODO: fix issue with intensity (mapmanagercore throwing errors)
+            # logger.info(f'getPixel self._currentSlice:{self._currentSlice}')
             intensity = self._myStack.getPixel(self._displayThisChannelIdx,
                             self._currentSlice,
                             y, x)
@@ -831,6 +831,9 @@ class ImagePlotWidget(mmWidget2):
                                     self._displayThisChannelIdx,
                                     upDownSlices, upDownSlices,
                                     func=np.max)
+
+            # store the current image slice for getPixel intensity retrieval
+            self._myStack.setCurrentImageSlice(sliceImage)
 
         autoLevels = True
         levels = None
