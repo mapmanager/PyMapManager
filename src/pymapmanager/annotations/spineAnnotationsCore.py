@@ -30,12 +30,21 @@ class SpineAnnotationsCore(AnnotationsCore):
     def _updateDataFrame(self, spineID: int | None = None, editType: SpineEditType | None = None):
         """Update the dataframe with the new spine information.
         """
+        # logger.warning('calling pooints[:]')
+        # self.singleTimepoint.points[:]
+        # self.singleTimepoint.points['spineLength']
+
+        logger.warning('abb 20250830 turned off spine edit system -->> do not use _rootDF')
+        return
+    
         if spineID is None and editType is None:
             # update full df
             self._buildDataFrame()
         
         elif editType == SpineEditType.ADD:
             # add spine to df
+            # rebuild single timepoint to get new points df
+            # self._buildTimepoint()
             self._addSingleRow(spineID)
 
         elif editType == SpineEditType.DELETE:
@@ -67,20 +76,29 @@ class SpineAnnotationsCore(AnnotationsCore):
             Transformed dataframe ready for frontend use
         """
         # Extract x,y coordinates from point column
-        if len(df) > 0:
-            try:
-                xyCoord = df['point'].get_coordinates()
-                df['x'] = xyCoord['x']
-                df['y'] = xyCoord['y']
-            except(AttributeError) as e:
-                logger.error(e)
-                logger.error(f'error getting x/y df is: {type(df)}')
-                print(df)
+        # abb spine df has computed 'x' and 'y'
+        # if len(df) > 0:
+        #     try:
+        #         xyCoord = df['point'].get_coordinates()
+        #         df['x'] = xyCoord['x']
+        #         df['y'] = xyCoord['y']
+        #     except(AttributeError) as e:
+        #         logger.error(e)
+        #         logger.error(f'error getting x/y df is: {type(df)}')
+        #         print(df)
         
         # Insert index column
-        df.insert(0, 'index', df.index)
+        try:
+            df.insert(0, 'index', df.index)
+        except(AttributeError) as e:
+            logger.error(e)
+            logger.error(f'error in inserting index df is: {type(df)}')
+            print(df)
         
         # Add computed columns
+        logger.warning("removed columns ['roiType', 'markerColor', 'mplMarker']")
+        return df
+
         addTheseColumns = ['roiType', 'markerColor', 'mplMarker']
         for aColumn in addTheseColumns:
             df[aColumn] = None
@@ -134,15 +152,31 @@ class SpineAnnotationsCore(AnnotationsCore):
         spineID : int
             The spine ID to add
         """
+        logger.info("calling self.singleTimepoint.points[spineID]")
+        self.singleTimepoint.points[spineID]
+
+        _debugColumns = ['spineLength', 'spineAngle', 'spineSide', 'z']
         # Get single row from backend
+        # allSpinesDf = self._fullMap.getTimepoint(self._timepoint).points._rootDf
         allSpinesDf = self._fullMap._fullMap.points._rootDf
+        
+        # logger.info('allSpinesDf _debugColumns is:')
+        # print(allSpinesDf[_debugColumns])
+
         singleRowDf = allSpinesDf.xs(self.timepoint, level="t").loc[[spineID]]
         
+        logger.info('singleRowDf _debugColumns is')
+        print(singleRowDf[_debugColumns])
+
         # Apply transformations
         singleRowDf = self._transformDataFrame(singleRowDf)
         
         # Append the new row to self._df
         self._df = pd.concat([self._df, singleRowDf], ignore_index=False)
+
+        logger.info('after add self._df is')
+        theseCols = ['spineLength', 'spineAngle', 'spineSide', 'z']
+        print(self._df[theseCols])
 
     def _buildDataFrame(self):
         """Dataframe representing backend spines, one row per spine.
@@ -153,24 +187,38 @@ class SpineAnnotationsCore(AnnotationsCore):
         -----
         When no (0) spines, self._fullMap.points[:] == None
         """
-        
+
+        logger.info(f'building spineAnnotationsCore dataframe')
+
         # v1
         # abb 20250819 this is depreciated, it triggers load of all spine image slices
-        # allSpinesDf = self.singleTimepoint.points[:]
-        
+        # allSpinesDf = self.singleTimepoint.points[:]  # GeoDataFrame
+        # logger.info(f'v1 allSpinesDf type: {type(allSpinesDf)}')
+        # logger.info(f'v1 allSpinesDf columns: {allSpinesDf.columns}')
+        # logger.info(f'v1 allSpinesDf head:')
+        # print(allSpinesDf.head())
+
+
+        allSpinesDf = self.singleTimepoint.points  # SingleTimePointFrame
+        logger.info(f'allSpinesDf type: {type(allSpinesDf)}')
+        logger.info(f'allSpinesDf columns: {allSpinesDf.columns}')
+        # logger.info(f'allSpinesDf head:')
+        # print(allSpinesDf.head())
+
         # logger.info('fetching singleTimepoint.points._rootDf')
         # allSpinesDf = self.singleTimepoint.points._rootDf
         #allSpinesDf = self.singleTimepoint.points._root
 
         # v2 20250819
         # this has row multiindex of (spineID,t)
-        allSpinesDf = self._fullMap._fullMap.points._rootDf
+        # allSpinesDf = self._fullMap._fullMap.points._rootDf
 
         
         # edge case where there are not spines (e.g. when importing a raw file like (tif, nd2, etc)
-        if len(allSpinesDf) > 0:  
-            #reduce rows to self.timepoint
-            allSpinesDf = allSpinesDf.xs(self.timepoint, level="t")  # assuming we know about 2nd level 't'
+        # not needed when using points[:] dataframe
+        # if len(allSpinesDf) > 0:  
+        #     #reduce rows to self.timepoint
+        #     allSpinesDf = allSpinesDf.xs(self.timepoint, level="t")  # assuming we know about 2nd level 't'
 
         # Apply transformations using the same helper methods
         allSpinesDf = self._transformDataFrame(allSpinesDf)

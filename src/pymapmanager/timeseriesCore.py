@@ -277,7 +277,10 @@ class TimeSeriesCore():
         """
         logger.info('loading zarr path:')
         logger.info(self.path)
-        self._fullMap : MapAnnotations = MapAnnotations.load(self.path)
+
+        logger.warning('switching from MapAnnotations load to load_backward_compatible')
+        # self._fullMap : MapAnnotations = MapAnnotations.load(self.path)
+        self._fullMap : MapAnnotations = MapAnnotations.load_backward_compatible(self.path)
 
         # logger.info(f'loaded full map:{self._fullMap}')
 

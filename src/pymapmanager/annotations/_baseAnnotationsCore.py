@@ -45,12 +45,13 @@ class AnnotationsCore:
 
         self._buildDataFrame()
     
-    def _buildTimepoint(self):
+    def _buildTimepoint(self) -> SingleTimePointAnnotations:
         """Build single timepoint by calling getTimepoint(timepoint).
         """
         logger.warning(f'building SingleTimePointAnnotations for tp:{self._timepoint} class:{self.getClassName()}')
         self._singleTimePoint : SingleTimePointAnnotations = self._fullMap.getTimepoint(self._timepoint)
-
+        return self._singleTimePoint
+    
     # abb 202508, now rebuilding each time???
     @property
     def singleTimepoint(self) -> SingleTimePointAnnotations:

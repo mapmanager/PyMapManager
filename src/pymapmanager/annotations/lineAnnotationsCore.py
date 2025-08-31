@@ -140,8 +140,9 @@ class LineAnnotationsCore(AnnotationsCore):
             logger.warning(e)
 
         self._summaryDf = summaryDf
-        # logger.info('summary df is now:')
-        # print(summaryDf)
+
+        logger.info('summary df is now:')
+        print(summaryDf)
 
         return summaryDf
     
@@ -152,7 +153,8 @@ class LineAnnotationsCore(AnnotationsCore):
          - Does not contain empty segments.
         """
         #self._df = self.getMapSegments()._buildSegmentDataFrame(self.timepoint)
-        
+        logger.info(f'building lineAnnotationsCore dataframe')
+
         _columns = ['t', 'segmentID', 'x', 'y', 'z', 'xLeft', 'yLeft', 'xRight', 'yRight']
 
         dfRet = pd.DataFrame(columns=_columns)
@@ -221,6 +223,7 @@ class LineAnnotationsCore(AnnotationsCore):
         self._df = dfRet
 
         logger.info(f'built lineAnnotationsCore dataframe with {len(self._df)} rows and {len(self._df.columns)} columns')
+        print(self._df)
 
         # summary, one row per segment        
         self._buildSummaryDf()
